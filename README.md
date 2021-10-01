@@ -100,10 +100,25 @@ source ../venv_django_1.10/bin/activate
 pip install -r requirements.txt
 ```
 
+#### Create the project
+With the virtual environment activated, create the project,
+
+```bash
+cd ../NExtSEEK
+mezzanine-project NExtSEEK
+```
+
 #### Change SEEK configuration
 
-Open settings.py in the DMAC folder and change the following variables:\
+Open settings.py in the NExtSEEK folder and set the following variables:
+
+```bash
+
 SEEK_URL = "http://127.0.0.1:3000"
+```
+
+where a Seek instance is installed locally on the same computer, which can be modified to point to the IP address of the Seek server.
+
 
 #### Run NExtSEEK
 
@@ -111,3 +126,5 @@ SEEK_URL = "http://127.0.0.1:3000"
 python manage.py runserver 0.0.0.0:8080
 ```
 
+## Contact Us
+For question in setting up the system or reporting bugs, please visit [BioMicro Center, MIT](https://biology.mit.edu/tile/biomicro-center/).
