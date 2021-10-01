@@ -15,3 +15,4 @@ changes   to   SEEK,   users   are   able   to   collect   and   organize   the 
 researchers need to improve reusability and reproducibility as well as to make data
 and metadata available to the scientific community through public repositories.
 
+## Dependencies
