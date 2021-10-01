@@ -1,0 +1,76 @@
+<style type="text/css">
+	.TFtable{
+		width:100%; 
+		border-collapse:collapse; 
+	}
+	.TFtable td{ 
+		padding:7px; border:#4e95f4 1px solid;
+	}
+	/* provide some minimal visual accomodation for IE8 and below */
+	.TFtable tr{
+		background: #b8d1f3;
+	}
+	/*  Define the background color for all the ODD background rows  */
+	.TFtable tr:nth-child(odd){ 
+		background: #e9f1fb;
+	}
+	/*  Define the background color for all the EVEN background rows  */
+	.TFtable tr:nth-child(even){
+		background: #fefefe;
+	}
+</style>
+
+<!---div style="margin:20px 0;"--->
+<!---div>
+<div id="sample_tab" class="easyui-tabs" style="width:auto;height:1000px;">
+    <div title="Sample" data-options="closable:false" style="overflow:auto;padding:20px;display:none;"--->
+		<div class="easyui-layout" style="width:auto;height:1500px;">
+			<!---div data-options="region:'north'" style="height:60px">
+				<div class="well" style="overflow: scroll;">
+					<h3>Sample name: </h3>
+				</div>
+			</div--->
+		    <div data-options="region:'north',border:true,split:true,hideCollapsedContent:false" title="Sample tree" style="overflow: scroll; width:auto; height:500px;">
+				<div class="well" style="overflow: scroll;">
+				{% include "pages/samples_tree.embed.html" %}
+				</div>
+	        </div>
+			<br/>
+	        <div data-options="region:'center',split:true,border:true" title="Sample info" style="overflow: scroll; width:auto; height:500px;">
+				<div class="well" style="overflow: scroll;">
+					<div class="widget-body">
+					<div class="widget-main">
+					<div id="piechart-placeholder">
+						<!---table class="TFtable">
+							{% for key, value in report.sampleinfo.items %}
+							<tr>
+								<td>{{key}}</td>
+								<td>{{value|safe}}</td>
+							</tr>
+							{% endfor %}
+						</table--->
+						<table class="TFtable">
+							{% for dici in report.sampleinfo %}
+							<tr>
+								<td>{{dici.attrname}}</td>
+								<td>{{dici.attrvalue|safe}}</td>
+							</tr>
+							{% endfor %}
+						</table>
+					</div>
+				    </div><!--/widget-main-->
+					</div><!--/widget-body-->
+				</div>
+	        </div>
+			<div data-options="region:'south',split:true,border:true" title="Sample page" style="overflow: scroll; width:auto; height:500px;">
+				<div class="well" style="overflow: scroll;">
+				{% autoescape off %}
+				    {{ bodyhtml }}
+				{% endautoescape %}
+				</div>
+	        </div>
+		</div>
+    <!---/div>
+</div>
+</div--->
+    

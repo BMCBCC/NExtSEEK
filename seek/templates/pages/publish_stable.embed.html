@@ -1,0 +1,262 @@
+<script type="text/javascript" src="{{STATIC_URL}}js/easyui/datagrid-filter.js"></script>
+<script type="text/javascript" src="{{STATIC_URL}}js/easyui/datagrid-export.js"></script>
+<script type="text/javascript" src="{{STATIC_URL}}js/custom/datagrid-custom.js"></script>
+<!---script type="text/javascript" src="{{STATIC_URL}}js/easyui/datagrid-groupview.js"></script--->
+<script type="text/javascript">
+$(document).ready(function(){
+			//$('#asset_table_div').hide();
+	$('#dgtable').datagrid({
+		onCheck: function(index,row){
+			row.ck = true;
+		},
+		onUncheck: function(index,row){
+			row.ck = false;
+		},
+		onCheckAll: function() {
+            //var allRows = $(this).treegrid('getAllRows');
+            //var state = $(this).data('datagrid');
+            //state.checkedRows = allRows;
+			var rows = $(this).datagrid('getRows');
+			for(var i=0; i<rows.length; i++){
+				var row = rows[i];
+				row.ck = true;
+			}
+        },
+        onUncheckAll: function() {
+            //var state = $(this).data('datagrid');
+            //state.checkedRows = [];
+			var rows = $(this).datagrid('getRows');
+			for(var i=0; i<rows.length; i++){
+				var row = rows[i];
+				row.ck = false;
+			}
+        }
+	})
+			
+});
+
+
+$(function(){
+	//document.getElementById("asset_table_div").style.display = 'none';
+	//document.getElementById("south_div").style.display = 'none';
+    var dg = $('#dgtable').datagrid();
+    dg.datagrid('enableFilter', [{
+				field:'piUrl',
+				type:'label'
+			}]);
+	
+
+});
+	
+	function pulishAssets(dg, url) {
+		var investigation_id = $('#publish_investigation').combobox('getValue');
+		if(investigation_id==0){
+			alert('No Investigation is selected.');
+			return;
+		}
+		var investigation =  $('#publish_investigation').combobox('getText');
+		
+		var study_id = $('#publish_study').combobox('getValue');
+		if(study_id==0){
+			alert('No Study is selected.');
+			return;
+		}
+		var study = $('#publish_study').combobox('getText');
+		
+		var assay_id = $('#publish_assay').combobox('getValue');
+		if(assay_id==0){
+			alert('No Assay is selected.');
+			return;
+		}
+		var assay = $('#publish_assay').combobox('getText');
+			
+		var rows = dg.datagrid('getRows');
+		// download only those rows shown in the table
+		//alert("download some");
+		if (rows.length==0){
+			alert('No asset in the table is available for publishing.');
+			return;
+		}
+		//alert(rows.length);
+		var allIds = [];
+		for(var i=0; i<rows.length; i++){
+			var row = rows[i];
+			
+			//var selected = $('#dg').datagrid('getEditor', {index: i, field: 'selected'});
+			//if ($(selected.target).is(':checked')){
+			if(row.ck){
+				//alert('checked');
+				allIds.push(row.id);
+			}
+			else{
+				//alert('unchecked');
+			}
+		}
+		if (allIds.length==0){
+			alert('No asset in the table is selected for publishing.');
+			return;
+		}
+		//alert(allIds);
+		var allids = JSON.stringify(allIds);
+		var msg = 'You have selected '
+			+ allIds.length
+			+ ' assets in the ISA for publishing. You must be superuser to do so. Do you really want to publish those assets?';
+		$.messager.confirm('Publishing assets', msg, function(r){
+            if (r){
+                //alert('Stop: A revision is in progress!');
+				//return
+            }
+			else{
+				return;
+			}
+							
+			var win = $.messager.progress({
+				title:'Please waiting',
+				msg:'Publishing assets ...'
+			});
+			
+			$.get(url,
+				{
+					'allids': allids,
+			        'investigation': investigation,
+					'study': study,
+					'assay': assay,
+			        'investigation_id': investigation_id,
+					'study_id': study_id,
+					'assay_id': assay_id
+				},
+				function(data){
+					$.messager.progress('close');
+					var obj = jQuery.parseJSON(data);
+				    var msg = obj.msg;
+					var status = obj.status;
+					var link = obj.link;
+					if(status==1){
+						window.location.href = link; 
+					}
+					else {
+						alert(msg);
+					}
+					return;
+				}
+			);
+			return;
+			
+			//$('#cell_dg').datagrid('reload');
+				
+			//setTimeout(function(){
+			//    $.messager.progress('close');
+			//},5000)
+				
+			//alert('confirmed: '+r);
+			//alert(statusType);
+			var grantIDs = jsonconvertstrings(grantids);
+			var grantcompIDs = jsonconvertstrings(grantcompids);
+			$.get('/grant/delete/',
+				{
+					//json: JSON.stringify(json)
+					grantids: grantIDs,
+					grantcompids: grantcompIDs,
+				},
+				function(data){
+					$.messager.progress('close');
+					var obj = jQuery.parseJSON(data);
+					var msg = obj.message;
+					var link = obj.link;
+					//alert(link);
+										
+					var status = obj.status;
+					if(!status){
+						//alert(msg);
+						var msg2 = "Error in deleting grants. <br/><br/>";
+						msg2 += msg;
+						//msg2 += "<br/><br/>Refer to the csv file returned for more information.";
+						$.messager.alert('Deleting grants',msg2,'info');
+						//window.location.href = link;
+						//window.location.href = "/grant/funding/";
+						return;
+					} 
+				
+					var msg = 'The following grants have been deleted from DB: ' + grantids.join() + '!';
+					$.messager.alert('Deleting grants',msg,'info');
+					//window.location.href = link;
+					window.location.href = "/grant/funding/";
+					return;
+								
+					data = eval('('+data+')');
+					if(data.success){
+						var message='Succeeded';
+						if(data.message){
+							message=data.message;
+						}
+						$.messager.show({
+							title:'Remind',
+							msg:message,
+							showType:'slide'
+						});
+						$('#cell_dg').datagrid('reload');
+					}else{
+						var message='Failed';
+						if(data.message){
+							message=data.message;
+						}
+						$.messager.alert('Remind',message,'error');
+					}
+				}
+			);
+			return;
+		});
+	}
+
+</script>
+<style type="text/css">
+  .datagrid-row-alt{
+        background: #e6f2ff;
+    }
+</style>
+<!---style type="text/css">
+  .datagrid-cell{
+    font-size:10px; font-weight: bold; 
+  }
+</style--->
+
+<div id="asset_table_div" style="height:auto">
+	<div style="margin:20px 0;"></div>
+	<table id="dgtable" class="easyui-datagrid" title="" style="width:auto; height:380px;"
+			data-options="
+				iconCls: 'icon-edit',
+				singleSelect: true,
+				selectOnCheck: false,
+				url:'',
+				method:'get',
+				toolbar: '#tb_toolbar',
+				striped: true,
+				pagination : true,
+				pageSize:50,
+				showFooter: false,
+				multiSort: true,
+				remoteFilter: true
+			">
+		<thead>
+			<tr>
+				<!---th data-options="field:'record_id',checkbox:true"><span class="lbl"></span></th--->
+				<!---th data-options="field:'idlink',width:60" sortable="false"><B>Select it</B></th--->
+				<th data-options="field:'ck',width:100,align:'center', checkbox:true, editor:{type:'checkbox',options:{on:'Y',off:'N'}}">Select file</th>
+				<th data-options="field:'id',width:100" sortable="true"><B>ID</B></th>
+				<!---th data-options="field:'uid',width:200,editor:'text'" sortable="true"><B>UID</B></th--->
+				<!---th data-options="field:'parent_uids',width:200,editor:'text'" sortable="true"><B>Parent UIDs</B></th--->
+				<th data-options="field:'title',width:300,editor:'text'" sortable="true"><B>Data file name</B></th>
+				<th data-options="field:'assay',width:120" sortable="true"><B>Assay</B></th>
+				<th data-options="field:'study',width:120" sortable="true"><B>Study</B></th>
+				<th data-options="field:'investigation',width:100" sortable="true"><B>Investigation</B></th>
+			</tr>
+		</thead>
+	</table>
+	<div id="tb_toolbar" style="height:auto">
+		<!---a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-add',plain:true" onclick="append($('#dgtable'))">Add a record</a>
+		<a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true" onclick="accept($('#dgtable'), '/directory/save/')">Save a record</a>
+        <a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-undo',plain:true" onclick="reject($('#dgtable'))">Cancel</a>
+        <a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-remove',plain:true" onclick="removeit($('#dgtable'), '/directory/delete/')">Remove a record</a--->
+		<a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true" onclick="pulishAssets($('#dgtable'), '/seek/pulishAssets/')">Publish assets</a>
+	</div>
+</div>

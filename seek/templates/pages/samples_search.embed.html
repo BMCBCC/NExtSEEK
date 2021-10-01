@@ -1,0 +1,294 @@
+<script type="text/javascript">
+	var type_options = {{ report.type_options|safe }};
+	
+	function getAttributes(rec) {
+		// given a sample type id, retrieve the list of sample attributes and show it in the combobox.
+		if(rec.id==0){
+			return;
+		}
+		else{
+			//alert(url);
+			//alert(rec.id);
+		}
+		var url = '/seek/attributes/id=' + rec.id + '/';
+		//window.location.href = url;
+		$.get(url,
+			{},
+			function(data){
+				var obj = jQuery.parseJSON(data);
+                var msg = obj.msg;
+				var status = obj.status;
+				if(status==1){
+					var attr_options = obj.attrOptions;
+					$('#sample_attribute').combobox('loadData', attr_options);
+				}
+				else {
+					alert(msg);
+				}
+				return;
+			}
+        );	
+	}
+
+	function getOperators(rec) {
+		// given a sample attribute name, retrieve a list of filter rules and show it in the combobox.
+		if(rec.attribute=='none'){
+			return;
+		}
+		else{
+			//alert(url);
+			//alert(rec.id);
+		}
+		var sampletype_id = $('#sample_type').combobox('getValue');
+		//alert(sample_type_id);
+		//var attribute = $('#sample_attribute').combobox('getValue');
+		var attribute = rec.attribute;
+		//alert(attribute);
+		var url = '/seek/operators/';
+		$.get(url,
+			{
+				'sampletype_id': sampletype_id,
+				'attribute': attribute
+			},
+			function(data){
+				var obj = jQuery.parseJSON(data);
+                var msg = obj.msg;
+				var status = obj.status;
+				if(status==1){
+					var filter_rule = obj.filter_rule;
+					$('#filter_rule').combobox('loadData', filter_rule);
+					var placeholder_start = obj.placeholder_start;
+					document.getElementById("input_valueFrom").setAttribute('placeholder',placeholder_start);
+					document.getElementById("input_valueFrom").setAttribute('value','');
+					var placeholder_end = obj.placeholder_end;
+					document.getElementById("input_valueTo").setAttribute('placeholder',placeholder_end);
+					document.getElementById("input_valueTo").setAttribute('value','');
+				}
+				else {
+					alert(msg);
+				}
+				return;
+			}
+        );	
+	}
+	
+	
+	function displaySamples(rec) {
+		alert(rec.id);
+		var url = '/seek/sample_types/id=' + rec.id + '/';
+		//var url = 'get_data2.php?id='+rec.title;
+		if(rec.id==0){
+			return;
+		}
+		else{
+			//alert(url);
+		}
+		//window.location.href = url;
+		return;
+		$.get(url,
+			{},
+			function(data){
+				var obj = jQuery.parseJSON(data);
+				return;
+				var bodyhtml = 
+                datanow = obj.rows;
+				//alert(datanow.length);
+				var number = datanow.length;
+                $('#cell_dg').datagrid('loadData',datanow);
+				var numberSelected = 96;
+				if(number<96){
+					numberSelected = number;
+				}
+				document.getElementById('numberCellsSelected').innerHTML = numberSelected;
+								
+				for(var i=0; i<numberSelected; i++){
+					$('#cell_dg').datagrid('selectRow', i); 
+				}
+								
+				var pager = $('#cell_dg').datagrid('getPager');
+				//pager.pagination({showRefresh:false});
+				pager.pagination({
+					total:number,
+					pageSize:number,
+					pageList: [number]
+				});
+				return;
+			}
+        );	
+	}
+
+	function getSearchVariables() {
+		var listdic = {};
+		listdic["keywords"] = document.getElementById("searching").value;
+		return listdic;
+	}
+	
+	function jsonconvertdic(listdic){
+		var jsontry = JSON.stringify(listdic);
+		return jsontry;
+	}
+	
+	function searchSamples() {
+		var sampletype_id = $('#sample_type').combobox('getValue');
+		if(sampletype_id==0){
+			alert('No sample type is selected.');
+			return;
+		}
+		var win = $.messager.progress({
+				title:'Please waiting',
+				msg:'Searching for samples...'
+		});
+		
+		//alert(sample_type_id);
+		var attribute = $('#sample_attribute').combobox('getValue');
+		//alert(attribute);
+		var filter_rule = $('#filter_rule').combobox('getValue');
+		//alert(filter_rule);
+		//var filter_value = $('#filter_value').combobox('getValue');
+		var filter_valueFrom = document.getElementById("input_valueFrom").value;
+		var filter_valueTo = document.getElementById("input_valueTo").value;
+		//alert(filter_valueFrom);
+		// run validation on server side
+		$.get('/seek/samples/searching/',
+			{
+				'sampletype_id': sampletype_id,
+				'attribute': attribute,
+				'filter_rule': filter_rule,
+				'filter_valueFrom': filter_valueFrom,
+				'filter_valueTo': filter_valueTo
+			},
+			function(data){
+				$.messager.progress('close');
+				var obj = jQuery.parseJSON(data);
+                var msg = obj.msg;
+				var status = obj.status;
+				if(status==1){
+					var datanow = obj.rows;
+					var total = obj.total;
+					//alert(total)
+					//document.getElementById("south_div").style.display = 'none';
+					//document.getElementById("south_div").style.display = 'inline';
+				
+					$('#dgtable').datagrid('loadData',datanow);
+					//$('#sample_table_div').show();
+					//alert(datanow.length);
+					//var number = datanow.length;
+					//$('#cell_dg').datagrid('loadData',datanow);
+					//var numberSelected = 96;
+					//if(number<96){
+					//	numberSelected = number;
+					//}
+					//document.getElementById('numberCellsSelected').innerHTML = numberSelected;
+								
+					//for(var i=0; i<numberSelected; i++){
+					//	$('#cell_dg').datagrid('selectRow', i); 
+					//}
+								
+					var pager = $('#dgtable').datagrid('getPager');
+					pager.pagination({showRefresh:false});
+					pager.pagination({
+						total:total,
+						pageSize:total,
+						pageList: [total]
+					});
+				}
+				else {
+					alert(msg);
+				}
+				return;
+			}
+        );	
+		//$('#cell_dg').datagrid('reload');
+	}
+</script>
+
+<div class="span12">
+	<form method="post" enctype="multipart/form-data" action="">
+			{% csrf_token %}
+	
+	<!--- Grid control from smartAdmin theme --->		
+	<div class="well">
+		<div class="row show-grid">
+			<!---table class="table table-bordered"--->
+			<table class="table" align="center" style="width:80%" >
+				<thead>
+					<tr>
+						<th>Sample Type:</th>
+						<th>Sample Attribute:</th>
+						<th>Operator:</th>
+						<th>From:</th>
+						<th>To:</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>
+							<input id="sample_type" class="easyui-combobox" name="sample_type" style="width:100%;" data-options="
+								showItemIcon: true,
+								data: type_options,
+								valueField:'id',
+								textField:'title',
+								groupField:'group',
+								editable: false,
+								panelHeight:'auto',
+								label: '',
+								labelPosition: 'top',
+								onSelect: function(rec){
+									getAttributes(rec);
+								}
+							">
+						</td>
+						<td>
+							<input id="sample_attribute" class="easyui-combobox" name="sample_attribute" style="width:100%;" data-options="
+								showItemIcon: true,
+								valueField:'attribute',
+								textField:'name',
+								editable: false,
+								panelHeight:'auto',
+								label: '',
+								labelPosition: 'top',
+								onSelect: function(rec){
+									getOperators(rec);
+								}
+							">
+						</td>
+						<td>
+							<input id="filter_rule" class="easyui-combobox" name="filter_rule" style="width:100%;" data-options="
+								showItemIcon: true,
+								valueField:'name',
+								textField:'operator',
+								editable: false,
+								panelHeight:'auto',
+								label: '',
+								labelPosition: 'top',
+								onSelect: function(rec){
+								}
+							">
+						</td>
+						<td>
+							<input id="input_valueFrom" label="" labelPosition="left" value="" placeholder="start value" style="width:150px;height:30px">
+						</td>
+						<td>
+							<input id="input_valueTo" label="" labelPosition="left" value="" placeholder="end value" style="width:150px;height:30px">
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<div class="row show-grid">
+			<div class="col-xs-6 col-sm-4 col-md-4">
+			</div>
+			<div class="col-xs-6 col-sm-4 col-md-4">
+				<a href="#" class="easyui-linkbutton" data-options="iconCls:'icon-search',plain:true" onclick="searchSamples()">Search</a>
+				<!---a href="#" class="easyui-linkbutton" data-options="iconCls:'icon-search',plain:true" onclick="generatePIReportWord()">Create PI Grant Report in Word</a--->
+			</div>
+			<div class="col-xs-6 col-sm-4 col-md-4">
+			</div>
+		</div>
+	</div>
+		<!-- widget content -->
+	<!-- end widget content -->
+	</form>
+</div>
+
+

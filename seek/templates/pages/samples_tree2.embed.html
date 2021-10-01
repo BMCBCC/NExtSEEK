@@ -1,0 +1,518 @@
+<!--- This is the second exaample to show the multi-parent tree --->
+<script type="text/javascript" src="{{ STATIC_URL }}js/buildtree/d3.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}js/buildtree/d3.layout.js"></script>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<!---script type="text/javascript" src="type="text/javascript" src="{{ STATIC_URL }}js/buildtree/d3.min.js"></script>
+<script type="text/javascript" src="type="text/javascript" src="{{ STATIC_URL }}js/buildtree/d3.layout.min.js"></script--->
+<script type="text/javascript" src="type="text/javascript" src="{{ STATIC_URL }}js/buildtree/buildTree.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.3.1/lodash.min.js"></script>
+    <style>
+        .link {
+            stroke-width: 1px;
+            stroke: #ddd;
+            fill: none;
+        }
+        .text {
+            font-family: "Lucida Grande", "Helvetica Nueue", Arial, sans-serif;
+            font-size: 10px;
+        }
+        .hover {
+            stroke: #2c3e50;
+        }
+        .cert-root {
+            visibility: hidden;
+        }
+        .chart {
+            width: 100%;
+            height: 100%;
+        }
+        div.tooltip {
+            position: absolute;
+            text-align: center;
+            max-width: 160px;
+            padding: 7px 10px;
+            font: 12px sans-serif;
+            color: white;
+            background: #111;
+            border: 0px;
+            border-radius: 2px;
+            pointer-events: none;
+            margin-top: 2px;
+        }
+        div.tooltip:before {
+            content: '';
+            position: absolute;
+            top: 0%;
+            left: 50%;
+            margin-left: -8px;
+            margin-top: -8px;
+            width: 0; height: 0;
+            border-bottom: 8px solid #111;
+            border-right: 8px solid transparent;
+            border-left: 8px solid transparent;
+        }
+    </style>
+<div class="chart">
+
+</div>
+<script>
+
+    var data = {{ report.treeData_multiparents|safe }};
+	
+    var data2 = {
+        'name': "certificates",
+        'id': "cert-root",
+        'children': [{
+            'name': "ISO-2000",
+            'id': "cert-iso",
+            'children': [
+                {'id':"CO-01",
+                  'name':"CO-AuditPlanning",
+                    'children': [{
+                        'id': "CO-01_1",
+                        'name': "CO-AuditPlanning.1",
+                        'children': [{
+                            'id': "softlayer",
+                            'name': "Soft Layter",
+							'children': [{
+								'id': "softlayer21",
+								'name': "Soft Layter21",
+							},
+							{
+								'id': "softlayer22",
+								'name': "Soft Layter22",
+							}
+							]
+                        }]
+                    }]
+                },
+                {'id':"CO-06",'name':"CO-IntellectualProperty",
+                    'children': [{
+                        'id': "CO-06_1",
+                        'name' : "CO-IntellectualProperty1",
+                        'children': [{
+                            'id': "Aryaka",
+                            'name': "Aryaka"
+                        }]
+                    }
+                    ]},
+                {'id':"DG-01",'name':"DG-Ownership"},
+                {'id':"SA-15",'name':"SA-MobileCode",
+                    'children': [{
+                        'id': "SA-15_1",
+                        'name': "SA-MobileCode.1",
+                        'children': [{
+                            'id': "softlayer",
+                            'name': "Soft Layter",
+							'children': [{
+								'id': "softlayer21",
+								'name': "Soft Layter21",
+							},
+							{
+								'id': "softlayer22",
+								'name': "Soft Layter22",
+							}
+							]
+                        }]
+                    }, {
+                        'id': "SA-15_2",
+                        'name': "SA-MobileCode.2",
+                        'children': [{
+                            'id': "softlayer",
+                            'name': "Soft Layter",
+                        }]
+                    }
+                 ]
+             }]
+        },
+        {
+            'name': "COBIT",
+            'id': "cert-cobit",
+            'children': [
+                {
+                    'id': "CO-01",
+                    'name' : "co-AuditPlanning",
+                    'children': [{
+                        'id': "CO-01_1",
+                        'name' : "CO-AuditPlanning.1",
+                        'children': [{
+                            'id': "softlayer",
+                            'name': "Soft Layter",
+							'children': [{
+								'id': "softlayer21",
+								'name': "Soft Layter21",
+							},
+							{
+								'id': "softlayer22",
+								'name': "Soft Layter22",
+							}
+							]
+                        },
+						{
+                            'id': "Aryaka",
+                            'name': "Aryaka"
+                        }
+						]
+                    }
+                    ]
+                }
+            ]
+        }
+        ]
+    };
+
+    var graph = {
+        width: 1200,
+        height: 400
+    };
+
+    d3.selection.prototype.moveToFront = function() {
+        return this.each(function(){
+            this.parentNode.appendChild(this);
+        });
+    };
+
+    var svg = d3.select('.chart').append('svg:svg')
+            .attr("width", graph.width)
+            .attr("height", graph.height)
+            .append('svg:g')
+            .attr('transform', 'translate(-' + graph.width * 0.1 + ', 0)')
+
+    function elbow(d, i) {
+        return "M" + d.source.y + "," + d.source.x + "H" + d.target.y
+                + "V" + d.target.x  + "H" + d.target.y
+    }
+
+    var diagonal = d3.svg.diagonal()
+            .projection(function(d)
+            {
+                return [d.y, d.x];
+            });
+
+    var tree = d3.layout.tree()
+            .size([graph.height,graph.width]);
+
+    var nodes = tree.nodes(data);
+
+    nodes = _.uniq(nodes, 'id');
+
+    _.each(nodes, function (o , i) {
+        var itemsOfTheSameDepth = _.where(nodes, {depth: o.depth});
+        var indexOfCurrent = _.indexOf(itemsOfTheSameDepth, o);
+        var interval = graph.height / itemsOfTheSameDepth.length;
+        nodes[i].x = interval / 2 + (interval * indexOfCurrent);
+    });
+
+    //tooltip
+    var tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+
+    var links = tree.links(nodes);
+
+    _.each(links, function (o, i) {
+        links[i].target = _.find(nodes, {id: o.target.id});
+    });
+
+    var link = svg.selectAll("path")
+            .data(links)
+            .enter().append("svg:path")
+            .attr('class', function (d) {
+                return (!!d.source) ? d.source.id : "root";
+            })
+            .classed('link', true)
+            .attr('d', diagonal);
+
+    var node = svg.selectAll('g.node')
+            .data(nodes)
+            .enter().append("svg:g")
+            .attr("transform", function (d) {
+                return "translate(" + d.y + "," + d.x + ")";
+            })
+            .on('mouseup', function (d) {
+                // remove all the colour paths
+                d3.selectAll('path.link').classed('hover', false);
+                // draw new colour paths
+                d3.selectAll("." + d.id)
+                        .classed("hover", true)
+                        .moveToFront();
+
+                _.pluck(d.children, 'id').forEach(function (id) {
+                    d3.selectAll('.' + id)
+                            .classed('hover', true)
+                            .moveToFront();
+                });
+
+                if (d.children) {
+                    d._children = d.children;
+                    d.children = null;
+                } else {
+                    d.children = d._children;
+                    d._children = null;
+                }
+
+            })
+            .on('mouseover', function (d) {
+                if (!!d.description) {
+                    tooltip.transition()
+                            .duration(200)
+                            .style('opacity',.9);
+
+                    tooltip.html(d.description)
+                            .style('left', (d3.event.pageX) + 'px')
+                            .style('top', ((d3.event.pageY) + 8) + "px")
+                }
+            })
+            .on('mouseout', function (d) {
+                tooltip.transition()
+                        .duration(500)
+                        .style('opacity', 0);
+            });
+
+    var colors = d3.scale.category20();
+    node.append("svg:circle")
+            .attr("r", 4)
+            .attr('fill', function (d, i) {
+                return colors(d.id.split('-')[0]);
+            })
+            .attr('stroke', "#333333")
+            .attr('stroke-width', '1.5px');
+
+    node.append("svg:text")
+            .attr("dx", function (d) {
+                return d.children ? -8: 8;
+            })
+            .attr("dy", 3)
+            .classed("text", true)
+            .attr("text-anchor", function (d) {
+                return d.children ? "end" : "start";
+            })
+            .text(function (d) {
+                return d.name;
+            });
+
+</script>
+
+<script type="text/javascript">
+function buildHorizontalTree(treeData, treeContainer)
+    {
+	  //treeContainer = "#viz"
+	  //treeData=treeData1
+      // Create a svg canvas
+      //var vis = d3.select("#viz").append("svg:svg")
+	  var vis = d3.select(treeContainer).append("svg:svg")
+      .attr("width", 1500)
+      .attr("height", 300)
+      .append("svg:g")
+      .attr("transform", "translate(300, 0)"); // shift everything to the right
+ 
+ 
+      // Create a tree "canvas"
+      var tree = d3.layout.tree()
+      .size([300,850]);
+ 
+      var diagonal = d3.svg.diagonal()
+      // change x and y (for the left to right tree)
+      .projection(function(d) { return [d.y, d.x]; });
+ 
+      // Preparing the data for the tree layout, convert data into an array of nodes
+      var nodes = tree.nodes(treeData);
+      // Create an array with all the links
+      var links = tree.links(nodes);
+ 
+	  //alert(treeData);
+      //console.log(treeData)
+      //console.log(nodes)
+      //console.log(links)
+ 
+      var link = vis.selectAll("pathlink")
+      .data(links)
+      .enter().append("svg:path")
+      .attr("class", "link")
+      .attr("d", diagonal)
+ 
+      var node = vis.selectAll("g.node")
+      .data(nodes)
+      .enter().append("svg:g")
+      .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; })
+ 
+      // Add the dot at every node
+      node.append("svg:circle")
+      .attr("r", 3.5);
+ 
+      // place the name atribute left or right depending if children
+      node.append("svg:text")
+      .attr("dx", function(d) { return d.children ? -8 : 8; })
+      .attr("dy", 3)
+      .attr("text-anchor", function(d) { return d.children ? "end" : "start"; })
+      .text(function(d) { return d.name; })
+}
+
+function BuildVerticaLTree(treeData, treeContainerDom) {
+              var margin = { top: 40, right: 120, bottom: 20, left: 120 };
+              var width = 960 - margin.right - margin.left;
+              var height = 500 - margin.top - margin.bottom;
+              var i = 0, duration = 750;
+              var tree = d3.layout.tree()
+                  .size([height, width]);
+              var diagonal = d3.svg.diagonal()
+                  .projection(function (d) { return [d.x, d.y]; });
+              var svg = d3.select(treeContainerDom).append("svg")
+                  .attr("width", width + margin.right + margin.left)
+                  .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                  .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+              root = treeData;
+              update(root);
+              function update(source) {
+                  // Compute the new tree layout.
+                  var nodes = tree.nodes(root).reverse(),
+                      links = tree.links(nodes);
+                  // Normalize for fixed-depth.
+                  nodes.forEach(function (d) { d.y = d.depth * 100; });
+                  // Declare the nodes
+                  var node = svg.selectAll("g.node")
+                      .data(nodes, function (d) { return d.id || (d.id = ++i); });
+                  // Enter the nodes.
+                  var nodeEnter = node.enter().append("g")
+                      .attr("class", "node")
+                      .attr("transform", function (d) {
+                          return "translate(" + source.x0 + "," + source.y0 + ")";
+                      }).on("click", nodeclick);
+                  nodeEnter.append("circle")
+                   .attr("r", 10)
+                      .attr("stroke", function (d)
+                      { return d.children || d._children ? "steelblue" : "#00c13f"; })
+                      .style("fill", function (d)
+                      { return d.children || d._children ? "lightsteelblue" : "#fff"; });
+                  //.attr("r", 10)
+                  //.style("fill", "#fff");
+                  nodeEnter.append("text")
+                      .attr("y", function (d) { return d.children || d._children ? -18 : 18;})
+                      .attr("dy", ".35em")
+                      .attr("text-anchor", "middle")
+                      .text(function (d) { return d.name; })
+                      .style("fill-opacity", 1e-6);
+					  
+                  // Transition nodes to their new position.
+                  //horizontal tree
+                  var nodeUpdate = node.transition()
+                      .duration(duration)
+                      .attr("transform", function (d)
+                      { return "translate(" + d.x + "," + d.y + ")"; });
+                  nodeUpdate.select("circle")
+                      .attr("r", 10)
+                      .style("fill", function (d)
+                      { return d._children ? "lightsteelblue" : "#fff"; });
+                  nodeUpdate.select("text")
+                      .style("fill-opacity", 1);
+					  
+                  // Transition exiting nodes to the parent's new position.
+                  var nodeExit = node.exit().transition()
+                      .duration(duration)
+                      .attr("transform", function (d)
+                      { return "translate(" + source.x + "," + source.y + ")"; })
+                      .remove();
+                  nodeExit.select("circle")
+                      .attr("r", 1e-6);
+                  nodeExit.select("text")
+                      .style("fill-opacity", 1e-6);
+					  
+                  // Update the links
+                  // Declare the links
+                  var link = svg.selectAll("path.link")
+                      .data(links, function (d) { return d.target.id; });
+					  
+                  // Enter the links.
+                  link.enter().insert("path", "g")
+                      .attr("class", "link")
+                      .attr("d", function (d) {
+                          var o = { x: source.x0, y: source.y0 };
+                          return diagonal({ source: o, target: o });
+                      });
+                  // Transition links to their new position.
+                  link.transition()
+                      .duration(duration)
+                  .attr("d", diagonal);
+                  // Transition exiting nodes to the parent's new position.
+                  link.exit().transition()
+                      .duration(duration)
+                      .attr("d", function (d) {
+                          var o = { x: source.x, y: source.y };
+                          return diagonal({ source: o, target: o });
+                      })
+                      .remove();
+					  
+					  
+                  // Stash the old positions for transition.
+                  nodes.forEach(function (d) {
+                      d.x0 = d.x;
+                      d.y0 = d.y;
+                  });
+              }
+              // Toggle children on click.
+              function nodeclick(d) {
+                  if (d.children) {
+                      d._children = d.children;
+                      d.children = null;
+                  } else {
+                      d.children = d._children;
+                      d._children = null;
+                  }
+                  update(d);
+              }
+}
+</script>
+
+<style>
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 4.5px;
+}
+
+        .node {
+            cursor: pointer;
+        }
+
+            .node circle {
+                stroke-width: 3px;
+            }
+            .node text {
+                font: 12px sans-serif;
+                fill: #fff;
+            }
+
+        .link {
+            fill: none;
+            stroke: #ccc;
+            stroke-width: 2px;
+        }
+
+        .tree {
+            margin-bottom: 10px;
+            overflow: auto;
+        }
+
+</style>
+<script type="text/javascript">
+    //JSON object with the data
+    var treeData1 = {"name" : "Adfdfsfffsdf", "info" : "tst", "children" : [
+            {"name" : "A1" },
+            {"name" : "A2" },
+            {"name" : "A3", "children": [
+                  {"name" : "A31", "children" :[
+            {"name" : "A311" },
+            {"name" : "A312" }
+				]}] }
+    ]};
+	//alert('create tree');
+	var treeData2 = {{ report.treeData|safe }};
+	  
+	$(document).ready(function () {
+        buildHorizontalTree(treeData2, "#viz")
+        //BuildVerticaLTree(treeData1, "#viz");
+    });
+</script>

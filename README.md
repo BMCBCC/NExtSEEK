@@ -111,6 +111,7 @@ mezzanine-project NExtSEEK
 ## Configuration
 
 In our local installation of NExtSEEK, we have applied a theme called SmartAdmin, which can be downloaded from [SmartAdmin - Responsive WebApp](https://wrapbootstrap.com/theme/smartadmin-responsive-webapp-WB0573SK0) with an expense.
+Unzip the package of SmartAdmin theme into the subfolder: NExtSEEK/themes/SmartAdmin.
 
 #### Change SEEK configuration
 
@@ -124,6 +125,8 @@ SEEK_URL = "http://127.0.0.1:3000"
 which refers to a Seek instance installed locally on the same computer. Change the IP address of the Seek server accordingly.
 
 
+
+
 #### Run NExtSEEK
 
 ```bash
@@ -132,3 +135,6 @@ python manage.py runserver 0.0.0.0:8080
 
 ## Contact Us
 For question in setting up the system or reporting bugs, please visit [BioMicro Center, MIT](https://biology.mit.edu/tile/biomicro-center/).
+
+
+

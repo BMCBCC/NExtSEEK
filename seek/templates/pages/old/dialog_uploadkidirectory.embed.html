@@ -1,0 +1,121 @@
+<script type="text/javascript">
+
+	function uploadDiscretionary(){
+		var win = $.messager.progress({
+			title:'Please waiting',
+			msg:'Uploading file...'
+        });
+        setTimeout(function(){
+            $.messager.progress('close');
+        },50000)
+		//var excelfile = document.getElementById('id_excelname').value;
+		var excelfile = document.getElementById('id_excelname').files[0];
+		if (!excelfile) {
+			//$.messager.progress('close');
+			alert("Error: No valid file is selected.");
+			return;
+		}
+		
+		var dateFrom = $('#dateFrom').datebox('getValue');	// get datebox value
+		//alert(dateFrom);
+		var dateTo = $('#dateTo').datebox('getValue');	// get datebox value
+		//alert(dateTo);
+		
+		//else{
+		//	alert("Name: " + excelfile.name + "\n" + "Last Modified Date :" + excelfile.lastModifiedDate);
+		//}
+		
+		var csrf_token = $('input[name="csrfmiddlewaretoken"]').val();
+		//var formdata = new FormData();
+		var formdata = new FormData($('form').get(0));
+		formdata.append('excelfile_upload', excelfile);
+		formdata.append('filename', excelfile.name);
+		formdata.append('dateFrom', dateFrom);
+		formdata.append('dateTo', dateTo);
+		formdata.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+		$.ajax('/discretionary/upload/',
+			{
+				//csrfmiddlewaretoken: csrf_token,
+				type: 'POST',
+				enctype: "multipart/form-data",
+				data: formdata,
+				processData: false,
+				contentType: false,
+				//contentType: 'multipart/form-data',
+				success: console.log('success!')
+			}
+				//);
+		)
+		.done(function( data ) {
+			var obj = jQuery.parseJSON(data);
+			var msg = obj.msg;
+			var status = obj.status;
+			var link = obj.link;
+			//alert(status);
+			$.messager.progress('close');
+			
+			//cancelDiscretionary();
+			cancelDialogue($('#dlg_discretionary'))
+			if(status){
+				//alert(msg);
+				//window.location.href = '/grant/discretionary/';
+				
+				alert("All grants have been uploaded successfully");
+				datanow = obj.rows;
+				//alert(datanow.length);
+				//var number = datanow.length;
+                $('#discretionary_dg').datagrid('loadData',datanow);
+				//document.getElementById('numberCellsSelected').innerHTML = numberSelected;
+				//var pager = $('#funding_dg').datagrid('getPager');
+				//pager.pagination({showRefresh:false});
+				//pager.pagination({
+				//	total:number,
+				//	pageSize:number,
+				//	pageList: [number]
+				//});
+				window.location.href = link;
+			}
+			else{
+				msg = "Refer to the excel file returned for details of the following error: \r" + msg
+				alert(msg);
+				window.location.href = link;
+				return;
+			}
+		});
+		return;
+	}
+</script>
+
+<div id="dlg_discretionary" class="easyui-dialog" title="Uploading new s"  data-options="closed:true"
+	style="width:600px;height:300px;padding:10px"
+    data-options="
+	iconCls: 'icon-save',
+	toolbar: '#dlg-toolbar',
+	buttons: '#dlg-buttons'
+">
+	<div style="padding:10px 60px 20px 60px">
+		<h4>Upload or update discretionary info from an Excel file.</h4>
+		<hr/>
+		<p><b>Hint</b>: Only the first worksheet in an excel file will be processed. <a href="/themes/SmartAdmin/static/media/download/template-discretionary-sample.xlsx" >Download a sample excel file</a> as a template.
+		</p>
+		<br/>
+		<form id="batchupload_form" action="." method="post" enctype='multipart/form-data'>
+		  {% csrf_token %}
+			{{ form }}
+			<table cellpadding="3" align="center">
+				<tr>
+					<td><B>Excel file name</B>:</td>
+					<td>
+						<input type="file" name="excelname" id="id_excelname" required style="height:28px;width:220px"/>
+						<span class="help-inline">required</span>
+					</td>
+				</tr>
+			</table>
+			<div style="text-align:center;padding:5px">
+				<!---a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-reload',plain:true" onclick="upload('/alumni/upload/')">Upload</a--->
+				<a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-reload',plain:true" onclick="uploadDiscretionary()">Upload</a>
+				<a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-cancel',plain:true" onclick="cancelDialogue($('#dlg_discretionary'))">Cancel</a>
+			</div>
+		</form>
+	</div>
+</div>		

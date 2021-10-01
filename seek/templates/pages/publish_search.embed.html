@@ -1,0 +1,249 @@
+<script type="text/javascript">
+	var investigation_options = {{ report.investigation_options|safe }};
+	
+	
+	var studies = {{ report.study_options_dic|safe }};
+	
+	var assays = {{ report.assay_options_dic|safe }};
+	
+	function getStudies(rec) {
+		// given an investigation id, retrieve the list of studies and show it in the combobox.
+		if(rec.id==0){
+			return;
+		}
+		else{
+		}
+		var url = '/seek/investigations/id=' + rec.id + '/';
+		//window.location.href = url;
+		$.get(url,
+			{},
+			function(data){
+				var obj = jQuery.parseJSON(data);
+                var msg = obj.msg;
+				var status = obj.status;
+				if(status==1){
+					var study_options = obj.study_options;
+					$('#publish_study').combobox('loadData', study_options);
+				}
+				else {
+					alert(msg);
+				}
+				return;
+			}
+        );	
+	}
+
+	function getAssays(rec) {
+		// given a study id, retrieve a list of assays and show it in the combobox.
+		if(rec.id==0){
+			return;
+		}
+		else{
+		}
+		var url = '/seek/studies/id=' + rec.id + '/';
+		$.get(url,
+			{
+			},
+			function(data){
+				var obj = jQuery.parseJSON(data);
+                var msg = obj.msg;
+				var status = obj.status;
+				if(status==1){
+					var assay_options = obj.assay_options;
+					$('#publish_assay').combobox('loadData', assay_options);
+				}
+				else {
+					alert(msg);
+				}
+				return;
+			}
+        );	
+	}
+	
+	function searchAssets() {
+		var investigation_id = $('#publish_investigation').combobox('getValue');
+		if(investigation_id==0){
+			alert('No Investigation is selected.');
+			return;
+		}
+		
+		var investigation =  $('#publish_investigation').combobox('getText');
+		
+		var study_id = $('#publish_study').combobox('getValue');
+		if(study_id==0){
+			alert('No Study is selected.');
+			return;
+		}
+		var study = $('#publish_study').combobox('getText');
+		
+		var assay_id = $('#publish_assay').combobox('getValue');
+		if(assay_id==0){
+			alert('No Assay is selected.');
+			return;
+		}
+		var assay = $('#publish_assay').combobox('getText');
+		
+		var win = $.messager.progress({
+				title:'Please waiting',
+				msg:'Searching for assets...'
+		});
+		
+		$.get('/seek/searchAssets/',
+			{
+				'investigation': investigation,
+				'study': study,
+				'assay': assay,
+				'assay_id': assay_id
+			},
+			function(data){
+				$.messager.progress('close');
+				var obj = jQuery.parseJSON(data);
+                var msg = obj.msg;
+				var status = obj.status;
+				if(status==1){
+					var datanow = obj.rows;
+					var total = obj.total;
+					$('#dgtable').datagrid('loadData',datanow);
+					var pager = $('#dgtable').datagrid('getPager');
+					pager.pagination({showRefresh:false});
+					pager.pagination({
+						total:total,
+						pageSize:total,
+						pageList: [total]
+					});
+				}
+				else {
+					alert(msg);
+				}
+				return;
+			}
+        );	
+	}
+	
+	// to be deleted
+	function displaySamples(rec) {
+		alert(rec.id);
+		var url = '/seek/publish_investigations/id=' + rec.id + '/';
+		//var url = 'get_data2.php?id='+rec.title;
+		if(rec.id==0){
+			return;
+		}
+		else{
+			//alert(url);
+		}
+		//window.location.href = url;
+		return;
+		$.get(url,
+			{},
+			function(data){
+				var obj = jQuery.parseJSON(data);
+				return;
+				var bodyhtml = 
+                datanow = obj.rows;
+				//alert(datanow.length);
+				var number = datanow.length;
+                $('#cell_dg').datagrid('loadData',datanow);
+				var numberSelected = 96;
+				if(number<96){
+					numberSelected = number;
+				}
+				document.getElementById('numberCellsSelected').innerHTML = numberSelected;
+								
+				for(var i=0; i<numberSelected; i++){
+					$('#cell_dg').datagrid('selectRow', i); 
+				}
+								
+				var pager = $('#cell_dg').datagrid('getPager');
+				//pager.pagination({showRefresh:false});
+				pager.pagination({
+					total:number,
+					pageSize:number,
+					pageList: [number]
+				});
+				return;
+			}
+        );	
+	}
+
+	function getSearchVariables() {
+		var listdic = {};
+		listdic["keywords"] = document.getElementById("searching").value;
+		return listdic;
+	}
+	
+	function jsonconvertdic(listdic){
+		var jsontry = JSON.stringify(listdic);
+		return jsontry;
+	}
+	
+
+</script>
+
+<div class="span12">
+	<form method="post" enctype="multipart/form-data" action="">
+			{% csrf_token %}
+	
+	<!--- Grid control from smartAdmin theme --->		
+	<div class="well">
+		<div class="row show-grid">
+			<div class="col-xs-18 col-sm-12 col-md-12">
+				<input id="publish_investigation" class="easyui-combobox" name="publish_investigation" style="width:100%;" data-options="
+					showItemIcon: true,
+					data: investigation_options,
+					valueField:'id',
+					textField:'title',
+					editable: false,
+					panelHeight:'auto',
+					label: 'Investigation',
+					labelPosition: 'top',
+					onSelect: function(rec){
+						getStudies(rec);
+					}
+				">
+			</div>
+			<div class="col-xs-18 col-sm-12 col-md-12">
+				<input id="publish_study" class="easyui-combobox" name="publish_study" style="width:100%;" data-options="
+					showItemIcon: true,
+					valueField:'id',
+					textField:'title',
+					editable: false,
+					panelHeight:'auto',
+					label: 'Study',
+					labelPosition: 'top',
+					onSelect: function(rec){
+						getAssays(rec);
+					}
+				">
+			</div>
+			<div class="col-xs-18 col-sm-12 col-md-12">
+				<input id="publish_assay" class="easyui-combobox" name="publish_assay" style="width:100%;" data-options="
+					showItemIcon: true,
+					valueField:'id',
+					textField:'title',
+					editable: false,
+					panelHeight:'auto',
+					label: 'Assay',
+					labelPosition: 'top',
+					onSelect: function(rec){
+					}
+				">
+			</div>
+		</div>
+		<br/>
+		<div class="row show-grid">
+			<div class="col-xs-6 col-sm-4 col-md-4">
+			</div>
+			<div class="col-xs-6 col-sm-4 col-md-4">
+				<a href="#" class="easyui-linkbutton" data-options="iconCls:'icon-search',plain:true" onclick="searchAssets()">Find assets in ISA</a>
+				<!---a href="#" class="easyui-linkbutton" data-options="iconCls:'icon-search',plain:true" onclick="generatePIReportWord()">Create PI Grant Report in Word</a--->
+			</div>
+			<div class="col-xs-6 col-sm-4 col-md-4">
+			</div>
+		</div>
+	</div>
+		<!-- widget content -->
+	<!-- end widget content -->
+	</form>
+</div>
+
+
