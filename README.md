@@ -17,7 +17,7 @@ and metadata available to the scientific community through public repositories.
 
 ## Dependencies
 NExtSEEK is implemented on top of [Mezzanine 4.2.3](http://mezzanine.jupo.org/), which is a Django CMS based on Django 1.10.7 and python 2.7. 
-It also requires the following packages to be installed in a virtual environment:
+NExtSEEK also requires the following packages to be installed in a virtual environment:
 
 * BeautifulSoup==3.2.1
 * beautifulsoup4==4.6.0
@@ -79,4 +79,32 @@ It also requires the following packages to be installed in a virtual environment
 
 Further upgrade of NExtSEEK from python2.7 to python3 will rely on the availability of the latest version of Mezzanine in python3. 
 
+## Installation
+#### Get NExtSEEK
+
+```bash
+mkdir NExtSEEK
+cd NExtSEEK
+git clone https://github.com/BMCBCC/NExtSEEK
+```
+#### Install dependencies
+It is recommened to install NExtSEEK in virtual environment,
+
+```bash
+sudo apt install virtualenv
+virtualenv -p /usr/bin/python2.7 ../venv_django_1.10
+source ../venv_django_1.10/bin/activate
+pip install -r requirements.txt
+```
+
+#### Change SEEK configuration
+
+Open settings.py in the DMAC folder and change the following variables:\
+SEEK_URL = "http://127.0.0.1:3000"
+
+#### Run NExtSEEK
+
+```bash
+python manage.py runserver 0.0.0.0:8080
+```
 
