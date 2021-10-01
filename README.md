@@ -108,6 +108,10 @@ cd ../NExtSEEK
 mezzanine-project NExtSEEK
 ```
 
+## Configuration
+
+In our local installation of NExtSEEK, we have applied a theme called SmartAdmin, which can be downloaded from [SmartAdmin - Responsive WebApp](https://wrapbootstrap.com/theme/smartadmin-responsive-webapp-WB0573SK0) with an expense.
+
 #### Change SEEK configuration
 
 Open settings.py in the NExtSEEK folder and set the following variables:
