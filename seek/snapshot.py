@@ -815,13 +815,6 @@ def test():
     session1.close()
     session2.close()
 
-def test2():
-    from seeksession import SeekSession
-    session = SeekSession("huiming", "Jiang@nan!12")
-    seekurl = "http://localhost:3000/studies/1/"
-    resultJson = session.getSeekURL(seekurl)
-    print(resultJson)
-
 def main():
     parser = argparse.ArgumentParser(description="Download and upload a snapshot of ISA from a Seek to another Seek.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)

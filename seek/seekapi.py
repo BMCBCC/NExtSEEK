@@ -37,15 +37,6 @@ from subprocess import call
 import shlex
 from subprocess import Popen, PIPE
 
-#SEEK_SERVER = "http://10.159.0.74:3000"
-#SEEK_USER = 'dbadmin'
-#SEEK_PWD = 'KIesxi2017*!'
-
-#from django.conf import settings
-#SEEK_SERVER = settings.SEEK_SERVER
-#SEEK_USER = settings.SEEK_USER
-#SEEK_PWD = settings.SEEK_PWD
-
 class SeekAPI(object):
     ''' The class is used to run Seek operations, regardless the underlayer query approach. 
     

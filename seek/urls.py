@@ -90,23 +90,3 @@ urlpatterns = [
     url(r'^publishAssets/', views.publishAssets, name='publishAssets'),
     
 ]
-'''
-    url(r'^alumnidb/', views.alumnidb, name='alumnidb'),
-    url(r'^alumnidbs/', views.alumnidb, name='alumnidb'),
-    
-    # retrieve data from Alumni table
-    url(r'^alumni/', views.alumni, name='alumni'),
-    
-    url(r'^alumnilist/', views.alumnilist, name='alumnilist'),
-    #url(r'^alumniupload/', views.alumniUploadAjax, name='alumniUploadAjax'),
-    
-    url(r'^download/', views.download, name='download'),
-    
-    url(r'^person/id=(?P<id>\d+)/$', views.person, name='person'),
-    url(r'^modify/', views.modify, name='modify'),
-    
-    
-    url(r'^delete/', views.delete, name='delete'),
-    url(r'^save/', views.save, name='save'),
-    url(r'^alumniupload/', views.alumniUploadAjax, name='alumniUploadAjax'),
-'''

@@ -1642,7 +1642,7 @@ def getDropboxPath(request):
     readmefile = upload_dropbox_path + '/ReadME.html'
     print(readmefile)
     
-    cmd = '/home/huiming/myhome/websites/dmac/seek/dropbox.py sharelink ' + readmefile
+    cmd = '!/myhome/websites/dmac/seek/dropbox.py sharelink ' + readmefile
     
     exitcode, out, err = callCmdline(cmd)
     if exitcode==0:
@@ -1667,8 +1667,7 @@ def getDropboxStatus(request):
     upload_dropbox_path, dropbox_datafile_folder, dropbox_sop_folder = __getDropBoxFolders(user_seek, ifMkdir)
 
     # get file names in the folder
-    cmd = '/home/huiming/myhome/websites/dmac/seek/dropbox.py ls ' + dropbox_datafile_folder
-    #cmd = '/home/huiming/myhome/websites/dmac/seek/dropbox.py ls ' + dropbox_sop_folder
+    cmd = '~/myhome/websites/dmac/seek/dropbox.py ls ' + dropbox_datafile_folder
     
     exitcode, out, err = callCmdline(cmd)
     if exitcode==0:
