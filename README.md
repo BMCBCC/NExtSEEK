@@ -2,7 +2,8 @@
  Extending SEEK for active management of scientific metadata
  
 ## License
-Copyright (c) 2021, BioMicro Center & Bioinformatics Core, Massachusetts Institute of Technology
+Copyright (c) 2021, BioMicro Center & Bioinformatics Core, Massachusetts Institute of Technology: 
+
 [BSD 3-clause](LICENSE)
 
 ## About NExtSEEK
