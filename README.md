@@ -117,7 +117,7 @@ Open settings.py in the NExtSEEK folder and set the following variables:
 SEEK_URL = "http://127.0.0.1:3000"
 ```
 
-where a Seek instance is installed locally on the same computer, which can be modified to point to the IP address of the Seek server.
+which refers to a Seek instance installed locally on the same computer. Change the IP address of the Seek server accordingly.
 
 
 #### Run NExtSEEK
