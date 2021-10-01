@@ -119,7 +119,38 @@ Open settings.py in the NExtSEEK folder and set the following variables:
 
 ```bash
 
+INSTALLED_APPS = (
+    "seek",
+    'themes.SmartAdmin',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.redirects",
+    "django.contrib.sessions",
+    "django.contrib.sites",
+    "django.contrib.sitemaps",
+    "django.contrib.staticfiles",
+    "mezzanine.boot",
+    "mezzanine.conf",
+    "mezzanine.core",
+    "mezzanine.generic",
+    "mezzanine.pages",
+    "mezzanine.blog",
+    "mezzanine.forms",
+    "mezzanine.galleries",
+    "mezzanine.twitter",
+    "mezzanine.accounts",
+    "mezzanine.mobile",
+    
+    'widget_tweaks',
+    'django_crontab',
+)
+
 SEEK_URL = "http://127.0.0.1:3000"
+DATABASE_ROUTERS = ['seek.dbrouters.CustomRouter']
+
+
+
 ```
 
 which refers to a Seek instance installed locally on the same computer. Change the IP address of the Seek server accordingly.
