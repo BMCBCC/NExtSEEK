@@ -16,8 +16,8 @@ researchers need to improve reusability and reproducibility as well as to make d
 and metadata available to the scientific community through public repositories.
 
 ## Dependencies
-NExtSEEK is implemented on top of Mezzanine, which is a Django CMS based on Django 1.10.7 and python 2.7. 
-It also requires the following packages to be installed in avirtual environment:
+NExtSEEK is implemented on top of [Mezzanine 4.2.3](http://mezzanine.jupo.org/), which is a Django CMS based on Django 1.10.7 and python 2.7. 
+It also requires the following packages to be installed in a virtual environment:
 
 * BeautifulSoup==3.2.1
 * beautifulsoup4==4.6.0
