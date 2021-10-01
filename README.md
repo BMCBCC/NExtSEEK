@@ -163,6 +163,10 @@ which refers to a Seek instance installed locally on the same computer. Change t
 ```bash
 python manage.py runserver 0.0.0.0:8080
 ```
+## References
+
+NExtSEEK: Extending SEEK for active management of scientific metadata, Dikshant Pradhan, Huiming Ding, Jingzhi Zhu, Bevin P. Engelward, and Stuart S.
+Levin, MIT BioMicro Center, Department of Biology, Massachusetts Institute of Technology, Cambridge, MA, USA
 
 ## Contact Us
 For question in setting up the system or reporting bugs, please visit [BioMicro Center, MIT](https://biology.mit.edu/tile/biomicro-center/).
