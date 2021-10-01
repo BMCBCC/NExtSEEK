@@ -80,6 +80,8 @@ NExtSEEK also requires the following packages to be installed in a virtual envir
 Further upgrade of NExtSEEK from python2.7 to python3 will rely on the availability of the latest version of Mezzanine in python3. 
 
 ## Installation
+
+We recommend installing NExtSEEK on Ubuntu.
 #### Get NExtSEEK
 
 ```bash
@@ -88,7 +90,7 @@ cd NExtSEEK
 git clone https://github.com/BMCBCC/NExtSEEK
 ```
 #### Install dependencies
-It is recommened to install NExtSEEK in virtual environment,
+It is recommened to install NExtSEEK in a virtual environment,
 
 ```bash
 sudo apt install virtualenv
