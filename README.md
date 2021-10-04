@@ -2,9 +2,7 @@
  Extending SEEK for active management of scientific metadata
  
 ## License
-Copyright (c) 2021, BioMicro Center & Bioinformatics Core, Massachusetts Institute of Technology: 
-
-[BSD 3-clause](LICENSE)
+Copyright (c) 2021, BioMicro Center & Bioinformatics Core, Massachusetts Institute of Technology: [MIT license](LICENSE)
 
 ## About NExtSEEK
 NExtSEEK is a modified wrapper around the [SEEK](https://github.com/seek4science/seek) platform
