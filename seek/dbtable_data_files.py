@@ -39,6 +39,7 @@ from dmac.conversion import handle_uploaded_file, correctFileName, sizeof_fmt, g
 
 from django.conf import settings
 from django import forms
+from django.db.models import Q
 
 from dbtable_assay_assets import DBtable_assay_assets
 from dbtable_content_blobs import DBtable_content_blobs
@@ -340,7 +341,77 @@ class DBtable_data_files(DBtable):
         upload_full_path = upload_full_path_labroot
         
         return lababbv, upload_full_path
-    
+ 
+    def __getUploadPathByUID(self, uid):
+        ''' Define the path and file name for uploading/downloading a data file.
+        Input:
+            uid, such as 'D.SEQ-211105BMC-1_200904Yil_D20-230001_dedup.fastq', where
+                    'D.SEQ-211105BMC' is the sample id;
+                    'BMC' is the lab abbreviation;
+                    '200904Yil_D20-230001_dedup.fastq' is the original file name
+            
+        Output
+            outfilename, the output file name without the absolute path,such as
+                    "DF-20191210-1234_USER_abcd.jpg", which is revised to
+                    "USER_v1_abcd.jpg", which supports versionning.
+                To get the file with path, use:
+                    filename = os.path.join(upload_full_path, outfilename)
+            upload_full_path, the absolute path, such as
+                "/net/bmc-pub10/data1/bmc/seek/luffenbourgLab/impactb/"
+            weblink, the weblink to the file, such as
+                'http://fairdata.mit.edu:8010/seek/sop/uid=P.WHI-200412-V1_1234_USER_abcd.jpg/'
+        Notes:
+            The protocol for defining the path, file name and web link is as the following:
+            1. The path consists of ROOT path, plus the sub-folder name by using the project name,
+                in which any space is replaced by "_", and the original file name.
+            2. A datafile should never be overwritten.
+        '''
+        if "_" not in uid:
+            return "", ""
+        
+        # such as uid = 'D.SEQ-211105BMC-1_200904Yil_D20-230001_dedup.fastq'
+        terms = uid.split("_")
+        sampleuid = terms[0]    # such as 'D.SEQ-211105BMC-1'
+        
+        terms = terms[1:]
+        originalfilename = "_".join(terms)  # such as '200904Yil_D20-230001_dedup.fastq'
+        
+        if '-' not in sampleuid:
+            return "", ""
+        
+        terms = sampleuid.split("-")
+        sampletype = terms[0]   # such as 'D.SEQ'
+        dateabbr = terms[1]     # such as '211105BMC'
+        if len(dateabbr)!=9:
+            return "", ""
+        
+        lababbv = dateabbr[-3:] # such as 'BMC'
+        
+        # Step 1. Get full path of the uploading folder
+        # Lab folder, such as "/net/bmc-pub10/data1/bmc/seek/lauffenbourgLab"
+        labfolder = lababbv
+
+        
+        # the sub-folder name, defined by the project name, in which any space is replaced by '_'.
+        verification = 1
+        for projectfolder in ['IMPAcTb', 'MIT_SRP']:
+            upload_full_path_projectroot = os.path.join(settings.SEEK_DATAFILE_ROOT, projectfolder)
+            #print('project_root:', upload_full_path_projectroot)
+            #if not os.path.exists(upload_full_path_projectroot):
+            #    continue
+        
+            upload_full_path_labroot = os.path.join(upload_full_path_projectroot, labfolder)
+            #if not os.path.exists(upload_full_path_labroot):
+            #    return "", ""
+        
+            upload_full_path = upload_full_path_labroot
+            outfilename = uid
+            fullfilename = os.path.join(upload_full_path, outfilename)
+            
+            if os.path.isfile(fullfilename) and os.path.exists(fullfilename):
+                return lababbv, upload_full_path 
+        
+        return "", ""  
     
     def __defineUploadPath(self, user_seek, originalfilename, nassets=0, sample_uid=None):
         ''' Define the path and file name for uploading a data file.
@@ -1049,22 +1120,28 @@ class DBtable_data_files(DBtable):
         contributor_id = record['contributor_id']
         print("contributor_id:", contributor_id)
         
+        if user_seek is None:
+            lababbv, upload_full_path = self.__getUploadPathByUID(uid)
+        else:
+            seekdb = SeekDB(user_seek['server'], user_seek['username'], user_seek['password'])
+            userInfo, status, msg = seekdb.getUserInfo(contributor_id)
+            if not status:
+                msg = DATAFILE_ERRORCODE['304'] + msg
+                return msg, status, weblink
         
-        seekdb = SeekDB(user_seek['server'], user_seek['username'], user_seek['password'])
-        userInfo, status, msg = seekdb.getUserInfo(contributor_id)
-        if not status:
-            msg = DATAFILE_ERRORCODE['304'] + msg
-            return msg, status, weblink
+            #username = user_seek['username']
+            #lababbv, upload_full_path = self.__getUploadPath(user_seek)
+            lababbv, upload_full_path = self.__getUploadPath(userInfo)
         
-        #username = user_seek['username']
-        #lababbv, upload_full_path = self.__getUploadPath(user_seek)
-        lababbv, upload_full_path = self.__getUploadPath(userInfo)
+        
         outfilename = uid
         
         fullfilename = os.path.join(upload_full_path, outfilename)
         weblink = fullfilename
         weblink = weblink.replace(settings.SEEK_DATAFILE_ROOT, settings.SEEK_DATAFILE_ROOT_WEBLINK)
         print('weblink:', weblink)
+        
+        weblink = settings.SEEK_DATAFILE_SERVER + weblink
         
         if not os.path.isfile(fullfilename):
             msg = DATAFILE_ERRORCODE['305'] + fullfilename
@@ -1744,6 +1821,63 @@ class DBtable_data_files(DBtable):
         data['diclist'] = diclist
         reportData = simplejson.dumps(data)
         return reportData
+        
+    def retrieveFileLinks(self, sampleDic):
+        ''' Retrieve data file links, given a sample meta info in a dictionary.
+        Input:
+            sampleDic, the dictionary of a sample meta data, such as,
+                {
+                    "file_primarydata_forward":'filename1',
+                    "file_primarydata_reverse":'filename2',
+                }
+        Output:
+            sampleDic_revised, a revised sample meta data, where data file names are replaced with data file links for download.
+                such as,
+                {
+                    "file_primarydata_forward":'filename1_link',
+                    "file_primarydata_reverse":'filename2_link',
+                }
+                
+        Usage:
+            Used for download the data file from an API call.
+        '''
+        
+        sampleDic_rev = {}
+        for key, value in sampleDic.iteritems():
+            sampleDic_rev[key] = value
+            if "file_" in key:
+                filename = value
+                sampleDic_rev[key] = value
+                sampleDic_rev[value] = ""
+                qset = Q(title__icontains=filename)
+                diclist = self.queryRecordsCustom(qset)
+                if len(diclist)==1:
+                    dici = diclist[0]
+                    datafile_id = dici['id']
+                    datafile_uid = dici['title']
+                    print("datafile_id: %s"%datafile_id)
+                    print("datafile_uid: %s"%datafile_uid)
+                    msg, status, link = self.downloadDF_fromStorage(None, datafile_uid)
+                    print("link: %s"%link)
+                    if status==1:
+                        sampleDic_rev[key] = datafile_uid
+                        sampleDic_rev[datafile_uid] = link
+                '''
+                #constraint = {'title': filename}
+                #datafile_id = self.queryPrimaryKeyByConstraint(constraint)
+                
+                print("datafile_id: %s"%datafile_id)
+                if datafile_id>0:
+                    datafile_uid = self.retrieveFieldValue(datafile_id, 'title')
+                    print("datafile_uid: %s"%datafile_uid)
+                    
+                    msg, status, link = self.downloadDF_fromStorage(None, datafile_uid)
+                    print("link: %s"%link)
+                    if status==1:
+                        sampleDic_rev[filename] = link
+                '''   
+        return sampleDic_rev
+        
         
         
         

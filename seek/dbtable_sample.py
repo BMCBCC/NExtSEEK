@@ -1173,6 +1173,10 @@ class DBtable_sample(DBtable):
             samplename = str(record['Name'])
         elif 'File_PrimaryData' in record:
             samplename = str(record['File_PrimaryData'])
+        elif 'File_PrimaryData_Forward' in record:
+            samplename = str(record['File_PrimaryData_Forward'])
+        elif 'File_PrimaryData_Reverse' in record:
+            samplename = str(record['File_PrimaryData_Reverse'])
         else:
             samplename = 'Undefined'
         
@@ -1553,6 +1557,12 @@ class DBtable_sample(DBtable):
                             # unique identifier for experimental sample type
                             samplename = value
                         elif attribute.lower()=='file_primarydata':
+                            # unique identifier for A. and D. sample type
+                            samplename = value
+                        elif attribute.lower()=='file_primarydata_forward':
+                            # unique identifier for A. and D. sample type
+                            samplename = value
+                        elif attribute.lower()=='file_primarydata_reverse':
                             # unique identifier for A. and D. sample type
                             samplename = value
                             
@@ -2009,6 +2019,10 @@ class DBtable_sample(DBtable):
                 samplename = str(dici['Name'])
             elif 'File_PrimaryData' in dici:
                 samplename = str(dici['File_PrimaryData'])
+            elif 'File_PrimaryData_Forward' in dici:
+                samplename = str(dici['File_PrimaryData_Forward'])
+            elif 'File_PrimaryData_Reverse' in dici:
+                samplename = str(dici['File_PrimaryData_Reverse'])
             else:
                 #msgi = "Error: " + sampleType + " sample " + str(index) + " does not have either 'Name' or 'File_PrimaryData' attribute."
                 msgi = SAMPLE_ERRORCODE['302'] + sampleType + " " + str(index)
