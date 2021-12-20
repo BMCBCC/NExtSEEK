@@ -166,6 +166,39 @@ python manage.py runserver 0.0.0.0:8080
 NExtSEEK: Extending SEEK for active management of scientific metadata, Dikshant Pradhan, Huiming Ding, Jingzhi Zhu, Bevin P. Engelward, and Stuart S.
 Levin, MIT BioMicro Center, Department of Biology, Massachusetts Institute of Technology, Cambridge, MA, USA
 
+## Checklist for Preparing to Use NExtSEEK
+#### Identify key samples and data to deposit 
+The NIH and journals will generally require:
+* The rawest form of the generated data – i.e. the immediate output from the instruments used or direct observations and measurements from experiments
+* Processed data which is central to the work – e.g. gene expression count matrices and spectra features 
+* Unique materials integral to the work – e.g. unique chemical compounds, plasmids, or cell lines
+* Code necessary for processing raw data into the interpreted dataset
+
+#### Identify FAIR-compliant field-specific repositories for data and samples
+Repositories should conform to the FAIR data standards and, where possible, be well utilized in their respective fields. Examples include GEO, PRIDE, MGI, etc. Lists of available repositories can be found at Nature (https://www.nature.com/sdata/policies/repositories) and FairSharing (fairsharing.org). Where field-specific repositories do not exist, researchers can deposit to general repositories such as FigShare (figshare.com), Dryad (datadryad.org), and Zenodo (zenodo.org).
+
+#### Identify relevant ontologies for their field
+When collecting metadata, users should use shared language for interoperability. Users should pull language from the most relevant ontology to their field. Researchers can search for ontologies through the EMBL-EBI (https://www.ebi.ac.uk/ols/index) and BioPortal (https://bioportal.bioontology.org/ontologies). Recommended ontologies to pull from are the NCI Thesaurus, Experimental Factor Ontology, and the BRENDA Tissue Ontology.
+
+#### Identify key metadata required by the repository of choice 
+These metadata will vary by endpoint, but the collected metadata should fulfill the following criteria to be FAIR compliant:
+* Use a formal and shared language for knowledge representation, drawn from established ontologies where possible
+* Include qualified references to other data and metadata where relevant
+* Include detailed provenance, such as references to parent samples
+* Include protocols and code which are open, free, and universally implementable
+* Metadata should be richly described with accurate and relevant attributes
+
+#### Identify additional critical metadata 
+To maximize impact and reusability, researchers should try to collect the following information: 
+* Experimental groups and cohorts
+* Variables and parameters that change between experiments
+* Known potential covariates
+* Scientists responsible for samples and experiments
+* Tools and instruments (including model and software versions)
+* Reagents (including manufacturers and lot numbers)
+* Treatments
+* Target analytes, antibodies, stains, reporters, etc.
+
 ## Contact Us
 For question in setting up the system or reporting bugs, please visit [BioMicro Center, MIT](https://biology.mit.edu/tile/biomicro-center/).
 
