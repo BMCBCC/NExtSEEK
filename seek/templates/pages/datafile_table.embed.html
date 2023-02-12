@@ -1,7 +1,6 @@
 <script type="text/javascript" src="{{STATIC_URL}}js/easyui/datagrid-filter.js"></script>
 <script type="text/javascript" src="{{STATIC_URL}}js/custom/datagrid-custom.js"></script>
 <script type="text/javascript" src="{{STATIC_URL}}js/easyui/datagrid-export.js"></script>
-<!---script type="text/javascript" src="{{STATIC_URL}}js/easyui/datagrid-groupview.js"></script--->
 <script type="text/javascript">
 var filetype_options = [
     {filetypeid: '0', filetypename: ''},
@@ -12,9 +11,7 @@ var filetype_options = [
     {filetypeid: '5', filetypename: 'Presentation'}
 ];
 
-
 $(document).ready(function(){
-	//$('#sample_table_div').hide();
 	$('#dgtable').datagrid({
 		onCheck: function(index,row){
 			row.ck = true;
@@ -23,9 +20,6 @@ $(document).ready(function(){
 			row.ck = false;
 		},
 		onCheckAll: function() {
-            //var allRows = $(this).treegrid('getAllRows');
-            //var state = $(this).data('datagrid');
-            //state.checkedRows = allRows;
 			var rows = $(this).datagrid('getRows');
 			for(var i=0; i<rows.length; i++){
 				var row = rows[i];
@@ -33,8 +27,6 @@ $(document).ready(function(){
 			}
         },
         onUncheckAll: function() {
-            //var state = $(this).data('datagrid');
-            //state.checkedRows = [];
 			var rows = $(this).datagrid('getRows');
 			for(var i=0; i<rows.length; i++){
 				var row = rows[i];
@@ -44,37 +36,29 @@ $(document).ready(function(){
 	})
 });
 
-
 $(function(){
-	//document.getElementById("datafile_table_div").style.display = 'none';
-	//document.getElementById("south_div").style.display = 'none';
     var dg = $('#dgtable').datagrid();
     dg.datagrid('enableFilter', [{
-				field:'piUrl',
-				type:'label'
-			}]);
+		field:'id',
+		type:'label'
+	}]);
 });
 
 
     function onEndEdit(index, row){
-		///alert(index);
 		var dg = $(this)
         var ed = dg.datagrid('getEditor', {
             index: index,
             field: 'filetypeid'
         });
-		if (ed){
-			//alert('editor true');
+		if(ed){
 			row.filetypename = $(ed.target).combobox('getText');
-			//alert(row.filetype);
 		}
 		else{
 			alert('editor false');
 		}
     }
 	
-	
-	// from datagrid-export.js
     function getRows(target){
         var state = $(target).data('datagrid');
         if (state.filterSource){
@@ -88,8 +72,6 @@ $(function(){
         var dg = $(target);
         var data = ['<table border="1" rull="all" style="border-collapse:collapse">'];
         var fields = dg.datagrid('getColumnFields',true).concat(dg.datagrid('getColumnFields',false));
-        //alert(fields.length);
-		//alert(fields[0]);
         var trStyle = 'height:32px';
         var tdStyle0 = 'vertical-align:middle;padding:0 4px';
         data.push('<tr style="'+trStyle+'">');
@@ -101,7 +83,6 @@ $(function(){
 			if(['uid','originalname','fileurl'].includes(field)) {
 				data.push('<th style="'+tdStyle+'">'+col.title+'</th>');
 			}
-            
         }
         data.push('</tr>');
         $.map(rows, function(row){
@@ -129,9 +110,6 @@ $(function(){
     }
 
     function exportDataGrid(dg){
-		//alert('Export table into datafiles.xlsx');
-		//dg.datagrid('toExcel','datafiles.xls');
-		
         var filename = 'datafiles.xls';
         var rows = null;
         var worksheet = 'Worksheet';
@@ -139,8 +117,6 @@ $(function(){
         , template = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><meta http-equiv="content-type" content="application/vnd.ms-excel; charset=UTF-8"><head><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>{worksheet}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>{table}</body></html>'
         , base64 = function (s) { return window.btoa(unescape(encodeURIComponent(s))) }
         , format = function (s, c) { return s.replace(/{(\w+)}/g, function (m, p) { return c[p]; }) }
-
-		//alert(uri);
         var table = toHtml(dg, rows);
         var ctx = { worksheet: worksheet, table: table };
         var data = base64(format(template, ctx));
@@ -155,19 +131,12 @@ $(function(){
             alink.remove();
         }
     }
-
 </script>
 <style type="text/css">
-  .datagrid-row-alt{
+    .datagrid-row-alt{
         background: #e6f2ff;
     }
 </style>
-<!---style type="text/css">
-  .datagrid-cell{
-    font-size:10px; font-weight: bold; 
-  }
-</style--->
-
 <div id="datafile_table_div" style="height:auto">
 	<div style="margin:20px 0;"></div>
 	<table id="dgtable" class="easyui-datagrid" title="" style="width:auto; height:300px;"
@@ -189,7 +158,6 @@ $(function(){
 			">
 		<thead>
 			<tr>
-				<!---th data-options="field:'idlink',width:60" sortable="false"><B>Select it</B></th--->
 				<th data-options="field:'ck',width:100,align:'center', checkbox:true, editor:{type:'checkbox',options:{on:'Y',off:'N'}}">Select file</th>
 				<th data-options="field:'id',width:60" sortable="true"><B>ID</B></th>
 				<th data-options="field:'uid',width:250" sortable="true"><B>UID</B></th>
@@ -199,36 +167,10 @@ $(function(){
 				<th data-options="field:'size',width:60" sortable="true"><B>Size</B></th>
 				<th data-options="field:'content_type',width:60,align:'left'"><B>File Type</B></th>
 				<th data-options="field:'md5',width:200" sortable="true"><B>MD5 checksum</B></th>
-				<!---th data-options="field:'filetypeid',width:160,align:'left',
-					formatter:function(value,row){
-						return row.filetypename;
-					},
-					editor:{
-						type:'combobox',
-						options:{
-						valueField:'filetypeid',
-						textField:'filetypename',
-						data:filetype_options,
-						required:true
-						}
-					},
-					sortable:true">
-					<B>File<br/>Type</B>
-				</th--->
-				<!---th data-options="field:'description',width:200,editor:'text'" sortable="true"><B>Description</B></th--->
-				<!---th data-options="field:'updated_at',align:'left',width:140"><B>Updated AT</B></th>
-				<th data-options="field:'contributor',align:'left',width:140"><B>Contributor</B></th--->
-				
 			</tr>
 		</thead>
 	</table>
 	<div id="tb_toolbar" style="height:auto">
 		<a href="javascript:;" class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true" onclick="exportDataGrid($('#dgtable'))">Export To Excel</a>
-		<!---a href="javascript:;" class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true" onclick="$('#dgtable').datagrid('toExcel','datafiles.xls')">Export To Excel</a>
-		<a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true" onclick="downloadTablePresent($('#dgtable'), '/datafiles/download/')">Download table</a>
-		<a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-add',plain:true" onclick="append($('#dgtable'))">Submit Files</a>
-		<a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true" onclick="accept($('#dgtable'), '/directory/save/')">Save a record</a>
-        <a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-undo',plain:true" onclick="reject($('#dgtable'))">Cancel</a>
-        <a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-remove',plain:true" onclick="removeit($('#dgtable'), '/directory/delete/')">Remove a record</a--->
 	</div>
 </div>

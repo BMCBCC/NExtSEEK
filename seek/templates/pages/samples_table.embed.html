@@ -1,48 +1,24 @@
 <script type="text/javascript" src="{{STATIC_URL}}js/easyui/datagrid-filter.js"></script>
 <script type="text/javascript" src="{{STATIC_URL}}js/easyui/datagrid-export.js"></script>
 <script type="text/javascript" src="{{STATIC_URL}}js/custom/datagrid-custom.js"></script>
-<!---script type="text/javascript" src="{{STATIC_URL}}js/easyui/datagrid-groupview.js"></script--->
 <script type="text/javascript">
-$(document).ready(function(){
-			//$('#sample_table_div').hide();
-		 });
-
-
-$(function(){
-	//document.getElementById("sample_table_div").style.display = 'none';
-	//document.getElementById("south_div").style.display = 'none';
-    var dg = $('#dgtable').datagrid();
-    dg.datagrid('enableFilter', [{
-				field:'piUrl',
-				type:'label'
-			}]);
+$(document).ready(function() {
+	
 });
 
-	//This is the callback function for closing the current wiindow,
-	// after this window is called from grant_info_table_pis page and poped up 
-    function callbackAddPI(id, name){
-		//alert(id);
-		//alert(window.name);
-		//opener.dismissAddAnotherPopup( window, id, name );
-		
-		// opener is the original html page, which calls the popup window,
-		// i.e., the gran_info_table_pi.embed.html
-		window.close();
-		opener.returnPerson(window, id, name);
-    }
-
+$(function() {
+	var dg = $('#dgtable').datagrid();
+	dg.datagrid('enableFilter', [{
+		field: 'id',
+		type: 'label'
+	}]);
+});
 </script>
 <style type="text/css">
   .datagrid-row-alt{
         background: #e6f2ff;
     }
 </style>
-<!---style type="text/css">
-  .datagrid-cell{
-    font-size:10px; font-weight: bold; 
-  }
-</style--->
-
 <div id="sample_table_div" style="height:auto">
 	<div style="margin:20px 0;"></div>
 	<table id="dgtable" class="easyui-datagrid" title="" style="width:auto; height:800px;"
@@ -62,11 +38,8 @@ $(function(){
 			">
 		<thead>
 			<tr>
-				<!---th data-options="field:'record_id',checkbox:true"><span class="lbl"></span></th--->
-				<!---th data-options="field:'idlink',width:60" sortable="false"><B>Select it</B></th--->
 				<th data-options="field:'id',width:30" sortable="true"><B>ID</B></th>
 				<th data-options="field:'uid',width:200,editor:'text'" sortable="true"><B>UID</B></th>
-				<!---th data-options="field:'title',width:200,editor:'text'" sortable="true"><B>Name</B></th--->
 				<th data-options="field:'sample_type',width:100" sortable="true"><B>Sample Type</B></th>
 				<th data-options="field:'assays',width:120" sortable="true"><B>Assays</B></th>
 				<th data-options="field:'first_name',align:'left',width:100"><B>Contributor</B></th>
@@ -77,10 +50,5 @@ $(function(){
 	</table>
 	<div id="tb_toolbar" style="height:auto">
 		<a href="javascript:;" class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true" onclick="$('#dgtable').datagrid('toExcel','samples.xls')">Export To Excel</a>
-
-		<!---a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-add',plain:true" onclick="append($('#dgtable'))">Add a record</a>
-		<a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true" onclick="accept($('#dgtable'), '/directory/save/')">Save a record</a>
-        <a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-undo',plain:true" onclick="reject($('#dgtable'))">Cancel</a>
-        <a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-remove',plain:true" onclick="removeit($('#dgtable'), '/directory/delete/')">Remove a record</a--->
 	</div>
 </div>

@@ -1,38 +1,9 @@
 {% extends "base.html" %}
 {% block main %}
-	
-<!-- PAGE RELATED PLUGIN(S) -->
-<!-- JARVIS WIDGETS -->
-<!---script type="text/javascript" src="{{STATIC_URL}}js/smartwidgets/jarvis.widget.min.js"></script>
-<script type="text/javascript" src="{{STATIC_URL}}js/plugin/dropzone/dropzone.min.js"></script>
-<script type="text/javascript">
-		
-		// DO NOT REMOVE : GLOBAL FUNCTIONS!
-		
-		$(document).ready(function() {
-			
-			pageSetUp();
-
-			Dropzone.autoDiscover = false;
-			$("#mydropzone").dropzone({
-				//url: "/file/post",
-				addRemoveLinks : true,
-				maxFilesize: 0.5,
-				dictDefaultMessage: '<span class="text-center">
-										<span class="font-lg visible-xs-block visible-sm-block visible-lg-block">
-											<span class="text-uppercase">
-												<i class="fa fa-caret-right text-danger"></i>
-												<B>Drop files here or click to upload.</B>
-											</span>
-										</span>
-									</span>',
-				dictResponseError: 'Error uploading file!'
-			});
-		
-		
-		})
-</script--->
-	
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/sha1.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/sha1-min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/lib-typedarrays-min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/aes.js"></script>
 <link rel="stylesheet" media="screen, print" href="{{STATIC_URL}}css/formplugins/dropzone/dropzone.css">
 <script type="text/javascript" src="{{STATIC_URL}}js/formplugins/dropzone/dropzone.js"></script>
 <script type="text/javascript">
@@ -40,103 +11,33 @@
 		alert("Add file");
 		return false;
 	}
-</script>		
-	
-	<!-- row -->
-	<div class="row">
-		<!-- NEW WIDGET START -->
-		<article class="col-sm-12">
-			<!---p>
-				<span class="label label-warning">
-				NOTE</span> &nbsp; This File DropZone works only on Latest Chrome, Firefox, Safari, Opera &amp; Internet Explorer 10.
-			</p--->
-			
-			<h5><span class="label label-warning">Notes for uploading files:</span></h5>
-			<p>
-				<ol>
-					<li>Select if you are uploading data files or protocol files:</B>
-						<select id="id_filetype" name="filetype" style="width:240px;height:24px" onchange="">
-							<option value="NOTSELECTED" selected="selected"></option>
-							<option value="DATAFILE">Data files</option>
-							<option value="SOP">Protocols</option>
-							<!---option value="PRESENTATION">Presentation</option--->
-						</select>
-					</li>
-					<li>Drag and drop your files up to 1GB in size into the space below.</li>
-					<li>For files larger than 1GB, follow the <a href="/seek/dropbox/path/"  target='_blank'>DropBox solution</a> to upload your large files. Check the <a href="/seek/dropbox/status/"  target='_blank'>DropBox status</a> for more info.</li>
-					<li>Click the submit button until all files are uploaded.</li>
-				</ol>
-			</p>
-			
-			<!-- Widget ID (each widget will need unique ID)-->
-			<div class="jarviswidget jarviswidget-color-blueLight" id="wid-id-0" data-widget-editbutton="false">
-				<header>
-					<span class="widget-icon"> <i class="fa fa-cloud"></i> </span>
-					<h2>File Dropzone! </h2>
-				</header>
+	var lab_options = {{ report.lab_options|safe }};
+	function getLabUsers(rec) {
+		if(rec.id==0){
+			return;
+		}
+		var url = '/seek/instituion/id=' + rec.id + '/';
+		$.get(url,
+			{},
+			function(data){
+				var obj = jQuery.parseJSON(data);
+                var msg = obj.msg;
+				var status = obj.status;
+				if(status==1){
+					var user_options = obj.userOptions;
+					$('#user_names').combobox('loadData', user_options);
+				}
+				else {
+					alert(msg);
+				}
+				return;
+			}
+        );	
+	}
 
-				<!-- widget div-->
-				<div>
-					<!-- widget edit box -->
-					<div class="jarviswidget-editbox">
-						<!-- This area used as dropdown edit box -->
-					</div>
-					<!-- end widget edit box -->
-					<!-- widget content -->
-					<div class="widget-body">
-						<!--- from SmartAdmin old version --->
-						<!---form action="upload.php" class="dropzone" id="mydropzone"></form--->
-						
-						<!--- from SmartAdmin version 4.0.2 --->
-						<form id="my-awesome-dropzone" action="/seek/datafiles/batchupload/" method="post" enctype="multipart/form-data" class="dropzone needsclick" style="min-height: 7rem;">	
-						<!---form id="my-awesome-dropzone" action="/seek/datafiles/batchupload/" onsubmit="return verifyFile(this)" method="post" enctype="multipart/form-data" class="dropzone needsclick" style="min-height: 7rem;"--->	
-							{% csrf_token %}
-                            <div class="dz-message needsclick">
-								<i class="glyphicon glyphicon-cloud-upload"></i>
-								<br>
-                                <span class="text-uppercase">Drop files here or click to upload.</span>
-							</div>
-                        </form>
-						<br/>
-						<button id="submit-all">
-							Submit
-						</button>
-					</div>
-					<!-- end widget content -->
-				</div>
-				<!-- end widget div -->
-			</div>
-			<h5><span class="label label-warning">Notes after files uploaded:</span></h5>
-			<p>
-				<ol>
-					<li>Click the web url in the table below to download and confirm that file is correct;</li>
-					<li>Click the checkBox in the table to make your files verified.</li>
-					<li>Use the UID of a file for your assay sheet to connect the file with samples.</li>
-					<li>To find files uploaded into the database, use the <a href='/seek/datafile/query/' target='_blank'>Data File Query</a> page or <a href='/seek/sop/query/' target='_blank'>Protocol File Query</a> page.</li>
-				</ol>
-			</p>
-			<!-- end widget -->
-		</article>
-		<!-- WIDGET END -->
-	</div>
-	<!-- end row -->
-	
-<!--- Use CryptoJS to calculate file md5: https://stackoverflow.com/questions/768268/how-to-calculate-md5-hash-of-a-file-using-javascript--->
-<!---script src="{{STATIC_URL}}js/CryptoJS-3.1.2/rollups/md5.js"></script>
-<script src="{{STATIC_URL}}js/CryptoJS-3.1.2/rollups/sha1.js"></script>
-<script src="{{STATIC_URL}}js/CryptoJS-3.1.2/components/enc-base64-min.js"></script--->
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/sha1.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/sha1-min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/lib-typedarrays-min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/aes.js"></script>
-
-
-<script type="text/javascript">
 	function showFileErrorMsg(errorMsg) {
 		var header = '<div class="alert alert-danger alert-block"><h4 class="alert-heading">File Upload Failed!</h4></div>';
 		var todo = '<div><h5><b>Please upload the file again and refer to the excel file returned to fix any error highlighted.</b></h5></div>';
-		//var msginfo = '<div><h5>Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!</h5></div>';
 		var msginfo = '<div><h5>' + errorMsg + '</h5></div>';
 		var content = header + todo + msginfo;
 		$.messager.alert({
@@ -150,8 +51,6 @@
 	
 	function showFileWarningMsg(warningMsg) {
 		var header = '<div class="alert alert-block alert-warning"><h4 class="alert-heading">Warning!</h4></div>';
-		//var todo = '<div><h5><b>The file has been uploaded with the following warning message:</b></h5></div>';
-		//var msginfo = '<div><h5>Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!</h5></div>';
 		var todo = '';
 		var msginfo = '<div><h5><b>' + warningMsg + '</b></h5></div>';
 		var content = header + todo + msginfo;
@@ -167,7 +66,6 @@
 	function showFileInfoMsg(infoMsg) {
 		var header = '<div class="alert alert-info alert-block"><h4 class="alert-heading">Info!</h4></div>';
 		var todo = '<div><h5><b>The file uploading has finished successfully. Refer to the table below for file UIDs.</b></h5></div>';
-		//var msginfo = '<div><h5>Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!</h5></div>';
 		var msginfo = '<div><h5>' + infoMsg + '</h5></div>';
 		var content = header + todo + msginfo;
 		$.messager.alert({
@@ -179,29 +77,22 @@
 		return;
 	}
 	
-	
-	
     function uploadOneFileIntoSeek(originalfilename, file_content_type, url_upload){
 		var filetype = document.getElementById("id_filetype").value;
-		//alert(filetype);
 		var csrf_token = $('input[name="csrfmiddlewaretoken"]').val();
-		//var formdata = new FormData();
 		var formdata = new FormData($('form').get(0));
 		formdata.append("filetype", filetype);
 		formdata.append('originalfilename', originalfilename);
 		formdata.append('content_type', file_content_type);
 		formdata.append('csrfmiddlewaretoken', '{{ csrf_token }}');
 		var msg = 'Upload the following file into Seek: ' + originalfilename + '  ' + file_content_type;
-		//alert(msg);
 		$.ajax(url_upload,
 			{
-				//csrfmiddlewaretoken: csrf_token,
 				type: 'POST',
 				enctype: "multipart/form-data",
 				data: formdata,
 				processData: false,
 				contentType: false,
-				//contentType: 'multipart/form-data',
 				success: console.log('success!')
 			}
 		)
@@ -209,54 +100,30 @@
 		    var obj = jQuery.parseJSON(data);
 		    var msg = obj.msg;
 		    var status = obj.status;
-		    //var link = obj.link;
 		    var newrow = obj.newrow;
 		    if(status==1){
-				//alert(newrow);
 				updateDatafileRow(originalfilename, newrow)
 				return true;
 		    }
 		    else {
 				updateDatafileRow(originalfilename, newrow)
-				//alert(msg);
 				return true;	
 		    }
 		});
     }
 	
     function uploadFilesIntoSeek(url_uploadSeek){
-		//var win = $.messager.progress({
-		//	title:'Please wait ...',
-		//	msg:'Files uploaded to the server, waiting for uploading into Seek...',
-		//	interval: 0
-		//});
-        //setTimeout(function(){
-        //    $.messager.progress('close');
-        //},50000)
-		
 		var records = [];
 		var dg = $('#dgtable');
 		var rows = dg.datagrid('getRows');
 		var total = rows.length;
 		for(var i=0,len=rows.length; i<len; i++){
-		    //if (rows[i]['originalname'] == filename){
-		    //if (rows[i]['notes'] == 'Successful'){
 		    if (rows[i]['notes'] == 'File uploaded to storage server'){
 				row = rows[i];
-				//break;   take the last row that has the same file name for updating.
-				//var record = {}
-				//for(var key in row) {
-				//	var value = row[key];
-				//	record[key] = value;
-				//}
-				//alert(row.uid);
-				//records.push(record);
 				uploadOneFileIntoSeek(row.originalname, row.content_type, url_uploadSeek);
-				
 				var proValue = (i+1)*100/total;
-				var bar = $.messager.progress('bar');  // get the progressbar object
-				bar.progressbar('setValue', proValue);  // set new progress value
-				//setTimeout(getProgress,50); // reload progress status in 20 msecs
+				var bar = $.messager.progress('bar');  
+				bar.progressbar('setValue', proValue);  
 			}
 		}
 		$.messager.progress('close');
@@ -267,13 +134,9 @@
     function submitFilesIntoSeek_v2(url_uploadSeek, ntotal, records){
 		if(ntotal==0){
 			var msg = 'No file is ready to be uploaded into Seek';
-		    //alert('No file to be uploaded into Seek');
 			showFileWarningMsg(msg);
 		    return;
 		}
-		//var bar = $.messager.progress('bar');  // get the progressbar object
-        //bar.progressbar('setValue', 50);  // set new progress value
-        //setTimeout(getProgress,200); // reload progress status in 200 msecs
 		var msg = 'Files uploaded to the server, waiting for uploading into Seek...'
 		var msginfo = '<div><h5><b>' + msg + '</b></h5></div>';
 		var win = $.messager.progress({
@@ -285,20 +148,19 @@
 		
 		for(var i=0,len=records.length; i<len; i++){
 		    var record = records[i];
-		    //alert(record.originalname);
 		}
-		
 		var filetype = document.getElementById("id_filetype").value;
-		//alert(filetype);
+		var instituion_id = document.getElementById("user_labs").value;
+		var people_id = document.getElementById("user_names").value;
 		var csrf_token = $('input[name="csrfmiddlewaretoken"]').val();
 		var formdata = new FormData($('form').get(0));
 		formdata.append("filetype", filetype);
+		formdata.append("instituion_id", instituion_id);
+		formdata.append("people_id", people_id);
 		formdata.append('records', JSON.stringify(records));
 		formdata.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-		//alert('records');
 		$.ajax(url_uploadSeek,
 		    {
-				//csrfmiddlewaretoken: csrf_token,
 				type: 'POST',
 				enctype: "multipart/form-data",
 				data: formdata,
@@ -312,9 +174,7 @@
 		    var obj = jQuery.parseJSON(data);
 		    var msg = obj.msg;
 		    var status = obj.status;
-		    //var link = obj.link;
 		    var newrows = obj.newrows;
-					
 		    for(var i=0,len=newrows.length; i<len; i++){
 				var newrow = newrows[i];
 				var originalfilename = newrow.originalname;
@@ -329,8 +189,6 @@
 				var warningMsg = 'The file uploading has finished with the following error message: ' + msg;
 				showFileWarningMsg(warningMsg);
 		    }
-			
-		    //alert("Files uploaded! \nClick 'Export To Excel' button in the table below to download the list.");
 		});
     }
 	
@@ -340,34 +198,23 @@
 		var rows = dg.datagrid('getRows');
 		var total = rows.length;
 		var ntotal = 0;
-		
-		var etotal = 0;	// total number of files with error
-		var eMsg = ''; // msg for error-pron files
-		
+		var etotal = 0;	
+		var eMsg = ''; 
 		for(var i=0,len=rows.length; i<len; i++){
 		    var row = rows[i];
-		    //alert(rows[i]['notes']);
-		    //if (rows[i]['originalname'] == filename){
-		    //if (rows[i]['notes'] == 'Successful'){
 		    if (row['notes']=='File uploaded to storage server'){
-				//break;   take the last row that has the same file name for updating.
 				var record = {}
 				for(var key in row) {
 				    var value = row[key];
 				    record[key] = value;
 				}
-				//alert(row.uid);
                 records.push(record);
 				ntotal += 1;
 		    }
 		    else{
                 if(row['notes']=='Warning: File already uploaded in Seek'){
-				    //alert('okay');
-				    //Warning: File already uploaded in Seek
-				    //existing SOP, forced upload as a newer version?
 				    var msg = 'Warning: File already uploaded in Seek: ' + rows[i]['originalname']
 				    msg += '.\n Do you want to upload the file as a newer version?';
-				    
 					var header = '<div class="alert alert-info alert-warning"><h4 class="alert-heading">Confirmation!</h4></div>';
 					var todo = '';
 					var msginfo = '<div><h5><b>' + msg + '</b></h5></div>';
@@ -381,23 +228,15 @@
 							for(var key in row) {
 							    var value = row[key];
 							    record[key] = value;
-							    //alert(value);
 							}
 							if (r){
-							    //alert('confirmed on update');
-							    //alert(row.uid);
 							    records.push(record);
 							    ntotal += 1;
 							}
 							else{
-							    //alert('denied on update');
 							    var originalname = row['originalname'];
-							    //record['uid'] = '';
-							    //record['fileurl'] = '';
 							    record['notes'] = row['notes'] + ': no update';
-							    //alert(record['notes']);
 							    updateDatafileRow(originalname, record);
-								
 								etotal += 1;
 								eMsg += originalname + ': already uploaded in Seek, no update; </br>';
 							}
@@ -414,16 +253,12 @@
 		}
 		
 		if(ntotal==total){
-			// all files in DropZone are uploaded to the server successfully, go to next step.
 			submitFilesIntoSeek_v2(url_uploadSeek, ntotal, records);
 			return;
 		}
 		
 		if(etotal==total){
-			// All files failed to be uploaded to the server, show the error message.
 			var header = '<div class="alert alert-block alert-warning"><h4 class="alert-heading">Warning!</h4></div>';
-			//var todo = '<div><h5><b>The file has been uploaded with the following warning message:</b></h5></div>';
-			//var msginfo = '<div><h5>Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!</h5></div>';
 			var todo = '<div><h5><b>Due to the reason below, no file will be uploaded into Seek systen. Try again after fixing the issue accordingly.</b></h5></div>';
 			var msginfo = eMsg;
 			var content = header + todo + msginfo;
@@ -464,53 +299,24 @@
 		var win = $.messager.progress({
 				title:'Please wait ...',
 				msg: msginfo,
-				//interval: 0,
 				width: 500
 		});
-		//var datadic = {'id': index, 'UID':''};
-		//datadic['originalname'] = file.name;
-		//datadic['md5'] = '';
-		//datadic['size'] = file.size;
-		//$('#dgtable').datagrid('appendRow',datadic);
-		//return
-	
 		var reader = new FileReader();
-		//alert(file.name);
-		//alert(file.size);
-        //reader.onload = function() {
-		//	var md5 = binl_md5(reader.result, reader.result.length);
 		reader.onload = function(event) {
-            //var file_result = this.result; // this == reader, get the loaded file "result"
-			
 			var file_result = event.target.result;
-			
-            var file_wordArr = CryptoJS.lib.WordArray.create(file_result); //convert blob to WordArray , see https://code.google.com/p/crypto-js/issues/detail?id=67
-            //var sha1 = CryptoJS.SHA1(file_wordArr); //calculate SHA1 hash
-			//alert("Calculated SHA1:" + sha1.toString()); //output result
-			
+            var file_wordArr = CryptoJS.lib.WordArray.create(file_result); 
 		    var md5 = CryptoJS.MD5(file_wordArr).toString();
-			//alert("Calculated MD5:" + md5); //output result
-		
-		    ////var binary = event.target.result;
-		    ////var md5 = CryptoJS.MD5(binary).toString();
-		    ////var sha1 = CryptoJS.SHA1(binary).toString();
-            ////console.log("MD5 is " + md5);
 		    var datadic = {'id': index, 'UID':''};
 		    datadic['originalname'] = file.name;
 		    datadic['md5'] = md5;
-		    //datadic['md5'] = sha1.toString();
 		    datadic['size'] = file.size;
 		    $('#dgtable').datagrid('appendRow',datadic);
 			$.messager.progress('close');
-			//callback(md5);
-			//return md5;
         };
         reader.onerror = function() {
             console.error("Could not read the file");
 			$.messager.progress('close');
         };
-		
-        //reader.readAsBinaryString(file);
 		reader.readAsArrayBuffer(file); //read file as ArrayBuffer
     }
 	
@@ -521,7 +327,6 @@
 		for(var i=0,len=ntotal; i<len; i++){
 		    if (rows[i]['originalname'] == filename){
 				var md5 = rows[i]['md5'];
-				//alert("Calculated MD5:" + md5);
 				return md5;
 		    }
 		}
@@ -532,7 +337,6 @@
 		var filetype = document.getElementById("id_filetype").value;
 		if(filetype=="NOTSELECTED"){
 			var msg = 'Please choose a file type from the dropdown menu and drop same type of files to proceed!';
-			//alert(msg);
 			showFileWarningMsg(msg);
 		    myDropzone.removeFile(file);
 		    return;
@@ -541,13 +345,9 @@
 		var files = myDropzone.files;
 		var index = 1;
 		if(files.length==1){
-		    // no file left in the dropZone except the current one,
-			// clear the DataGrid table for new batch of files.
-			//alert("no file in fileZone");
 			$('#dgtable').datagrid('loadData', []);  
 		}
 		else{
-		    //Check whther same file appears twice 
 			var count = 0;
 			for(var i=0; i<files.length; i++){
 				var fileIn = files[i];
@@ -564,10 +364,6 @@
 			index = files.length;
 		}
 		
-		//getFileCecksum(file, index);
-		//alert("Calculated MD5:" + md5);
-		//return
-		
 		var msg = 'Calculating the MD5 checksum for file uploading...'
 		var msginfo = '<div><h5><b>' + msg + '</b></h5></div>';
 		var win = $.messager.progress({
@@ -576,38 +372,14 @@
 				//interval: 0,
 				width: 500
 		});
-		//var datadic = {'id': index, 'UID':''};
-		//datadic['originalname'] = file.name;
-		//datadic['md5'] = '';
-		//datadic['size'] = file.size;
-		//$('#dgtable').datagrid('appendRow',datadic);
-		//return
-	
 		var reader = new FileReader();
-		//alert(file.name);
-		//alert(file.size);
-        //reader.onload = function() {
-		//	var md5 = binl_md5(reader.result, reader.result.length);
 		reader.onload = function(event) {
-            //var file_result = this.result; // this == reader, get the loaded file "result"
-			
 			var file_result = event.target.result;
-			
-            var file_wordArr = CryptoJS.lib.WordArray.create(file_result); //convert blob to WordArray , see https://code.google.com/p/crypto-js/issues/detail?id=67
-            //var sha1 = CryptoJS.SHA1(file_wordArr); //calculate SHA1 hash
-			//alert("Calculated SHA1:" + sha1.toString()); //output result
-			
+            var file_wordArr = CryptoJS.lib.WordArray.create(file_result);
 		    var md5 = CryptoJS.MD5(file_wordArr).toString();
-			//alert("Calculated MD5:" + md5); //output result
-		
-		    //var binary = event.target.result;
-		    //var md5 = CryptoJS.MD5(binary).toString();
-		    //var sha1 = CryptoJS.SHA1(binary).toString();
-            //console.log("MD5 is " + md5);
 		    var datadic = {'id': index, 'UID':''};
 		    datadic['originalname'] = file.name;
 		    datadic['md5'] = md5;
-		    //datadic['md5'] = sha1.toString();
 		    datadic['size'] = file.size;
 		    $('#dgtable').datagrid('appendRow',datadic);
 			$.messager.progress('close');
@@ -617,7 +389,6 @@
 			$.messager.progress('close');
         };
 		
-        //reader.readAsBinaryString(file);
 		reader.readAsArrayBuffer(file); //read file as ArrayBuffer
     }
 	
@@ -630,17 +401,13 @@
 		for(var i=0,len=ntotal; i<len; i++){
 		    if (rows[i]['originalname'] == filename){
 				rownow = rows[i];
-				//break;   take the last row that has the same file name for updating.
 		    }
 		    if (rows[i]['notes']){
 				nuploaded += 1;
 		    }
 		}
-		
 		var prog = Math.round(((nuploaded+1)/ntotal) * 100);
-		
 		if (!rownow){
-		    //alert('file not found in table!');
 		    return prog;
 		}
 		
@@ -653,8 +420,6 @@
     }
 	
     function updateDatafileUIDs(){
-		//alert('update datafile UIDs');
-		
 		var allFiles = [];
         var rows = $('#dgtable').datagrid('getRows');
         for(var i=0; i<rows.length; i++){
@@ -668,20 +433,15 @@
 		var allfiles = JSON.stringify(allFiles);
 		$.get('/seek/datafiles/getuids/',
 		    {
-				//json: JSON.stringify(json)
 				allfiles: allfiles
 		    },
 		    function(data){
-				//$.messager.progress('close');
 				var obj = jQuery.parseJSON(data);
 				var msg = obj.message;
 				var link = obj.link;
-				//alert(link);
-										
 				var status = obj.status;
 				if(!status){
 				    alert(msg);
-				    //window.location.href = link; 
 				    return;
 				} 
 							
@@ -696,28 +456,25 @@
     }
 
     Dropzone.options.myAwesomeDropzone = {
-        // Prevents Dropzone from uploading dropped files immediately
         autoProcessQueue : false,
 		maxFilesize: 2000, // MB,  defaults to 256 (MB).
-		//How many file uploads to process in parallel, default 2
-		// so when more than 2 files are dropped, only first 2 are uploaded from one click of the submit button.
 		parallelUploads: 10,
 		timeout: 3000000,   //The timeout for the XHR requests in milliseconds (since v4.4.0).default 30000
 		addRemoveLinks: true,
-        //uploadMultiple: true,
         init : function() {
             var submitButton = document.querySelector("#submit-all")
             var myDropzone = this;
- 
             submitButton.addEventListener("click", function() {
 				var filetype = document.getElementById("id_filetype").value;
                 if(filetype=="NOTSELECTED"){
 					var msg = "Please choose a file type from the ComboBox and drop same type of files to proceed!";
-					//alert(msg);
 					showFileWarningMsg(msg);
 					myDropzone.removeFile(file);
 					return;
 				}
+				var instituion_id = document.getElementById("user_labs").value;
+				var people_id = document.getElementById("user_names").value;
+				
 				var msg = 'Please confirm whether all files in the DropZone are  '
 				if(filetype=="DATAFILE"){
 					msg += 'data files?';
@@ -745,17 +502,12 @@
 								interval: 0,
 								width: 500
 							});
-							//setTimeout(function(){
-							//    $.messager.progress('close');
-							//},50000)
-							
-							//alert("How many files for upload?");
-							// Tell Dropzone to process all queued files.
 							myDropzone.on("sending", function (file, xhr, formData) {
-								//formData.append("ProductName", $("#txtprod").val());
 								var md5 = getFileCecksum2(file.name);
 								formData.append("md5", md5);
 								formData.append("filetype", filetype);
+								formData.append("instituion_id", instituion_id);
+								formData.append("people_id", people_id);
 							});
 						    myDropzone.processQueue();
 						}
@@ -766,60 +518,27 @@
 					}
 				});
 		    });
-		    // You might want to show the submit button only when
-		    // files are dropped here:
-		    //this.on("drop", function(file) {
-			//alert(file.name);
-			//	dropDatafile(file);
-		    //});
-            // You might want to show the submit button only when
-            // files are dropped here:
 		    this.on("addedfile", function(file) {
-				//alert(file.name);
 				addDatafile(file, this);
 		    });
 		    this.on("complete", function(file) {
-				//alert("complete! ");
-				// Called when the upload was either successful or erroneous.
-				//alert(file.name);
-				//myDropzone.removeFile(file);
 		    });
 					
 		    this.on("success", function(file, serverResponse) {
-				// Called after each of files in the DropZone is successfully uploaded.
-				// refer to: https://github.com/enyo/dropzone/wiki/FAQ#how-to-show-files-already-stored-on-server
-				// Handle the responseText here. For example, add the text to the preview element:
-				//file.previewTemplate.appendChild(document.createTextNode(serverResponse.responseText));
-						
-				// If the image is already a thumbnail:
-				//this.emit('thumbnail', file, serverResponse.imageUrl);
-
-				// If it needs resizing:
-				//this.createThumbnailFromUrl(file, serverResponse.imageUrl);
-						
-				//alert("success! ");
-				//alert(serverResponse);
-				//alert("Successful uploading the file to data lake, wait for next step: " + file.name);
 				var obj = jQuery.parseJSON(serverResponse);
 				var newrow = obj.newrow;
 				var status = obj.status;
 		        var msg = obj.msg;
-				//alert(msg);
 				var prog = updateDatafileRow(file.name, newrow);
-				//alert(prog);
-				var bar = $.messager.progress('bar');  // get the progressbar object
-				bar.progressbar('setValue', prog);  // set new progress value
+				var bar = $.messager.progress('bar');  
+				bar.progressbar('setValue', prog);  
 				myDropzone.removeFile(file);
 				
 				if(prog==100){
 					$.messager.progress('close');
-					//var win = $.messager.progress();
-					//win.dialog('setTitle','Updating hardly:');
-					//win.find('.messager-p-msg').html('File uploaded to the server!');
 				}
 				return;
 				if(status==1){
-		            //alert(msg);
 					updateDatafileRow(file.name, newrow);
 				}
 				else {
@@ -827,51 +546,109 @@
 				}
 		    });
 		    this.on("error", function(file, errorMessage) {
-				//alert("error! ");
-				// callback after all files complete uploading
-		        // Tell Dropzone to process all queued files.
 				alert(errorMessage);
 		    });
 		    this.on("queuecomplete", function(file) {
-				//alert("Successful uploading all files to data lake, start uploading into Seek");
-				// callback after all files complete uploading
-				// Tell Dropzone to process all queued files.
-				//alert(this.getUploadingFiles().length);
-				//alert(this.getQueuedFiles().length);
-						
-				// files are uploaded to the storageserver,
-				// not upload them from storage serverinto Seek
-				//uploadFilesIntoSeek("/seek/datafiles/uploadtoseek/");
 				uploadFilesIntoSeek_v2("/seek/datafiles/uploadtoseek/");
-				//updateDatafileUIDs();
-
 		    });
 		    this.on("totaluploadprogress", function(totaluploadprogress) {
-		        //document.querySelector("#total-progress .progress-bar").style.width = totaluploadprogress + "%";
-				// refer to
-				//$("#the-progress-div").width(totaluploadprogress + '%');
-				//$(".the-progress-text").text(totaluploadprogress + '%');
 		    });
         }
     };
-</script>
-    <!---div style="margin:20px 0;"--->
+</script>	
+	<div class="row">
+		<article class="col-sm-12">
+			<h5><span class="label label-warning">Notes for uploading files:</span></h5>
+			<p>
+				<ol>
+					<li>Select if you are uploading data files or protocol files:</B>
+						<select id="id_filetype" name="filetype" style="width:240px;height:24px" onchange="">
+							<option value="NOTSELECTED" selected="selected"></option>
+							<option value="DATAFILE">Data files</option>
+							<option value="SOP">Protocols</option>
+						</select>
+					</li>
+					<li>Select the creator's lab and name if you are the data curator:</B>
+						<input id="user_labs" class="easyui-combobox" name="user_labs" style="width:20%;" data-options="
+							showItemIcon: true,
+							data: lab_options,
+							valueField:'id',
+							textField:'title',
+							groupField:'group',
+							editable: false,
+							panelHeight:'auto',
+							label: '',
+							labelPosition: 'top',
+							onSelect: function(rec){
+								getLabUsers(rec);
+							}
+						">
+						<input id="user_names" class="easyui-combobox" name="user_names" style="width:20%;" data-options="
+							showItemIcon: true,
+							valueField:'id',
+							textField:'title',
+							editable: false,
+							panelHeight:'auto',
+							label: '',
+							labelPosition: 'top',
+							onSelect: function(rec){
+								;
+							}
+						">	
+					</li>
+					
+					<li>Drag and drop your files up to 1GB in size into the space below.</li>
+					<li>For files larger than 1GB, follow the <a href="/seek/dropbox/path/"  target='_blank'>DropBox solution</a> to upload your large files. Check the <a href="/seek/dropbox/status/"  target='_blank'>DropBox status</a> for more info.</li>
+					<li>Click the submit button until all files are uploaded.</li>
+				</ol>
+			</p>
+			
+			<div class="jarviswidget jarviswidget-color-blueLight" id="wid-id-0" data-widget-editbutton="false">
+				<header>
+					<span class="widget-icon"> <i class="fa fa-cloud"></i> </span>
+					<h2>File Dropzone! </h2>
+				</header>
+				<div>
+					<div class="jarviswidget-editbox">
+					</div>
+					<div class="widget-body">
+						<form id="my-awesome-dropzone" action="/seek/datafiles/batchupload/" method="post" enctype="multipart/form-data" class="dropzone needsclick" style="min-height: 7rem;">	
+							{% csrf_token %}
+                            <div class="dz-message needsclick">
+								<i class="glyphicon glyphicon-cloud-upload"></i>
+								<br>
+                                <span class="text-uppercase">Drop files here or click to upload.</span>
+							</div>
+                        </form>
+						<br/>
+						<button id="submit-all">
+							Submit
+						</button>
+					</div>
+				</div>
+			</div>
+			<h5><span class="label label-warning">Notes after files uploaded:</span></h5>
+			<p>
+				<ol>
+					<li>Click the web url in the table below to download and confirm that file is correct;</li>
+					<li>Click the checkBox in the table to make your files verified.</li>
+					<li>Use the UID of a file for your assay sheet to connect the file with samples.</li>
+					<li>To find files uploaded into the database, use the <a href='/seek/datafile/query/' target='_blank'>Data File Query</a> page or <a href='/seek/sop/query/' target='_blank'>Protocol File Query</a> page.</li>
+				</ol>
+			</p>
+		</article>
+	</div>
+	
 <div id="datafile_tab" class="easyui-tabs" style="width:auto;height:560px;">
     <div title="Upload data files" data-options="closable:false" style="padding:20px;display:none;">
 		<div class="easyui-layout" style="width:auto;height:560px;">
 		    <div data-options="region:'north',border:false" style="height: 2px;">
-		        <!--- include "pages/datafile_upload.embed.html" --->
 	        </div>
 	        <div data-options="region:'center',border:false" style="width:auto; height:300px;">
 	            {% include "pages/datafile_table.embed.html" %} 
 	        </div>
 	        <div data-options="region:'south',border:false" style="width:auto; height:200px;">
 				<div class="well">
-					<!---div class="progress">
-						<div id="the-progress-div">
-							<span class="the-progress-text"></span>
-						</div>
-					</div--->
 					<div class="span12">
 						<B>Logs: </B>
 					</div>
@@ -883,7 +660,5 @@
 		</div>
     </div>
 </div>
-
-
 
 {% endblock %}

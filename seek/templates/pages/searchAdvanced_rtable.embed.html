@@ -1,0 +1,29 @@
+
+<table id="dgtable2" class="easyui-datagrid" title="dgtable2" style="width: 1200px;; height:480px;"
+			data-options="
+				iconCls: 'icon-edit',
+				singleSelect: true,
+				selectOnCheck: false,
+				url:'',
+				method:'',
+				toolbar: '#tb_toolbar2',
+				striped: true,
+				pagination : false,
+				pageSize:50,
+				showFooter: false,
+				multiSort: true,
+				remoteFilter: false
+			">
+	<thead>
+		<tr>
+			<th data-options="field:'ck',width:100,align:'center', checkbox:true, editor:{type:'checkbox',options:{on:'Y',off:'N'}}">Select file</th>
+			<th data-options="field:'id',width:30" sortable="true"><B>ID</B></th>
+			<th data-options="field:'uid',width:200,editor:'text'" sortable="true"><B>UID</B></th>
+			<th data-options="field:'sample_type',width:100" sortable="true"><B>Sample Type</B></th>
+			<th data-options="field:'json_metadata',align:'left',width:900"><B>Metadata</B></th>
+		</tr>
+	</thead>
+</table>
+<div id="tb_toolbar2" style="height:auto">
+	<a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true" onclick="downloadSamples($('#dgtable2'), '/seek/samples/download/')">Download samples</a>
+</div>

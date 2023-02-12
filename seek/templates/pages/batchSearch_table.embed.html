@@ -1,10 +1,8 @@
 <script type="text/javascript" src="{{STATIC_URL}}js/easyui/datagrid-filter.js"></script>
 <script type="text/javascript" src="{{STATIC_URL}}js/easyui/datagrid-export.js"></script>
 <script type="text/javascript" src="{{STATIC_URL}}js/custom/datagrid-custom.js"></script>
-<!---script type="text/javascript" src="{{STATIC_URL}}js/easyui/datagrid-groupview.js"></script--->
 <script type="text/javascript">
 $(document).ready(function(){
-	//$('#sample_table_div').hide();
 	$('#dgtable').datagrid({
 		onCheck: function(index,row){
 			row.ck = true;
@@ -13,9 +11,6 @@ $(document).ready(function(){
 			row.ck = false;
 		},
 		onCheckAll: function() {
-            //var allRows = $(this).treegrid('getAllRows');
-            //var state = $(this).data('datagrid');
-            //state.checkedRows = allRows;
 			var rows = $(this).datagrid('getRows');
 			for(var i=0; i<rows.length; i++){
 				var row = rows[i];
@@ -23,8 +18,6 @@ $(document).ready(function(){
 			}
         },
         onUncheckAll: function() {
-            //var state = $(this).data('datagrid');
-            //state.checkedRows = [];
 			var rows = $(this).datagrid('getRows');
 			for(var i=0; i<rows.length; i++){
 				var row = rows[i];
@@ -34,43 +27,30 @@ $(document).ready(function(){
 	})
 });
 
-
 $(function(){
-	//document.getElementById("sample_table_div").style.display = 'none';
-	//document.getElementById("south_div").style.display = 'none';
     var dg = $('#dgtable').datagrid();
     dg.datagrid('enableFilter', [{
-				field:'piUrl',
-				type:'label'
-			}]);
+		field:'id',
+		type:'label'
+	}]);
 });
 
 	function exportDataGridList(dg) {
 		var rows = dg.datagrid('getRows');
-		// download only those rows shown in the table
-		//alert("download some");
 		if (rows.length==0){
 			alert('No file in the table is selected for download.');
 			return;
 		}
-		
-		//alert(rows.length);
-		// choose samples selected
 		var allIds = [];
 		var rowsSelected = [];
 		for(var i=0; i<rows.length; i++){
 			var row = rows[i];
 			if(row.ck){
-				//alert('checked');
 				allIds.push(row.id);
 				rowsSelected.push(row);
 			}
-			else{
-				//alert('unchecked');
-			}
 		}
 		
-		// if no sample is selected, download all samples
 		if (allIds.length==0){
 			alert('No file in the table is selected for download.');
 			return;
@@ -83,37 +63,25 @@ $(function(){
 
 	function batchDownloadFiles(dg, url_batchdownload) {
 		var rows = dg.datagrid('getRows');
-		// download only those rows shown in the table
-		//alert("download some");
 		if (rows.length==0){
 			alert('No file in the table is selected for download.');
 			return;
 		}
-		
-		//alert(rows.length);
-		// choose samples selected
 		var allIds = [];
 		var rowsSelected = [];
 		for(var i=0; i<rows.length; i++){
 			var row = rows[i];
 			if(row.ck){
-				//alert('checked');
 				allIds.push(row.id);
 				rowsSelected.push(row);
 			}
-			else{
-				//alert('unchecked');
-			}
 		}
 		
-		// if no sample is selected, download all samples
 		if (allIds.length==0){
 			alert('No file in the table is selected for download.');
 			return;
 		}
 		var allids = JSON.stringify(allIds);
-		//alert(allids);
-		
 		var win = $.messager.progress({
 				title:'Please waiting',
 				msg:'Batch downloading files...'
@@ -142,90 +110,38 @@ $(function(){
         );	
 	}
 
-
 	function batchPublishFiles(dg, url_batchpublish) {
 		var rows = dg.datagrid('getRows');
-		// download only those rows shown in the table
-		//alert("download some");
 		if (rows.length==0){
 			alert('No file in the table is selected for publish.');
 			return;
 		}
 		
-		//alert(rows.length);
-		// choose samples selected
 		var allIds = [];
 		var rowsSelected = [];
 		for(var i=0; i<rows.length; i++){
 			var row = rows[i];
 			if(row.ck){
-				//alert('checked');
 				allIds.push(row.id);
 				rowsSelected.push(row);
 			}
-			else{
-				//alert('unchecked');
-			}
 		}
 		
-		// if no sample is selected, download all samples
 		if (allIds.length==0){
 			alert('No file in the table is selected for publish.');
 			return;
 		}
 		
-		//var url = '/seek/samples/publishlist/' + allIds.toString() + '/';
 		var url = url_batchpublish + allIds.toString() + '/';
 		window.open(url);
 		return;
-		
-		
-		
-		
-		var allids = JSON.stringify(allIds);
-		//alert(allids);
-		
-		var win = $.messager.progress({
-				title:'Please waiting',
-				msg:'Batch publishing files...'
-		});
-
-		$.get(url_batchpublish,
-			{
-				allids: allids,
-				downloadallterms: 1
-			},
-			function(data){
-				$.messager.progress('close');
-				var obj = jQuery.parseJSON(data);
-                var msg = obj.msg;
-				var status = obj.status;
-				var link = obj.link;
-				if(status==1){
-					window.location.href = link; 
-				}
-				else {
-					alert(msg);
-					window.location.href = link;
-				}
-				return;
-			}
-        );	
 	}
-
-
 </script>
 <style type="text/css">
   .datagrid-row-alt{
         background: #e6f2ff;
     }
 </style>
-<!---style type="text/css">
-  .datagrid-cell{
-    font-size:10px; font-weight: bold; 
-  }
-</style--->
-
 <div id="sample_table_div" style="height:auto">
 	<div style="margin:20px 0;"></div>
 	<table id="dgtable" class="easyui-datagrid" title="" style="width:auto; height:680px;"
@@ -245,8 +161,6 @@ $(function(){
 			">
 		<thead>
 			<tr>
-				<!---th data-options="field:'record_id',checkbox:true"><span class="lbl"></span></th--->
-				<!---th data-options="field:'idlink',width:60" sortable="false"><B>Select it</B></th--->
 			    <th data-options="field:'ck',width:100,align:'center', checkbox:true, editor:{type:'checkbox',options:{on:'Y',off:'N'}}">Select file</th>
 				<th data-options="field:'id',width:60" sortable="true"><B>ID</B></th>
 				<th data-options="field:'title',width:400" sortable="true"><B>UID</B></th>
@@ -259,16 +173,8 @@ $(function(){
 		</thead>
 	</table>
 	<div id="tb_toolbar" style="height:auto">
-			<a href="javascript:;" class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true" onclick="exportDataGridList($('#dgtable'))">Download file list</a>
-			
-			<a href="javascript:;" class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true" onclick="batchDownloadFiles($('#dgtable'), '{{report.batchdownload_url}}')">Batch download files selected </a>
-	
-			<a href="javascript:;" class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true" onclick="batchPublishFiles($('#dgtable'), '{{report.batchpublish_url}}')">Publish files selected </a>
-
-	
-		<!---a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-add',plain:true" onclick="append($('#dgtable'))">Add a record</a>
-		<a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true" onclick="accept($('#dgtable'), '/directory/save/')">Save a record</a>
-        <a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-undo',plain:true" onclick="reject($('#dgtable'))">Cancel</a>
-        <a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-remove',plain:true" onclick="removeit($('#dgtable'), '/directory/delete/')">Remove a record</a--->
+		<a href="javascript:;" class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true" onclick="exportDataGridList($('#dgtable'))">Download file list</a>			
+		<a href="javascript:;" class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true" onclick="batchDownloadFiles($('#dgtable'), '{{report.batchdownload_url}}')">Batch download files selected </a>	
+		<a href="javascript:;" class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true" onclick="batchPublishFiles($('#dgtable'), '{{report.batchpublish_url}}')">Publish files selected </a>
 	</div>
 </div>

@@ -1,116 +1,60 @@
 <script type="text/javascript">
 	var type_options = {{ report.type_options|safe }};
-	
 	function showSamples() {
 		var sampletype_id = document.getElementById("sample_type").value;
 		var url = '/seek/sample_types/id=' + sampletype_id + '/';
-		//alert(url);
 		window.location.href = url;
 		$('#sample_tab').tabs('select', 1);
 		return;
 	}
 	function displaySamples(rec) {
 		var url = '/seek/sample_types/id=' + rec.id + '/';
-		//var url = 'get_data2.php?id='+rec.title;
 		if(rec.id==0){
 			return;
 		}
-		else{
-			//alert(url);
-		}
-		//window.location.href = url;
 		return;
-		$.get(url,
-			{},
-			function(data){
-				var obj = jQuery.parseJSON(data);
-				return;
-				var bodyhtml = 
-                datanow = obj.rows;
-				//alert(datanow.length);
-				var number = datanow.length;
-                $('#cell_dg').datagrid('loadData',datanow);
-				var numberSelected = 96;
-				if(number<96){
-					numberSelected = number;
-				}
-				document.getElementById('numberCellsSelected').innerHTML = numberSelected;
-								
-				for(var i=0; i<numberSelected; i++){
-					$('#cell_dg').datagrid('selectRow', i); 
-				}
-								
-				var pager = $('#cell_dg').datagrid('getPager');
-				//pager.pagination({showRefresh:false});
-				pager.pagination({
-					total:number,
-					pageSize:number,
-					pageList: [number]
-				});
-				return;
-			}
-        );	
 	}
 </script>
-
-	<!---div class="col-xs-12 col-sm-7 col-md-7 col-lg-4">
-		<h1 class="page-title txt-color-blueDark"><i class="fa-fw fa fa-home"></i></h1>
-	</div--->
-	<!---h3><i class="fa-fw fa fa-list-alt"></i>
-		Samples
-	</h3--->
-	<!---p>&nbsp;&nbsp;You can upload, search or update records of the discretionary.
-	</p--->
-
-	<div class="span12">
-		<form method="post" enctype="multipart/form-data" action="">
-			{% csrf_token %}
-	
-	<!--- Grid control from smartAdmin theme --->		
-	<div class="well">
-		<div class="row show-grid">
-			<!---table class="table table-bordered"--->
-			<table class="table" align="center" style="width:80%" >
-				<thead>
-					<tr>
-						<th>Sample Type</th>
-						<th>Download</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td>
-							<input id="sample_type" class="easyui-combobox" name="sample_type" style="width:100%;" data-options="
-								showItemIcon: true,
-								data: type_options,
-								valueField:'id',
-								textField:'title',
-								editable: false,
-								panelHeight:'auto',
-								label: '',
-								labelPosition: 'top',
-								onSelect: function(rec){
-									displaySamples(rec);
-								}
-							">
-							<br/>
-							<a href="#" class="easyui-linkbutton" data-options="iconCls:'icon-search',plain:true" onclick="showSamples()">Show Samples</a>	
-						</td>
-						<td>
-							<!---a href="#" class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true" onclick="downloadSamples()">Download Samples</a--->
-						</td>
-					</tr>
-				</tbody>
-			</table>
-		 </div>
-	</div>
-			
-			
-		<!-- widget content -->
-
-	<!-- end widget content -->
-		</form>
-	</div>
-	<div>
-		Select a sample type from the list or enter sample UIDs into the search area to show samples.
-	</div>
+<div class="span12">
+	<form method="post" enctype="multipart/form-data" action="">
+		{% csrf_token %}
+		<div class="well">
+			<div class="row show-grid">
+				<table class="table" align="center" style="width:80%" >
+					<thead>
+						<tr>
+							<th>Sample Type</th>
+							<th>Download</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>
+								<input id="sample_type" class="easyui-combobox" name="sample_type" style="width:100%;" data-options="
+									showItemIcon: true,
+									data: type_options,
+									valueField:'id',
+									textField:'title',
+									editable: false,
+									panelHeight:'auto',
+									label: '',
+									labelPosition: 'top',
+									onSelect: function(rec){
+										displaySamples(rec);
+									}
+								">
+								<br/>
+								<a href="#" class="easyui-linkbutton" data-options="iconCls:'icon-search',plain:true" onclick="showSamples()">Show Samples</a>	
+							</td>
+							<td>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</form>
+</div>
+<div>
+	Select a sample type from the list or enter sample UIDs into the search area to show samples.
+</div>

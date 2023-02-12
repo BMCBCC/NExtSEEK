@@ -1,20 +1,12 @@
 <script type="text/javascript">
 	var investigation_options = {{ report.investigation_options|safe }};
-	
-	
 	var studies = {{ report.study_options_dic|safe }};
-	
 	var assays = {{ report.assay_options_dic|safe }};
-	
 	function getStudies(rec) {
-		// given an investigation id, retrieve the list of studies and show it in the combobox.
 		if(rec.id==0){
 			return;
 		}
-		else{
-		}
 		var url = '/seek/investigations/id=' + rec.id + '/';
-		//window.location.href = url;
 		$.get(url,
 			{},
 			function(data){
@@ -34,11 +26,8 @@
 	}
 
 	function getAssays(rec) {
-		// given a study id, retrieve a list of assays and show it in the combobox.
 		if(rec.id==0){
 			return;
-		}
-		else{
 		}
 		var url = '/seek/studies/id=' + rec.id + '/';
 		$.get(url,
@@ -68,26 +57,22 @@
 		}
 		
 		var investigation =  $('#publish_investigation').combobox('getText');
-		
 		var study_id = $('#publish_study').combobox('getValue');
 		if(study_id==0){
 			alert('No Study is selected.');
 			return;
 		}
 		var study = $('#publish_study').combobox('getText');
-		
 		var assay_id = $('#publish_assay').combobox('getValue');
 		if(assay_id==0){
 			alert('No Assay is selected.');
 			return;
 		}
 		var assay = $('#publish_assay').combobox('getText');
-		
 		var win = $.messager.progress({
 				title:'Please waiting',
 				msg:'Searching for assets...'
 		});
-		
 		$.get('/seek/searchAssets/',
 			{
 				'investigation': investigation,
@@ -120,49 +105,12 @@
         );	
 	}
 	
-	// to be deleted
 	function displaySamples(rec) {
-		alert(rec.id);
 		var url = '/seek/publish_investigations/id=' + rec.id + '/';
-		//var url = 'get_data2.php?id='+rec.title;
 		if(rec.id==0){
 			return;
 		}
-		else{
-			//alert(url);
-		}
-		//window.location.href = url;
 		return;
-		$.get(url,
-			{},
-			function(data){
-				var obj = jQuery.parseJSON(data);
-				return;
-				var bodyhtml = 
-                datanow = obj.rows;
-				//alert(datanow.length);
-				var number = datanow.length;
-                $('#cell_dg').datagrid('loadData',datanow);
-				var numberSelected = 96;
-				if(number<96){
-					numberSelected = number;
-				}
-				document.getElementById('numberCellsSelected').innerHTML = numberSelected;
-								
-				for(var i=0; i<numberSelected; i++){
-					$('#cell_dg').datagrid('selectRow', i); 
-				}
-								
-				var pager = $('#cell_dg').datagrid('getPager');
-				//pager.pagination({showRefresh:false});
-				pager.pagination({
-					total:number,
-					pageSize:number,
-					pageList: [number]
-				});
-				return;
-			}
-        );	
 	}
 
 	function getSearchVariables() {

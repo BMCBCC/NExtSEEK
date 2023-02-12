@@ -1,0 +1,83 @@
+{% load static %}
+<ul>
+  <li class="active">
+    <a href="/" title="Dashboard">
+      <i class="fa fa-lg fa-fw fa-home"></i>
+      <span class="menu-item-parent">Home</span>
+    </a>
+  </li>
+  <li>
+    <a href="#">
+      <i class="fa fa-lg fa-fw fa-bar-chart-o"></i>
+      <span class="menu-item-parent">Data Entry</span>
+    </a>
+    <ul>
+      <li>
+        <a href="/seek/samples/upload/"><i class="fa fa-file-excel-o"></i>Assay Sheet Uploading</a>
+      </li>
+      <li>
+        <a href="/seek/data/upload/"><i class="fa fa-file-archive-o"></i>Data & Protocol File Uploading</a>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <a href="#">
+      <i class="fa fa-lg fa-fw fa-search"></i>
+      <span class="menu-item-parent">Data Query</span>
+    </a>
+    <ul>
+      <li>
+        <!---a href="/seek/samples/query/"><i class="fa fa-link"></i>Sample Query</a--->
+        <a href="/seek/search/"><i class="fa fa-link"></i>Sample Advanced Search</a>
+      </li>
+      <li>
+        <a href="/seek/samples/search/"><i class="fa fa-paperclip"></i>Sample Search</a>
+      </li>
+      <li>
+        <a href="/seek/datafile/query/"><i class="fa fa-file-zip-o"></i>Data File Query</a>
+      </li>
+      <li>
+        <a href="/seek/sop/query/"><i class="fa fa-file-powerpoint-o"></i>Protocol Query</a>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <a href="#">
+      <i class="fa fa-lg fa-fw fa-wrench"></i>
+      <span class="menu-item-parent">Admin</span>
+    </a>
+    <ul>
+      <li>
+        <a href="/seek/samples/attributes/"><i class="fa fa-wrench"></i>Revise Sample Attributes</a>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <a href="#">
+      <i class="fa fa-lg fa-fw fa-book"></i>
+      <span class="menu-item-parent">Instructions</span>
+    </a>
+    <ul>
+      <li>
+        <a href="/instructions/">
+        <i class="fa fa-book"></i>Instructions</a>
+      </li>
+      <li>
+        <a href="/tutorial/">
+        <i class="fa fa-file-text-o"></i>Tutorial</a>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <a href="#">
+      <i class="fa fa-lg fa-fw fa-puzzle-piece"></i>
+      <span class="menu-item-parent">Contact</span>
+    </a>
+    <ul>
+      <li>
+        <a href="/contact/">
+        <i class="fa fa-file-text-o"></i>Legals</a>
+      </li>
+    </ul>
+  </li>
+</ul>

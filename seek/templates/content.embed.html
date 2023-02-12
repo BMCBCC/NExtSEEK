@@ -1,14 +1,10 @@
 {% load static %}	 
-				{% include "content-title.embed.html" %}
-				{% autoescape off %}
-				{{ bodyhtml }}
-				{% endautoescape %}
-				<!-- widget grid -->
-				<section id="widget-grid" class="">
-					<!-- row -->
-					<div>
-						 <B></B>
-					</div>
-					<!-- end row -->
-				</section>
-				<!-- end widget grid -->
+{% include "content-title.embed.html" %}
+{% autoescape off %}
+{{ bodyhtml }}
+{% endautoescape %}
+<section id="widget-grid" class="">
+	<div>
+		<B></B>
+	</div>
+</section>

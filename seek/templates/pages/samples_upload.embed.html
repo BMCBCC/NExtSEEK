@@ -1,11 +1,9 @@
 <script type="text/javascript">
 	var template_options = {{ report.template_options|safe }};
 	
-	
 	function showSampleErrorMsg(errorMsg) {
 		var header = '<div class="alert alert-danger alert-block"><h4 class="alert-heading">Sample Upload Failed!</h4></div>';
 		var todo = '<div><h5><b>Please upload the array sheet again and refer to the excel file returned to fix any error highlighted.</b></h5></div>';
-		//var msginfo = '<div><h5>Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!</h5></div>';
 		var msginfo = '<div><h5>' + errorMsg + '</h5></div>';
 		var content = header + todo + msginfo;
 		$.messager.alert({
@@ -20,7 +18,6 @@
 	function showSampleWarningMsg(warningMsg) {
 		var header = '<div class="alert alert-block alert-warning"><h4 class="alert-heading">Warning!</h4></div>';
 		var todo = '<div><h5><b>The array sheet has been uploaded with the following warning message:</b></h5></div>';
-		//var msginfo = '<div><h5>Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!</h5></div>';
 		var msginfo = '<div><h5>' + warningMsg + '</h5></div>';
 		var content = header + todo + msginfo;
 		$.messager.alert({
@@ -35,7 +32,6 @@
 	function showSampleInfoMsg(infoMsg) {
 		var header = '<div class="alert alert-info alert-block"><h4 class="alert-heading">Info!</h4></div>';
 		var todo = '<div><h5><b>The array sheet has been uploaded successfully. Refer to the excel file returned for sample UIDs.</b></h5></div>';
-		//var msginfo = '<div><h5>Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!</h5></div>';
 		var msginfo = '<div><h5>' + infoMsg + '</h5></div>';
 		var content = header + todo + msginfo;
 		$.messager.alert({
@@ -47,58 +43,9 @@
 		return;
 	}
 	
-	function showSampleMsgs() {
-		$.messager.alert("Sample uploading...",
-						 '<div class="alert alert-danger alert-block"><h4>Error!</h4>Best check your error.</div><div><p>Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!</p></div>',
-						 'error');
-		$.messager.alert("Sample uploading...",
-						 '<div class="alert alert-block alert-warning"><h4 class="alert-heading">Warning!</h4></div><div><b>Be aware yurself.</b></div>',
-						 'warning');
-		$.messager.alert("Sample uploading...",
-						 '<div class="alert alert-info alert-block"><h4 class="alert-heading">Info!</h4></div><div><p>For your information</p></div>',
-						 'info');
-		$.messager.alert("Sample uploading...",
-						 '<div class="alert alert-success alert-block"><h4 class="alert-heading">Success!</h4></div><div><p>Okay.</p></div>',
-						 'question');
-		$.messager.alert("Sample uploading...",
-						 '<div class="alert alert-danger alert-block"><h4 class="alert-heading">Error!</h4></div><div><p>Best check your error.</p></div>',
-						 'error');
-		$.messager.alert({
-			title: 'title',
-			msg: '<div style="height:100px">msg</div>',
-			icon: 'info',
-			width: 400
-		});
-		$.messager.alert("Sample uploading...",
-			'<div class="alert alert-danger alert-block"><h4>Error!</h4>Best check your error.</div><div><p>Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!</p></div>',
-			'error'
-		);
-		
-		var header = '<div class="alert alert-danger alert-block"><h4 class="alert-heading">Error!</h4></div>';
-		var todo = '<div><h5><b>Please upload the array sheet again after fixing the following error:</b></h5></div>';
-		var msginfo = '<div><h5>Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!</h5></div>';
-		var content = header + todo + msginfo;
-		$.messager.alert({
-			title: 'Sample uploading...',
-			msg: content,
-			icon: 'error',
-			width: 400
-		});
-		return;
-	}
-	
 	function downloadTemplate() {
-		//var msginfoIn = 'Assay sheet does not contain valid "Samples" sheet.<br/>Try again.<br/>Try again.<br/>Try again.';
-		//showSampleErrorMsg(msginfoIn);
-		//msginfoIn = 'Warning: Sample not saved to the SEEK database.';
-		//showSampleWarningMsg(msginfoIn);
-		//showSampleInfoMsg('')
-		//return;
-		
 		var document_id = document.getElementById("sample_template").value;
 		var url = '/seek/document/id=' + document_id + '/';
-		//alert(url);
-		//window.location.href = url;
 		$.get(url,
 			{
 			},
@@ -108,18 +55,10 @@
 				$('#messages').text(msg);
 				var status = obj.status;
 				var link = obj.link;
-				//alert(link);
-				//alert(status);
-				//$.messager.progress('close');
 				if(status){
-					//alert(msg);
-					//var url = '/seek/sample_types/id=' + sampletype_id + '/';
-					//alert(url);
-					//window.location.href = url;
 					window.location.href = link;
 				}
 				else{
-					//alert(msg);
 				}
 				return;
 			}
@@ -129,190 +68,129 @@
 	
 	function displayTemplate(rec) {
 		var url = '/seek/sample_types/id=' + rec.id + '/';
-		//var url = 'get_data2.php?id='+rec.title;
 		if(rec.id==0){
 			return;
 		}
 		else{
-			//alert(url);
 		}
-		//window.location.href = url;
 		return;
-		$.get(url,
-			{},
-			function(data){
-				var obj = jQuery.parseJSON(data);
-				return;
-				var bodyhtml = 
-                datanow = obj.rows;
-				//alert(datanow.length);
-				var number = datanow.length;
-                $('#cell_dg').datagrid('loadData',datanow);
-				var numberSelected = 96;
-				if(number<96){
-					numberSelected = number;
-				}
-				document.getElementById('numberCellsSelected').innerHTML = numberSelected;
-								
-				for(var i=0; i<numberSelected; i++){
-					$('#cell_dg').datagrid('selectRow', i); 
-				}
-								
-				var pager = $('#cell_dg').datagrid('getPager');
-				//pager.pagination({showRefresh:false});
-				pager.pagination({
-					total:number,
-					pageSize:number,
-					pageList: [number]
-				});
-				return;
-			}
-        );	
 	}
 	function uploadSamples(){
-		//var win = $.messager.progress({
-		//	title:'Please waiting',
-		//	msg:'Uploading data...'
-		//});
-        //setTimeout(function(){
-        //    $.messager.progress('close');
-        //},50000)
-		//var sampletype_id = document.getElementById("sample_template").value;
-		//if(sampletype_id==0){
-			//$.messager.progress('close');
-		//	alert("Warning: Select a sample type and a sample sheet to start.");
-		//	return;
-		//}
-		
-		//var excelfile = document.getElementById('id_sampleexcelname').value;
 		var excelfile = document.getElementById('id_sampleexcelname').files[0];
 		if (!excelfile) {
-			//$.messager.progress('close');
 			alert("Warning: No valid sample sheet in excel is selected.");
 			return;
 		}
-		//alert("Name: " + excelfile.name + "\nSample type :" + sampletype_id);
 		
+		var instituion_id = document.getElementById("user_labs").value;
+		var people_id = document.getElementById("user_names").value;
 		var csrf_token = $('input[name="csrfmiddlewaretoken"]').val();
-		//var formdata = new FormData();
 		var formdata = new FormData($('form').get(0));
 		formdata.append('excelfile_upload', excelfile);
 		formdata.append('filename', excelfile.name);
-		//formdata.append('sampletype_id', sampletype_id);
+		formdata.append("instituion_id", instituion_id);
+		formdata.append("people_id", people_id);
 		formdata.append('csrfmiddlewaretoken', '{{ csrf_token }}');
 		$.ajax('/seek/sampleupload/',
 			{
-				//csrfmiddlewaretoken: csrf_token,
 				type: 'POST',
 				enctype: "multipart/form-data",
 				data: formdata,
 				processData: false,
 				contentType: false,
-				//contentType: 'multipart/form-data',
 				success: console.log('success!')
 			}
 		)
 		.done(function( data ) {
-			
 			var obj = jQuery.parseJSON(data);
-			// msg uses '<br/>' for new line, shown in popup dialogue.
 			var msg = obj.msg;
-			
-			// same as msg but using '\n' for new line
 			var message = obj.message;
 			$('#messages').text(message);
 			var status = obj.status;
 			var link = obj.link;
-			//alert(link);
-			//alert(status);
-			//$.messager.progress('close');
-			window.location.href = link;
 			if(status>0){
-				//alert(msg);
-				//var url = '/seek/sample_types/id=' + sampletype_id + '/';
-				//alert(url);
-				//window.location.href = url;
 				showSampleInfoMsg(msg);
 			}
 			else if(status==0){
-				//Error msg
 				showSampleErrorMsg(msg);
 			}
 			else{
-				// warning msg
 				showSampleWarningMsg(msg);
+			}
+			if(link){
+				window.location.href = link;
 			}
 		});
 		return;
 	}
+	
+	var lab_options = {{ report.lab_options|safe }};
+	
+	function getLabUsers(rec) {
+		if(rec.id==0){
+			return;
+		}
+		else{
+		}
+		var url = '/seek/instituion/id=' + rec.id + '/';
+		$.get(url,
+			{},
+			function(data){
+				var obj = jQuery.parseJSON(data);
+                var msg = obj.msg;
+				var status = obj.status;
+				if(status==1){
+					var user_options = obj.userOptions;
+					$('#user_names').combobox('loadData', user_options);
+				}
+				else {
+					alert(msg);
+				}
+				return;
+			}
+        );	
+	}
 </script>
-
-	<!---div class="col-xs-12 col-sm-7 col-md-7 col-lg-4">
-		<h1 class="page-title txt-color-blueDark"><i class="fa-fw fa fa-home"></i></h1>
-	</div--->
-	<!---h3><i class="fa-fw fa fa-list-alt"></i>
-		Samples
-	</h3--->
-	<!---p>&nbsp;&nbsp;You can upload, search or update records of the discretionary.
-	</p--->
 
 	<div class="span12">
 		<form method="post" enctype="multipart/form-data" action="">
-			{% csrf_token %}
-	
-	<!--- Grid control from smartAdmin theme --->		
-	<div class="well">
-		<div class="row show-grid">
-			<!---table class="table table-bordered"--->
-			<table class="table" align="center" style="width:70%" >
-				<thead>
-					<tr>
-						<th style="width:50%;">Sample Templates</th>
-						<th style="width:50%;">Sample Excel sheet for uploading</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td>
-							<input id="sample_template" class="easyui-combobox" name="sample_template" style="width:90%;" data-options="
-								showItemIcon: true,
-								data: template_options,
-								valueField:'id',
-								textField:'title',
-								editable: false,
-								panelHeight:'auto',
-								label: '',
-								labelPosition: 'top',
-								onSelect: function(rec){
-									displayTemplate(rec);
-								}
-							">
-							<br/>
-							<a href="#" class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true" onclick="downloadTemplate()">Download Sample Template</a>
-						</td>
-						<td>
-							<input type="file" name="sampleexcelname" id="id_sampleexcelname" required style="height:28px;width:220px"/>
-							<a href="#" class="easyui-linkbutton" data-options="iconCls:'icon-add',plain:true" onclick="uploadSamples()">Upload Samples</a>
-						</td>
-					</tr>
-				</tbody>
-			</table>
-		</div>
-	</div>
-			
-			
-		<!-- widget content -->
+			{% csrf_token %} 
+			<div class="well">
+				<div class="row show-grid">
+					<table class="table" align="center" style="width:70%">
+						<thead>
+							<tr>
+								<th style="width:40%;">Sample Templates</th>
 
-	<!-- end widget content -->
+								<th style="width:60%;">Sample Excel sheet for uploading</th>
+							</tr>
+						</thead>
+
+						<tbody>
+							<tr>
+								<td><input id="sample_template" class="easyui-combobox" name="sample_template" style="width:50%;" data-options="showItemIcon: true, data: template_options, valueField:'id', textField:'title', editable: false, panelHeight:'auto', label: '', labelPosition: 'top', onSelect: function(rec){ displayTemplate(rec); }"><br>
+								<a href="#" class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true" onclick="downloadTemplate()">Download Sample Template</a></td>
+
+								<td><input type="file" name="sampleexcelname" id="id_sampleexcelname" required="" style="height:28px;width:220px"><br>
+								<label for="user_labs">Lab:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label> <input id="user_labs" class="easyui-combobox" name="user_labs" style="width:50%;" data-options="showItemIcon: true, data: lab_options, valueField:'id', textField:'title', groupField:'group', editable: false, panelHeight:'auto', label: '', labelPosition: 'top', onSelect: function(rec){ getLabUsers(rec); }"><br>
+								<label for="user_names">Creator:</label> <input id="user_names" class="easyui-combobox" name="user_names" style="width:50%;" data-options=" showItemIcon: true, valueField:'id', textField:'title', editable: false, panelHeight:'auto', label: '', labelPosition: 'top', onSelect: function(rec){ ; }"><br>
+								<br>
+								<a href="#" class="easyui-linkbutton" data-options="iconCls:'icon-add',plain:true" onclick="uploadSamples()">Upload Samples</a></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
 		</form>
 	</div>
-	
+
 	<div class="well">
-	<div class="span12">
-		<B>Logs: </B>
-	</div>
-	<div class="span12">
-		<textarea id="messages" style="width:100%; max-width:100%; min-width:600px" rows="20"></textarea>
-	</div>
+		<div class="span12">
+			<b>Logs:</b>
+		</div>
+		<div class="span12">
+			<textarea id="messages" style="width:100%; max-width:100%; min-width:600px" rows="20">
+			</textarea>
+		</div>
 	</div>
 

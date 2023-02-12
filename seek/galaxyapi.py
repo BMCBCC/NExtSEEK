@@ -1,57 +1,14 @@
 #!/usr/bin/env python
-
-'''****************************************************************************
-*   Program - A class for running Galaxy API queries.
-*   Author - Huiming Ding: huiming@mit.edu
-
-*  This program is a trial software: you can redistribute it and/or modify
-*  it under the terms of the MIT License. 
-*  Due to the nature of the on-going research, the redistribution is limited to authorized users 
-*  in the current phase of the study. 
- 
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-
-****************************************************************************'''
-
-'''****************************************************************************
-
-*   To run the program
-*   For example - python 
-
-*   Logic - 
-
-****************************************************************************'''
-#from bioblend.galaxy import GalaxyInstance
-#from bioblend.galaxy.client import ConnectionError
 from datetime import datetime, timedelta
-
 import subprocess
 import json
 from subprocess import call
 
 class GalaxyAPI(object):
-    ''' The class is used to run Seek operations, regardless the underlayer query approach. 
-    
-    Typical usage of the class
-    
-        galaxyapi = GalaxyAPI()
-    '''
     def __init__(self, url, email, password):
-        ''' We do need the username and password for accessing the Seek API. 
-        '''
         self.__url = url
         self.__email = email
         self.__password = password
-        print(url, email, password)
         self.__gi = GalaxyInstance(
             url=url,
             email=email,
@@ -59,21 +16,8 @@ class GalaxyAPI(object):
             
 
     def get_galaxy_info(self):
-        """Gets the Galaxy information from the logged in user.
-
-        Arguments:
-            url : The Galaxy server URL.
-            email: The users email address for the Galaxy server.
-            password: The Galaxy server password.
-
-        Returns:
-            The Galaxy username of the logged in user. Available Galaxy 
-            workflows. A List of Galaxy histories from the user's account and 
-            a list of available dbkeys.
-        """
         gusername = ""
         user = self.__gi.users.get_current_user()
-        print("user:", user)
         gusername = user['username']
         workflows = self.__gi.workflows.get_workflows
         history = self.__gi.histories.get_histories()
@@ -92,15 +36,6 @@ class GalaxyAPI(object):
 
 
     def get_history_id(self):
-        """Get the current Galaxy history ID
-
-        Arguments:
-            gi: Galaxy instance.
-
-        Returns:
-            The current Galaxy history ID from the logged in user.
-        """
-        # gi = GalaxyInstance(url=server, email=galaxyemail, password=galaxypass)
         cur_hist = self.__gi.histories.get_current_history()
         current = json.dumps(cur_hist)
         current_hist = json.loads(current)
@@ -109,17 +44,6 @@ class GalaxyAPI(object):
 
 
     def get_input_data(self):
-        """Get input data based on the selected history.
-        Find the number of uploaded files and return the id's of the files.
-
-        Arguments:
-            gi: Galaxy instance.
-
-        Returns:
-            A list of input files from the Galaxy history and 
-            the amount of input datasets in the history.
-        """
-        # gi = GalaxyInstance(url=server, email=galaxyemail, password=galaxypass)
         history_id = self.get_history_id()
         hist_contents = self.__gi.histories.show_history(history_id, contents=True)
         inputs = {}
@@ -131,20 +55,6 @@ class GalaxyAPI(object):
         return inputs, datacount
     
     def create_new_hist(self, workflowid, files, new_hist):
-        """Create a new history if there are any files selected.
-
-        Arguments:
-            gi: The Galaxy Instance.
-            galaxyemail: The Galaxy email address.
-            galaxypass: The Galaxy password.
-            server: The Galaxy server URL.
-            workflowid: The Galaxy workflow ID.
-            files: A List of files to upload.
-            new_hist: The new history name.
-
-        Returns:
-            A new Galaxy history ID.
-        """
         date = format(datetime.now() + timedelta(hours=2))
         if workflowid != "0":
             if len(list(filter(None, files))) >= 0:
@@ -170,18 +80,6 @@ class GalaxyAPI(object):
         return history_id
     
     def get_output(self):
-        """Get all inputs and outputs from the Galaxy workflow.
-        This information will be used to store the files in the storage location.
-
-        Arguments:
-            galaxyemail: The Galaxy email address.
-            galaxypass: The Galaxy password.
-            server: The Galaxy server URL.
-
-        Returns:
-            Lists with Galaxy inputfile URLs, inputfile names, 
-            outputfile URLs and outputfile names.
-        """
         historyid = self.get_history_id()
         inputs = []
         input_ids = []
@@ -191,7 +89,6 @@ class GalaxyAPI(object):
         state = hist['state_ids']
         dump = json.dumps(state)
         status = json.loads(dump)
-        # Stop process after workflow is done
         while (
             status['running'] or
             status['queued'] or
@@ -234,8 +131,6 @@ class GalaxyAPI(object):
         return in_url, in_name, out_url, out_name
     
     def create_history(self, resultid):
-        ''' used before calling rerun_analysis()
-        '''
         ftp = self.__gi.config.get_config()["ftp_upload_site"]
         if "bioinf-galaxian" in ftp:
             ftp = "ftp://bioinf-galaxian.erasmusmc.nl:23"
@@ -243,17 +138,6 @@ class GalaxyAPI(object):
         return ftp
     
     def rerun_owncloud_workflow(self, gafile, history_id):
-        """Start a Galaxy workflow when using owncloud/nextcloud as a 
-        storage location when rerunning a previous analysis.
-
-        Arguments:
-            gi: Galaxy Instance of the current logged in user.
-            gafile: The Galaxy workflow file to import into the Galaxy server
-
-        Raises:
-            IndexError: An error occurred searching for the input names
-            in the Galaxy workflow file.
-        """
         self.__gi.workflows.import_workflow_from_local_path(gafile.name)
         workflows = self.__gi.workflows.get_workflows(name="TEMP_WORKFLOW")
         for workflow in workflows:
@@ -284,20 +168,6 @@ class GalaxyAPI(object):
     
     
     def rerun_seek_workflow(self, username, workflowid, history_id, gacont):
-        """Start the Galaxy workflow after uploading the data files to the 
-        Galaxy server. 
-
-        Arguments:
-            gi: Galaxy instance of the logged in user.
-            username: SEEK username.
-            workflowid: ID of the workflow used in this analysis.
-            history_id: ID of the new Galaxy history.
-            gacont: JSON content of the workflow used in the analysis.
-
-        Raises:
-            IndexError: An error occurred when searching ffor the input name labels
-            in the Galaxy workflow file.
-        """
         with open(username + "/workflow.ga", 'w') as gafile:
             json_ga = json.loads(gacont)
             for i, dummyj in json_ga.items():

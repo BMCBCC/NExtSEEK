@@ -3,151 +3,86 @@
 <script type="text/javascript" src="{{STATIC_URL}}js/custom/datagrid-custom.js"></script>
 <script type="text/javascript">
 $(document).ready(function(){
-
 });
-
 
 $(function(){
-	//document.getElementById("sample_table_div").style.display = 'none';
-	//document.getElementById("south_div").style.display = 'none';
     var dg = $('#dg_atype').datagrid();
-    //dg.datagrid('enableFilter', [{
-	//			field:'piUrl',
-	//			type:'label'
-	//		}]);
 });
 
-	var sample_attribute_types = [
-		{sample_attribute_type_id: 7, sample_attribute_type_title: 'Text'},
-		{sample_attribute_type_id: 3, sample_attribute_type_title: 'Float'}
-    ];
 	var sample_attribute_types = {{ report.attribute_types_options|safe }};
 	
-
 	function saveSelectedIntoDB(dg, url_save) {
-		// This is an overwriiten of the same function in datagrid-custom.js
-		// an extra field 'sample_type_id' is added into records
 		var sample_type_id = $('#sample_type').combobox('getValue');
 		if(sample_type_id==0){
 			alert('No sample type is selected.');
 			return;
 		}
-		//alert(sample_type_id);
-		
-			// save the row in editing into DB
-			//var ss = [];
-			//var ids = [];
-			var records = [];
-			var rows = dg.datagrid('getChanges');
-			if (rows.length==0){
-				alert("You have not entered any new person!");
-				return false;
+		var records = [];
+		var rows = dg.datagrid('getChanges');
+		if (rows.length==0){
+			alert("You have not entered any new person!");
+			return false;
+		}
+		for(var i=0; i<rows.length; i++){
+			var row = rows[i];
+			var record = {}
+			for(var key in row) {
+				var value = row[key];
+				record[key] = value;
+			}
+			record['sample_type_id'] = sample_type_id;
+			records.push(record);
+		}
+		var msg = 'You have entered '
+			+ rows.length
+			+ ' records for saving. Do you really want to save the change?'
+			+ '?';
+		$.messager.confirm('Saving record', msg, function(r){
+			if (r){
 			}
 			else{
-				//alert(rows.length+' persons are entered!');
+				return false;
 			}
-			for(var i=0; i<rows.length; i++){
-				var row = rows[i];
-				//alert(row.cancer_related);
-				//alert(row.id);
-				var record = {}
-				for(var key in row) {
-					var value = row[key];
-					///alert(value);
-					record[key] = value;
-					//alert(key);
-					//alert(value);
-				}
-				record['sample_type_id'] = sample_type_id;
-				//alert(row.id);
-				//ids.push(row.id);
-				records.push(record);
-			}
-			var msg = 'You have entered '
-				+ rows.length
-				+ ' records for saving. Do you really want to save the change?'
-				//+ ids.join()
-				+ '?';
-			$.messager.confirm('Saving record', msg, function(r){
-				if (r){
-					//alert('Stop: A revision is in progress!');
-					//return
-				}
-				else{
-					return false;
-				}
 							
-				var win = $.messager.progress({
-					title:'Please waiting',
-					msg:'Saving record ...'
-				});
-				
-				//setTimeout(function(){
-				//    $.messager.progress('close');
-				//},5000)
-				
-				//alert('confirmed: '+r);
-				//alert(statusType);
-				//var IDs = jsonconvertstrings(ids);
-				$.get(url_save,
-					{
-						//ids: IDs,
-						records: JSON.stringify(records),
-						sampletype_id: sample_type_id
-					},
-					function(data){
-						$.messager.progress('close');
-						var obj = jQuery.parseJSON(data);
-						var msg = obj.msg;
-						//alert(msg);
-						var link = obj.link;
-						//alert(link);
-										
-						var status = obj.status;
-						if(!status){
-							//alert(msg);
-							var msg2 = "Error in saving record. <br/><br/>";
-							msg2 += msg;
-							//msg2 += "<br/><br/>Refer to the csv file returned for more information.";
-							//$.messager.alert('Saving record',msg2,'info');
-							alert(msg);
-							window.location.href = link;
-							return false;
-						} 
-						else{
-							$.messager.alert('Saving record',msg,'info');
-						}
-						//var msg = 'The following records have been saved into DB: ' + ids.join() + '!';
-						//$.messager.alert('Deleting person',msg,'info');
-						window.location.href = link;
-						//window.location.href = "/alumni/alumnidbs/";
-						// instead of refreshing the table, just delete the row from table
-						
-						//dg.datagrid('cancelEdit', editIndex)
-						//	.datagrid('deleteRow', editIndex);
-						//editIndex = undefined;
-						
-						return true;
-					}
-				);
-				return true;
+			var win = $.messager.progress({
+				title:'Please waiting',
+				msg:'Saving record ...'
 			});
+			$.get(url_save,
+				{
+					records: JSON.stringify(records),
+					sampletype_id: sample_type_id
+				},
+				function(data){
+					$.messager.progress('close');
+					var obj = jQuery.parseJSON(data);
+					var msg = obj.msg;
+					var link = obj.link;
+					var status = obj.status;
+					if(!status){
+						var msg2 = "Error in saving record. <br/><br/>";
+						msg2 += msg;
+						alert(msg);
+						window.location.href = link;
+						return false;
+					} 
+					else{
+						$.messager.alert('Saving record',msg,'info');
+					}
+					window.location.href = link;
+					return true;
+				}
+			);
 			return true;
+		});
+		return true;
 	}
-
-
 </script>
 <style type="text/css">
   .datagrid-row-alt{
         background: #e6f2ff;
     }
 </style>
-<!---style type="text/css">
-  .datagrid-cell{
-    font-size:10px; font-weight: bold; 
-  }
-</style--->
-
 <div id="sample_table_div" style="height:auto">
 	<div style="margin:20px 0;"></div>
 	<table id="dg_atype" class="easyui-datagrid" title="" style="width:auto; height:680px;"
@@ -168,7 +103,6 @@ $(function(){
 			">
 		<thead>
 			<tr>
-				<!---th data-options="field:'ck',width:100,align:'center', checkbox:true, editor:{type:'checkbox',options:{on:'Y',off:'N'}}">Select file</th--->
 				<th data-options="field:'id',width:60"><B>ID</B></th>
 				<th data-options="field:'pos',width:60,editor:'text'"><B>Position</B></th>
 				<th data-options="field:'title',width:200,editor:'text'"><B>Name</B></th>

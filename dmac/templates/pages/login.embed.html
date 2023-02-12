@@ -4,7 +4,7 @@
     </div>
 </div>
 <div class="container" style="margin-top:10px"></div>
-<div id="login">
+<div id="login" style="width:100%">
     You need to log in to use this application. <br />
     Please log in with your SEEK credential.<br />
     <br />
@@ -15,54 +15,6 @@
         {% csrf_token %}
         <table id="table-login">
             <span style="color:red">*</span> = required fields
-            <!---tr>
-                <td>
-                    <h2>Galaxy</h2>
-                    <hr>
-                </td>
-            </tr>
-            <tr>
-                <td>Galaxy Server:<span style="color:red">*</span></td>
-                <td><input type="text" name="server" id="server" placeholder="Enter galaxy server" required></td>
-            </tr>
-            <tr>
-                <td>Galaxy email:<span style="color:red">*</span></td>
-                <td><input type="text" name="galaxyemail" id="galaxyemail" placeholder="Enter your Galaxy email" required></td>
-            </tr>
-            <tr>
-                <td>Galaxy Password:<span style="color:red">*</span></td>
-                <td><input type="password" name="galaxypass" id="galaxypass" placeholder="Enter your Galaxy password" required></td>
-            </tr--->
-            <!-- <tr>
-                <td>Storage URL:<span style="color:red">*</span></td>
-                <td>
-                    <input type="text" name="storage" id="storage" placeholder="i.e. seek.erasmusmc.nl" required>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <h2>SEEK/NextCloud</h2>
-                    <hr>
-                </td>
-            </tr>
-            <tr>
-                <td>Server:<span style="color:red">*</span></td>
-                <td><input type="text" name="server" id="server" placeholder="Enter server name" required></td>
-            </tr>
-            <tr>
-                <td>
-                    Select the storagetype (SEEK server or NextCloud):
-                </td>
-                <td>
-                    <fieldset id="storagetype">
-                        <input type="radio" value="SEEK" id="typeseek" name="storagetype" checked>
-                        <label for="typeseek"> SEEK</label>
-                        <br>
-                        <input type="radio" value="NextCloud" id="typenextcloud" name="storagetype">
-                        <label for="typenextcloud"> NextCloud</label>
-                    </fieldset>
-                </td>
-            </tr--->
             <tr>
                 <td>Username:<span style="color:red">*</span></td>
                 <td><input type="text" name="username" id="username" placeholder="Enter your username" required></td>
@@ -72,7 +24,14 @@
                 <td><input type="password" name="password" id="password" placeholder="Enter your password" required></td>
             </tr>
             <tr>
-                <td>&nbsp;</td>
+                <td><a href="https://SEEK.server/signup">Need an account?</a> or</td>
+                <td><a href="https://SEEK.server/forgot_password">Forgotten your password?</a> </td>
+            </tr>
+            <tr>
+                <td>
+                    <h2>SEEK/NExtSEEK</h2>
+                    <hr>
+                </td>
             </tr>
             <tr>
                 <td>&nbsp;</td>
@@ -83,6 +42,7 @@
                     <br />
                     <input id="index_buttons" type="submit" value="Log in" style="margin-left:25px">
                 </td>
+            </tr>
         </table>
     </form>
 </div>

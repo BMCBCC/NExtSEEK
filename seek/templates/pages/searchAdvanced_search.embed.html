@@ -1,0 +1,248 @@
+<script type="text/javascript">
+	var type_options = {{report.type_options|safe}};
+	var logic_options = [{
+		logicid: 'AND',
+		logicname: 'Add with AND',
+		"selected": true
+	}, {
+		logicid: 'OR',
+		logicname: 'Add with OR'
+	}, {
+		logicid: 'NOT',
+		logicname: 'Add with NOT'
+	}];
+
+	function getAttributes(rec) {
+		return;
+		if (rec.id == 0) {
+			return;
+		} else {
+		}
+		var url = '/seek/attributes/id=' + rec.id + '/';
+		$.get(url, {}, function(data) {
+			var obj = jQuery.parseJSON(data);
+			var msg = obj.msg;
+			var status = obj.status;
+			if (status == 1) {
+				var attr_options = obj.attrOptions;
+				$('#sample_attribute').combobox('loadData', attr_options);
+			} else {
+				alert(msg);
+			}
+			return;
+		});
+	}
+
+	function getOperators(rec) {
+		if (rec.attribute == 'none') {
+			return;
+		} else {
+		}
+		var sampletype_id = $('#sample_type').combobox('getValue');
+		var attribute = rec.attribute;
+		var url = '/seek/operators/';
+		$.get(url, {
+			'sampletype_id': sampletype_id,
+			'attribute': attribute
+		}, function(data) {
+			var obj = jQuery.parseJSON(data);
+			var msg = obj.msg;
+			var status = obj.status;
+			if (status == 1) {
+				var filter_rule = obj.filter_rule;
+				$('#filter_rule').combobox('loadData', filter_rule);
+				var placeholder_start = obj.placeholder_start;
+				document.getElementById("input_valueFrom").setAttribute('placeholder', placeholder_start);
+				document.getElementById("input_valueFrom").setAttribute('value', '');
+				var placeholder_end = obj.placeholder_end;
+				document.getElementById("input_valueTo").setAttribute('placeholder', placeholder_end);
+				document.getElementById("input_valueTo").setAttribute('value', '');
+			} else {
+				alert(msg);
+			}
+			return;
+		});
+	}
+
+	function displaySamples(rec) {
+		var url = '/seek/sample_types/id=' + rec.id + '/';
+		if (rec.id == 0) {
+			return;
+		} else {
+		}
+		return;
+	}
+
+	function getSearchVariables() {
+		var listdic = {};
+		listdic["keywords"] = document.getElementById("searching").value;
+		return listdic;
+	}
+
+	function jsonconvertdic(listdic) {
+		var jsontry = JSON.stringify(listdic);
+		return jsontry;
+	}
+
+	function searchAdvanced(pageNumberSelected) {
+		var sampletype_id = $('#sample_type').combobox('getValue');
+		var attribute = 'none';
+		var filter_logic = $('#input_logic').combobox('getValue');
+		var filter_searchValue = document.getElementById("input_searchValue").value;
+		var filter_searchText = $("#input_searchText").textbox('getText');
+		if (!filter_searchText) {
+			alert('No search term entered.');
+			return;
+		}
+		var matchType = $('input[name=matchType]:checked').val();
+		if (pageNumberSelected > 0) {
+			var dg = $('#dgtable');
+			var pager = dg.datagrid('getPager');
+			var popts = pager.pagination('options');
+			var options = dg.datagrid('options');
+		}
+
+		var win = $.messager.progress({
+			title: 'Please waiting',
+			msg: 'Searching for samples...'
+		});
+		$.get('/seek/searchAdvanced/', {
+			'sampletype_id': sampletype_id,
+			'attribute': attribute,
+			'filter_logic': filter_logic,
+			'filter_searchValue': filter_searchValue,
+			'filter_searchText': filter_searchText,
+			'filter_matchType': matchType
+		}, function(data) {
+			$.messager.progress('close');
+			var obj = jQuery.parseJSON(data);
+			var msg = obj.msg;
+			var status = obj.status;
+			if (status == 1) {
+				var datanow = obj.rows;
+				var total = obj.total;
+				$('#dgtable').datagrid('loadData', datanow);
+				document.getElementById('numberSamplesFound').innerHTML = total;
+				document.getElementById('numberSampleTypesFound').innerHTML = obj.noSampleTypes;
+				var pager = $('#dgtable').datagrid('getPager');
+				pager.pagination({
+					showRefresh: false
+				});
+				pager.pagination({
+					total: total,
+					pageSize: 50
+				});
+			} else {
+				alert(msg);
+			}
+			return;
+		});
+	}
+
+	function searchAdd() {
+		var sampletype_id = $('#sample_type').combobox('getText');
+		var attribute = 'none';
+		var filter_logic = $('#input_logic').combobox('getValue');
+		var filter_searchValue = document.getElementById("input_searchValue").value;
+		if (!filter_searchValue) {
+			alert('No search keyword entered.');
+			return;
+		}
+		var keywords = filter_searchValue;
+		if (sampletype_id) {
+			keywords = keywords + "[" + sampletype_id + "]"
+		}
+		var curText = $("#input_searchText").textbox('getText');
+		if (keywords.indexOf(' ') >= 0) {
+			if (curText) {
+				keywords = "(" + keywords + ")";
+			}
+		}
+		if (curText) {
+			if (curText.indexOf(' ') >= 0) {
+				curText = "(" + curText + ")";
+			}
+
+			keywords = curText + " " + filter_logic + " " + keywords;
+		} else {
+			keywords = keywords
+		}
+
+		$("#input_searchText").textbox('setText', keywords);
+		return;
+	}
+</script>
+
+<div class="span12">
+	<form method="post" enctype="multipart/form-data" action="">
+		{% csrf_token %}
+		<div class="well">
+			<div class="row show-grid">
+				<div class="col-xs-14 col-sm-7 col-md-7">
+					<p><b>Add terms to the query box:</b></p>
+					<table class="table2" align="center" style="width:100%">
+						<thead>
+							<tr>
+								<th></th>
+								<th></th>
+								<th></th>
+								<th></th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>Search Value<a style="color:red;">*</a>:</td>
+								<td><input id="input_searchValue" label="" labelposition="left" value="" placeholder="Enter a search term" style="width:250px;height:40px"></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td>Logic:</td>
+								<td>
+									<input id="input_logic" class="easyui-combobox" name="input_logic" style="width:150px;" data-options="
+										showItemIcon: true,
+										data: logic_options,
+										valueField:'logicid',
+										textField:'logicname',
+										editable: false,
+										panelHeight:'auto',
+										label: '',
+										labelPosition: 'top',
+										onSelect: function(rec){}
+									">
+								</td>
+								<td>&nbsp;&nbsp;</td>
+								<td><a href="#" class="easyui-linkbutton" style="width:80px; height:40px; font-size:16px;" data-options="" onclick="searchAdd()"><b>Add&nbsp;&nbsp;</b></a></td>
+							</tr>
+							<tr>
+								<td>Sample Type (optional):</td>
+								<td><input id="sample_type" class="easyui-combobox" name="sample_type" style="width:250px;" data-options="showItemIcon: true, data: type_options, valueField:'id', textField:'title', groupField:'group', editable: false, panelHeight:'auto', label: '', labelPosition: 'top', onSelect: function(rec){ getAttributes(rec); }"></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><br>Match to Attribute Value:</td>
+								<td><br>
+								<input type="radio" id="id_partial" name="matchType" value="PARTIAL" checked> <label for="html">Partial</label><br>
+								<input type="radio" id="id_exact" name="matchType" value="EXACT"> <label for="css">Exact</label><br></td>
+								<td><br></td>
+								<td></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<div class="col-xs-10 col-sm-5 col-md-5">
+					<b>Current query box:</b><br>
+					<input id="input_searchText" class="easyui-textbox" label="" name="input_searchText" multiline="true" style="width:320px;height:120px">
+				</div>
+			</div>
+		</div>
+		<div class="row show-grid">
+			<div class="col-xs-10 col-sm-5 col-md-5"></div>
+			<div class="col-xs-4 col-sm-2 col-md-2">
+				<a href="#" class="easyui-linkbutton" style="width:100px; height:40px; font-size:16px;" onclick="searchAdvanced(0)"><span class="glyphicon glyphicon-search">&nbsp;</span><b>Search</b></a>
+			</div>
+			<div class="col-xs-10 col-sm-5 col-md-5"></div>
+		</div>
+	</form>
+</div>
