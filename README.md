@@ -17,12 +17,12 @@ and metadata available to the scientific community through public repositories.
 
 ## Release notes
 
-#### Version 1.1.0
+### Version 1.1.0
 Release date: *12 February 2023*
 
 This release includes the implementation of the following functionalities.
 
-##### Advanced search
+#### Advanced search
 The advanced search on sample metadata is implemented with the following features:
 - a pubMed style text search builder;
 - any combination of multiple AND/OR/NOT queries;
@@ -31,7 +31,7 @@ The advanced search on sample metadata is implemented with the following feature
 - filtering of sample attributes;
 - bulk search/download by sample UIDs.
 
-##### Separation of the creator and submitter in asset uploading for samples, SOPs and data files
+#### Separation of the creator and submitter in asset uploading for samples, SOPs and data files
 During the process of assets uploading for samples, SOPs or data files, the login user is regarded as the creator of assets by default, 
 which is usually true if lab users take care their own asset uploading. However, sometimes, a lab manager or a project admin may upload 
 assests on behlaf of the creator of assets. To correctly assign assests to the right creator, instead of under the name of the login user by default, 
