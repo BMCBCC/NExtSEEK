@@ -14,6 +14,29 @@ changes   to   SEEK,   users   are   able   to   collect   and   organize   the 
 researchers need to improve reusability and reproducibility as well as to make data
 and metadata available to the scientific community through public repositories.
 
+
+## Release notes
+
+#### Version 1.1.0
+Release date: *12 February 2023*
+
+This release includes the implementation of the following functionalities.
+
+##### Advanced search
+A major implementation of the advanced search on sample metadata allows
+
+    * a pubMed style text search builder;
+    * any combination of multiple AND/OR/NOT queries;
+    * user-friendly metadata display
+    * filtering of search output;
+    * filtering of sample attributes;
+    * bulk search/download by sample UIDs.
+
+##### Separation of the creator and submitter in asset uploading for samples, SOPs and data files
+
+During the process of assets uploading for samples, SOPs or data files, the login user is regarded as the creator of assets by default, which is true if lab users take care their own asset uploading. However, it's not always the case. Sometimes, a lab manager or a project admin may upload assests on behlaf of the creator of assets. To correctly assign assests to the right creator, instead of under the name of the login user by default, additional options are provided on the sample or SOP/data file uploading page, for selecting the lab and the lab user, who substitutes the login user as the right creator of assets, while the login user is stored as the submitter or contributor of the corresponding assets. The current release covers the revision on the user interfaces for uploading assay sheet and SOP/data files, as well as on the server side code to deal with the asset creator and submitter.
+
+
 ## Dependencies
 NExtSEEK is implemented on top of [Mezzanine 4.2.3](http://mezzanine.jupo.org/), which is a Django CMS based on Django 1.10.7 and python 2.7. 
 NExtSEEK also requires the following packages to be installed in a virtual environment:
