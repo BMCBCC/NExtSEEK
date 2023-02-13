@@ -19,6 +19,7 @@ and metadata available to the scientific community through public repositories.
 
 ### Version 1.1.0
 Release date: *12 February 2023*
+
 This release includes the implementation of two major functionalities.
 
 #### Advanced search
