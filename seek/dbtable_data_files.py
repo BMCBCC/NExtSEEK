@@ -23,8 +23,8 @@ from django.conf import settings
 from django import forms
 from django.db.models import Q
 
-from dbtable_assay_assets import DBtable_assay_assets
-from dbtable_content_blobs import DBtable_content_blobs
+from .dbtable_assay_assets import DBtable_assay_assets
+from .dbtable_content_blobs import DBtable_content_blobs
 
 DOWNLOAD_DIRECTORY  = settings.MEDIA_ROOT + "/download/"
 DOWNLOAD_DIRECTORY_LINK = settings.MEDIA_URL + '/download/'

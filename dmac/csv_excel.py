@@ -1,7 +1,7 @@
 import csv
 import openpyxl
 from openpyxl.cell.read_only import EmptyCell
-from conversion import toString
+from dmac.conversion import toString
 
 def handle_uploaded_file(file, output):
     destination = open(output, 'wb+')

@@ -1,7 +1,7 @@
 import pandas as pd
 from unidecode import unidecode
 import xlwt
-from conversion import toString, cleanString, is_numeric
+from dmac.conversion import toString, cleanString, is_numeric
 
 def printline(fout, dict, fieldnames):
     l = len(fieldnames) - 1

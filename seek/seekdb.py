@@ -5,7 +5,7 @@ from django.conf import settings
 import hashlib
 import os
 import json
-from pandas.io.json import json_normalize
+from pandas import json_normalize
 from dmac.conversion import convertDicToOptions
 
 import logging

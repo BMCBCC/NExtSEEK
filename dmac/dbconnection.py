@@ -3,8 +3,8 @@ import os, sys
 import MySQLdb
 import datetime
 from os.path import abspath, exists
-from iocsv import saveCsvfile
-from conversion import toString, cleanString
+from dmac.iocsv import saveCsvfile
+from dmac.conversion import toString, cleanString
 
 class DBconnection(object):
     def __init__(self, whichDB, dbname=''):

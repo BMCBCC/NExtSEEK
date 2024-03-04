@@ -19,8 +19,8 @@ from dmac.conversion import handle_uploaded_file, correctFileName, sizeof_fmt, g
 
 from django.conf import settings
 from django import forms
-from dbtable_assay_assets import DBtable_assay_assets
-from dbtable_content_blobs import DBtable_content_blobs
+from .dbtable_assay_assets import DBtable_assay_assets
+from .dbtable_content_blobs import DBtable_content_blobs
 
 DOWNLOAD_DIRECTORY  = settings.MEDIA_ROOT + "/download/"
 DOWNLOAD_DIRECTORY_LINK = settings.MEDIA_URL + '/download/'

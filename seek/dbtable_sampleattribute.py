@@ -6,8 +6,8 @@ import simplejson
 import logging
 logger = logging.getLogger(__name__)
 
-from .models import Sample_attributes
-from .dbtable_attributetype import DBtable_attributetype
+from seek.models import Sample_attributes
+from seek.dbtable_attributetype import DBtable_attributetype
 from dmac.dbtable import DBtable
 from dmac.csv_excel import load_file, load_excelfile
 from dmac.conversion import toDateClass, is_numeric, toFloat, toBinaryTinyInt, toString, getDefaultDate

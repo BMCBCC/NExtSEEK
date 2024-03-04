@@ -22,7 +22,7 @@ from time import strftime, gmtime
 
 from django.conf import settings
 from django.core.files.storage import default_storage
-from django.shortcuts import render_to_response, render, HttpResponseRedirect, redirect, HttpResponse
+from django.shortcuts import render, HttpResponseRedirect, redirect, HttpResponse
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from pathlib import Path

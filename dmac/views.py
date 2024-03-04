@@ -1,4 +1,4 @@
-from django.shortcuts import redirect, render_to_response, render
+from django.shortcuts import redirect, render
 from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib.auth.models import User
 from django import forms
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 from seek.seekdb import SeekDB
 from seek.models import People
-from dbtable import DBtable
+from dmac.dbtable import DBtable
 
 DOWNLOAD_DIRECTORY  = settings.MEDIA_ROOT + "download/"
 DOWNLOAD_DIRECTORY_LINK = settings.MEDIA_URL + 'download/'
@@ -186,7 +186,7 @@ def login_full(request):
         else:
             err.append("No server selected")
             request.session.flush()
-            return render_to_response('login.html', context={
+            return render(request, 'login.html', context={
                 'error': err})
             
         if username != "" and password != "":
@@ -195,12 +195,12 @@ def login_full(request):
         else:
             err.append("No valid username or password")
             request.session.flush()
-            return render_to_response('login.html', context={'error': err})
+            return render(request, 'login.html', context={'error': err})
         if noexpire == "yes":
             request.session.set_expiry(0)
         else:
             request.session.set_expiry(43200)
-        return render_to_response('home.html', context={'error': err})
+        return render(request, 'home.html', context={'error': err})
         
     return render(request, 'login.html')
     
@@ -218,7 +218,7 @@ def index(request):
         request.session.get('username') == ""
     ):
         err = ""
-        return render_to_response('login.html', context={'error': err})
+        return render(request, 'login.html', context={'error': err})
     else:
         if not os.path.isdir(request.session.get('username')):
             call(["mkdir", request.session.get('username')])

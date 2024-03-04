@@ -1,7 +1,7 @@
 import simplejson
-from dbconnection import DBconnection
-from datagrid_custom import DataGrid
-from conversion import toInt, convertBoolstrToInt
+from dmac.dbconnection import DBconnection
+from dmac.datagrid_custom import DataGrid
+from dmac.conversion import toInt, convertBoolstrToInt
 from django.conf import settings
 from django import forms
 
@@ -109,7 +109,7 @@ class DBtable(object):
         status = 1
         try:
             record_new = self.reformatRecordForDB(username, record)
-        except Exception, e:
+        except Exception as e:
             status = 0
             msg = str(e)
             logger.debug(msg)
@@ -317,7 +317,7 @@ class DBtable(object):
                     report['form_status'] = status
                     
                     report['operation'] = operation
-                except Exception, e:
+                except Exception as e:
                     error = "Form field has exception: " + str(e)
                     form.errors['__all__'] = form.error_class([error])
                     report['form_status'] = 0

@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals
 import os
 
 from django import VERSION as DJANGO_VERSION
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 
 ######################
@@ -203,8 +203,9 @@ TEMPLATES = [
             #os.path.join(PROJECT_ROOT, "templates")
             #(os.path.join(PROJECT_ROOT, "themes.amai.templates"),
              
-            (os.path.join(PROJECT_ROOT, "themes.SmartAdmin.templates"),
-                os.path.join(PROJECT_ROOT, "templates")),
+            #(
+                os.path.join(PROJECT_ROOT, "themes.SmartAdmin.templates"),
+             #os.path.join(PROJECT_ROOT, "templates")),
         ],
         "APP_DIRS": True,
         "OPTIONS": {
@@ -240,6 +241,7 @@ INSTALLED_APPS = (
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
+    "django.contrib.messages",
     "django.contrib.redirects",
     "django.contrib.sessions",
     "django.contrib.sites",
@@ -266,7 +268,7 @@ INSTALLED_APPS = (
 # List of middleware classes to use. Order is important; in the request phase,
 # these middleware classes will be applied in the order given, and in the
 # response phase the middleware will be applied in reverse order.
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = (
     "mezzanine.core.middleware.UpdateCacheMiddleware",
 
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -275,7 +277,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
+    #'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
@@ -428,5 +430,5 @@ LOGGING = {
     }
 }
 
-#PUBLISH_URL = "https://fairdomhub.org"
+PUBLISH_URL = "https://fairdomhub.org"
 

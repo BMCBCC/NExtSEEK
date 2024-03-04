@@ -19,15 +19,15 @@ from dmac.csv_excel import load_file, load_excelfile, load_excelfile_asdic, save
 from dmac.conversion import getDefaultDate, toString, cleanString, getDefaultDate, getDefaultDateTime, convertDateListToString, toInt, verifyValueType
 from dmac.iocsv import saveDiclistIntoExcel, filterDiclist, saveTwoDiclistsIntoExcel, getConstantRows, removeDiclistDuplicates
 
-from dbtable_sampleattribute import DBtable_sampleattribute
-from dbtable_sampletype import DBtable_sampletype
-from dbtable_assay_assets import DBtable_assay_assets
+from .dbtable_sampleattribute import DBtable_sampleattribute
+from .dbtable_sampletype import DBtable_sampletype
+from .dbtable_assay_assets import DBtable_assay_assets
 
-from dbtable_data_files import DBtable_data_files
-from dbtable_sops import DBtable_sops
-from dbtable_policies import DBtable_policies
+from .dbtable_data_files import DBtable_data_files
+from .dbtable_sops import DBtable_sops
+from .dbtable_policies import DBtable_policies
 
-from dbtable_ontology import DBtable_ontology
+from .dbtable_ontology import DBtable_ontology
 
 SEEK_DATABASE = settings.SEEK_DATABASE
 DOWNLOAD_DIRECTORY  = settings.MEDIA_ROOT + "/download/"
