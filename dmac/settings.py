@@ -176,7 +176,8 @@ CACHE_MIDDLEWARE_KEY_PREFIX = PROJECT_APP
 # URL prefix for static files.
 # Example: "http://media.lawrence.com/static/"
 #STATIC_URL = "/static/"
-STATIC_URL = "/themes/SmartAdmin/static/"
+STATIC_BASE = "/themes/SmartAdmin/static/"
+STATIC_URL = STATIC_BASE + "static/"
 
 # Absolute path to the directory static files should be collected to.
 # Don't put anything in this directory yourself; store your static files
@@ -187,7 +188,7 @@ STATIC_ROOT = os.path.join(PROJECT_ROOT, STATIC_URL.strip("/"))
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash.
 # Examples: "http://media.lawrence.com/media/", "http://example.com/media/"
-MEDIA_URL = STATIC_URL + "media/"
+MEDIA_URL = STATIC_BASE + "media/"
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
@@ -200,14 +201,10 @@ TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": [
-            #os.path.join(PROJECT_ROOT, "templates")
-            #(os.path.join(PROJECT_ROOT, "themes.amai.templates"),
-             
-            #(
-                os.path.join(PROJECT_ROOT, "themes.SmartAdmin.templates"),
-             #os.path.join(PROJECT_ROOT, "templates")),
+            os.path.join(PROJECT_ROOT, "templates"),
+            os.path.join(PROJECT_ROOT, "themes.amai.templates"),
+            os.path.join(PROJECT_ROOT, "themes.SmartAdmin.templates"),
         ],
-        "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
                 "django.contrib.auth.context_processors.auth",
@@ -224,6 +221,9 @@ TEMPLATES = [
             "builtins": [
                 "mezzanine.template.loader_tags",
             ],
+            #"loaders": [
+            #    "mezzanine.template.loaders.host_themes.Loader"
+            #],
         },
     },
 ]
@@ -237,7 +237,7 @@ if DJANGO_VERSION < (1, 9):
 
 INSTALLED_APPS = (
     "seek",
-    'themes.SmartAdmin',
+    #'themes.SmartAdmin',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -381,15 +381,17 @@ DEFAULT_FROM_EMAIL = SERVER_EMAIL = 'your email address'
 DATABASE_ROUTERS = ['seek.dbrouters.CustomRouter']
 
 # used in dmac/views.py for managing session and authentication of user login
-SEEK_URL = "http://" + SERVER_IPADDRESS + ":3000"
+# SEEK_URL = "http://" + SERVER_IPADDRESS + ":3000"
+SEEK_HOSTNAME = "fairdata-dev.mit.edu"
+SEEK_URL = "https://" + SEEK_HOSTNAME
 SEEK_DATABASE = "seek"
 SEEK_SERVER = SEEK_URL
 SEEK_JS_URL = SEEK_URL
 
-VIRTUOSO_URL = "http://" + SERVER_IPADDRESS + ":8890/sparql/"
-VIRTUOSO_JS_URL = "http://" + SERVER_IPADDRESS + ":8890/sparql"
+VIRTUOSO_URL = "http://" + SEEK_HOSTNAME+ ":8890/sparql/"
+VIRTUOSO_JS_URL = "http://" + SEEK_HOSTNAME + ":8890/sparql"
 
-SEEK_DATAFILE_SERVER = 'http://' + SERVER_IPADDRESS + ':portNumber'
+SEEK_DATAFILE_SERVER = 'http://' + SEEK_HOSTNAME + ':portNumber'
 SEEK_DATAFILE_ROOT = MEDIA_ROOT + "/uploads/"
 SEEK_DATAFILE_ROOT_WEBLINK = MEDIA_URL + "uploads/"
 
@@ -431,4 +433,3 @@ LOGGING = {
 }
 
 PUBLISH_URL = "https://fairdomhub.org"
-
