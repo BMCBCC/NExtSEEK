@@ -201,8 +201,8 @@ TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": [
-            os.path.join(PROJECT_ROOT, "templates"),
-            os.path.join(PROJECT_ROOT, "themes.amai.templates"),
+            #os.path.join(PROJECT_ROOT, "templates"),
+            #os.path.join(PROJECT_ROOT, "themes.amai.templates"),
             os.path.join(PROJECT_ROOT, "themes.SmartAdmin.templates"),
         ],
         "OPTIONS": {
@@ -218,12 +218,14 @@ TEMPLATES = [
                 "mezzanine.conf.context_processors.settings",
                 "mezzanine.pages.context_processors.page",
             ],
-            "builtins": [
-                "mezzanine.template.loader_tags",
-            ],
-            #"loaders": [
-            #    "mezzanine.template.loaders.host_themes.Loader"
+            #"builtins": [
+                #"mezzanine.template.loader_tags",
             #],
+            "loaders": [
+                "mezzanine.template.loaders.host_themes.Loader",
+                "django.template.loaders.filesystem.Loader",
+                "django.template.loaders.app_directories.Loader",
+            ],
         },
     },
 ]
@@ -237,7 +239,7 @@ if DJANGO_VERSION < (1, 9):
 
 INSTALLED_APPS = (
     "seek",
-    #'themes.SmartAdmin',
+    'themes.SmartAdmin',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -246,7 +248,6 @@ INSTALLED_APPS = (
     "django.contrib.sessions",
     "django.contrib.sites",
     "django.contrib.sitemaps",
-    "django.contrib.staticfiles",
     "mezzanine.boot",
     "mezzanine.conf",
     "mezzanine.core",
@@ -283,8 +284,8 @@ MIDDLEWARE = (
 
     "mezzanine.core.request.CurrentRequestMiddleware",
     "mezzanine.core.middleware.RedirectFallbackMiddleware",
-    "mezzanine.core.middleware.TemplateForDeviceMiddleware",
-    "mezzanine.core.middleware.TemplateForHostMiddleware",
+    #"mezzanine.core.middleware.TemplateForDeviceMiddleware",
+    #"mezzanine.core.middleware.TemplateForHostMiddleware",
     "mezzanine.core.middleware.AdminLoginInterfaceSelectorMiddleware",
     "mezzanine.core.middleware.SitePermissionMiddleware",
     "mezzanine.pages.middleware.PageMiddleware",
@@ -382,7 +383,7 @@ DATABASE_ROUTERS = ['seek.dbrouters.CustomRouter']
 
 # used in dmac/views.py for managing session and authentication of user login
 # SEEK_URL = "http://" + SERVER_IPADDRESS + ":3000"
-SEEK_HOSTNAME = "fairdata-dev.mit.edu"
+SEEK_HOSTNAME = "example.com"
 SEEK_URL = "https://" + SEEK_HOSTNAME
 SEEK_DATABASE = "seek"
 SEEK_SERVER = SEEK_URL
@@ -432,4 +433,4 @@ LOGGING = {
     }
 }
 
-PUBLISH_URL = "https://fairdomhub.org"
+# PUBLISH_URL = "https://fairdomhub.org"

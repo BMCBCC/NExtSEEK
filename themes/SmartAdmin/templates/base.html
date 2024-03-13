@@ -1,4 +1,4 @@
-{% load static pages_tags mezzanine_tags i18n staticfiles %}
+{% load static pages_tags mezzanine_tags i18n static %}
 <!DOCTYPE html>
 <html lang="en-us">
 	<head>
@@ -139,16 +139,10 @@ include "pages/seek_includes.html"
 						<i class="fa fa-refresh"></i>
 					</span> 
 				</span>
-				<!-- breadcrumb -->
+				<!-- breadcrumb 
 				<ol class="breadcrumb">
-					<!---li>Home</li><li>Dashboard</li--->
-					{% spaceless %}
-						{% block breadcrumb_menu %}
-							{% page_menu "pages/menus/breadcrumb.html" %}
-						{% endblock %}
-					{% endspaceless %}
-				</ol>
-				<!-- end breadcrumb -->
+					<li>Home</li><li>Dashboard</li>
+				 end breadcrumb -->
 			</div>
 			<!-- END RIBBON -->
 			<!-- MAIN CONTENT -->
