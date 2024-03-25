@@ -1188,19 +1188,19 @@ class SeekDB(object):
     
         study_options_dic = {}
         allstudies = {}
-        for iid, investigation in allinvestigations.iteritems():
+        for iid, investigation in allinvestigations.items():
             studies = self.getStudies(investigation, True)
             study_options = convertDicToOptions(studies)
             study_options_dic[iid] = study_options
         
-            for sid, study in studies.iteritems():
+            for sid, study in studies.items():
                 if sid not in allstudies:
                     allstudies[sid] = study
             
 
         study_options_dic = json.dumps(study_options_dic)
         assay_options_dic = {}
-        for sid, study in allstudies.iteritems():
+        for sid, study in allstudies.items():
             assays = self.getAssays(study, True)
             assay_options = convertDicToOptions(assays)
             assay_options_dic[sid] = assay_options

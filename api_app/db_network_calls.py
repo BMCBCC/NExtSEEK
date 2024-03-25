@@ -73,7 +73,7 @@ def tableSQL(tablename, attributes, base_types, parents):
         if fieldname.lower()!='id':
             sql += fieldname + " " + dbtype + ","
     sql_foreign = ''
-    for parent_type, uids in parents.iteritems():
+    for parent_type, uids in parents.items():
         foreign_tablename = parent_type
         if "." in parent_type:
             foreign_tablename = parent_type.replace(".", "_")
@@ -163,7 +163,7 @@ def createSampletypeTable(dbconn_seek, dbconn_out, sample_type, sample_type_id, 
 def getParentUIDs(sampleDic):
     uids = []
     
-    for key, value in sampleDic.iteritems():
+    for key, value in sampleDic.items():
         if "parent" in key:
             if value is None:
                 continue
@@ -228,10 +228,10 @@ def calSampleNetwork():
     sample_types = getSampleTypes(dbconn_in)
     network = []
     numbers = {}
-    for sample_type, sample_type_id in sample_types.iteritems():
+    for sample_type, sample_type_id in sample_types.items():
         nsamples, parents = retrieveSampleTypeInfo(dbconn_in, sample_type_id, sample_types)
         numbers[sample_type] = nsamples
-        for parent_type, uids in parents.iteritems():
+        for parent_type, uids in parents.items():
             link = []
             ni = len(uids)
             if ni>0:
@@ -240,7 +240,7 @@ def calSampleNetwork():
                 link.append(ni)
                 network.append(link)
 
-    for sample_type, nsamples in numbers.iteritems():
+    for sample_type, nsamples in numbers.items():
         print("%s\t%d"%(sample_type, nsamples))
     
     for link in network:
@@ -258,7 +258,7 @@ def runDBTest():
     network = []
     numbers = {}
     sql_foreign_keys = ''
-    for sample_type, sample_type_id in sample_types.iteritems():
+    for sample_type, sample_type_id in sample_types.items():
         nsamples, parents = retrieveSampleTypeInfo(dbconn_in, sample_type_id, sample_types)
         
         tablename, sql_foreign = createSampletypeTable(dbconn_in, dbconn_out, sample_type, sample_type_id, base_types, parents)

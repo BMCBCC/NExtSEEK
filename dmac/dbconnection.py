@@ -98,7 +98,7 @@ class DBconnection(object):
             return -1, msg
             
         record_update = self.__dbconn.retrieveOneRecord(tablemodel, id)
-        for key, value in record.iteritems():
+        for key, value in record.items():
             if key == "id":
                 if value!=id:
                     msg = "Error: The primary key not consistent."

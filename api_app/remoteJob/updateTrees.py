@@ -32,7 +32,7 @@ def isValidUID(sample_uid):
 
 def getParentUIDs(sampleDic):
     uids = []
-    for key, value in sampleDic.iteritems():
+    for key, value in sampleDic.items():
         if SAMPLE_PARENT_ACCESSOR_NAME in key:
             if value is None:
                 continue

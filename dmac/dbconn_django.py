@@ -157,7 +157,7 @@ class DBconn_django(object):
         record_forUpdate = self.__updateRecord(record_old, record)
         try:            
             model = tablemodel()
-            for k, v in record_forUpdate.iteritems():
+            for k, v in record_forUpdate.items():
                 setattr(model, k, v)
             model.save()
             
@@ -580,7 +580,7 @@ class DBconn_django(object):
         
     def __updateRecord(self, record_fromDB, record_input):
         record_forUpdate = record_fromDB
-        for k, v in record_input.iteritems():
+        for k, v in record_input.items():
             if k in record_forUpdate:
                 v_old = record_forUpdate[k]
                 if v!=v_old:
@@ -603,7 +603,7 @@ class DBconn_django(object):
             obj = self.retrieveUniqueObj(tablemodel, primarykeyname, pid)
             
             obj = tablemodel.objects.get(person_id=7)
-            for k, v in record.iteritems():
+            for k, v in record.items():
                 setattr(obj, k, v)
             obj.save()
             transaction.savepoint_commit(sid)

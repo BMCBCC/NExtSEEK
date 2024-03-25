@@ -1554,7 +1554,7 @@ class DBtable_sample(DBtable):
 
     def __getParentUIDs(self, sampleDic):
         uids = []
-        for key, value in sampleDic.iteritems():
+        for key, value in sampleDic.items():
             if SAMPLE_PARENT_ACCESSOR_NAME in key:
                 if value is None:
                     continue
@@ -1968,7 +1968,7 @@ class DBtable_sample(DBtable):
                 else:
                     sampleTypeCount_i[sampleType] = sampleTypeCount_i[sampleType] + 1
                     
-            for sampleType_i, count_i in sampleTypeCount_i.iteritems():
+            for sampleType_i, count_i in sampleTypeCount_i.items():
                 if sampleType_i not in sampleTypeCount:
                     sampleTypeCount[sampleType_i] = count_i
                 else:
@@ -1980,7 +1980,7 @@ class DBtable_sample(DBtable):
         headers = []
         headersMapping = {} 
         for attr in attributes:
-            for sampleType, attrInfo in attr.iteritems():
+            for sampleType, attrInfo in attr.items():
                 count = sampleTypeCount[sampleType]
                 for i in range(count):
                     if count>1:
@@ -2013,25 +2013,25 @@ class DBtable_sample(DBtable):
         attributes = stype.retrieveAttributes(sampleTypes)
         uids = {}
         for dici in diclist:
-            for sampletype, uid in dici.iteritems():
+            for sampletype, uid in dici.items():
                 if uid not in uids:
                     sampleDic = self.__retrieveSampleJsonData(uid)
                     uids[uid] = sampleDic
                     
         for dici in diclist:
             dici_new = {}
-            for sampletype, uid in dici.iteritems():
+            for sampletype, uid in dici.items():
                 if uid in uids:
                     sampleDic = uids[uid]
                     if sampleDic is not None and sampleDic is not []:
-                        for key, value in sampleDic.iteritems():
+                        for key, value in sampleDic.items():
                             newkey = sampletype + ':' + key
                             dici_new[newkey] = value
             diclist_new.append(dici_new)
             
         headers = []
         for attr in attributes:
-            for sampletype, attrInfo in attr.iteritems():
+            for sampletype, attrInfo in attr.items():
                 if attrInfo is not None and 'headers' in attrInfo:
                     headers_i = attrInfo['headers']
                     for header in headers_i:
@@ -2075,7 +2075,7 @@ class DBtable_sample(DBtable):
                 
                 sampleDic = uids[uid]
                 if sampleDic is not None and sampleDic is not []:
-                    for key, value in sampleDic.iteritems():
+                    for key, value in sampleDic.items():
                         newkey = prefix + key
                         dici_new[newkey] = value        
             diclist_new.append(dici_new)
@@ -2157,7 +2157,7 @@ class DBtable_sample(DBtable):
                 else:
                     sampleTypeCount_i[sampleType] = sampleTypeCount_i[sampleType] + 1
                     
-            for sampleType_i, count_i in sampleTypeCount_i.iteritems():
+            for sampleType_i, count_i in sampleTypeCount_i.items():
                 if sampleType_i not in sampleTypeCount:
                     sampleTypeCount[sampleType_i] = count_i
                 else:
@@ -2592,7 +2592,7 @@ class DBtable_sample(DBtable):
         fileInRecord = False
         json_metadata = sampleRecord['json_metadata']
         sampledic = self.__getRecordFromJson(json_metadata)
-        for key, value in sampledic.iteritems():
+        for key, value in sampledic.items():
             if filetype=="SOP":
                 if SAMPLE_PROTOCOL_ACCESSOR_NAME in key.lower():
                     if value==originalfilename:
@@ -2663,12 +2663,12 @@ class DBtable_sample(DBtable):
         sampleDic = self.__getRecordFromJson(metadata)
         
         suffix = None
-        for key, value in sampleDic.iteritems():
+        for key, value in sampleDic.items():
             if SAMPLE_FILE_ACCESSOR_NAME in key:
                 if value==originalfilename:
                     suffix = key.replace(SAMPLE_FILE_ACCESSOR_NAME, '')     # such as "qc"
         
-        for key, value in sampleDic.iteritems():
+        for key, value in sampleDic.items():
             if SAMPLE_LINK_ACCESSOR_NAME in key:
                 suffixi = key.replace(SAMPLE_LINK_ACCESSOR_NAME, '')        # such as 'qc'
                 if suffix is not None and suffixi==suffix:
@@ -2910,7 +2910,7 @@ class DBtable_sample(DBtable):
                 
                 sampleDic = uids[uid]
                 if sampleDic is not None and sampleDic is not []:
-                    for key, value in sampleDic.iteritems():
+                    for key, value in sampleDic.items():
                         newkey = prefix + key
                         dici_new[newkey] = value        
             diclist_new.append(dici_new)

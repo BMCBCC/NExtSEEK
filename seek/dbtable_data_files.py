@@ -932,7 +932,7 @@ class DBtable_data_files(DBtable):
         dbcb = DBtable_content_blobs("DEFAULT")
         
         sampleDic_rev = {}
-        for key, value in sampleDic.iteritems():
+        for key, value in sampleDic.items():
             sampleDic_rev[key] = value
             if "file_" in key:
                 filename = value

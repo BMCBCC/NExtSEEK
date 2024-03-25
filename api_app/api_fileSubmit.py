@@ -70,7 +70,7 @@ def getDseqFiles(sample_id):
     if search==1:
         dic0 = dic0[0]
 
-    for key, value in dic0.iteritems():
+    for key, value in dic0.items():
         if "file_primarydata" in key:
             filename = value
             file_uid, file_link = searchDatafileUID(filename)
@@ -139,7 +139,7 @@ def searchSampleFiles(sample_keyword, server, token):
     
     for dici in dicList:
         fileDic = {}
-        for key, value in dici.iteritems():
+        for key, value in dici.items():
             if "file_" in key:
                 df_dic = value
                 if isinstance(df_dic, dict):
@@ -184,7 +184,7 @@ def querySampleFiles(sample_id, server, token):
         print("No sample found: sample uid not available")
         return fileDic
 
-    for key, value in sample_dic.iteritems():
+    for key, value in sample_dic.items():
         if "file_" in key:
             fileDic[key] = value
             '''
@@ -347,7 +347,7 @@ def runSalmonWorkflow(sampleid, server):
         
         fileDownload = {}
         n = 0
-        for key, value in fileDic.iteritems():
+        for key, value in fileDic.items():
             if "file_" in key:
                 datafile_uid = value
                 if datafile_uid in fileDic:
@@ -386,7 +386,7 @@ def getSampleTypes(diclist_ins):
 
 def getSampleData(sampleType, sampleDic, mapping):
     sampledata = {}
-    for field, value in sampleDic.iteritems():
+    for field, value in sampleDic.items():
         if field not in mapping:
             msg = "Warning: attribute " + field + " not found in mapping: "
             continue
@@ -427,7 +427,7 @@ def runAuthSampleBatchSubmission(sampleDiclist, diclist_ins, token, userInfo, su
                 
             key = sampleType + "::UID"
             dici[key] = minfo
-            for field, dbField in mapping.iteritems():
+            for field, dbField in mapping.items():
                 if dbField==key:
                     dici[field] = minfo
                 

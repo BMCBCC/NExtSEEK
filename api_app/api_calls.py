@@ -61,7 +61,7 @@ def getDseqFiles(sample_id):
     dic0 = json.loads(resultset[0])
     if search==1:
         dic0 = dic0[0]
-    for key, value in dic0.iteritems():
+    for key, value in dic0.items():
         if "file_primarydata" in key:
             filename = value
             file_uid, file_link = searchDatafileUID(filename)
@@ -135,7 +135,7 @@ def searchSampleFiles(sample_keyword, server, token):
     for dici in dicList:
         #print(dici)
         fileDic = {}
-        for key, value in dici.iteritems():
+        for key, value in dici.items():
             if "file_" in key:
                 df_dic = value
                 if isinstance(df_dic, dict):
@@ -180,7 +180,7 @@ def querySampleFiles(sample_id, server, token):
         print("No sample found: sample uid not available")
         return fileDic
 
-    for key, value in sample_dic.iteritems():
+    for key, value in sample_dic.items():
         if "file_" in key:
             fileDic[key] = value
             '''
@@ -358,7 +358,7 @@ def runSalmonWorkflow(sampleid, server):
         
         fileDownload = {}
         n = 0
-        for key, value in fileDic.iteritems():
+        for key, value in fileDic.items():
             if "file_" in key:
                 datafile_uid = value
                 if datafile_uid in fileDic:
@@ -380,7 +380,7 @@ def runAuthSalmonWorkflow(sampleid, username, password, server=None):
         
         fileDownload = {}
         n = 0
-        for key, value in fileDic.iteritems():
+        for key, value in fileDic.items():
             if "file_" in key:
                 datafile_uid = value
                 if datafile_uid in fileDic:

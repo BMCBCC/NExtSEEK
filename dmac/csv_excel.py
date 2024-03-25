@@ -162,7 +162,7 @@ def load_excelfile_1stSheet(excelfile, headersmapping):
         return filedata
     
     headersmappingLower = {}
-    for key, value in headersmapping.iteritems():
+    for key, value in headersmapping.items():
         keyLower = key.lower()
         headersmappingLower[keyLower] = value
     

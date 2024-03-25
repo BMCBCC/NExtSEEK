@@ -121,7 +121,7 @@ def getDseqFiles(sample_id):
     dic0 = json.loads(resultset[0])
     if search==1:
         dic0 = dic0[0]
-    for key, value in dic0.iteritems():
+    for key, value in dic0.items():
         if "file_primarydata" in key:
             filename = value
             file_uid, file_link = searchDatafileUID(filename)
@@ -187,7 +187,7 @@ def searchSampleFiles(sample_keyword, server, token):
     
     for dici in dicList:
         fileDic = {}
-        for key, value in dici.iteritems():
+        for key, value in dici.items():
             if "file_" in key:
                 df_dic = value
                 if isinstance(df_dic, dict):
@@ -233,7 +233,7 @@ def querySampleFiles(sample_id, server, token):
         print("No sample found: sample uid not available")
         return fileDic
 
-    for key, value in sample_dic.iteritems():
+    for key, value in sample_dic.items():
         if "file_" in key:
             fileDic[key] = value
 
@@ -385,7 +385,7 @@ def runSalmonWorkflow(sampleid, server):
         
         fileDownload = {}
         n = 0
-        for key, value in fileDic.iteritems():
+        for key, value in fileDic.items():
             if "file_" in key:
                 datafile_uid = value
                 if datafile_uid in fileDic:
@@ -1124,7 +1124,7 @@ def appendSampleInfo(samplesDiclist, identifier, samplesDic):
             continue
             
         sampleDic = samplesDic[id]
-        for key, value in sampleDic.iteritems():
+        for key, value in sampleDic.items():
             if key in dici:
                 dici[key] = value
         diclist.append(dici)
@@ -1146,7 +1146,7 @@ def diclistToDicdic(diclist, identifier, keyprefix='', keyRemove=None):
             id = id.replace(keyRemove, '')
         
         dici_new = {}
-        for key, value in dici.iteritems():
+        for key, value in dici.items():
             newKey = keyprefix + key
             dici_new[newKey] = value
         
@@ -1206,7 +1206,7 @@ def adjustSamples(samplesDiclist):
             sample["RNA_samples::SampleType"] = terms[0].replace('Type=', '')
             sample["RNA_samples::SampleNotes"] = terms[1].replace('Notes=', '')
             
-        for key, value in sample.iteritems():
+        for key, value in sample.items():
             if "::" in key:
                 terms = key.split("::")
                 field = terms[1]
