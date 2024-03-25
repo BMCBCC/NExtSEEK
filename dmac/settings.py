@@ -259,18 +259,13 @@ INSTALLED_APPS = (
     "mezzanine.twitter",
     "mezzanine.accounts",
     'widget_tweaks',
-    #'django_crontab',
-    #'rest_framework',
-    #'rest_framework.authtoken',
-    #'rest_auth',
-    #'api_app',
 
-    #'address',
     'django_crontab',
     'rest_framework',
     'rest_framework.authtoken',
     'rest_auth',
-    #'api_app',
+    'api_app',
+
 )
 
 # List of middleware classes to use. Order is important; in the request phase,

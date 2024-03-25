@@ -9,6 +9,7 @@ django-contrib-comments
 django-crontab
 django-realtime
 django-rest-framework
+django-rest-auth
 django-widget-tweaks
 djangorestframework
 et-xmlfile

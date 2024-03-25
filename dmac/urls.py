@@ -10,7 +10,7 @@ from mezzanine.core.views import direct_to_template
 from mezzanine.conf import settings
 
 import seek.urls
-#import api_app.urls
+import api_app.urls
 
 from . import views
 
@@ -23,7 +23,7 @@ urlpatterns = i18n_patterns(
     
     re_path("^admin/", include(admin.site.urls)),
     re_path("^seek/", include(seek.urls)),
-    #re_path("^api/", include(api_app.urls)),
+    re_path("^api/", include(api_app.urls)),
 )
 
 if settings.USE_MODELTRANSLATION:
