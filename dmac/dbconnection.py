@@ -11,16 +11,16 @@ class DBconnection(object):
         self.__dbconn = None
         self.dbtype = whichDB
         if whichDB=="DJANGO":
-            from dbconn_django import DBconn_django
+            from dmac.dbconn_django import DBconn_django
             self.__dbconn = DBconn_django()
         elif whichDB=="SEEK":
-            from dbconn_django import DBconn_django
+            from dmac.dbconn_django import DBconn_django
             self.__dbconn = DBconn_django()
         elif whichDB=="MYSQL":
-            from dbconn_mysql import DBconn_mysql
+            from dmac.dbconn_mysql import DBconn_mysql
             self.__dbconn = DBconn_mysql()
         else:
-            from dbconn_django import DBconn_django
+            from dmac.dbconn_django import DBconn_django
             self.__dbconn = DBconn_django()
         
     def getPrimarykey(self, table, field, keyword):

@@ -13,8 +13,8 @@ from django.db.models import Q
 import datetime
 import simplejson
 
-from iocsv import saveCsvfile, getString, getFloat
-from conversion import convertSQLString, is_numeric
+from dmac.iocsv import saveCsvfile, getString, getFloat
+from dmac.conversion import convertSQLString, is_numeric
 
 class DBconn_django(object):
     def __init__(self):
@@ -776,7 +776,7 @@ class DBconn_django(object):
             cur.execute(sqlquery)
             transaction.savepoint_commit(sid)
             con.commit()
-        except MySQLdb.Error, e:
+        except MySQLdb.Error:
             sqlquery = "ROLLBACK;"
             cur.execute(sqlquery)
             transaction.savepoint_rollback(sid)
