@@ -390,8 +390,8 @@ DATABASE_ROUTERS = ['seek.dbrouters.CustomRouter']
 
 # used in dmac/views.py for managing session and authentication of user login
 # SEEK_URL = "http://" + SERVER_IPADDRESS + ":3000"
-SEEK_HOSTNAME = "example.com"
-SEEK_URL = "https://" + SEEK_HOSTNAME
+SEEK_HOSTNAME = "seek:3000"
+SEEK_URL = "http://" + SEEK_HOSTNAME
 SEEK_DATABASE = "seek"
 SEEK_SERVER = SEEK_URL
 SEEK_JS_URL = SEEK_URL
@@ -440,7 +440,7 @@ LOGGING = {
     }
 }
 
-# PUBLISH_URL = "https://fairdomhub.org"
+PUBLISH_URL = "https://fairdomhub.org"
 
 #refer to: https://blog.csdn.net/cuipengchong/article/details/73738416
 LOGGING = {
