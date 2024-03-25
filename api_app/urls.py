@@ -14,7 +14,7 @@ urlpatterns = [
     re_path(r'^samples/(?P<pk>[0-9]+)/$', SamplesDetailViews.as_view()),
     re_path(r'^datafiles/$', DatafilesListViews.as_view()),
     re_path(r'^datafiles/(?P<pk>[0-9]+)/$', DatafilesDetailViews.as_view()),
-    re_path(r'^rest-auth/', include('rest_auth.urls')),
+    re_path(r'^rest-auth/', include('dj_rest_auth.urls')),
     re_path(r'^sampleupload/$', SamplesViews.as_view(), name='sample-upload'),
     re_path(r'^datafileupload/$', DatafileViews.as_view(), name='datafile-upload'),
 ]
