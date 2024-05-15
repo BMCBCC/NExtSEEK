@@ -567,7 +567,7 @@ def fileDownload(request, uid, filetype):
         else:
             url_redirect = '/login/'
         
-        isokay = request.user.is_authenticated()
+        isokay = request.user.is_authenticated
         isTokenAuthenticated = verifyToken(request)
         if not isTokenAuthenticated:
             msg = "Login error: not token authenticated."
@@ -1166,7 +1166,7 @@ def getSampleType(request):
     
 def verifySuperUser(request):
     username = request.user
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         try:
             user = User.objects.get(username=username)
             if user.is_superuser:
