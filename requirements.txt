@@ -1,5 +1,5 @@
 beautifulsoup4
-bleach
+bleach==5.0.1
 bunch
 certifi
 chardet
@@ -17,6 +17,7 @@ filebrowser-safe
 fpdf
 future
 grappelli-safe
+gunicorn
 h5py
 html5lib
 idna
