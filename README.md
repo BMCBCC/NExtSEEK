@@ -6,14 +6,7 @@ Copyright (c) 2021, BioMicro Center & Bioinformatics Core, Massachusetts Institu
 
 ## About NExtSEEK
 NExtSEEK is a modified wrapper around the [SEEK](https://github.com/seek4science/seek) platform
-that allows active data management by establishing more discrete sample types which are mutable to permit the expansion of the types of
-metadata, allowing researchers to track additional information. The use of discrete
-nodes also converts assays from nodes to edges, creating a network model of the
-study,   and  more   accurately   representing  the   experimental   process.   With  these
-changes   to   SEEK,   users   are   able   to   collect   and   organize   the   information   that
-researchers need to improve reusability and reproducibility as well as to make data
-and metadata available to the scientific community through public repositories.
-
+that allows active data management by establishing more discrete sample types which are mutable to permit the expansion of the types of metadata, allowing researchers to track additional information. The use of discrete nodes also converts assays from nodes to edges, creating a network model of the study, and more accurately representing the experimental process. With these changes to SEEK, users are able to collect and organize the information that researchers need to improve reusability and reproducibility as well as to make data and metadata available to the scientific community through public repositories.
 
 ## Release notes
 
@@ -32,167 +25,134 @@ The advanced search on sample metadata is implemented with the following feature
 - bulk search/download by sample UIDs.
 
 #### Separation of the creator and submitter in asset uploading for samples, SOPs and data files
-During the process of assets uploading for samples, SOPs or data files, the login user is regarded as the creator of assets by default, 
-which is usually true if lab users take care their own asset uploading. However, sometimes, a lab manager or a project admin may upload 
-assests on behlaf of the creator of assets. To correctly assign assests to the right creator, instead of under the name of the login user by default, 
-additional options are provided on the sample or SOP/data file uploading page, for selecting the lab and the lab user, 
-who substitutes the login user as the right creator of assets, while the login user is stored as the submitter or contributor of the corresponding assets. 
-The current release covers the revision on the user interfaces for uploading assay sheet and SOP/data files, as well as on the server side code to deal 
-with the asset creator and submitter.
+During the process of assets uploading for samples, SOPs or data files, the login user is regarded as the creator of assets by default, which is usually true if lab users take care their own asset uploading. However, sometimes, a lab manager or a project admin may upload assets on behalf of the creator of assets. To correctly assign assets to the right creator, instead of under the name of the login user by default, additional options are provided on the sample or SOP/data file uploading page, for selecting the lab and the lab user, who substitutes the login user as the right creator of assets, while the login user is stored as the submitter or contributor of the corresponding assets.
+ 
+The current release covers the revision on the user interfaces for uploading assay sheet and SOP/data files, as well as on the server side code to deal with the asset creator and submitter.
 
 ## Dependencies
-NExtSEEK is implemented on top of [Mezzanine 4.2.3](http://mezzanine.jupo.org/), which is a Django CMS based on Django 1.10.7 and python 2.7. 
-NExtSEEK also requires the following packages to be installed in a virtual environment:
 
-* BeautifulSoup==3.2.1
-* beautifulsoup4==4.6.0
-* bleach==2.0.0
-* bunch==1.0.1
-* certifi==2017.4.17
-* chardet==3.0.4
-* deepmerge==0.2.1
-* Django==1.10.7
-* django-contrib-comments==1.8.0
-* django-crontab==0.7.1
-* django-realtime==1.1
-* django-rest-framework==0.1.0
-* django-widget-tweaks==1.4.3
-* djangorestframework==3.9.4
-* et-xmlfile==1.0.1
-* filebrowser-safe==0.4.7
-* fpdf==1.7.2
-* future==0.16.0
-* grappelli-safe==0.4.6
-* h5py==2.9.0
-* html5lib==0.999999999
-* idna==2.5
-* immpload==1.1.2
-* inflection==0.3.1
-* isodate==0.6.0
-* jdcal==1.4
-* joblib==0.14.1
-* lxml==4.2.5
-* Markdown==3.1.1
-* Mezzanine==4.2.3
-* mysqlclient==1.4.4
-* numpy==1.14.5
-* oauthlib==2.0.2
-* olefile==0.44
-* openpyxl==2.5.4
-* pandas==0.23.3
-* parse==1.12.1
-* pathlib==1.0.1
-* Pillow==4.2.1
-* PyMySQL==0.8.1
-* pyparsing==2.4.2
-* python-dateutil==2.7.3
-* python-docx==0.8.7
-* pytz==2017.2
-* PyYAML==5.4.1
-* rdflib==4.2.2
-* reportlab==3.5.0
-* requests==2.18.1
-* requests-oauthlib==0.8.0
-* simplejson==3.15.0
-* six==1.10.0
-* SPARQLWrapper==1.8.4
-* tzlocal==1.4
-* Unidecode==1.0.22
-* urllib3==1.21.1
-* webencodings==0.5.1
-* xlwt==1.3.0
-
-Further upgrade of NExtSEEK from python2.7 to python3 will rely on the availability of the latest version of Mezzanine in python3. 
+NExtSEEK is implemented on top of [Mezzanine](http://mezzanine.jupo.org/), a Django CMS. NExtSEEK also requires the packages enumerated in the `requirements.txt` file.
 
 ## Installation
 
 We recommend installing NExtSEEK on Ubuntu.
-#### Get NExtSEEK
+
+If you attempt to install NExtSEEK on RHEL 9> and you encounter issues installing the `mysqlclient` Python package, install `mariadb-connector-c-devel` using your system's package manager. For example:
 
 ```bash
-mkdir NExtSEEK
-cd NExtSEEK
-git clone https://github.com/BMCBCC/NExtSEEK
-```
-#### Install dependencies
-It is recommened to install NExtSEEK in a virtual environment,
-
-```bash
-sudo apt install virtualenv
-virtualenv -p /usr/bin/python2.7 ../venv_django_1.10
-source ../venv_django_1.10/bin/activate
-pip install -r requirements.txt
+sudo yum install mariadb-connector-c-devel
 ```
 
-#### Create the project
-With the virtual environment activated, create the project,
+### Get NExtSEEK
 
 ```bash
-cd ../NExtSEEK
-mezzanine-project NExtSEEK
+git clone https://github.com/asoberan/NExtSEEK
+```
+
+### Install dependencies
+It is recommended to install NExtSEEK in a virtual environment.
+
+```bash
+python3 -m venv ../venv_nextseek
+source ../venv_nextseek/bin/activate
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
 ```
 
 ## Configuration
 
 In our local installation of NExtSEEK, we have applied a theme called SmartAdmin, which can be downloaded from [SmartAdmin - Responsive WebApp](https://wrapbootstrap.com/theme/smartadmin-responsive-webapp-WB0573SK0) with an expense.
-Unzip the package of SmartAdmin theme into the subfolder: NExtSEEK/themes/SmartAdmin.
+Unzip the package of SmartAdmin theme into the subfolder: `themes/SmartAdmin`.
 
-#### Change SEEK configuration
+### Change SEEK configuration
 
-Open settings.py in the NExtSEEK folder and set the following variables:
+Open settings.py in the `dmac` folder and set the following variables:
 
 ```bash
-
-INSTALLED_APPS = (
-    "seek",
-    'themes.SmartAdmin',
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.redirects",
-    "django.contrib.sessions",
-    "django.contrib.sites",
-    "django.contrib.sitemaps",
-    "django.contrib.staticfiles",
-    "mezzanine.boot",
-    "mezzanine.conf",
-    "mezzanine.core",
-    "mezzanine.generic",
-    "mezzanine.pages",
-    "mezzanine.blog",
-    "mezzanine.forms",
-    "mezzanine.galleries",
-    "mezzanine.twitter",
-    "mezzanine.accounts",
-    "mezzanine.mobile",
-    
-    'widget_tweaks',
-    'django_crontab',
-)
-
 SEEK_URL = "http://127.0.0.1:3000"
-DATABASE_ROUTERS = ['seek.dbrouters.CustomRouter']
-
-
-
 ```
 
 which refers to a Seek instance installed locally on the same computer. Change the IP address of the Seek server accordingly.
 
-
-
-
-#### Run NExtSEEK
+With the configuration done, run the following for Django to initialize the database;
 
 ```bash
-python manage.py runserver 0.0.0.0:8080
+python3 manage.py makemigrations
+python3 manage.py migrate
 ```
+
+## Run NExtSEEK
+
+### Development Server
+
+```bash
+python3 manage.py runserver 0.0.0.0:8080
+```
+
+Open http://localhost:8080 in your browser.
+
+### Production Gunicorn Server
+
+Gunicorn does not serve static files, it only runs the Django app. Static files should ideally be served by a web server, such as nginx or Apache. Django has a built-in way of collecting all static files and placing them in `STATIC_ROOT` set in `dmac/settings.py`. Then, you point your web server to this directory.
+
+```bash
+# Collect your static files and place them in STATIC_ROOT
+python3 manage.py collectstatic
+
+# Run the gunicorn server
+gunicorn --bind 0.0.0.0:8080 \
+         --timeout 600 \
+         --workers 4 \
+         dmac.wsgi
+```
+
+Gunicorn should also not be used as the main server. Instead, your web server should proxy requests from `http://your_domain.com` to the address Gunicorn is running at.
+
+An example Apache configuration would look like this, assuming you have `mod_proxy` installed and loaded in Apache:
+
+```Apache
+<VirtualHost *:80>
+  ServerName    your_domain.com
+  ErrorLog      /var/log/httpd/nextseek.error.log
+  CustomLog     /var/log/httpd/nextseek.custom.log combined
+
+  # Proxy requests to http://your_domain.com
+  # to the internal Gunicorn server at
+  # http://127.0.0.1:8080
+  
+  ProxyPreserveHost     On
+  ProxyPass     / http://127.0.0.1:8080/ Keepalive=On timeout=600
+  ProxyPassReverse / http://127.0.0.1:8080/
+    
+  # Do not proxy requests to
+  # https://your_domain.com/<value of STATIC_URL in your dmac/settings.py>
+  # to the Gunicorn server since it doesn't
+  # handle serving those files
+  ProxyPass     <STATIC_URL value> !
+    
+  # Any requests to http://nextseek.your_domain.com/<value of STATIC_URL in your dmac/settings.py>
+  # should instead be an alias to the files located at
+  # whatever STATIC_ROOT is set to in dmac/settings.py
+  Alias <STATIC_URL value>       <STATIC_ROOT value>
+
+  # Give apache permissions to access the static files
+  <Directory <STATIC_ROOT value> >
+    Require all granted
+  </Directory>
+</VirtualHost>
+```
+
+**It's best to set the timeout value on the "ProxyPass" line to something high and equal to the timeout set in Gunicorn.**
+
+After starting your web server, you should be able to go to http://your_domain.com and NExtSEEK will be running. It's advised that you add TLS encryption to your domain so that users' passwords aren't sent to the server in plaintext. The simplest way of doing this is using [certbot](https://certbot.eff.org/).
+
 ## References
 
 NExtSEEK: Extending SEEK for active management of scientific metadata, Dikshant Pradhan, Huiming Ding, Jingzhi Zhu, Bevin P. Engelward, and Stuart S.
 Levin, MIT BioMicro Center, Department of Biology, Massachusetts Institute of Technology, Cambridge, MA, USA
 
 ## Checklist for Preparing to Use NExtSEEK
+
 #### Identify key samples and data to deposit 
 The NIH and journals will generally require:
 * The rawest form of the generated data – i.e. the immediate output from the instruments used or direct observations and measurements from experiments
@@ -227,6 +187,3 @@ To maximize impact and reusability, researchers should try to collect the follow
 
 ## Contact Us
 For question in setting up the system or reporting bugs, please visit [BioMicro Center, MIT](https://biology.mit.edu/tile/biomicro-center/).
-
-
-
