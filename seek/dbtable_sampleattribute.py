@@ -96,7 +96,7 @@ class DBtable_sampleattribute(DBtable):
         attributeInfo['headers_required'] = headers_required
         attributeInfo['attributeTypes'] = attributeTypes
         
-        from dbtable_sampletype import DBtable_sampletype
+        from seek.dbtable_sampletype import DBtable_sampletype
         sampletype = DBtable_sampletype("DEFAULT")
         attributeInfo['sampletype'] = sampletype.getOneRecord(sampleType_id)
         attributeInfo['sampleType_id'] = sampleType_id

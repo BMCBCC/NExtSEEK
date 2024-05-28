@@ -100,7 +100,7 @@ class DBtable_ontology(DBtable):
         ontologyInfo['headers_required'] = headers_required
         ontologyInfo['ontologyTypes'] = ontologyTypes
         
-        from dbtable_sampletype import DBtable_sampletype
+        from seek.dbtable_sampletype import DBtable_sampletype
         sampletype = DBtable_sampletype("DEFAULT")
         ontologyInfo['sampletype'] = sampletype.getOneRecord(sampleType_id)
         ontologyInfo['sampleType_id'] = sampleType_id
