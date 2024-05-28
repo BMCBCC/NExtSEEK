@@ -38,9 +38,14 @@ class DBtable_sampleattribute(DBtable):
             'unit_id',
             'is_title',
             'template_column_index',
-            'accessor_name',
+            'original_accessor_name',
             'sample_controlled_vocab_id',
-            'linked_sample_type_id'
+            'linked_sample_type_id',
+            'pid',
+            'description',
+            'isa_tag_id',
+            'allow_cv_free_text',
+            'template_attribute_id',
         ]
         
         self.uniqueFields = ['title', 'sample_type_id']
@@ -473,7 +478,7 @@ class DBtable_sampleattribute(DBtable):
                 value = getDefaultDate()
             elif key=="template_column_index":
                 value = record['pos']
-            elif key=="accessor_name":
+            elif key=="original_accessor_name":
                 title = record['title']
                 value = title.lower()
             else:

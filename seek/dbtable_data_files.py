@@ -114,7 +114,8 @@ class DBtable_data_files(DBtable):
             'doi',
             'license',
             'simulation_data',
-            'deleted_contributor'
+            'deleted_contributor',
+            'file_template_id',
         ]
         
         self.uniqueFields = ['title']

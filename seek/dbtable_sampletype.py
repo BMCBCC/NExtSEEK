@@ -26,6 +26,18 @@ class DBtable_sampletype(DBtable):
         self.fulltablename = self.tablemodel
         self.viewtablename = self.dbname + '.' + self.tablename
         self.fields = [
+            'id',
+            'title',
+            'uuid',
+            'created_at',
+            'updated_at',
+            'first_letter',
+            'description',
+            'uploaded_template',
+            'contributor_id',
+            'deleted_contributor',
+            'template_id',
+            'other_creators',
         ]
         
         self.uniqueFields = []

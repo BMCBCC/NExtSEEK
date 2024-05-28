@@ -38,8 +38,8 @@ class DBtable_policies(DBtable):
             'name',
             'sharing_scope',
             'access_type',
-            'use_whitelist',
-            'use_blacklist',
+            'use_allowlist',
+            'use_denylist',
             'created_at',
             'updated_at'
         ]

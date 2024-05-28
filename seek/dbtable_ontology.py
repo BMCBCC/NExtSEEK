@@ -29,6 +29,13 @@ class DBtable_ontology(DBtable):
         self.fulltablename = self.tablemodel
         self.viewtablename = self.dbname + '.' + self.tablename
         self.fields = [
+            'id',
+            'label',
+            'sample_controlled_vocab_id',
+            'created_at',
+            'updated_at',
+            'iri',
+            'parent_irl',
         ]
         
         self.uniqueFields = []
