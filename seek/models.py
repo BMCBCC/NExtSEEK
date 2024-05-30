@@ -386,8 +386,6 @@ class Projects(models.Model):
     last_jerm_run = models.DateTimeField()
     uuid = models.CharField(max_length=255, default=None)
     programme_id = models.IntegerField()
-    ancestor_id = models.IntegerField()
-    parent_id = models.IntegerField()
     
     default_license = models.CharField(max_length=255, default=None)
     use_default_policy = models.IntegerField()
