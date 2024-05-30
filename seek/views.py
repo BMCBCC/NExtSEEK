@@ -125,6 +125,7 @@ def sample(request, id):
     report['sample_id'] = sample_id
     dbsample = DBtable_sample()
     report['treeData_multiparents'] = dbsample.createSampleMultiParentTree(sample_id)
+    # This treeData_multiparents does not have the complete tree information
     sampledic, samplelist = dbsample.getSampleInfo(sample_id)
     report['sampledic'] = sampledic
     report['sampleinfo'] = samplelist
@@ -186,6 +187,7 @@ def sampleUpload(request):
     return render(request,"sampleUpload.html", {'report':report})
     
 def sampleUploadAjax(request):
+    logger.debug('sampleUploadAjax')
     username = str(request.user)
     seekdb = SeekDB(None, None, None)
     user_seek = seekdb.getSeekLogin(request)
@@ -197,15 +199,35 @@ def sampleUploadAjax(request):
         if request.FILES and request.FILES.get('excelfile_upload'):
             excelfile = request.FILES['excelfile_upload']
             if excelfile:
+                inputfile = excelfile.name
+                #logger.debug(inputfile)
                 instituion_id = request.POST.get('instituion_id')
                 creator_id = request.POST.get('people_id')
-                if verifySuperUser(request)==1 and int(creator_id)>0:
-                    status, msg = seekdb.updateCreator(instituion_id, creator_id)
-                    if not status:
-                        data = {'msg':msg, 'status': status, 'link':''}
+                if verifySuperUser(request)==1:
+                    #logger.debug(creator_id)
+                    try:
+                        creator_id = int(creator_id)
+                    except:
+                        msg = 'Error: You login as admin and must choose the creator.'
+                        status = 0
+                        logger.error(msg)
+                        data = {'msg':msg, 'status': status, 'link':'', 'message':''}
+                        return HttpResponse(simplejson.dumps(data, default=str))
+                        
+                    if int(creator_id)>0:
+                        status, msg = seekdb.updateCreator(instituion_id, creator_id)
+                        logger.debug(msg)
+                        if not status:
+                            logger.error(msg)
+                            data = {'msg':msg, 'status': status, 'link':'', 'message':''}
+                            return HttpResponse(simplejson.dumps(data, default=str))
+                    else:
+                        msg = 'Error: You login as admin and must choose the creator.'
+                        status = 0
+                        logger.error(msg)
+                        data = {'msg':msg, 'status': status, 'link':'', 'message':''}
                         return HttpResponse(simplejson.dumps(data, default=str))
                 
-                inputfile = excelfile.name
                 names = inputfile.split(".")
                 n = len(names)
                 
@@ -213,9 +235,11 @@ def sampleUploadAjax(request):
                 filename = '.'.join(names[:(n-1)]) + '_feedback-' + datenow + '.xls'
                 feedbackfile = DOWNLOAD_DIRECTORY + filename
                 link = DOWNLOAD_DIRECTORY_LINK + filename
+                logger.debug(feedbackfile)
                 
                 backupfile = '.'.join(names[:(n-1)]) + '_v' + datenow + '.' + names[-1]
                 backupfile = UPLOAD_DIRECTORY + backupfile
+                logger.debug(backupfile)
                 handle_uploaded_file(excelfile, backupfile)
                 
                 sample = DBtable_sample()
@@ -225,20 +249,23 @@ def sampleUploadAjax(request):
                     message = msg + '\n\n' + msgi
                 else:
                     message = msgi
-                    
                     terms = msgi.split("<")
                     msg = terms[0] + "<br/><br/>"
                     msg += "Refer to the log and the excel file: " + filename + '.<br/>'
                 data = {'msg':msg, 'status': status, 'link':link}
+                #logger.debug(message)
             else:
                 message = 'Error: Not a valid file from client side'
                 data = {'msg':message, 'status': 0, 'link':''}
+                logger.error(message)
         else:
             message = 'Error: Not a valid file from client side'
             data = {'msg':message, 'status': 0, 'link':''}
+            logger.error(message)
     else:
         message = 'Error: Not a valid http POST request'
         data = {'msg':message, 'status': 0, 'link':''}
+        logger.error(message)
                 
     if message is not None and '<br/>' in message:
         data['message'] = message.replace('<br/>', '\n')
@@ -325,21 +352,29 @@ def __searchFilterKeywords(keywords):
     uids = keywords.split(",")
     return uids
 
-    
-def sampleSearching(request):
-    ret = request.GET
-    sampletype_id = ret['sampletype_id']
-    attribute = ret['attribute']
-    filter_rule = ret['filter_rule']
-    filter_valueFrom = ret['filter_valueFrom']
-    filter_valueTo = ret['filter_valueTo']
-    
+
+def runSampleSearch(request, searchType):
+    '''
+    Input:
+        searchType = 'FILTERING', 'UIDs', or'Advanced'
+    '''
     seekdb = SeekDB(None, None, None)
     user_seek = seekdb.getSeekLogin(request, True)
-    
+    isSupervisor = verifySuperUser(request)
+    if isSupervisor==0:
+        project_id = user_seek['projectid']
+    else:
+        project_id = 0
+        
+    ret = request.GET
+    filters = ret
     dbsample = DBtable_sample()
-    sdata = dbsample.searchSamples(user_seek, sampletype_id, attribute, filter_rule, filter_valueFrom, filter_valueTo)
+    sdata = dbsample.searchAdvanced(user_seek, filters, searchType, project_id)
     return HttpResponse(sdata)
+    
+def sampleSearching(request):
+    searchType = 'FILTERING'
+    return runSampleSearch(request, searchType)
 
 #@csrf_exempt
 def remote(request):
@@ -384,12 +419,30 @@ def filesBatchUpload(request):
         err = user_seek['err']
         return HttpResponseRedirect("/login/?next=/seek/data/upload/")
         
-    if verifySuperUser(request)==1 and int(people_id)>0:
-        status, msg = seekdb.updateCreator(instituion_id, people_id)
-        if not status:
+    if verifySuperUser(request)==1:
+        try:
+            creator_id = int(people_id)
+        except:
+            msg = 'Error: You login as admin and must choose the creator.'
+            status = 0
+            logger.error(msg)
             report['msg'] = msg
+            report['status'] = 0
             return HttpResponse(simplejson.dumps(report, default=str))
-        
+
+        if creator_id>0:
+            status, msg = seekdb.updateCreator(instituion_id, people_id)
+            if not status:
+                report['msg'] = msg
+                return HttpResponse(simplejson.dumps(report, default=str))
+        else:
+            msg = 'Error: You login as admin and must choose the creator.'
+            status = 0
+            logger.error(msg)
+            report['msg'] = msg
+            report['status'] = 0
+            return HttpResponse(simplejson.dumps(report, default=str))
+            
     infile = request.FILES['file']
     dfrecord = {}
     dfrecord['uid'] = ''
@@ -479,6 +532,7 @@ def filesGetUIDs(request):
     return HttpResponse(simplejson.dumps(data, default=str))
 
 def sopDownload(request, uid):
+    print("sopDownload: " + uid)
     return fileDownload(request, uid, "SOP")
 
 
@@ -487,6 +541,9 @@ def sopDownload(request, uid):
 #@permission_classes((IsAuthenticated,))
 def datafileDownload(request, uid):
     return fileDownload(request, uid, "DATAFILE")
+    
+def sopIDDownload(request, id):
+    return fileDownload(request, id, "SOP_ID")
     
 def fileDownloadEncoded(request, url_redirect, fileInfo):
     if url_redirect is not None:
@@ -555,6 +612,7 @@ def verifyToken(request):
     
     
 def fileDownload(request, uid, filetype):
+    print(uid, filetype)
     seekdb = SeekDB(None, None, None)
     user_seek = seekdb.getSeekLogin(request)
     if not user_seek['status']:
@@ -564,6 +622,8 @@ def fileDownload(request, uid, filetype):
             url_redirect = '/login/?next=/seek/datafiles/uid=' + uid + '/'
         elif filetype=="SOP":
             url_redirect = '/login/?next=/seek/sop/uid=' + uid + '/'
+        elif filetype=="SOP_ID":
+            url_redirect = '/login/?next=/seek/sop/download/id=' + uid + '/'
         else:
             url_redirect = '/login/'
         
@@ -582,18 +642,24 @@ def fileDownload(request, uid, filetype):
     elif filetype=="SOP":
         dbsop = DBtable_sops("DEFAULT")
         msg, status, fileInfo = dbsop.downloadSOP_fromStorage(user_seek, uid)
+    elif filetype=="SOP_ID":
+        dbsop = DBtable_sops("DEFAULT")
+        sop_id = uid
+        msg, status, fileInfo = dbsop.downloadSOPID_fromStorage(user_seek, sop_id)
     else:
         msg = 'Error: file type not supported.'
+        logger.error(msg)
         status = 0
         
     if status==1:
         if filetype=="DATAFILE":
             return fileDownloadEncoded(request, url_redirect, fileInfo)
-        elif filetype=="SOP":
+        elif filetype=="SOP" or filetype=="SOP_ID" :
             return fileDownloadEncoded(request, url_redirect, fileInfo)
         else:
             return HttpResponseRedirect(url_redirect)
     else:
+        print(msg)
         return render(request, 'pages/404.html')
     return HttpResponse("You're downloading file %s." % uid)
  
@@ -806,11 +872,19 @@ def sampleDownload(request):
     user_seek = seekdb.getSeekLogin(request, False)
     
     datenow = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
-    filename = 'download-samples-' + datenow + '.xls'
+    filename = 'download-samples-' + datenow + '.xlsx'
     downloadfile = DOWNLOAD_DIRECTORY + filename
     link = DOWNLOAD_DIRECTORY_LINK + filename
     
     dbsample = DBtable_sample()
+    if 'attributeFilter' in ret and includeSampleTree:
+        #linkfile = link.replace('.xls', '.zip')
+        #dzipfile = downloadfile.replace('.xls', '.zip')
+        #sdata = dbsample.downloadSamples_noTree(user_seek, dzipfile, linkfile, sample_ids, includeSampleTree, attributeFilter)
+        
+        sdata = dbsample.downloadSamples_noTree(user_seek, downloadfile, link, sample_ids, includeSampleTree, attributeFilter)
+        return HttpResponse(sdata) 
+    
     sampleTypes = dbsample.parseSampleIDs(sample_ids)
     if len(sampleTypes)==1:
         sdata = dbsample.downloadSamples_new(user_seek, downloadfile, link, sample_ids, includeSampleTree, attributeFilter)
@@ -1001,6 +1075,7 @@ def publish_assets(request, idsstring, assetType):
         return HttpResponseRedirect(url_redirect)
     
     project_options, investigation_options_dic, study_options_dic, assay_options_dic, server = __getISA(seekdb, user_seek, "DESTINATION")
+    print(investigation_options_dic)
     
     report = {}
     report['project_options'] = project_options
@@ -1293,39 +1368,12 @@ def searchAdvanced(request):
     return render(request,"searchAdvanced.html", {'report':report})
     
 def searchingAdvanced(request):
-    ret = request.GET
-    filters = ret
-    
-    sampletype_id = ret['sampletype_id']
-    attribute = ret['attribute']
-    filter_logic = ret['filter_logic']
-    filter_searchValue = ret['filter_searchValue']
-    filter_searchText = ret['filter_searchText']
-    filter_matchType = ret['filter_matchType']
-    
-    seekdb = SeekDB(None, None, None)
-    user_seek = seekdb.getSeekLogin(request, True)
-    isSupervisor = verifySuperUser(request)
-    if isSupervisor==0:
-        project_id = user_seek['projectid']
-    else:
-        project_id = 0
-    
-    dbsample = DBtable_sample()    
     searchType = "Advanced"
-    sdata = dbsample.searchAdvanced(user_seek, filters, searchType, project_id)
-    return HttpResponse(sdata)
+    return runSampleSearch(request, searchType)
     
 def searchingUIDs(request):
-    ret = request.GET
-    filters = ret
-    
-    seekdb = SeekDB(None, None, None)
-    user_seek = seekdb.getSeekLogin(request, True)
-    
-    dbsample = DBtable_sample()
     searchType = "UIDs"
-    sdata = dbsample.searchAdvanced(user_seek, filters, searchType)
-    return HttpResponse(sdata)
+    return runSampleSearch(request, searchType)
+    
 
     

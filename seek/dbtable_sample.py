@@ -7,6 +7,7 @@ import simplejson
 import json
 import logging
 import xlwt
+import operator
 logger = logging.getLogger(__name__)
 
 import zipfile
@@ -15,7 +16,7 @@ from django.db.models import Q
 
 from .models import Samples, Projects_samples, People, Assets_creators, Projects
 from dmac.dbtable import DBtable
-from dmac.csv_excel import load_file, load_excelfile, load_excelfile_asdic, saveExcelDiclist, modifyExcelCell, reviseExcelDiclist
+from dmac.csv_excel import load_file, load_excelfile, load_excelfile_asdic, saveExcelDiclist, modifyExcelCell, reviseExcelDiclist, removeRedundancy, AddExcelDiclist
 from dmac.conversion import getDefaultDate, toString, cleanString, getDefaultDate, getDefaultDateTime, convertDateListToString, toInt, verifyValueType
 from dmac.iocsv import saveDiclistIntoExcel, filterDiclist, saveTwoDiclistsIntoExcel, getConstantRows, removeDiclistDuplicates
 
@@ -98,6 +99,7 @@ SAMPLE_PROTOCOL_ACCESSOR_NAME = "protocol"
 SAMPLE_FILE_ACCESSOR_NAME = "file_"         
 SAMPLE_LINK_ACCESSOR_NAME = "link_"        
 SAMPLE_CONTRIBUTOR_ACCESSOR_NAME = "Scientist"
+SAMPLE_PUBLISH_ACCESSOR_NAME = "publish"
 
 SAMPLE_ERRORCODE = {
     '101': 'Error S101: Sample excel file not in the right xlsx format.',
@@ -269,6 +271,7 @@ class DBtable_sample(DBtable):
         return record
         
     def __updateSampleMetadata(self, metadata_db, metadata_in, attributes=None):
+        #logger.debug('updateSampleMetadata')
         metadata_in2 = {}
         for key, value in metadata_in.items():
             lowkey = key.lower()
@@ -317,6 +320,7 @@ class DBtable_sample(DBtable):
                 else:
                     metadata_out[key] = value
         
+        #logger.debug('updateSampleMetadata: Finish')
         return metadata_out
         
     def __getRecord(self, user_seek, record, attributeInfo, contributor_id):
@@ -956,6 +960,7 @@ class DBtable_sample(DBtable):
         book.save(feedbackfile)        
         
     def __verifyUpdateSample(self, sheetData, feedbackfile):
+        #logger.debug('verifyUpdateSample')
         status = 1
         msg = "Okay"
         headers = sheetData['headers']
@@ -963,11 +968,13 @@ class DBtable_sample(DBtable):
         if len(diclist)<1:
             msg = SAMPLE_ERRORCODE['104']
             status = 0
+            logger.debug(msg)
             return msg, status, None
         
         if 'UID' not in headers and 'uid' not in headers:
             msg = 'UID column not available in the sheet for update'
             status = 0
+            logger.debug(msg)
             return msg, status, None
         
         sampleTypes_order = []
@@ -984,11 +991,13 @@ class DBtable_sample(DBtable):
         if len(sampleTypes_order)==0:
             msg = 'Sample type not available in the sheet for update'
             status = 0
+            logger.debug(msg)
             return msg, status, None
         
         if len(sampleTypes_order)>1:
             msg = 'Only one sample type should be included in the sheet for update'
             status = 0
+            logger.debug(msg)
             return msg, status, None
         
         sampleType = sampleTypes_order[0]
@@ -996,6 +1005,7 @@ class DBtable_sample(DBtable):
         sampletype_id = stype.getSampleTypeID(sampleType)
         if sampletype_id<=0:
             msg = SAMPLE_ERRORCODE['201'] + sampleType + " id: " + str(sampletype_id)
+            logger.debug(msg)
             return msg, 0, None
     
         sattr = DBtable_sampleattribute()
@@ -1003,6 +1013,7 @@ class DBtable_sample(DBtable):
         if len(attributeInfo['headers'])==0:
             msg = SAMPLE_ERRORCODE['202'] + sampleType
             status = 0
+            logger.debug(msg)
             return msg, status, None
         
         attributes = [x.lower() for x in attributeInfo['headers']]
@@ -1022,9 +1033,11 @@ class DBtable_sample(DBtable):
                 diclist_sanity.append(dici)
             self.__outputUploadFeedback_V2(diclist, diclist_sanity, headers, feedbackfile)
         
+        #logger.debug('verifyUpdateSample: Finish')
         return msg, status, attributes
         
     def __batchUpdateSample(self, sheetData, feedbackfile, user_seek):
+        #logger.debug('batchUpdateSample')
         username = user_seek['username']
         msg = "batchUpdate"
         status = 0
@@ -1034,10 +1047,12 @@ class DBtable_sample(DBtable):
         if len(diclist)<1:
             msg = SAMPLE_ERRORCODE['104']
             status = 0
+            logger.debug(msg)
             return msg, status
         
         msg, status, attributes = self.__verifyUpdateSample(sheetData, feedbackfile)
         if status==0:
+            logger.debug(msg)
             return msg, status
         
         headers.append('feedback')
@@ -1064,6 +1079,7 @@ class DBtable_sample(DBtable):
                 nright += 1
                 dici_feedback['feedback'] = 'successful'
             else:
+                logger.debug(msgi)
                 statusTest = False
                 msg0 += msgi +  '<br/>'
                 dici_feedback['feedback'] = msgi
@@ -1079,6 +1095,8 @@ class DBtable_sample(DBtable):
             status = 1
                 
         self.__outputUploadFeedback_V2(diclist, diclist_feedback, headers, feedbackfile)
+        #logger.debug(feedbackfile)
+        #logger.debug('batchUpdateSample: Finish')
         return msg, status
     
     
@@ -1208,18 +1226,21 @@ class DBtable_sample(DBtable):
         user_seek = seekdb.user_seek
         username = user_seek['username']
         msg = "batchUpload"
+        #logger.debug(msg)
         status = 0
         try:
             filedata = load_excelfile_asdic(infile)
         except:
             msg = SAMPLE_ERRORCODE['101']
             status = 0
+            logger.debug(msg)
             return msg, status
         
         status = filedata['status']
         msg = filedata['msg']
         if status==0:
             msg = SAMPLE_ERRORCODE['106'] + msg
+            logger.debug(msg)
             return msg, status
         
         if 'UPDATE' in filedata['sheetnames'] and 'UPDATE' in filedata:
@@ -1373,6 +1394,7 @@ class DBtable_sample(DBtable):
     
     def createSampleTree(self, sample_id):
         record = self.__retrieveSampleByID(sample_id)
+        print(f"record: {record}")
         if record is None:
             return None
         
@@ -1381,8 +1403,7 @@ class DBtable_sample(DBtable):
         dici = self.__getRecordFromJson(json_metadata)
         uids =  self.__getParentUIDs(dici)
         parentinfo, treeData = self.__trackParent(childuid, uids)
-        return treeData
-        
+        return treeData 
 
     def __retrieveSampleByUID(self, uid):
         record = None
@@ -1449,42 +1470,16 @@ class DBtable_sample(DBtable):
             datadic['sample_type_id'] = data['sample_type_id']
             datadic['contributor_id'] = data['contributor_id']
             datadic['created_at'] = str(data['created_at'])
-            datadic['json_metadata'] = str(data['json_metadata'])
+            datadic['json_metadata'] = toString(data['json_metadata'])
             datadic['sample_type'] = data['sample_type']
             datadic['first_name'] = data['first_name']
             datadic['assays'] = data['assays']
             
             jdata_new.append(datadic)
         
-        return jdata_new
-    
-    def retrieveRecords(self, user_seek, filtersdic):
-        return self.retrieveRecords_joint(user_seek, filtersdic)
-    
-    def __sqlQuery_select_records_filters(self, filtersdic):
-        filterRules = filtersdic['filterRules']
-        sqlquery_filter = ""
-        n = 0
-        for rule in filterRules:
-            tablefield = rule["field"]
-            value = rule["value"]
-            op = rule["op"]
-            if tablefield in SAMPLE_FILTER_MAPPING:
-                field = SAMPLE_FILTER_MAPPING[tablefield]
-            
-                if n==0:
-                    sqlquery_filter += " WHERE " + field
-                else:
-                    sqlquery_filter += " AND " + field
-                if op=="contains":
-                    sqlquery_filter += " LIKE '%" + str(value) + "%' "
-                elif op=="equal":
-                    sqlquery_filter += "='" + str(value) + "' "
-                else:
-                    sqlquery_filter += " LIKE '%" + str(value) + "%' "
-            n += 1
+        jdata_new = sorted(jdata_new, key=operator.itemgetter('id'))
         
-        return sqlquery_filter
+        return jdata_new
     
     def __sqlQuery_select_records_select(self):
         sqlquery_select =  " SELECT "
@@ -1517,45 +1512,30 @@ class DBtable_sample(DBtable):
         return sqlquery_from     
     
     def __sqlQuery_select_records(self, filtersdic, withLimit=True):
+        # The query that this generates does not return all items that it should
+        # in the simple search page
         sqlquery_select = self.__sqlQuery_select_records_select()
-        sqlquery_from = self.__sqlQuery_select_records_from()
+        project_id = filtersdic['project_id']
+        sqlquery_from = self.__sqlQuery_select_records_from(project_id)
         orderby = filtersdic['orderby'] 
         startNo = filtersdic['startNo'] 
-        endNo = filtersdic['endNo']     
-        sqlquery_where = self.__sqlQuery_select_records_filters(filtersdic)
+        endNo = filtersdic['endNo']
+        sqlquery_where = self.__sqlQuery_select_records_filters_advanced(filtersdic)
         sqlqueryMega = sqlquery_select + sqlquery_from + sqlquery_where
-        
         if len(orderby)==0:
             orderby = " ORDER BY A.id desc"
-        
         if withLimit:
             sqlqueryMega = sqlquery_select + sqlquery_from + sqlquery_where + orderby
         else:
             sqlqueryMega = " SELECT count(A.id) " + sqlquery_from
-        
+        logger.debug(sqlqueryMega)
         return sqlqueryMega
-    
-    def retrieveRecords_joint(self, user_seek, filtersdic):
-        sqlquery = self.__sqlQuery_select_records(filtersdic)
-        headers = SAMPLE_HEADERS
-        db_alias = settings.SEEK_DATABASE
-        jdata = self.db.queryToListDics(sqlquery, headers, db_alias)
-        sqlquery = self.__sqlQuery_select_records(filtersdic, False)
-        total = self.db.getQueryValue(sqlquery, db_alias)
-        if total is None:
-            total = 0
-        else:
-            total = int(total)
-    
-        jdata_new = self.reformatDataForClient(jdata)
-        footer = []
-        data = {'total':total,'rows':jdata_new,'footer':footer}
-        return data
 
     def __getParentUIDs(self, sampleDic):
         uids = []
         for key, value in sampleDic.items():
-            if SAMPLE_PARENT_ACCESSOR_NAME in key:
+            print(f"key: {key}\nSAMPLE_PARENT_ACCESSOR_NAME: {SAMPLE_PARENT_ACCESSOR_NAME}")
+            if SAMPLE_PARENT_ACCESSOR_NAME in key.lower():
                 if value is None:
                     continue
                 else:
@@ -1617,10 +1597,15 @@ class DBtable_sample(DBtable):
         
 
     def __filterSamples(self, jdata, sampletype_id, attribute, filter_rule, filter_valueFrom, filter_valueTo):
+        logger.debug('filterSamples')
+        
         if filter_rule=='No Filter':
             return jdata
         
-        accessor_name = attribute.lower().strip()
+        # This was lowercasing the key but the key is uppercase in json_metadata/dici
+        #accessor_name = attribute.lower().strip()
+        accessor_name = attribute.strip()
+        print(f"accessor_name: {accessor_name}")
         
         values = []     
         parentUIDs = []    
@@ -1635,11 +1620,12 @@ class DBtable_sample(DBtable):
                 value = dici[accessor_name]
             values.append(value)
             
-            uids = self.__getParentUIDs(dici)
-            parentUIDs.append(uids)
+            #uids = self.__getParentUIDs(dici)
+            #parentUIDs.append(uids)
             
             n += 1
             
+        # Values is a list of None when passed in so passvalues is all False
         sattr = DBtable_sampleattribute()
         passvalues = sattr.filterValues(values, sampletype_id, attribute, filter_rule, filter_valueFrom, filter_valueTo)
         
@@ -1647,30 +1633,38 @@ class DBtable_sample(DBtable):
         parentUIDs_new = [] 
         index = 0
         ni = 0
+        nf = 0
         for data in jdata:
             passit = passvalues[index]
             if passit:
-                childuid = data['uid']
-                uids = parentUIDs[index]
-                parentinfo, treeData = self.__trackParent(childuid, uids)
-                data['parent_uids'] = ';'.join(uids)
+                json_metadata = data['json_metadata']
+                dici = self.__getRecordFromJson(json_metadata)
+                attributeValue = self.__highlightKeyValues(dici, None, None, accessor_name)
+                if len(attributeValue)==0:
+                    nf += 1
+                    continue
+                
+                data['attributeValue'] = attributeValue
+                
+                #childuid = data['uid']
+                #uids = parentUIDs[index]
+                #parentinfo, treeData = self.__trackParent(childuid, uids)
+                #data['parent_uids'] = ';'.join(uids)
+                
                 jdata_new.append(data)
                 ni += 1
             index += 1
         
+        print("Total number of samples retrieved: %d"%index)
+        print("Total number of samples passing filter: %d"%ni)
+        print("Total number of samples passing filter but not highlighted: %d"%nf)
+
+        logger.debug("Total number of samples retrieved: %d"%index)
+        logger.debug("Total number of samples passing filter: %d"%ni)
+        logger.debug("Total number of samples passing filter but not highlighted: %d"%nf)
         return jdata_new
     
-    def searchSamples(self, user_seek, sampletype_id, attribute, filter_rule, filter_valueFrom, filter_valueTo):
-        if attribute=='none':
-            msg = 'ignore validation'
-        else:
-            sattr = DBtable_sampleattribute()
-            msg, status = sattr.validateFilters(sampletype_id, attribute, filter_rule, filter_valueFrom, filter_valueTo)
-            if status==0:
-                data = {'msg':msg, 'status': status}
-                reportData = simplejson.dumps(data, default=str)
-                return reportData
-        
+    def __initSearchFilters(self, searchType, sampletype_id, project_id=0):
         filtersdic = {}
         filtersdic['orderby'] = " ";
         filtersdic['limit'] = " ";
@@ -1678,24 +1672,27 @@ class DBtable_sample(DBtable):
         filtersdic['startNo'] = " "
         filtersdic['endNo'] = " "
         filtersdic['sqlquery_filter'] = " "
-        filterRules = [{
-            "field":"sample_type_id",
-            "op":"equal",
-            "value":sampletype_id
-        }]
-        filtersdic['filterRules'] = filterRules
-        data = self.retrieveRecords_joint(user_seek, filtersdic)
-        if attribute=='none':
-            msg = 'ignore filtering'
+        filtersdic['project_id'] = project_id
+        if sampletype_id is None:
+            filterRules = []
         else:
-            rows = self.__filterSamples(data['rows'], sampletype_id, attribute, filter_rule, filter_valueFrom, filter_valueTo) 
-            data['rows'] = rows
-            data['total'] = len(rows)
-        data['msg'] = 'okay'
-        data['status'] = 1
+            filterRules = [{
+                "field":"sample_type_id",
+                "op":"equal",
+                "value":sampletype_id
+            }]
         
-        reportData = simplejson.dumps(data, default=str)
-        return reportData
+        filtersdic['tableField'] = 'json_metadata'
+        filtersdic['categoryField'] = 'sample_type_id'
+        filtersdic['filterRules'] = filterRules
+        filtersdic['searchType'] = searchType
+        return filtersdic
+    
+    def __retrieveSamplesInType(self, user_seek, sampletype_id, project_id=0):
+        searchType = 'FILTERING'
+        filtersdic = self.__initSearchFilters(searchType, sampletype_id, project_id)
+        data = self.__retrieveRecords_advanced(user_seek, filtersdic)
+        return data
     
     def __getChildrenUIDs(self, currentuid):
         records = self.db.retrieveRecords(self.tablemodel, 'json_metadata', currentuid)
@@ -1817,7 +1814,7 @@ class DBtable_sample(DBtable):
         
         record = self.__retrieveSampleByID(sample_id)
         if record is None:
-            return None
+            return None, None
         
         childuid = record['uuid']
         json_metadata = record['json_metadata']
@@ -1840,7 +1837,7 @@ class DBtable_sample(DBtable):
                 parentTreeList = self.__getParentTreeListLoop(childNode)
                 upTreeList += parentTreeList
         
-        return upTreeList
+        return upTreeList, parent_uids
     
     def createMultiParentTreeParallel_i(self, uid, child):
         uid = str(uid)
@@ -1851,12 +1848,13 @@ class DBtable_sample(DBtable):
     def __createMultiParentTreeParallel(self, sample_id, includeChilren, childrenTreeIn=None):
         record = self.__retrieveSampleByID(sample_id)
         if record is None:
-            return None
+            return None, None
         
         childuid = record['uuid']
         json_metadata = record['json_metadata']
         dici = self.__getRecordFromJson(json_metadata)
         parent_uids =  self.__getParentUIDs(dici)
+        # Parent uids aren't being found
         
         childuid = str(childuid)
         child = {'id':childuid, 'name':childuid}
@@ -1878,7 +1876,7 @@ class DBtable_sample(DBtable):
             for parentTreeList in parentTreeLists:
                 upTreeList += parentTreeList
         
-        return upTreeList
+        return upTreeList, parent_uids
     
     def __getChildrenListLoop(self, parentTreeData):
         listlists = []
@@ -1899,7 +1897,8 @@ class DBtable_sample(DBtable):
     
     def createSampleMultiParentTree(self, sample_id):
         includeChilren = True
-        fullTreeList = self.__createMultiParentTree(sample_id, includeChilren)
+        fullTreeList, parent_uids = self.__createMultiParentTree(sample_id, includeChilren)
+        # Full tree list does not contain all the info
         
         if fullTreeList is None:
             multi_parents_treeData = {
@@ -2103,6 +2102,13 @@ class DBtable_sample(DBtable):
                     diclist_constant_new.append(dici)
             diclist_constant = diclist_constant_new
         
+        n1 = len(diclist_new)
+        msg = "Number of rows before filtering: " + str(n1) + " at " + str(datetime.datetime.now())
+        logger.debug(msg)
+        diclist_new = removeRedundancy(headers_noneConstant, diclist_new)
+        n2 = len(diclist_new)
+        msg = "Number of rows after filtering: " + str(n2) + " at " + str(datetime.datetime.now())
+        logger.debug(msg)
         saveTwoDiclistsIntoExcel(excelfile, diclist_new, headers_noneConstant, 'samples', diclist_constant, headers_constant, 'constants')
         nsamples = len(diclist_new)
         return nsamples
@@ -2110,7 +2116,7 @@ class DBtable_sample(DBtable):
 
     def __createSampleTreeToList(self, sample_id, xlsfile='test.xls'):
         includeChilren = False
-        upTreeList = self.__createMultiParentTree(sample_id, includeChilren)
+        upTreeList, parent_uids = self.__createMultiParentTree(sample_id, includeChilren)
         parentList = self.__getChildrenListLoop(upTreeList)
         sampleTypes, sampleTypeCount, headers, headersMapping = self.__getSampleTypeAttributes(parentList)
           
@@ -2123,7 +2129,7 @@ class DBtable_sample(DBtable):
         includeChilren = False
         parentList = []
         for sample_id in sample_ids:
-            upTreeList = self.__createMultiParentTree(sample_id, includeChilren)
+            upTreeList, parent_uids = self.__createMultiParentTree(sample_id, includeChilren)
             parentList_i = self.__getChildrenListLoop(upTreeList)
             parentList += parentList_i
         
@@ -2286,7 +2292,7 @@ class DBtable_sample(DBtable):
             newheaders.append(header.lower())
         return newheaders, metadata
         
-    def downloadSamples(self, user_seek, xlsfile, link, sampletype_id, attribute, filter_rule, filter_valueFrom, filter_valueTo):
+    def downloadSamples(self, user_seek, xlsfile, link, sampletype_id, attribute, filter_rule, filter_valueFrom, filter_valueTo, project_id=0):
         if attribute=='none':
             msg = 'ignore validation'
         else:
@@ -2296,21 +2302,8 @@ class DBtable_sample(DBtable):
                 data = {'msg':msg, 'status': status, 'link':''}
                 reportData = simplejson.dumps(data, default=str)
                 return reportData
-        
-        filtersdic = {}
-        filtersdic['orderby'] = " ";
-        filtersdic['limit'] = " ";
-        filtersdic['suffix'] = " ";
-        filtersdic['startNo'] = " "
-        filtersdic['endNo'] = " "
-        filtersdic['sqlquery_filter'] = " "
-        filterRules = [{
-            "field":"sample_type_id",
-            "op":"equal",
-            "value":sampletype_id
-        }]
-        filtersdic['filterRules'] = filterRules
-        data = self.retrieveRecords_joint(user_seek, filtersdic)
+                
+        data = self.__retrieveSamplesInType(user_seek, sampletype_id, project_id)
         if attribute=='none':
             msg = 'ignore filtering'
             rows = data['rows']
@@ -2587,29 +2580,36 @@ class DBtable_sample(DBtable):
     
     def __verifyFileInRecord(self, sampleRecord, originalfilename, filetype):
         if 'json_metadata' not in sampleRecord:
-            return false
+            return False
         
-        fileInRecord = False
+        fileInRecord = 0
         json_metadata = sampleRecord['json_metadata']
         sampledic = self.__getRecordFromJson(json_metadata)
         for key, value in sampledic.items():
             if filetype=="SOP":
                 if SAMPLE_PROTOCOL_ACCESSOR_NAME in key.lower():
                     if value==originalfilename:
-                        fileInRecord = True
+                        fileInRecord = 1
             
             if filetype=="DATAFILE":
                 if SAMPLE_FILE_ACCESSOR_NAME in key.lower():
                     if value==originalfilename:
-                        fileInRecord = True
+                        fileInRecord = 1
+                #elif SAMPLE_LINK_ACCESSOR_NAME in key.lower():
+                #    if value==originalfilename:
+                #        fileInRecord = 2
+                
         return fileInRecord, sampledic
     
     def searchFileInSample(self, creator, originalfilename, filetype):
+        #print("searchFileInSample now...", creator)
         creator_id = creator['user_id']
+        #print("creator_id: ", creator_id)
         if filetype!="SOP" and filetype!="DATAFILE":
             msg = 'Error: file type not supported for uploading file.'
             return None, msg
         
+        #print("retrieveRecords...")
         records = self.db.retrieveRecords(self.tablemodel, 'json_metadata', originalfilename)
         if records is None:
             msg = 'Warning: File not associated with any sample that has been uploaded first'
@@ -2620,16 +2620,17 @@ class DBtable_sample(DBtable):
             msg = 'Warning: File not associated with any sample that has been uploaded first'
             return None, msg
         
-        msg = "Number of samples for the file: " + str(nrecords)
+        msg = "Number of samples for the file: " + str(nrecords) + ";"
+        #print(msg)
         creator_lab = creator['lababbv']
         records_now = []
         for record in records:
             contributor_id = record['contributor_id']
             sample_uid = record['uuid']
-            msg += "Creator lab " + creator_lab + " sample UID: " + sample_uid
+            msg += "Lab: " + creator_lab + "; sample UID: " + sample_uid
             if sample_uid is not None and creator_lab in sample_uid:
                 fileInRecord, sampledic = self.__verifyFileInRecord(record, originalfilename, filetype)
-                if fileInRecord:
+                if fileInRecord>0:
                     record_now = record.update(sampledic)
                     records_now.append(record)
         
@@ -2792,6 +2793,29 @@ class DBtable_sample(DBtable):
         weblink = '<a href="' + url + '" target="_blank">' + str(sop_uid) + '</a>'
         return weblink
     
+    def __formatExternalLink(self, urlValue):
+        weblink = urlValue
+        if ";" in urlValue:
+            weblink = ''
+            vis = urlValue.split(";")
+            i = 0
+            for vi in vis:
+                vi = vi.strip()
+                if len(vi)>0:
+                    if vi[0:4].lower()=='http':
+                        if i>0:
+                            weblink += ","
+                        
+                        weblink += '<a href="' + vi + '" target="_blank">' + vi + '</a>'
+                        i += 1
+        else:
+            vi = urlValue.strip()
+            if len(vi)>0:
+                if vi[0:4].lower()=='http':
+                    weblink = '<a href="' + vi + '" target="_blank">' + vi + '</a>'
+        
+        return weblink
+    
     def __formatLinkUrl(self, attrname, attrvalue):
         weblink = attrvalue
         value = attrvalue
@@ -2841,6 +2865,17 @@ class DBtable_sample(DBtable):
         elif SAMPLE_LINK_ACCESSOR_NAME in attrname:
             if attrvalue is None:
                 return weblink
+            weblink = self.__formatExternalLink(attrvalue)
+            
+        elif SAMPLE_FILE_ACCESSOR_NAME in attrname:
+            if attrvalue is None:
+                return weblink
+            weblink = self.__formatExternalLink(attrvalue)
+            
+        elif SAMPLE_PUBLISH_ACCESSOR_NAME in attrname:
+            if attrvalue is None:
+                return weblink
+            weblink = self.__formatExternalLink(attrvalue)
         
         return weblink
     
@@ -3028,9 +3063,9 @@ class DBtable_sample(DBtable):
             sample_ids.append(sample_id)
             
         sdata = self.__exportSamples0(user_seek, downloadfile, link, sample_ids, sampletype)
-        return sdata
+        return sdata 
         
-    def getSampleType(self, user_seek, sampletype_id, attribute):
+    def getSampleType(self, user_seek, sampletype_id, attribute, project_id=0):
         if attribute=='none':
             msg = 'ignore validation'
         else:
@@ -3041,20 +3076,7 @@ class DBtable_sample(DBtable):
                 reportData = simplejson.dumps(data, default=str)
                 return reportData
         
-        filtersdic = {}
-        filtersdic['orderby'] = " ";
-        filtersdic['limit'] = " ";
-        filtersdic['suffix'] = " ";
-        filtersdic['startNo'] = " "
-        filtersdic['endNo'] = " "
-        filtersdic['sqlquery_filter'] = " "
-        filterRules = [{
-            "field":"sample_type_id",
-            "op":"equal",
-            "value":sampletype_id
-        }]
-        filtersdic['filterRules'] = filterRules
-        data = self.retrieveRecords_joint(user_seek, filtersdic)
+        data = self.__retrieveSamplesInType(user_seek, sampletype_id, project_id)
         if attribute=='none':
             msg = 'ignore filtering'
         else:
@@ -3119,22 +3141,8 @@ class DBtable_sample(DBtable):
         return msg, status
     
     
-    def updateSampleType(self, user_seek, sampletype_id, attri_renamed):
-        filtersdic = {}
-        filtersdic['orderby'] = " ";
-        filtersdic['limit'] = " ";
-        filtersdic['suffix'] = " ";
-        filtersdic['startNo'] = " "
-        filtersdic['endNo'] = " "
-        filtersdic['sqlquery_filter'] = " "
-        filterRules = [{
-            "field":"sample_type_id",
-            "op":"equal",
-            "value":sampletype_id
-        }]
-        filtersdic['filterRules'] = filterRules
-        data = self.retrieveRecords_joint(user_seek, filtersdic)
-        
+    def updateSampleType(self, user_seek, sampletype_id, attri_renamed, project_id=0):
+        data = self.__retrieveSamplesInType(user_seek, sampletype_id, project_id)
         msg, status = self.__updateSamplesMeta(user_seek, data['rows'], sampletype_id, attri_renamed)
         data['msg'] = msg
         data['status'] = status
@@ -3146,10 +3154,11 @@ class DBtable_sample(DBtable):
     def updateSingleSample(self, dici, username=None, attributes=None):
         msg = "updateSingleSample"
         status = 0
-                
+        #logger.debug(msg)        
         if 'UID' not in dici and 'uid' not in dici:
             msg = 'UID not available for update'
             status = False
+            logger.debug(msg)
             return msg, status
             
         if 'UID' in dici:
@@ -3160,12 +3169,14 @@ class DBtable_sample(DBtable):
         if uidIn is None or len(uidIn.strip())==0:
             msg = 'UID not available for update'
             status = False
+            logger.debug(msg)
             return msg, status
                 
         record = self.__retrieveSampleByUID(uidIn)
         if record is None:
             msg = "Error: Sample UID " + uidIn + " does not exist in DB for update "
             status = False
+            logger.debug(msg)
             return msg, status
             
         json_metadata = record['json_metadata']
@@ -3178,7 +3189,6 @@ class DBtable_sample(DBtable):
                 
         json_metadata_updated = simplejson.dumps(dici_json, default=str)
         record['json_metadata'] = json_metadata_updated
-        
         other_creators = record['other_creators']
         if username is not None:
             if other_creators is None:
@@ -3187,6 +3197,7 @@ class DBtable_sample(DBtable):
                 record['other_creators'] = other_creators + ';' + username
 
         record['updated_at'] = getDefaultDateTime()
+        #logger.debug('storeOneRecord: Start')
         msg, status, sample_id = self.storeOneRecord(username, record)
         return msg, status
     
@@ -3404,7 +3415,6 @@ class DBtable_sample(DBtable):
         
         return sinfo
         
-        
     def __downloadSampleList(self, sample_ids, xlsfile, isNewSheet=True):
         status = 1
         msg = ''
@@ -3451,62 +3461,126 @@ class DBtable_sample(DBtable):
             diclist.append(dici_rev)
             nsamplesOutput += 1
         
-        saveExcelDiclist(xlsfile, headers, diclist, 'Samples', isNewSheet)
+        #n1 = len(diclist)
+        #diclist = removeRedundancy(headers, diclist)
+        #n2 = len(diclist)
+        #msg = "Number of rows before and after filtering: " + str(n1) + ' ' + str(n2)
+        #logger.debug(msg)
+        saveExcelDiclist(xlsfile, headers, diclist, 'Samples', isNewSheet, True)
         return msg, status, nsamplesOutput
     
     
-    def searchAdvanced(self, user_seek, filters, searchType, project_id=0):
-        filtersdic = {}
-        filtersdic['orderby'] = " "
-        filtersdic['limit'] = " "
-        filtersdic['suffix'] = " "
-        filtersdic['startNo'] = " "
-        filtersdic['endNo'] = " "
-        filtersdic['sqlquery_filter'] = " "
-        filtersdic['project_id'] = project_id
-        filterRules = []
+    def __parseSearchFilters(self, filters, searchType, project_id=0):
+        msg = ''
+        status = 1
+        sampletype_id = None
+        attribute = None
+        filter_rule = None
+        filter_valueFrom = None
+        filter_valueTo = None
+        filtersdic = self.__initSearchFilters(searchType, sampletype_id, project_id)
         if searchType == "UIDs":
-            filter_searchText = filters['filter_searchUIDs']
+            filtersdic['searchText'] = filters['filter_searchUIDs']
+            field = 'uid'
+            filtersdic['tableField'] = SAMPLE_FILTER_MAPPING[field]
         elif searchType=="Advanced":
+            filtersdic['searchText'] = filters['filter_searchText']
             sampletype_id = filters['sampletype_id']
-            attribute = filters['attribute']
-            filter_logic = filters['filter_logic']
-            filter_searchValue = filters['filter_searchValue']
-            filter_searchText = filters['filter_searchText']
-            filter_matchType = filters['filter_matchType']
-            filterRules = [{
+            filtersdic['sampletype_id'] = sampletype_id
+            filtersdic['filterRules'] = [{
                 "field":"sample_type_id",
                 "op":"equal",
                 "value":sampletype_id
             }]
-            filtersdic['sampletype_id'] = sampletype_id
+            # the following not in use
+            attribute = filters['attribute']
             filtersdic['attribute'] = attribute
-            filtersdic['matchType'] = filter_matchType 
-        else:
-            filter_searchText = None
+            #filter_logic = filters['filter_logic']
+            #filter_searchValue = filters['filter_searchValue']
+            filtersdic['matchType'] = filters['filter_matchType']
+        elif searchType=="FILTERING":
+            filtersdic['searchText'] = None
+            sampletype_id = filters['sampletype_id']
+            attribute = filters['attribute']
+            filter_rule = filters['filter_rule']
+            filter_valueFrom = filters['filter_valueFrom']
+            filter_valueTo = filters['filter_valueTo']
+            rules = [{
+                "field":"sample_type_id",
+                "op":"equal",
+                "value":sampletype_id
+            }]
+            if attribute!='none':
+                sattr = DBtable_sampleattribute()
+                msg, status = sattr.validateFilters(sampletype_id, attribute, filter_rule, filter_valueFrom, filter_valueTo)
+                if status==0:
+                    #data = {'msg':msg, 'status': status}
+                    #reportData = simplejson.dumps(data, default=str)
+                    #return reportData
+                    return msg, status, filtersdic
+            else:    
+                #attribute=='none':  
+                # no attribute is selected
+                keyword = toString(filter_valueFrom)
+                keyword = keyword.strip()
+                if len(keyword)>0:
+                    # Add additional rule for keyword search
+                    field = "json_metadata"
+                    #tableField = SAMPLE_FILTER_MAPPING[field]
+                    rule = {
+                        "field":field,
+                        "op":"contains",
+                        "value":keyword
+                    }
+                    rules.append(rule)
+                    filtersdic['searchText'] = keyword
             
-        filtersdic['filterRules'] = filterRules
-        filtersdic['searchText'] = filter_searchText
-        filtersdic['searchType'] = searchType
-        
-        attribute = 'none'
-        if attribute=='none':
-            msg = 'ignore validation'
+            filtersdic['filterRules'] = rules
+            filtersdic['sampletype_id'] = sampletype_id
         else:
-            sattr = DBtable_sampleattribute()
-            msg, status = sattr.validateFilters(sampletype_id, attribute, filter_rule, filter_valueFrom, filter_valueTo)
-            if status==0:
-                data = {'msg':msg, 'status': status}
-                reportData = simplejson.dumps(data, default=str)
-                return reportData
+            filtersdic['searchText'] = None
+            field = "json_metadata"
+            filtersdic['tableField'] = SAMPLE_FILTER_MAPPING[field]
+            filtersdic['sampletype_id'] = sampletype_id
         
-        data = self.retrieveRecords_advanced(user_seek, filtersdic)
+        filtersdic['attribute'] = attribute
+        filtersdic['filter_rule'] = filter_rule
+        filtersdic['filter_valueFrom'] = filter_valueFrom
+        filtersdic['filter_valueTo'] = filter_valueTo
+        return msg, status, filtersdic
+    
+    def searchAdvanced(self, user_seek, filters, searchType, project_id=0):
+        logger.debug('searchAdvanced')
+        msg, status, filtersdic = self.__parseSearchFilters(filters, searchType, project_id)
+        if status==0:
+            data = {'msg':msg, 'status': status}
+            reportData = simplejson.dumps(data, default=str)
+            return reportData
         
-        if searchType == "UIDs":
+        data = self.__retrieveRecords_advanced(user_seek, filtersdic)
+        # Retrieves 505 records, but does not include every sample bc ones with SHA or BTC are missing
+        
+        if searchType=="UIDs":
             msg = 'ignore filtering'
             data['tree'] = self.__getAttributeTree(data['rows'])
+        elif searchType=="FILTERING":
+            attribute = filtersdic['attribute']
+            if attribute!='none':
+                sampletype_id = filtersdic['sampletype_id']
+                filter_rule = filtersdic['filter_rule']
+                filter_valueFrom = filtersdic['filter_valueFrom']
+                filter_valueTo = filtersdic['filter_valueTo']
+                rows = self.__filterSamples(data['rows'], sampletype_id, attribute, filter_rule, filter_valueFrom, filter_valueTo) 
+                # After the data are filtered here, they all disappear, so they're all being filtered before arriving to the screen!
+                data['rows'] = rows
+                data['total'] = len(rows)
+            elif filtersdic['searchText'] is not None:
+                filtersdic['matchType'] = 'CONTAIN'
+                rows = self.__filterSamples_advanced(data['rows'], filtersdic)    
+                data['rows'] = rows
+                data['total'] = len(rows)
         else:
-            rows = self.__filterSamples_advanced(data['rows'], filtersdic) 
+            rows = self.__filterSamples_advanced(data['rows'], filtersdic)
             data['rows'] = rows
             data['total'] = len(rows)
             
@@ -3520,230 +3594,41 @@ class DBtable_sample(DBtable):
             
         data['msg'] = 'okay'
         data['status'] = 1
-        
         reportData = simplejson.dumps(data, default=str)
         return reportData
     
-    def retrieveRecords_advanced(self, user_seek, filtersdic):
-        sqlquery = self.__sqlQuery_select_records_advanced(filtersdic)
+    def __retrieveRecords_advanced(self, user_seek, filtersdic):
+        sqlquery = self.__sqlQuery_select_records(filtersdic)
+        print(f"sqlquery: {sqlquery}")
         headers = SAMPLE_HEADERS
         db_alias = settings.SEEK_DATABASE
         jdata = self.db.queryToListDics(sqlquery, headers, db_alias)
         total = len(jdata)
-        if total is None:
-            total = 0
-        else:
-            total = int(total)
+        #sqlquery = self.__sqlQuery_select_records(filtersdic, False)
+        #total = self.db.getQueryValue(sqlquery, db_alias)
+        #if total is None:
+        #    total = 0
+        #else:
+        #    total = int(total)
     
         jdata_new = self.reformatDataForClient(jdata)
         footer = []
         data = {'total':total,'rows':jdata_new,'footer':footer}
         return data
         
-        
-    def __sqlQuery_select_records_advanced(self, filtersdic, withLimit=True): 
-        sqlquery_select = self.__sqlQuery_select_records_select()
-        
-        project_id = filtersdic['project_id']
-        sqlquery_from = self.__sqlQuery_select_records_from(project_id)
-        orderby = filtersdic['orderby'] 
-        startNo = filtersdic['startNo'] 
-        endNo = filtersdic['endNo']   
-        sqlquery_where = self.__sqlQuery_select_records_filters_advanced(filtersdic)
-        sqlqueryMega = sqlquery_select + sqlquery_from + sqlquery_where
-        if len(orderby)==0:
-            orderby = " ORDER BY A.id desc"
-        
-        if withLimit:
-            sqlqueryMega = sqlquery_select + sqlquery_from + sqlquery_where + orderby
-        else:
-            sqlqueryMega = " SELECT count(A.id) " + sqlquery_from
-        
-        return sqlqueryMega
-    
-    
-    def __getSearchTerms(self, searchText):
-        terms = []
-        if searchText is None:
-            return terms
-        
-        # split accoring to new line
-        if '\n' in searchText:
-            lines = searchText.split('\n')
-        elif '\n\r' in searchText:
-            lines = searchText.split('\n\r')
-        else:
-            lines = [searchText]
-            
-        for line in lines:
-            line = line.strip()
-            for delimiter in (',', ';', ' ', '\t'):
-                if delimiter in line:
-                    termi = line.split(delimiter)
-                    for term in termi:
-                        term = term.strip()
-                        if len(term)>0 and term not in terms:
-                            terms.append(term)
-            
-            if len(line)>0 and line not in terms:
-                terms.append(line)
-                
-        if len(terms)==0:
-            terms.append(searchText.strip())
-        return terms
-        
-    def __sqlQuery_select_records_filters_uids(self, uids):
-        if len(uids)>0:
-            tarray = "('" + "','".join(uids) + "')"
-            tablefield = 'uid'
-            field = SAMPLE_FILTER_MAPPING[tablefield]
-            sqlquery_filter = " WHERE " + field + " in " + tarray + ";"
-        else:
-            sqlquery_filter = " "
-        
-        return sqlquery_filter
-    
-    def __sqlQuery_select_records_filters_keywords(self, terms):
-        query = {}
-        multi_match = True
-        for term in terms:
-            if '&' in term:
-                multi_match = False
-                
-        if multi_match:
-            query["multi_match"] = terms  
-        
-        if len(terms)==1:
-            term = terms[0]
-            if '&' in term:
-                termi = term.split('&')
-                query["match_all"] = termi
-        
-        tablefield = "json_metadata"
-        field = SAMPLE_FILTER_MAPPING[tablefield]
-        if "match_all" in query:
-            keywords = query["match_all"]
-            sqlquery_filter = ""
-            n = 0
-            for keyword in keywords:
-                if ":" in keyword:
-                    keyword = self.__getCleanKeyword(keyword)
-                
-                if n==0:
-                    sqlquery_filter += " WHERE " + field
-                else:
-                    sqlquery_filter += " AND " + field
-                sqlquery_filter += " LIKE '%" + str(keyword) + "%' "
-                n += 1
-        elif "multi_match" in query:
-            keywords = query["multi_match"]
-            sqlquery_filter = ""
-            n = 0
-            for keyword in keywords:
-                if ":" in keyword:
-                    keyword = self.__getCleanKeyword(keyword)
-                
-                if n==0:
-                    sqlquery_filter += " WHERE " + field
-                else:
-                    sqlquery_filter += " OR " + field
-                sqlquery_filter += " LIKE '%" + str(keyword) + "%' "
-                n += 1
-        else:
-            sqlquery_filter = ""
-            n = 0
-            for term in terms:
-                if n==0:
-                    if '&' not in term:
-                        keyword = term
-                        sqlquery_filter += " WHERE " + field
-                        if ":" in keyword:
-                                keyword = self.__getCleanKeyword(keyword)
-                                
-                        sqlquery_filter += " LIKE '%" + str(keyword) + "%' "
-                    else:
-                        keywords = term.split('&')
-                        i = 0
-                        for keyword in keywords:
-                            if ":" in keyword:
-                                keyword = self.__getCleanKeyword(keyword)
-                            
-                            if i==0:   
-                                sqlquery_filter += " WHERE (" + field
-                            else:
-                                sqlquery_filter += " AND " + field
-                            sqlquery_filter += " LIKE '%" + str(keyword) + "%' "
-                            i += 1
-                        sqlquery_filter += " )" 
-                else:
-                    if '&' not in term:
-                        keyword = term
-                        if ":" in keyword:
-                            keyword = self.__getCleanKeyword(keyword)
-                            
-                        sqlquery_filter += " OR " + field
-                        sqlquery_filter += " LIKE '%" + str(term) + "%' "
-                    else:
-                        keywords = term.split('&')
-                        i = 0
-                        for keyword in keywords:
-                            if ":" in keyword:
-                                keyword = self.__getCleanKeyword(keyword)
-                            
-                            if i==0:   
-                                sqlquery_filter += " OR (" + field
-                            else:
-                                sqlquery_filter += " AND " + field
-                            sqlquery_filter += " LIKE '%" + str(keyword) + "%' "
-                            i += 1
-                        sqlquery_filter += " )" 
-                n += 1
-                
-        return sqlquery_filter 
-    
     def __sqlQuery_select_records_filters_advanced(self, filtersdic):
-        if 'searchText' in filtersdic: 
-            searchText = filtersdic['searchText']
-            searchType = filtersdic['searchType']
-            
-            terms = self.__getSearchTerms(searchText)
-            if searchType=="UIDs":
-                sqlquery_filter = self.__sqlQuery_select_records_filters_uids(terms)
-            elif searchType=="Advanced":
-                sqlquery_filter, keywords = self.__getSearchTermsPubmed(searchText)
-            else:
-                sqlquery_filter = self.__sqlQuery_select_records_filters_keywords(terms)
-        
+        from .search import Search
+        spi = Search('')
+        sqlquery_filter = spi.designSearchAdvanced(filtersdic, SAMPLE_FILTER_MAPPING)            
+        if 'project_id' in filtersdic:
             project_id = filtersdic['project_id']
-            if project_id>0:
-                sqlquery_filter = sqlquery_filter + " AND D.project_id=" + str(project_id)
-        
-            return sqlquery_filter
-        
-        
-        filterRules = filtersdic['filterRules'] 
-        sqlquery_filter = ""
-        n = 0
-        for rule in filterRules:
-            tablefield = rule["field"]
-            value = rule["value"]
-            op = rule["op"]
-            if tablefield in SAMPLE_FILTER_MAPPING:
-                field = SAMPLE_FILTER_MAPPING[tablefield]
+            if int(project_id)>0:
+                sqlquery_filter = sqlquery_filter.replace('WHERE ', 'WHERE (')
+                sqlquery_filter = sqlquery_filter + ")"# AND D.project_id=" + str(project_id)    
             
-                if n==0:
-                    sqlquery_filter += " WHERE " + field
-                else:
-                    sqlquery_filter += " AND " + field
-                if op=="contains":
-                    sqlquery_filter += " LIKE '%" + str(value) + "%' "
-                elif op=="equal":
-                    sqlquery_filter += "='" + str(value) + "' "
-                else:
-                    sqlquery_filter += " LIKE '%" + str(value) + "%' "
-            n += 1
-        
+        logger.debug(sqlquery_filter)
         return sqlquery_filter
+            
     
     def __highlightKeyword(self, keyword, value, style=None):
         defaultStyle = "color:red;"
@@ -3763,19 +3648,93 @@ class DBtable_sample(DBtable):
                 value = value.replace(keyw, newKeyword)
         return value
     
+    def __highlightKeyValues(self, dici, terms, matchType, attribute=None):
+        separator = ',   '
+        attributeValue = ''
+        ki = 0
+        for key, value in sorted(dici.items()):
+            if value is None:
+                continue
+            try:
+                value = str(value)
+            except:
+                continue
+            
+            if attribute is not None:
+                if key==attribute:
+                    key = self.__highlightKeyword(key, key, "color:blue;font-weight:bold;")
+                    attributeValue += key + ':' + self.__highlightKeyword(value, value)
+                continue
+                
+            key = self.__highlightKeyword(key, key, "color:blue;font-weight:bold;")
+            valuel = value.lower()
+            for term in terms:
+                if matchType=='EXACT':
+                    if term==value or term.upper()==value.upper():
+                        if ki==0:
+                            attributeValue += key + ':' + self.__highlightKeyword(term, value)
+                        else:
+                            attributeValue += separator + key + ':' + self.__highlightKeyword(term, value)
+                        ki += 1
+                    continue   
+                        
+                if term in value or term.lower() in valuel:     
+                    if ki==0:
+                        attributeValue += key + ':' + self.__highlightKeyword(term, value)
+                    else:
+                        attributeValue += separator + key + ':' + self.__highlightKeyword(term, value)
+                    ki += 1
+                elif "&" in term:
+                    termi = term.split("&")
+                    for ti in termi:
+                        if ':' in ti:
+                            ti = self.__getCleanKeyword(ti)
+                                
+                        if ti in value or ti.lower() in valuel:
+                            if ki==0:
+                                attributeValue += key + ':' + self.__highlightKeyword(ti, value)
+                            else:
+                                attributeValue += separator + key + ':' + self.__highlightKeyword(ti, value)
+                            ki += 1
+                elif "^" in term:
+                    termi = term.split("^")
+                    for ti in termi:
+                        if ':' in ti:
+                            ti = self.__getCleanKeyword(ti)
+
+                        if ti in value or ti.lower() in valuel:
+                            if ki==0:
+                                attributeValue += key + ':' + self.__highlightKeyword(ti, value)
+                            else:
+                                attributeValue += separator + key + ':' + self.__highlightKeyword(ti, value)
+                            ki += 1            
+                elif ':' in term:
+                    term = self.__getCleanKeyword(term)
+                    if term in value or term.lower() in valuel:     
+                        if ki==0:
+                            attributeValue += key + ':' + str(value)
+                        else:
+                            attributeValue += separator + key + ':' + self.__highlightKeyword(term, value)
+                        ki += 1
+                    
+        return attributeValue
+    
     def __filterSamples_advanced(self, jdata, filtersdic):
         filterRules = filtersdic['filterRules']
         sampletype_id = filtersdic['sampletype_id']
         attribute = filtersdic['attribute']
         matchType = filtersdic['matchType']
-        searchType = filtersdic['searchType']
         
         filter_rule = None
         filter_valueFrom = None
         filter_valueTo = None
         
         searchText = filtersdic['searchText']
-        query, terms = self.__getSearchTermsPubmed(searchText)
+        from .search import Search
+        spi = Search('')
+        tableField = 'json_metadata'
+        categoryField = 'sample_type_id'
+        query, terms = spi.designSearchPubmed(searchText, tableField, categoryField)
         
         sampletype_id = 0
         
@@ -3787,68 +3746,8 @@ class DBtable_sample(DBtable):
             sample_type_id = data['sample_type_id']
             dici = self.__getRecordFromJson(json_metadata)
             
-            attributeValue = ''
-            ki = 0
-            for key, value in sorted(dici.items()):
-                if value is None:
-                    continue
-                try:
-                    value = str(value)
-                except:
-                    continue
-                
-                key = self.__highlightKeyword(key, key, "color:blue;font-weight:bold;")
-                
-                valuel = value.lower()
-                for term in terms:
-                    if matchType=='EXACT':
-                        if term==value or term.upper()==value.upper():
-                            if ki==0:
-                                attributeValue += key + ':' + self.__highlightKeyword(term, value)
-                            else:
-                                attributeValue += separator + key + ':' + self.__highlightKeyword(term, value)
-                            ki += 1
-                        continue    
-                    
-                    if term in value or term.lower() in valuel:     
-                        if ki==0:
-                            attributeValue += key + ':' + self.__highlightKeyword(term, value)
-                        else:
-                            attributeValue += separator + key + ':' + self.__highlightKeyword(term, value)
-                        ki += 1
-                    elif "&" in term:
-                        termi = term.split("&")
-                        for ti in termi:
-                            if ':' in ti:
-                                ti = self.__getCleanKeyword(ti)
-                            
-                            if ti in value or ti.lower() in valuel:
-                                if ki==0:
-                                    attributeValue += key + ':' + self.__highlightKeyword(ti, value)
-                                else:
-                                    attributeValue += separator + key + ':' + self.__highlightKeyword(ti, value)
-                                ki += 1
-                    elif "^" in term:
-                        termi = term.split("^")
-                        for ti in termi:
-                            if ':' in ti:
-                                ti = self.__getCleanKeyword(ti)
-
-                            if ti in value or ti.lower() in valuel:
-                                if ki==0:
-                                    attributeValue += key + ':' + self.__highlightKeyword(ti, value)
-                                else:
-                                    attributeValue += separator + key + ':' + self.__highlightKeyword(ti, value)
-                                ki += 1            
-                    elif ':' in term:
-                        term = self.__getCleanKeyword(term)
-                        if term in value or term.lower() in valuel:     
-                            if ki==0:
-                                attributeValue += key + ':' + str(value)
-                            else:
-                                attributeValue += separator + key + ':' + self.__highlightKeyword(term, value)
-                            ki += 1
-    
+            attributeValue = self.__highlightKeyValues(dici, terms, matchType)
+            
             if len(attributeValue)==0:
                 continue
     
@@ -3863,6 +3762,7 @@ class DBtable_sample(DBtable):
 
         return jdata_new
     
+    
     def __getCleanKeyword(self, keywordIn):
         keywordOut = keywordIn
         if ':' in keywordIn:
@@ -3873,293 +3773,6 @@ class DBtable_sample(DBtable):
                 keywordOut = tii[-1]
         
         return keywordOut
-    
-    def __findMatchedParentheses(self, s, leftPT='(', rightPT=')'):
-        ''' Refer to: https://stackoverflow.com/questions/29991917/indices-of-matching-parentheses-in-python
-        
-        Examples:
-            S = '((((dfdfd) OR (feefe)) AND (eeewewe)) NOT (eefefe)) NOT (hhghjhh[Author])'
-            find_parens(S) = {3: 9, 14: 20, 2: 21, 27: 35, 1: 36, 42: 49, 0: 50, 56: 72}
-            
-            s = 'ssasas'
-            find_parens(s) = {}
-
-            s = '(ssasas'
-            ab = find_parens(s)
-                Traceback (most recent call last):
-                  File "<stdin>", line 1, in <module>
-                  File "<stdin>", line 12, in find_parens
-                IndexError: No matching opening parens at: 0
-        '''
-        toret = {}
-        pstack = []
-
-        for i, c in enumerate(s):
-            if c==leftPT:
-                pstack.append(i)
-            elif c==rightPT:
-                if len(pstack) == 0:
-                    raise IndexError("No matching closing parens at: " + str(i))
-                toret[pstack.pop()] = i
-
-        if len(pstack) > 0:
-            raise IndexError("No matching opening parens at: " + str(pstack.pop()))
-
-        return toret
-    
-    
-    def __parseKeyword(self, keyword):
-        sampleType = None
-        if '[' not in keyword or ']' not in keyword:
-            return keyword, sampleType
-            
-        try:
-            pts = self.__findMatchedParentheses(keyword, '[', ']')
-        except:
-            logger.debug("Warning: Search text has mismatched parentheses [ or ] in : " + keyword) 
-            return keyword, sampleType
-            
-        if pts is None or not pts:
-            return keyword, sampleType
-        
-        sids = []
-        kws = []
-        for i, j in pts.items():
-            term = keyword[(i+1):j] 
-            termi = keyword[i:(j+1)]   
-            sids.append(term)
-            kw = keyword[0:i]       
-            kws.append(kw)
-            
-        if len(sids)!=1:
-            logger.debug("Warning: Search text not in the right format for sample_type_id: " + keyword) 
-            return keyword, sampleType
-        
-        keyword = kws[0].strip()
-        sampleType = sids[0].strip()
-        sampleType = sampleType.upper()
-        return keyword, sampleType
-            
-        
-    
-    def __designConstraint(self, field, keyword, isNOT=False):
-        if isNOT:
-            constraint = field + " NOT LIKE '%" + str(keyword) + "%' "
-        else:
-            constraint = field + " LIKE '%" + str(keyword) + "%' "
-            
-        keyword, sampleType = self.__parseKeyword(keyword)
-        if sampleType is None:
-            return constraint
-            
-        stype = DBtable_sampletype()
-        sample_type_id = stype.getSampleTypeID(sampleType)
-        try:
-            sample_type_id = int(sample_type_id)
-        except:
-            logger.debug("Warning: Search text not in the right format for sample_type_id: " + keyword) 
-            return constraint
-        
-        if isNOT:
-            constraint = "(" + field + " NOT LIKE '%" + str(keyword) + "%' AND sample_type_id=" + str(sample_type_id) + ")"
-        else:
-            constraint = "(" + field + " LIKE '%" + str(keyword) + "%' AND sample_type_id=" + str(sample_type_id) + ")"            
-            
-        return constraint
-        
-    def __designDualConstraint(self, field, expression, operator, termsdic):
-        query = ''
-        if operator not in expression:
-            return None
-        
-        terms = expression.split(operator)
-        if len(terms)!=2:
-            msg = "More than two" + operator + "operations found in: " + expression
-            logger.debug(msg)
-            return None
-                    
-        keyword1 = terms[0].strip()
-        keyword2 = terms[1].strip()
-        
-        isNOT = False
-        operator2 = operator
-        if operator==' NOT ':
-            isNOT = True
-            operator2 = ' AND '
-            
-        if keyword1 not in termsdic:
-            constraint1 = self.__designConstraint(field, keyword1)
-            query += constraint1
-            if keyword2 not in termsdic:
-                constraint2 = self.__designConstraint(field, keyword2, isNOT)
-                query += operator2 + constraint2
-            else:
-                nextExpression = termsdic[keyword2]
-                subQuery = self.__designIterativeQuery(nextExpression, field, termsdic)
-                if subQuery is not None:
-                    query += operator2 + " (" + subQuery + ") "
-                
-        else:
-            nextExpression = termsdic[keyword1]
-            subQuery1 = self.__designIterativeQuery(nextExpression, field, termsdic)
-                
-            if keyword2 not in termsdic:
-                constraint2 = self.__designConstraint(field, keyword2, isNOT)
-                if subQuery1 is not None:
-                    query += " (" + subQuery1 + ") " + operator2
-                query += constraint2
-                
-            else:
-                nextExpression = termsdic[keyword2]
-                subQuery2 = self.__designIterativeQuery(nextExpression, field, termsdic)
-                if subQuery1 is not None:
-                    if subQuery2 is not None:
-                        query += " (" + subQuery1 + ") " + operator2 + " (" + subQuery2 + ") "
-                    else:
-                        query += " (" + subQuery1 + ") "
-                else:
-                    if subQuery2 is not None:
-                        query += " (" + subQuery2 + ") "
-                    
-        return query
-        
-    def __validateExpression(self, expression):
-        isValid = True
-        operatorFound = None
-        noOperators = 0
-        
-        expression = expression.upper().strip()
-        for operator in [' NOT ', ' AND ', ' OR ']:
-            if operator in expression:
-                terms = expression.split(operator)
-                if len(terms)!=2:
-                    isValid = False
-                else:
-                    operatorFound = operator
-                    noOperators += 1
-                
-        if noOperators>1:
-            isValid = False
-            
-        return isValid, operatorFound   
-        
-        
-    def __designIterativeQuery(self, expression, field, termsdic):
-        isValid, operatorFound = self.__validateExpression(expression)
-        if not isValid:
-            msg = 'Search expression not in the valid format: ' + expression
-            logger.debug(msg)
-            return None
-            
-        if operatorFound is None:
-            constraint = self.__designConstraint(field, expression)
-            query = constraint
-        else:
-            query = self.__designDualConstraint(field, expression, operatorFound, termsdic)     
-            
-        return query
-    
-    def __getDualKeywords(self, expression, operator, termsdic):
-        keywords = []
-        if operator not in expression:
-            return keywords
-        
-        terms = expression.split(operator)
-        if len(terms)!=2:
-            msg = "More than two" + operator + "operations found in: " + expression
-            logger.debug(msg)
-            return keywords
-                    
-        keyword1 = terms[0].strip()
-        keyword2 = terms[1].strip()
-        
-        if keyword1 not in termsdic:
-            keywords.append(keyword1)
-            if keyword2 not in termsdic:
-                keywords.append(keyword2)
-            else:
-                nextExpression = termsdic[keyword2]
-                keywords += self.__getKeywords(nextExpression, termsdic)
-        else:
-            nextExpression = termsdic[keyword1]
-            keywords += self.__getKeywords(nextExpression, termsdic)
-            if keyword2 not in termsdic:
-                keywords.append(keyword2)
-            else:
-                nextExpression = termsdic[keyword2]
-                keywords += self.__getKeywords(nextExpression, termsdic)
-                    
-        return keywords
-    
-    
-    def __getKeywords(self, expression, termsdic):
-        keywords = []
-        isValid, operatorFound = self.__validateExpression(expression)
-        if operatorFound is None:
-            keywords.append(expression)
-        else: 
-            keywords += self.__getDualKeywords(expression, operatorFound, termsdic)  
-        
-        keywords_new = []
-        for keyword in keywords:
-            keyword, sampleType = self.__parseKeyword(keyword)
-            keywords_new.append(keyword)
-            
-        return keywords_new
-    
-    def __getSearchTermsPubmed(self, searchText):
-        query = ''
-        if searchText is None:
-            return query
-        try:
-            pts = self.__findMatchedParentheses(searchText)
-        except:
-            logger.debug("Warning: Search text has mismatched parentheses in : " + searchText) 
-            return query
-        
-        searching = True
-        ni = 0
-        sss = searchText
-        iterations = []
-        termsdic = {}
-        keywords = []
-        while(searching):
-            if pts is None or not pts:
-                si = {}
-                si['sss'] = sss
-                si['pts'] = pts
-                iterations.append(si)    
-                searching = False
-                
-            for i, j in pts.items():
-                term = sss[(i+1):j]
-                termi = sss[i:(j+1)]
-                if '(' not in term and ')' not in term:
-                    termRep = 'term_' + str(i) + '_' + str(j+1)
-                    if termRep not in termsdic:
-                        termsdic[termRep] = term   
-                    sss = sss.replace(termi, termRep)
-            
-            si = {}
-            si['sss'] = sss
-            si['pts'] = pts
-            iterations.append(si)
-            pts = self.__findMatchedParentheses(sss)
-        
-        query = ""
-        field = 'json_metadata'
-        
-        si = iterations[-1]
-        expression = si['sss']     
-        query = self.__designIterativeQuery(expression, field, termsdic)
-        if query is None:
-            query = field + " LIKE '%" + str(expression) + "%' "
-        
-        query = 'WHERE ' + query
-        logger.debug("keyword query filter: " + query)
-        
-        keywords = self.__getKeywords(expression, termsdic)
-        return query, keywords
         
  
     def __createSampleTreeFromDB(self, sample_ids):
@@ -4167,7 +3780,12 @@ class DBtable_sample(DBtable):
         
         includeChilren = True
         parentList = []
+        ntotal = len(sample_ids)
+        n = 0
         for sample_id in sample_ids:
+            n += 1
+            msg = "Retrieve sample tree " + str(sample_id) + " " + str(n) + "/" + str(ntotal)
+            logger.debug(msg)
             id = int(sample_id)
             objs = Sample_tree.objects.filter(sample_id=id)
             total = objs.count()
@@ -4178,7 +3796,7 @@ class DBtable_sample(DBtable):
                 fullTreeList = atree
                 upTreeList = fullTreeList
             else:
-                upTreeList = self.__createMultiParentTree(sample_id, includeChilren)
+                upTreeList, parent_uids = self.__createMultiParentTree(sample_id, includeChilren)
 
             parentList_i = self.__getChildrenListLoop(upTreeList)
             parentList += parentList_i
@@ -4215,24 +3833,42 @@ class DBtable_sample(DBtable):
                 
                 terms = header.split(':')
                 stype = terms[0]
+                if '_' in stype:
+                    # such as 'DNA_1'
+                    terms = stype.split('_')
+                    stype = terms[0]
+                    
                 if stype not in stypes:
                     stypes.append(stype)
             
             treeChildren = {}
+            uniqueIDs = []
             for header in headers_filter:
                 if ':' not in header:
                     continue
                 
                 terms = header.split(':')
                 stype = terms[0]
+                if '_' in stype:
+                    # such as 'DNA_1'
+                    terms2 = stype.split('_')
+                    stype = terms2[0]
+                
                 if stype in treeChildren:
                     children = treeChildren[stype]
                 else:
                     children = []
                 
                 attribute = terms[1]
+                uniqueID = stype + ':' + attribute
+                if uniqueID in uniqueIDs:
+                    # such as header='DNA_1:uid' and 'DNA_2:uid', uniqueID='DNA:uid'
+                    continue
+                else:
+                    uniqueIDs.append(uniqueID)
+                
                 child = {}
-                child['id'] = header
+                child['id'] = uniqueID
                 if header in headers_noneConstant:
                     #child["text"] = attribute
                     child["text"] = '<span style="color:red;">' + attribute + '</span>'
@@ -4267,12 +3903,16 @@ class DBtable_sample(DBtable):
         sampleTree['children'] = childrenTree
         
         includeChilren = True
-        fullTreeList = self.__createMultiParentTree(sample_id, includeChilren, childrenTree)
+        fullTreeList, parent_uids = self.__createMultiParentTree(sample_id, includeChilren, childrenTree)
         sampleTree['full'] = fullTreeList
-        sampleTree['parents'] = ''
+        
+        if parent_uids is None:
+            sampleTree['parents'] = ''
+        elif len(parent_uids)==0:
+            sampleTree['parents'] = ''
+        else:
+            sampleTree['parents'] = ';'.join(parent_uids)
         return sampleTree
-        
-        
        
     def updateChildrenTreeDic(self, childrenTrees, uid, childrenTree):
         if uid in childrenTrees:
@@ -4309,9 +3949,304 @@ class DBtable_sample(DBtable):
             
         return sampleTypes
         
+    def __getChildrenListLoop_noTree(self, parentTreeData):
+        sampleTypes = {}
+        for node in parentTreeData:
+            if 'children' in node:
+                children = node['children']
+                sampleTypes = self.__getChildrenListLoop(children)
+            else:
+                sampleTypes = {}
+            
+            uid = node['id']
+            terms = uid.split('-')
+            sampleType = terms[0]
+            if sampleType in sampleTypes:
+                uids = sampleTypes[sampleType]
+            else:
+                uids = []
+            if uid not in uids:
+                uids.append(uid)
+            sampleTypes[sampleType] = uids
+        
+        return sampleTypes
         
         
+    def __createSampleTreeFromDB_noTree(self, sample_ids):
+        logger.debug("createSampleTreeFromDB_noTree")
+        from .models import Sample_tree
         
+        includeChilren = True
+        parentList = []
+        ntotal = len(sample_ids)
+        n = 0
+        sampleTypes = {}
+        for sample_id in sample_ids:
+            n += 1
+            msg = "Retrieve sample tree " + str(sample_id) + " " + str(n) + "/" + str(ntotal)
+            logger.debug(msg)
+            id = int(sample_id)
+            objs = Sample_tree.objects.filter(sample_id=id)
+            total = objs.count()
+            if total==1:
+                obj = objs[0]
+                fullTree = obj.full
+                atree = json.loads(fullTree)
+                fullTreeList = atree
+                upTreeList = fullTreeList
+            else:
+                upTreeList, parent_uids = self.__createMultiParentTree(sample_id, includeChilren)
+
+            parentList_i = self.__getChildrenListLoop(upTreeList)
+            parentList += parentList_i
+            '''
+            sampleTypes_i = self.__getChildrenListLoop_noTree(upTreeList)
+            for sampleType in sampleTypes_i:
+                uids_i = sampleTypes_i[sampleType]
+                if sampleType in sampleTypes:
+                    uids = sampleTypes[sampleType]
+                    for uid in uids_i:
+                        if uid not in uids:
+                            uids.append(uid)
+                    sampleTypes[sampleType] = uids
+                else:
+                    sampleTypes[sampleType] = uids_i
+            '''
+        sampleTypes = self.__getTreeSampleTypes(parentList)
+        return sampleTypes
         
+    def __getSampleTypeFromUID(self, sampleUID):
+        if "-" in sampleUID:
+            terms = sampleUID.split('-')
+            sampleType = terms[0]
+            if '_' in sampleType:
+                # such as 'DNA_1'
+                terms = sampleType.split('_')
+                sampleType = terms[0]
+        else:
+            sampleType = uid
+        return sampleType
         
+    def __getTreeSampleTypes(self, parentList):
+        logger.debug("getTreeSampleTypes")
+        sampleTypes = {}
+        for listi in parentList:
+            for uid in listi:
+                sampleType = self.__getSampleTypeFromUID(uid)
+                if sampleType in sampleTypes:
+                    uids = sampleTypes[sampleType]
+                else:
+                    uids = []
+                
+                if uid not in uids:
+                    uids.append(uid)
+                sampleTypes[sampleType] = uids
+        return sampleTypes
+    
+    def __retrieveSamples(self, headers, sample_uids):
+        return self.__retrieveSamples_v2(headers, sample_uids)
+            
+        logger.debug("retrieveSamples")
+        status = 1
+        msg = ''
+        diclist = []
+        nsamplesOutput = 0
+        for uid in sample_uids:
+            record = self.__retrieveSampleByUID(uid)
+            if record is None:
+                msgi = 'Error: Sample uid ' + str(uid) +  ' not found in DB '
+                status = 0
+                msg += msgi + '<br/>'
+                logger.debug(msgi)
+                continue
+            
+            json_metadata = record['json_metadata']
+            dici = self.__getRecordFromJson(json_metadata)
+            dici_rev = {}
+            for header in headers:
+                hi = header.lower().strip()
+                if hi in dici:
+                    dici_rev[header] = dici[hi]
+                else:
+                    dici_rev[header] = ''
+            
+            diclist.append(dici_rev)
+            nsamplesOutput += 1
+        
+        #n1 = len(diclist)
+        #diclist = removeRedundancy(headers, diclist)
+        #n2 = len(diclist)
+        #msg = "Number of rows before and after filtering: " + str(n1) + ' ' + str(n2)
+        #logger.debug(msg)
+        return diclist, msg, status, nsamplesOutput
+    
+    
+    def __retrieveSamples_v2(self, headers, sample_uids):
+        logger.debug("retrieveSamples_v2")
+        status = 1
+        msg = ''
+        nsamplesOutput = 0
+        diclist = []
+        
+        query = {}
+        query['uuid__in'] = sample_uids
+        qset = Q(**query)
+        records = self.queryRecordsCustom(qset)
+        if len(records)==0:
+            msg = 'retrieveSamples_v2: Custom retrieval not working'
+            logger.debug(msg)
+            return diclist, msg, status, nsamplesOutput
+        
+        #print(records)
+        for record in records:  
+            if record is None:
+                msgi = 'Error: Sample not found in DB '
+                status = 0
+                msg += msgi + '<br/>'
+                logger.debug(msgi)
+                continue
+            
+            json_metadata = record['json_metadata']
+            dici = self.__getRecordFromJson(json_metadata)
+            dici_rev = {}
+            for header in headers:
+                hi = header.lower().strip()
+                if hi in dici:
+                    dici_rev[header] = dici[hi]
+                else:
+                    dici_rev[header] = ''
+            
+            diclist.append(dici_rev)
+            nsamplesOutput += 1
+        
+        #n1 = len(diclist)
+        #diclist = removeRedundancy(headers, diclist)
+        #n2 = len(diclist)
+        #msg = "Number of rows before and after filtering: " + str(n1) + ' ' + str(n2)
+        #logger.debug(msg)
+        return diclist, msg, status, nsamplesOutput
+        
+    def __exportSamplesInZipfile(self, sampleTypes, dzipfile='test.zip', attributeFilter=None):
+        logger.debug("exportSamplesInZipfile")
+        
+        headersFiltered = []
+        if attributeFilter is not None and len(attributeFilter)>0:
+            if ',' in attributeFilter:
+                headersFiltered = attributeFilter.split(',')
+        if len(headersFiltered)==0:
+            logger.error(attributeFilter)
+            return 0
+                
+        sattr = DBtable_sampleattribute()
+        dtype = DBtable_sampletype()
+        zf = zipfile.ZipFile(dzipfile, mode='w')
+        
+        n = 0
+        for sampleType in sampleTypes:
+            suffix = '-' + sampleType + '.xls'
+            downfilei = dzipfile.replace('.zip', suffix)
+            #logger.debug(downfilei)
+            
+            sample_uids = sampleTypes[sampleType]
+            sample_type_id = dtype.getSampleTypeID(sampleType)
+            attributeInfo = sattr.getAttributeInfo(sample_type_id)
+            headers = attributeInfo['headers']
+            headers_new = []
+            for header in headers:
+                header_new = sampleType + ':' + header.lower()
+                if header_new in headersFiltered:
+                    headers_new.append(header)
+            
+            if len(headers_new)>0:
+                logger.debug(downfilei)
+                diclist, msg, status, nsamplesOutput = self.__retrieveSamples(headers_new, sample_uids)
+                isNewSheet = True
+                saveExcelDiclist(downfilei, headers_new, diclist, 'Samples', isNewSheet)
+                terms = downfilei.split('/')
+                filenamei = terms[-1]
+                if status:
+                    zf.write(downfilei, filenamei)
+                    n += nsamplesOutput
+            else:
+                msg = 'exportSamplesInZipfile: No metadata for sampletype: ' + sampleType
+                logger.debug(msg)
+                
+        return n
+    
+    def __exportSamplesInExcel(self, sampleTypes, excelfile, attributeFilter=None):
+        logger.debug("exportSamplesInExcel")
+        
+        headersFiltered = []
+        if attributeFilter is not None and len(attributeFilter)>0:
+            if ',' in attributeFilter:
+                headersFiltered = attributeFilter.split(',')
+        #if len(headersFiltered)==0:
+        #    logger.error(attributeFilter)
+        #    return 0
+        excludeEmptyColumns = False
+        if len(headersFiltered)==0:
+            excludeEmptyColumns = True
+                
+        sattr = DBtable_sampleattribute()
+        dtype = DBtable_sampletype()
+        n = 0
+        isNewFile = True
+        for sampleType in sampleTypes:
+            sample_uids = sampleTypes[sampleType]
+            sample_type_id = dtype.getSampleTypeID(sampleType)
+            attributeInfo = sattr.getAttributeInfo(sample_type_id)
+            headers = attributeInfo['headers']
+            headers_new = []
+            for header in headers:
+                header_new = sampleType + ':' + header.lower()
+                if header_new in headersFiltered:
+                    headers_new.append(header)
+                elif excludeEmptyColumns:
+                    headers_new.append(header)
+            
+            if len(headers_new)>0:
+                msg = 'exportSamplesInExcel: Retrieve sampletype: ' + sampleType + ' ' + str(len(sample_uids))
+                print(msg)
+                diclist, msg, status, nsamplesOutput = self.__retrieveSamples(headers_new, sample_uids)
+                if isNewFile:
+                    saveExcelDiclist(excelfile, headers_new, diclist, sampleType, isNewFile, excludeEmptyColumns)
+                else:
+                    AddExcelDiclist(excelfile, headers_new, diclist, sampleType, excludeEmptyColumns)
+               
+                isNewFile = False
+                if status:
+                    n += nsamplesOutput
+            else:
+                msg = 'exportSamplesInExcel: No metadata for sampletype: ' + sampleType
+                #print(msg)
+                #print(headers)
+                #print(headers_new)
+                #print(headersFiltered)
+                logger.debug(msg)
+                
+        return n
+        
+    def downloadSamples_noTree(self, user_seek, dzipfile, link, sample_ids, includeSampleTree=1, attributeFilter=None):
+        logger.debug("downloadSamples_noTree")
+        
+        sampleTypes = self.__createSampleTreeFromDB_noTree(sample_ids)
+        
+        if ".zip" in dzipfile:
+            # download a zip file, in which each sample type has its own excel file
+            nsamplesOutput = self.__exportSamplesInZipfile(sampleTypes, dzipfile, attributeFilter)
+        else:
+            downloadfile = dzipfile
+            nsamplesOutput = self.__exportSamplesInExcel(sampleTypes, downloadfile, attributeFilter)
+        data = {}
+        data['link'] = link
+        #if nsamplesOutput>=len(sample_ids):
+        if nsamplesOutput>0:
+            data['msg'] = 'okay'
+            data['status'] = 1
+        else:
+            data['msg'] = 'Warning: Number of samples output: ' + str(nsamplesOutput) + ' is less than the number selected: ' + str(len(sample_ids))
+            data['status'] = 0
+            
+        reportData = simplejson.dumps(data, default=str)
+        return reportData    
         
