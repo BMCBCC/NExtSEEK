@@ -188,7 +188,7 @@ class DBconn_django(object):
         id = 0
         if "id" in record:
             id = record["id"]
-        if id>0:
+        if int(id) > 0:
             msg, status = self.__updateOneRecord(tablemodel, record)
         else:
             id = self.getLatestID(tablemodel)
