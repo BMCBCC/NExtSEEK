@@ -1534,7 +1534,6 @@ class DBtable_sample(DBtable):
     def __getParentUIDs(self, sampleDic):
         uids = []
         for key, value in sampleDic.items():
-            print(f"key: {key}\nSAMPLE_PARENT_ACCESSOR_NAME: {SAMPLE_PARENT_ACCESSOR_NAME}")
             if SAMPLE_PARENT_ACCESSOR_NAME in key.lower():
                 if value is None:
                     continue
@@ -2895,7 +2894,7 @@ class DBtable_sample(DBtable):
         
         diclist = []
         for header in headers:
-            headerlower = header.lower()
+            headerlower = header.strip()
             attrdici = {}
             attrdici['attrname'] = header
             if headerlower in dici:
