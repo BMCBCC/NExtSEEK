@@ -2819,7 +2819,7 @@ class DBtable_sample(DBtable):
         weblink = attrvalue
         value = attrvalue
         
-        if SAMPLE_PARENT_ACCESSOR_NAME in attrname:
+        if SAMPLE_PARENT_ACCESSOR_NAME in attrname.lower():
             if attrvalue is None:
                 return weblink
             
@@ -2840,7 +2840,7 @@ class DBtable_sample(DBtable):
                 if len(value)>0:
                     weblink = self.__formatSampleUIDLink(value)
         
-        elif SAMPLE_PROTOCOL_ACCESSOR_NAME in attrname:
+        elif SAMPLE_PROTOCOL_ACCESSOR_NAME in attrname.lower():
             if attrvalue is None:
                 return weblink
             
@@ -2861,17 +2861,17 @@ class DBtable_sample(DBtable):
                 if len(value)>0:
                     weblink = self.__formatSopUIDLink(value)
         
-        elif SAMPLE_LINK_ACCESSOR_NAME in attrname:
+        elif SAMPLE_LINK_ACCESSOR_NAME in attrname.lower():
             if attrvalue is None:
                 return weblink
             weblink = self.__formatExternalLink(attrvalue)
             
-        elif SAMPLE_FILE_ACCESSOR_NAME in attrname:
+        elif SAMPLE_FILE_ACCESSOR_NAME in attrname.lower():
             if attrvalue is None:
                 return weblink
             weblink = self.__formatExternalLink(attrvalue)
             
-        elif SAMPLE_PUBLISH_ACCESSOR_NAME in attrname:
+        elif SAMPLE_PUBLISH_ACCESSOR_NAME in attrname.lower():
             if attrvalue is None:
                 return weblink
             weblink = self.__formatExternalLink(attrvalue)
