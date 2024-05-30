@@ -111,7 +111,7 @@ class Search():
             The clause, such as
                 "sample_type_id=15"
         '''
-        from dbtable_sampletype import DBtable_sampletype
+        from .dbtable_sampletype import DBtable_sampletype
         
         clause = None
         stype = DBtable_sampletype()
