@@ -582,7 +582,7 @@ def fileDownloadEncoded(request, url_redirect, fileInfo):
         file_path = fileInfo['fullfilename']
         file_name = fileInfo['originalfilename']
         
-        file_wrapper = FileWrapper(file(file_path,'rb'))
+        file_wrapper = FileWrapper(open(file_path,'rb'))
         file_mimetype = mimetypes.guess_type(file_path)
         response = HttpResponse(file_wrapper, content_type=file_mimetype )
         response['X-Sendfile'] = file_path
