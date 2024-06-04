@@ -3451,7 +3451,7 @@ class DBtable_sample(DBtable):
             dici = self.__getRecordFromJson(json_metadata)
             dici_rev = {}
             for header in headers:
-                hi = header.lower().strip()
+                hi = header.strip()
                 if hi in dici:
                     dici_rev[header] = dici[hi]
                 else:
@@ -4063,7 +4063,8 @@ class DBtable_sample(DBtable):
             dici = self.__getRecordFromJson(json_metadata)
             dici_rev = {}
             for header in headers:
-                hi = header.lower().strip()
+                # hi = header.lower().strip()
+                hi = header.strip()
                 if hi in dici:
                     dici_rev[header] = dici[hi]
                 else:
@@ -4109,7 +4110,8 @@ class DBtable_sample(DBtable):
             dici = self.__getRecordFromJson(json_metadata)
             dici_rev = {}
             for header in headers:
-                hi = header.lower().strip()
+                # hi = header.lower().strip()
+                hi = header.strip()
                 if hi in dici:
                     dici_rev[header] = dici[hi]
                 else:
