@@ -1108,12 +1108,12 @@ def main():
         
         updateTrees(input_csv_file, output_csv_file, 'DMAC')
     else:
-        print "Usage: python updateTrees.py keyword\n"
-        print "where the keyword has the following options: \n"
-        print "     update - Update those trees that are present in samples table but not in seek_sample_tree table.\n"
-        print "     renew - Renew all trees in seek_sample_tree table, not tested yet.\n"
-        print "     generate - Renew all trees in seek_sample_tree table\n"
-        print "     generate 89903 - Only renew the tree for sample id=89903\n"
+        print("Usage: python updateTrees.py keyword\n")
+        print("where the keyword has the following options: \n")
+        print("     update - Update those trees that are present in samples table but not in seek_sample_tree table.\n")
+        print("     renew - Renew all trees in seek_sample_tree table, not tested yet.\n")
+        print("     generate - Renew all trees in seek_sample_tree table\n")
+        print("     generate 89903 - Only renew the tree for sample id=89903\n)"
         sys.exit()
     
 if __name__ == '__main__':
