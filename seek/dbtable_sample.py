@@ -255,11 +255,12 @@ class DBtable_sample(DBtable):
     
     def __getRecordToJson(self, record, attributeInfo):
         headers = attributeInfo['headers']
+        record = {k.lower(): v for k, v in record.items()}
         record_new = {}
         for header in headers:
-            field = header.lower()
-            if header in record:
-                record_new[field] = toString(record[header])
+            field = header
+            if header.lower() in record:
+                record_new[field] = toString(record[header.lower()])
             else:
                 record_new[field] = ''
         
