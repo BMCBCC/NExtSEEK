@@ -50,7 +50,7 @@ class DBconnection(object):
         
     def storeOneRecord(self, tablemodel, record, primarykey=None, primaryvalue=None, excludeKeys=[]):
         id, msg = self.__dbconn.storeOneRecord(tablemodel, record)
-        if id>0:
+        if int(id)>0:
             primarykey = id
         else:
             primarykey = 0
@@ -92,7 +92,7 @@ class DBconnection(object):
             
     def __updateRecordViaKeyword(self, tablemodel, uniqueField, uniqueKeyword, record):
         id = self.getPrimarykey(tablemodel, uniqueField, uniqueKeyword)
-        if id<=0:
+        if int(id)<=0:
             msg = "Warning: The primary key for the table is not valid."
             logger.debug(msg)
             return -1, msg
@@ -112,7 +112,7 @@ class DBconnection(object):
 
     def updateNotesViaKeyword(self, tablemodel, uniqueField, uniqueKeyword, notes):
         id = self.getPrimarykey(tablemodel, uniqueField, uniqueKeyword)
-        if id<=0:
+        if int(id)<=0:
             msg = "Warning: The primary key for the table is not valid."
             logger.debug(msg)
             return -1, msg
@@ -241,7 +241,7 @@ class DBconnection(object):
         record = {}
         keyword = datadic[unqiuefield]
         id = self.getPrimarykey(tablemodel, unqiuefield, keyword.strip())
-        if id>0:
+        if int(id)>0:
             record['id'] = id
        
         for field in expectedfields:

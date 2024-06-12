@@ -12,6 +12,8 @@ from django.db.models import Q
 
 import datetime
 import simplejson
+import logging
+logger = logging.getLogger(__name__)
 
 from dmac.iocsv import saveCsvfile, getString, getFloat
 from dmac.conversion import convertSQLString, is_numeric

@@ -347,12 +347,13 @@ class DBtable_data_files(DBtable):
         dfrecord['content_type'] = content_type
         
         fullfilename = dfrecord['fullfilename']
-        if df_id>0:
-            report['msg'] = DATAFILE_ERRORCODE['101']
-            report['status'] = -1
-            dfrecord['notes'] = report['msg']
-            report['newrow'] = dfrecord
-            return report
+        if df_id is not None:
+            if df_id>0:
+                report['msg'] = DATAFILE_ERRORCODE['101']
+                report['status'] = -1
+                dfrecord['notes'] = report['msg']
+                report['newrow'] = dfrecord
+                return report
         
         handle_uploaded_file(infile, fullfilename)
         md5Now = getFileChecksum(fullfilename, 'MD5')
