@@ -296,7 +296,7 @@ class DBtable_sops(DBtable):
         
         report = {}
         df_id, asset_type, dfrecord = self.__defineSOP(creator, originalfilename)
-        if df_id>0:
+        if int(df_id)>0:
             report['msg'] = SOP_ERRORCODE['205'] + originalfilename
             report['status'] = 0
             dfrecord['notes'] = report['msg']

@@ -53,7 +53,7 @@ class DBconn_django(object):
                         value = getattr(obj,f.name)
                     except AttributeError:
                         value = None
-                    return unicode(value)
+                    return str(value)
             
             return None
         else:

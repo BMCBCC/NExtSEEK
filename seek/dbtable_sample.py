@@ -2746,7 +2746,7 @@ class DBtable_sample(DBtable):
             
             dici['uid'] = currentuid
             childrenList =  self.__getSampleChildren(currentuid)
-            if user_id==contributor_id or roles_mask>0:
+            if user_id==contributor_id or int(roles_mask)>0:
                 if len(childrenList)==0:
                     msgi, statusi = self.__deleteOneSample(sample_id, policy_id)
                     if statusi:

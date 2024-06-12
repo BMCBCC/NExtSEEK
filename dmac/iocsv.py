@@ -130,8 +130,9 @@ def filterDiclist(headers, diclist):
     for header in headers:
         headerOkay = False
         for dici in diclist:
-            if header in dici:
-                value = dici[header]
+            dici = {k.lower(): v for k, v in dici.items()}
+            if header.lower() in dici:
+                value = dici[header.lower()]
                 if value is not None:
                     try:
                         vstr = str(value)

@@ -80,7 +80,7 @@ class SeekDB(object):
         userInfo = {}
         status = True
         msg = ''
-        if user_id<=0:
+        if int(user_id)<=0:
             msg = "User id not valid: " + str(user_id)
             status = False
             userInfo['userdata'] = None
@@ -311,7 +311,7 @@ class SeekDB(object):
     
     def getInfoObject(self, object_url, object_id):
         objectdata = None
-        if object_id<=0:
+        if int(object_id)<=0:
             return objectdata
         
         queryurl = object_url + str(object_id)
