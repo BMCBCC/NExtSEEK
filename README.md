@@ -37,7 +37,7 @@ NExtSEEK is implemented on top of [Mezzanine](http://mezzanine.jupo.org/), a Dja
 
 We recommend installing NExtSEEK on Ubuntu.
 
-If you attempt to install NExtSEEK on RHEL 9> and you encounter issues installing the `mysqlclient` Python package, install `mariadb-connector-c-devel` using your system's package manager. For example:
+If you attempt to install NExtSEEK on RHEL 9 or above and you encounter issues installing the `mysqlclient` Python package, install `mariadb-connector-c-devel` using your system's package manager. For example:
 
 ```bash
 sudo yum install mariadb-connector-c-devel
@@ -47,6 +47,7 @@ sudo yum install mariadb-connector-c-devel
 
 ```bash
 git clone https://github.com/asoberan/NExtSEEK
+cd NExtSEEK
 ```
 
 ### Install dependencies
@@ -93,11 +94,14 @@ Open http://localhost:8080 in your browser.
 
 ### Production Gunicorn Server
 
-Gunicorn does not serve static files, it only runs the Django app. Static files should ideally be served by a web server, such as nginx or Apache. Django has a built-in way of collecting all static files and placing them in `STATIC_ROOT` set in `dmac/settings.py`. Then, you point your web server to this directory.
+Gunicorn does not serve static or media files, it only runs the Django app. Static/media files should ideally be served by a web server, such as nginx or Apache. Django has two settings regarding static and media files: `STATIC_ROOT`, the directory containing static files, and `MEDIA_ROOT`, the directory containing media that is uploaded, downloaded, etc. Django can collect all static files and place them in the `STATIC_ROOT` set in `dmac/settings.py`, making it easy to serve them with your web server.
 
 ```bash
 # Collect your static files and place them in STATIC_ROOT
 python3 manage.py collectstatic
+
+# Create cron jobs for some basic NExtSEEK tasks
+python3 manage.py crontab add
 
 # Run the gunicorn server
 gunicorn --bind 0.0.0.0:8080 \
@@ -129,14 +133,23 @@ An example Apache configuration would look like this, assuming you have `mod_pro
   # to the Gunicorn server since it doesn't
   # handle serving those files
   ProxyPass     <STATIC_URL value> !
-    
+  ProxyPass     <MEDIA_URL value> !
+  
   # Any requests to http://nextseek.your_domain.com/<value of STATIC_URL in your dmac/settings.py>
+  # or http://nextseek.your_domain.com/<value of MEDIA_URL in your dmac/settings.py>
   # should instead be an alias to the files located at
-  # whatever STATIC_ROOT is set to in dmac/settings.py
+  # whatever STATIC_ROOT and MEDIA_ROOT are set to in dmac/settings.py
   Alias <STATIC_URL value>       <STATIC_ROOT value>
+  Alias <MEDIA_URL value>        <MEDIA_ROOT value>
 
-  # Give apache permissions to access the static files
+  # Give apache permissions to access the static and media files
   <Directory <STATIC_ROOT value> >
+    Options FollowSymLinks
+    Require all granted
+  </Directory>
+
+  <Directory <MEDIA_ROOT value> >
+    Options FollowSymLinks
     Require all granted
   </Directory>
 </VirtualHost>
