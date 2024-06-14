@@ -1603,9 +1603,8 @@ class DBtable_sample(DBtable):
             return jdata
         
         # This was lowercasing the key but the key is uppercase in json_metadata/dici
-        #accessor_name = attribute.lower().strip()
-        accessor_name = attribute.strip()
-        print(f"accessor_name: {accessor_name}")
+        accessor_name = attribute.lower().strip()
+        #accessor_name = attribute.strip()
         
         values = []     
         parentUIDs = []    
