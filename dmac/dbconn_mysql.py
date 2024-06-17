@@ -2,9 +2,10 @@
 import os, sys
 import MySQLdb
 from os.path import abspath, exists
+from django.conf import settings
 
-SEEK_PRO = {'host': 'dbserver', 'user':'dbuser', 'passwd':'dbpassword', 'db':'seek_development'}
-SEEK_DEV = {'host': 'dbserver', 'user':'dbuser', 'passwd':'dbpassword', 'db':'seek_development'}
+SEEK_PRO = settings['DATABASES']['seek']
+SEEK_DEV = settings['DATABASES']['seek_development']
 
 class DBconn_mysql(object):
     def __init__(self):
@@ -12,7 +13,7 @@ class DBconn_mysql(object):
         self.cursor = None
         mysqldb = self.__getDefaultDB()
         if mysqldb is not None:
-            self.conn = MySQLdb.connect(host=mysqldb['host'], user=mysqldb['user'], passwd=mysqldb['passwd'], db=mysqldb['db'])
+            self.conn = MySQLdb.connect(host=mysqldb['HOST'], user=mysqldb['USER'], passwd=mysqldb['PASSWORD'], db=mysqldb['NAME'])
             self.cursor = self.conn.cursor()
         
     def __getDefaultDB(self):

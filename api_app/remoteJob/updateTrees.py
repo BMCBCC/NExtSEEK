@@ -1011,7 +1011,7 @@ def updateTrees():
     
     
     
-    conn = MySQLdb.connect (host=mysqldb['host'], user=mysqldb['user'], passwd=mysqldb['passwd'], db=mysqldb['db'])
+    conn = MySQLdb.connect(host=mysqldb['HOST'], user=mysqldb['USER'], passwd=mysqldb['PASSWORD'], db=mysqldb['NAME'])
     cursor = conn.cursor()
 
     array_id = process_csvfile(input_csv_file, conn, cursor)
