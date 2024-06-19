@@ -277,9 +277,15 @@ class DBtable_sample(DBtable):
         for key, value in metadata_in.items():
             lowkey = key.lower()
             metadata_in2[lowkey] = value
-        metadata_in = metadata_in2
-        
-        if metadata_db['uid']!=metadata_in['uid']:
+        metadata_in = metadata_in2        
+
+        metadata_db2 = {}
+        for key, value in metadata_db.items():
+            lowkey = key.lower()
+            metadata_db2[lowkey] = value
+        metadata_db = metadata_db2
+
+        if metadata_db['uid'] != metadata_in['uid']:
             return metadata_in
         
         if attributes is not None:
