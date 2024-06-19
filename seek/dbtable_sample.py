@@ -1609,8 +1609,8 @@ class DBtable_sample(DBtable):
             return jdata
         
         # This was lowercasing the key but the key is uppercase in json_metadata/dici
-        accessor_name = attribute.lower().strip()
-        #accessor_name = attribute.strip()
+        #accessor_name = attribute.lower().strip()
+        accessor_name = attribute.strip()
         
         values = []     
         parentUIDs = []    
@@ -3563,7 +3563,6 @@ class DBtable_sample(DBtable):
             return reportData
         
         data = self.__retrieveRecords_advanced(user_seek, filtersdic)
-        # Retrieves 505 records, but does not include every sample bc ones with SHA or BTC are missing
         
         if searchType=="UIDs":
             msg = 'ignore filtering'
@@ -3576,7 +3575,6 @@ class DBtable_sample(DBtable):
                 filter_valueFrom = filtersdic['filter_valueFrom']
                 filter_valueTo = filtersdic['filter_valueTo']
                 rows = self.__filterSamples(data['rows'], sampletype_id, attribute, filter_rule, filter_valueFrom, filter_valueTo) 
-                # After the data are filtered here, they all disappear, so they're all being filtered before arriving to the screen!
                 data['rows'] = rows
                 data['total'] = len(rows)
             elif filtersdic['searchText'] is not None:
