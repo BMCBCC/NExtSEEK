@@ -9,6 +9,7 @@ RUN locale-gen en_US.UTF-8
 RUN groupadd -g 48 apache
 RUN useradd -ms /bin/bash -u 48 -g 48 apache
 
+RUN mkdir -p /logs
 RUN mkdir -p /static
 RUN mkdir -p /app
 
@@ -24,6 +25,7 @@ RUN python3 -m pip install -r requirements.txt
 USER root
 
 RUN chown -R apache /app
+RUN chown -R apache /logs
 RUN chmod +x docker/entrypoint.sh
 
 USER apache
