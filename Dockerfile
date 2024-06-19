@@ -9,6 +9,7 @@ RUN locale-gen en_US.UTF-8
 RUN groupadd -g 48 apache
 RUN useradd -ms /bin/bash -u 48 -g 48 apache
 
+RUN mkdir -p /static
 RUN mkdir -p /app
 
 WORKDIR /app
