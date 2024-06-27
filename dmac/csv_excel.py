@@ -65,13 +65,13 @@ def convertToDicList(columns, rows):
     return datadiclist
       
 def checkHeaders(headersExpected, headersUploaded):
-    headersExpectedNew = [x.lower() for x in headersExpected]
-    headersUploadedNew = [x.lower() for x in headersUploaded]
+    #headersExpectedNew = [x.lower() for x in headersExpected]
+    #headersUploadedNew = [x.lower() for x in headersUploaded]
     
     n = 0
     missing = []
-    for header in headersExpectedNew:
-        if header not in headersUploadedNew:
+    for header in headersExpected:
+        if header not in headersUploaded:
             n += 1
             missing.append(header)
                 
@@ -162,10 +162,10 @@ def load_excelfile_1stSheet(excelfile, headersmapping):
         filedata['msg'] = "No valid sheet is opened in the file: " + excelfile.name
         return filedata
     
-    headersmappingLower = {}
-    for key, value in headersmapping.items():
-        keyLower = key.lower()
-        headersmappingLower[keyLower] = value
+    #headersmappingLower = {}
+    #for key, value in headersmapping.items():
+    #    keyLower = key.lower()
+    #    headersmappingLower[keyLower] = value
     
     worksheet1 = worksheets[0]
     sheet = workbook.get_sheet_by_name(worksheet1)
@@ -195,9 +195,9 @@ def load_excelfile_1stSheet(excelfile, headersmapping):
             for cell in row:
                 key = columns[i]
                 i += 1
-                keyLower = key.lower()
-                if keyLower in headersmappingLower:
-                    newkey = headersmappingLower[keyLower]
+                #keyLower = key.lower()
+                if key in headersmapping:
+                    newkey = headersmapping[key]
                     value = cell.value
                     if value is None:
                         value = ''

@@ -512,8 +512,8 @@ class DBtable_sampleattribute(DBtable):
             if id in attributes_old:
                 attribute = attributes_old[id]
                 title_old = attribute['title']
-                if title_new.lower()!=title_old.lower():
-                    attri_renamed[title_new.lower()] = title_old.lower()
+                #if title_new.lower()!=title_old.lower():
+                #    attri_renamed[title_new.lower()] = title_old.lower()
         
         return attri_renamed
         

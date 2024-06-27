@@ -394,8 +394,8 @@ def getSampleData(sampleType, sampleDic, mapping):
         dbField = mapping[field]
         stype, attribute = dbField.split("::")
         if stype==sampleType:
-            key = attribute.lower()
-            sampledata[key] = value
+            #key = attribute.lower()
+            sampledata[attribute] = value
     
     sampledata = json.dumps(sampledata)
     return sampledata

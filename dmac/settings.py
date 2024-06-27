@@ -397,6 +397,14 @@ SEEK_DATAFILE_SERVER = 'http://' + SEEK_HOSTNAME + ':portNumber'
 SEEK_DATAFILE_ROOT = MEDIA_ROOT + "/uploads/"
 SEEK_DATAFILE_ROOT_WEBLINK = MEDIA_URL + "uploads/"
 
+CRONJOBS = [
+    ('0 2 * * *', seek.cron_job.my_cron_job),
+    ('0 20 * * *', api_app.updateTrees.renewTreesCronjob)
+]
+
+AUTH_PROFILE_MODULE = "seek.User_profile"
+ACCOUNTS_PROFILE_MODEL = "seek.User_profile"
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

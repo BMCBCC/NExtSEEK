@@ -6,28 +6,24 @@ RUN apt-get clean
 RUN rm -rf /var/lib/apt/lists/*
 RUN locale-gen en_US.UTF-8
 
-RUN groupadd -g 48 apache
-RUN useradd -ms /bin/bash -u 48 -g 48 apache
+RUN useradd -ms /bin/bash -u 33 -g 33 www-data
 
-RUN mkdir -p /logs
-RUN mkdir -p /static
-RUN mkdir -p /app
+RUN mkdir -p /nextseek/logs
 
-WORKDIR /app
+WORKDIR /nextseek
 
 COPY . .
 
-USER apache
+USER www-data
 
 RUN python3 -m pip install --upgrade pip
 RUN python3 -m pip install -r requirements.txt
 
 USER root
 
-RUN chown -R apache /app
-RUN chown -R apache /logs
+RUN chown -R www-data:www-data /nextseek
 RUN chmod +x docker/entrypoint.sh
 
-USER apache
+USER www-data
 
 CMD ["docker/entrypoint.sh"]

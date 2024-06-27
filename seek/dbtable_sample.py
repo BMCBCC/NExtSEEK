@@ -94,12 +94,12 @@ ATTRIBUTETYPE_ID_WEBLINK = 5
 ATTRIBUTETYPE_ID_URI = 19
 
 SAMPLE_PARENT_ATTRIBUTOR = "CreatedFromSample"
-SAMPLE_PARENT_ACCESSOR_NAME = "parent"
-SAMPLE_PROTOCOL_ACCESSOR_NAME = "protocol"
-SAMPLE_FILE_ACCESSOR_NAME = "file_"         
-SAMPLE_LINK_ACCESSOR_NAME = "link_"        
+SAMPLE_PARENT_ACCESSOR_NAME = "Parent"
+SAMPLE_PROTOCOL_ACCESSOR_NAME = "Protocol"
+SAMPLE_FILE_ACCESSOR_NAME = "File_"         
+SAMPLE_LINK_ACCESSOR_NAME = "Link_"        
 SAMPLE_CONTRIBUTOR_ACCESSOR_NAME = "Scientist"
-SAMPLE_PUBLISH_ACCESSOR_NAME = "publish"
+SAMPLE_PUBLISH_ACCESSOR_NAME = "Publish"
 
 SAMPLE_ERRORCODE = {
     '101': 'Error S101: Sample excel file not in the right xlsx format.',
@@ -255,12 +255,11 @@ class DBtable_sample(DBtable):
     
     def __getRecordToJson(self, record, attributeInfo):
         headers = attributeInfo['headers']
-        record = {k.lower(): v for k, v in record.items()}
         record_new = {}
         for header in headers:
             field = header
-            if header.lower() in record:
-                record_new[field] = toString(record[header.lower()])
+            if header in record:
+                record_new[field] = toString(record[header])
             else:
                 record_new[field] = ''
         
@@ -273,27 +272,12 @@ class DBtable_sample(DBtable):
         
     def __updateSampleMetadata(self, metadata_db, metadata_in, attributes=None):
         #logger.debug('updateSampleMetadata')
-        metadata_in2 = {}
-        for key, value in metadata_in.items():
-            lowkey = key.lower()
-            metadata_in2[lowkey] = value
-        metadata_in = metadata_in2        
-
-        metadata_db2 = {}
-        for key, value in metadata_db.items():
-            lowkey = key.lower()
-            metadata_db2[lowkey] = value
-        metadata_db = metadata_db2
-
-        if metadata_db['uid'] != metadata_in['uid']:
-            return metadata_in
-        
+      
         if attributes is not None:
             metadata_db2 = {}
             for key, value in metadata_db.items():
-                lowkey = key.lower()
-                if lowkey in attributes:
-                    metadata_db2[lowkey] = value
+                if key in attributes:
+                    metadata_db2[key] = value
             metadata_db = metadata_db2
         
         metadata_out = {}
@@ -799,8 +783,8 @@ class DBtable_sample(DBtable):
             
             if SAMPLE_CONTRIBUTOR_ACCESSOR_NAME in dici:
                 scientist = str(dici[SAMPLE_CONTRIBUTOR_ACCESSOR_NAME])
-            elif SAMPLE_CONTRIBUTOR_ACCESSOR_NAME.lower() in dici:
-                scientist = str(dici[SAMPLE_CONTRIBUTOR_ACCESSOR_NAME.lower()])
+            elif SAMPLE_CONTRIBUTOR_ACCESSOR_NAME in dici:
+                scientist = str(dici[SAMPLE_CONTRIBUTOR_ACCESSOR_NAME])
             else:
                 msgi = SAMPLE_ERRORCODE['304']
                 statusTest = False
@@ -1023,11 +1007,11 @@ class DBtable_sample(DBtable):
             logger.debug(msg)
             return msg, status, None
         
-        attributes = [x.lower() for x in attributeInfo['headers']]
+        attributes = attributeInfo['headers']
         msg = 'The following column(s) are not in sample attributes thus must be removed from the sheet before further processing:<br/><br/>'
         headers_error = []
         for header in headers:
-            if header.lower() not in attributes:
+            if header not in attributes:
                 msg += header +  '<br/>'
                 headers_error.append(header)
                 status = 0
@@ -1541,7 +1525,7 @@ class DBtable_sample(DBtable):
     def __getParentUIDs(self, sampleDic):
         uids = []
         for key, value in sampleDic.items():
-            if SAMPLE_PARENT_ACCESSOR_NAME in key.lower():
+            if SAMPLE_PARENT_ACCESSOR_NAME in key:
                 if value is None:
                     continue
                 else:
@@ -1608,8 +1592,6 @@ class DBtable_sample(DBtable):
         if filter_rule=='No Filter':
             return jdata
         
-        # This was lowercasing the key but the key is uppercase in json_metadata/dici
-        #accessor_name = attribute.lower().strip()
         accessor_name = attribute.strip()
         
         values = []     
@@ -1630,7 +1612,6 @@ class DBtable_sample(DBtable):
             
             n += 1
             
-        # Values is a list of None when passed in so passvalues is all False
         sattr = DBtable_sampleattribute()
         passvalues = sattr.filterValues(values, sampletype_id, attribute, filter_rule, filter_valueFrom, filter_valueTo)
         
@@ -1997,7 +1978,7 @@ class DBtable_sample(DBtable):
                         headers_i = attrInfo['headers']
                         for header in headers_i:
                             title = prefix + header
-                            newheader = prefix + header.lower()
+                            newheader = prefix + header
                             headers.append(newheader)
                             headersMapping[newheader] = title
 
@@ -2039,7 +2020,7 @@ class DBtable_sample(DBtable):
                 if attrInfo is not None and 'headers' in attrInfo:
                     headers_i = attrInfo['headers']
                     for header in headers_i:
-                        newheader = sampletype + ":" + header.lower()
+                        newheader = sampletype + ":" + header
                         headers.append(newheader)
                         
         saveDiclistIntoExcel(diclist_new, excelfile, headers, 'samples')
@@ -2294,7 +2275,7 @@ class DBtable_sample(DBtable):
         
         newheaders = []
         for header in headers:
-            newheaders.append(header.lower())
+            newheaders.append(header)
         return newheaders, metadata
         
     def downloadSamples(self, user_seek, xlsfile, link, sampletype_id, attribute, filter_rule, filter_valueFrom, filter_valueTo, project_id=0):
@@ -2369,7 +2350,7 @@ class DBtable_sample(DBtable):
                 attribute = mapping[header]
                 if ":" in attribute:
                     terms = attribute.split(":")
-                    attribute = terms[0] + ":" + terms[1].lower()
+                    attribute = terms[0] + ":" + terms[1]
                 
                 if attribute in dici:
                     diciOut[header] = dici[attribute]
@@ -2435,7 +2416,7 @@ class DBtable_sample(DBtable):
                 attribute = mapping[header]
                 if ":" in attribute:
                     terms = attribute.split(":")
-                    attribute = terms[0] + ":" + terms[1].lower()
+                    attribute = terms[0] + ":" + terms[1]
                 
                 if attribute in dici:
                     diciOut[header] = dici[attribute]
@@ -2592,17 +2573,17 @@ class DBtable_sample(DBtable):
         sampledic = self.__getRecordFromJson(json_metadata)
         for key, value in sampledic.items():
             if filetype=="SOP":
-                if SAMPLE_PROTOCOL_ACCESSOR_NAME in key.lower():
+                if SAMPLE_PROTOCOL_ACCESSOR_NAME in key:
                     if value==originalfilename:
                         fileInRecord = 1
             
             if filetype=="DATAFILE":
-                if SAMPLE_FILE_ACCESSOR_NAME in key.lower():
+                if SAMPLE_FILE_ACCESSOR_NAME in key:
                     if value==originalfilename:
                         fileInRecord = 1
-                #elif SAMPLE_LINK_ACCESSOR_NAME in key.lower():
-                #    if value==originalfilename:
-                #        fileInRecord = 2
+                elif SAMPLE_LINK_ACCESSOR_NAME in key:
+                    if value==originalfilename:
+                        fileInRecord = 2
                 
         return fileInRecord, sampledic
     
@@ -2825,7 +2806,7 @@ class DBtable_sample(DBtable):
         weblink = attrvalue
         value = attrvalue
         
-        if SAMPLE_PARENT_ACCESSOR_NAME in attrname.lower():
+        if SAMPLE_PARENT_ACCESSOR_NAME in attrname:
             if attrvalue is None:
                 return weblink
             
@@ -2846,7 +2827,7 @@ class DBtable_sample(DBtable):
                 if len(value)>0:
                     weblink = self.__formatSampleUIDLink(value)
         
-        elif SAMPLE_PROTOCOL_ACCESSOR_NAME in attrname.lower():
+        elif SAMPLE_PROTOCOL_ACCESSOR_NAME in attrname:
             if attrvalue is None:
                 return weblink
             
@@ -2867,17 +2848,17 @@ class DBtable_sample(DBtable):
                 if len(value)>0:
                     weblink = self.__formatSopUIDLink(value)
         
-        elif SAMPLE_LINK_ACCESSOR_NAME in attrname.lower():
+        elif SAMPLE_LINK_ACCESSOR_NAME in attrname:
             if attrvalue is None:
                 return weblink
             weblink = self.__formatExternalLink(attrvalue)
             
-        elif SAMPLE_FILE_ACCESSOR_NAME in attrname.lower():
+        elif SAMPLE_FILE_ACCESSOR_NAME in attrname:
             if attrvalue is None:
                 return weblink
             weblink = self.__formatExternalLink(attrvalue)
             
-        elif SAMPLE_PUBLISH_ACCESSOR_NAME in attrname.lower():
+        elif SAMPLE_PUBLISH_ACCESSOR_NAME in attrname:
             if attrvalue is None:
                 return weblink
             weblink = self.__formatExternalLink(attrvalue)
@@ -2900,16 +2881,16 @@ class DBtable_sample(DBtable):
         
         diclist = []
         for header in headers:
-            headerlower = header.strip()
+            headerStripped = header.strip()
             attrdici = {}
             attrdici['attrname'] = header
-            if headerlower in dici:
-                value = dici[headerlower]
+            if headerStripped in dici:
+                value = dici[headerStripped]
                 if value is not None:
                     try:
                         valuestr = str(value)
                         if len(valuestr.strip())>0:
-                            attrdici['attrvalue'] = self.__formatLinkUrl(headerlower, valuestr)
+                            attrdici['attrvalue'] = self.__formatLinkUrl(headerStripped, valuestr)
                             diclist.append(attrdici)
                     except:
                         attrdici['attrvalue'] = value
@@ -3099,7 +3080,6 @@ class DBtable_sample(DBtable):
         
         for dici in diclist_attributes:
             accessor_name = dici['title']
-            accessor_name = accessor_name.lower()
             
             if accessor_name in metadata_db:
                 metadata_out[accessor_name] = metadata_db[accessor_name]
@@ -3256,8 +3236,8 @@ class DBtable_sample(DBtable):
             
         if SAMPLE_CONTRIBUTOR_ACCESSOR_NAME in record:
             scientist = str(record[SAMPLE_CONTRIBUTOR_ACCESSOR_NAME])
-        elif SAMPLE_CONTRIBUTOR_ACCESSOR_NAME.lower() in record:
-            scientist = str(record[SAMPLE_CONTRIBUTOR_ACCESSOR_NAME.lower()])
+        elif SAMPLE_CONTRIBUTOR_ACCESSOR_NAME in record:
+            scientist = str(record[SAMPLE_CONTRIBUTOR_ACCESSOR_NAME])
         else:
             msg = SAMPLE_ERRORCODE['304']
             return msg, 0, '', ''
@@ -3287,8 +3267,6 @@ class DBtable_sample(DBtable):
         for header in headers:
             if header in dici:
                 record[header] = dici[header]
-            elif header.lower() in dici:
-                record[header] = dici[header.lower()]
         
         msg, status, samplename, scientist = self.__verifySampleAttributes(record, headers_required)
         if status==0:
@@ -4067,7 +4045,6 @@ class DBtable_sample(DBtable):
             dici = self.__getRecordFromJson(json_metadata)
             dici_rev = {}
             for header in headers:
-                # hi = header.lower().strip()
                 hi = header.strip()
                 if hi in dici:
                     dici_rev[header] = dici[hi]
@@ -4114,7 +4091,6 @@ class DBtable_sample(DBtable):
             dici = self.__getRecordFromJson(json_metadata)
             dici_rev = {}
             for header in headers:
-                # hi = header.lower().strip()
                 hi = header.strip()
                 if hi in dici:
                     dici_rev[header] = dici[hi]
@@ -4203,7 +4179,7 @@ class DBtable_sample(DBtable):
             headers = attributeInfo['headers']
             headers_new = []
             for header in headers:
-                header_new = sampleType + ':' + header.lower()
+                header_new = sampleType + ':' + header
                 if header_new in headersFiltered:
                     headers_new.append(header)
                 elif excludeEmptyColumns:
