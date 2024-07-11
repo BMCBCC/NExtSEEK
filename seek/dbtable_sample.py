@@ -10,6 +10,7 @@ import xlwt
 import operator
 logger = logging.getLogger(__name__)
 
+import MySQLdb
 import zipfile
 from django.conf import settings
 from django.db.models import Q
@@ -377,15 +378,23 @@ class DBtable_sample(DBtable):
         return record_new, newSample
         
     def __updateSampleProject(self, user_seek, sample_id):
-        username = user_seek['username']
-        user_id = user_seek['user_id']
         project_id = user_seek['projectid']
+
+        db = settings.DATABASES[SEEK_DATABASE]
+        conn = MySQLdb.connect(host=db['HOST'], user=db['USER'], passwd=db['PASSWORD'], db=db['NAME'])
+        conn.autocommit(False)
+
+        try:
+            cursor.execute(f"INSERT INTO projects_samples (project_id, sample_id) VALUES ({project_id, {sample_id}})")
+            conn.commit()
+        except:
+            conn.rollback()
         
-        record = {}
-        record['sample_id'] = sample_id
-        record['project_id'] = project_id
-        record = Projects_samples(project_id=project_id, sample_id=sample_id)
-        record.save()
+        # record = {}
+        # record['sample_id'] = sample_id
+        # record['project_id'] = project_id
+        # record = Projects_samples(project_id=project_id, sample_id=sample_id)
+        # record.save()
         return
         
         

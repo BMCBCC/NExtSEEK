@@ -193,8 +193,7 @@ class Projects_samples(models.Model):
     _DATABASE = SEEK_DATABASE
     
     project_id = models.IntegerField(default=None, primary_key=True)
-    #sample_id = models.IntegerField(default=None, primary_key=True)
-    sample_id = models.IntegerField(default=None)
+    sample_id = models.IntegerField(default=None, primary_key=True)
     
     def __unicode__(self):
         uuid = str(self.project_id) + '-' + str(self.sample_id)
@@ -202,8 +201,7 @@ class Projects_samples(models.Model):
     
     class Meta:
         db_table = "projects_samples"
-        unique_together = ['project_id', 'sample_id']
-        #constraints = [models.UniqueConstraint(fields=['project_id','sample_id'], name='project_sample_constraint')]
+        unique_together = ('project_id', 'sample_id')
         
         
 class Documents(models.Model):
