@@ -32,6 +32,7 @@ urlpatterns = [
     
     re_path(r'^sample_types/id=(?P<id>\d+)/$', views.sample_type, name='sample_type'),
     re_path(r'^sampleupload/', views.sampleUploadAjax, name='sampleUploadAjax'),
+    re_path(r'^samplesvalidate/', views.samplesValidate, name='samplesValidate'),
     
     re_path(r'^url/(?P<url>[\w-]+)/$', views.seek, name='seek'),
     
