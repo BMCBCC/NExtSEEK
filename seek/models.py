@@ -192,8 +192,8 @@ class Samples(models.Model):
 class Projects_samples(models.Model):
     _DATABASE = SEEK_DATABASE
     
-    project_id = models.IntegerField(default=None, primary_key=True)
-    sample_id = models.IntegerField(default=None, primary_key=True)
+    project_id = models.IntegerField(default=None)
+    sample_id = models.IntegerField(default=None)
     
     def __unicode__(self):
         uuid = str(self.project_id) + '-' + str(self.sample_id)

@@ -156,6 +156,21 @@ DATABASES = {
         # Set to empty string for default. Not used with sqlite3.
         "PORT": "",
     }
+
+    "seek": {
+        # Add "postgresql_psycopg2", "mysql", "sqlite3" or "oracle".
+        "ENGINE": "django.db.backends.",
+        # DB name or path to database file if using sqlite3.
+        "NAME": "",
+        # Not used with sqlite3.
+        "USER": "",
+        # Not used with sqlite3.
+        "PASSWORD": "",
+        # Set to empty string for localhost. Not used with sqlite3.
+        "HOST": "",
+        # Set to empty string for default. Not used with sqlite3.
+        "PORT": "",
+    }
 }
 
 
@@ -384,6 +399,7 @@ DATABASE_ROUTERS = ['seek.dbrouters.CustomRouter']
 
 # used in dmac/views.py for managing session and authentication of user login
 # SEEK_URL = "http://" + SERVER_IPADDRESS + ":3000"
+NEXTSEEK_DATABASE = "default"
 SEEK_HOSTNAME = "example.com"
 SEEK_URL = "https://" + SEEK_HOSTNAME
 SEEK_DATABASE = "seek"
