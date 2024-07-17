@@ -2,11 +2,10 @@
 
 import csv
 import MySQLdb
-#import settings
 import glob
 import os, sys
 import zipfile
-import StringIO
+from io import StringIO
 import json
 import simplejson
 import multiprocessing
@@ -16,9 +15,9 @@ import datetime
 from multiprocessing import Pool, cpu_count
 
 from datetime import date
-from dbconn_mysql import DBconn_mysql
+from api_app.dbconn_mysql import DBconn_mysql
 
-SAMPLE_PARENT_ACCESSOR_NAME = "parent"
+SAMPLE_PARENT_ACCESSOR_NAME = "Parent"
 
 def isValidUID(sample_uid):
     try:
@@ -489,6 +488,7 @@ def saveSampleTree(conn_dmac, uid, sampleUIDs, id=None):
     #print(tree)
     try:
         #tree.save()
+        print(f"Adding record: {record}")
         idout, msg = conn_dmac.storeOneRecord('seek_sample_tree', record)
         if idout>0:
             status = 1
@@ -695,7 +695,7 @@ def generateTrees(sanityCheck_sampleID=None):
     '''
     print("generateTrees")
     start = time.time()
-    conn_dmac = DBconn_mysql('DMAC')
+    conn_dmac = DBconn_mysql('NEXTSEEK')
     trees = conn_dmac.retrieveAllRecord('seek_sample_tree')
     
     mid1 = time.time()
@@ -853,7 +853,7 @@ def updateTrees():
     '''
     print("updateTrees")
     start = time.time()
-    conn_dmac = DBconn_mysql('DMAC')
+    conn_dmac = DBconn_mysql('NEXTSEEK')
     nr = conn_dmac.retrieveNumberOfRecords('seek_sample_tree')
     print("Number of tree generated: %d"%nr)
     
@@ -1026,7 +1026,7 @@ def renewTrees():
     '''
     print("renewTrees")
     start = time.time()
-    conn_dmac = DBconn_mysql('DMAC')
+    conn_dmac = DBconn_mysql('NEXTSEEK')
     trees = conn_dmac.retrieveAllRecord('seek_sample_tree')
     
     # Get the last sample id from the sample table
@@ -1083,6 +1083,33 @@ def renewTrees():
     
     return
     
+def renewTreesCronjob():
+    ''' Renew all trees in seek_sample_tree table
+    Input:
+    sanityCheck_sampleID, if not None, run the sanity check to generate the sample tree only for the
+    sample ID of interest, without saving it into DB.
+    '''
+
+    print("renewTreesCronjob")
+    start = time.time()
+    conn_dmac = DBconn_mysql('NEXTSEEK')
+    trees = conn_dmac.retrieveAllRecord('seek_sample_tree')
+
+    mid1 = time.time()
+    mi = int((mid1 - start)//60)
+    se = round((mid1 - start)%60,2)
+    print('Processing time for retriving all trees: %d mins %d s'%(mi, se))
+
+    print('About to export records')
+    status = conn_dmac.exportRecords('seek_sample_tree')
+    if status==0:
+        print("Exporting records failed.")
+        return
+    print("Exporting records was successful")
+
+    sqlquery = 'DELETE FROM seek_sample_tree where id>0;'
+    rows = conn_dmac.retrieve_custom_sql(sqlquery)
+    return generateTrees(None)
 
 def main():
     
@@ -1102,18 +1129,20 @@ def main():
                 sanityCheck_sampleID = int(sys.argv[2])
             except:
                 sanityCheck_sampleID = None
-            
             generateTrees(sanityCheck_sampleID)
+        elif rtype=='cronjob':
+            renewTreesCronjob()
         exit(1)
         
-        updateTrees(input_csv_file, output_csv_file, 'DMAC')
+        updateTrees(input_csv_file, output_csv_file, 'NEXTSEEK')
     else:
         print("Usage: python updateTrees.py keyword\n")
         print("where the keyword has the following options: \n")
         print("     update - Update those trees that are present in samples table but not in seek_sample_tree table.\n")
         print("     renew - Renew all trees in seek_sample_tree table, not tested yet.\n")
         print("     generate - Renew all trees in seek_sample_tree table\n")
-        print("     generate 89903 - Only renew the tree for sample id=89903\n)"
+        print("     generate 89903 - Only renew the tree for sample id=89903\n)")
+        print("     cronjob - Delete and re-generate all trees in seek_sample_tree table in a cron job.")
         sys.exit()
     
 if __name__ == '__main__':

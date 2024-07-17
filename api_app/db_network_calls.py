@@ -10,7 +10,7 @@ import urllib2
 import io
 import sys; 
 import argparse
-from dbconn_mysql import DBconn_mysql
+from api_app.dbconn_mysql import DBconn_mysql
 
  
 DB_FIELD_TYPES = { 
