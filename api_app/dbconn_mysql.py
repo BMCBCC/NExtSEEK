@@ -3,9 +3,12 @@ import os, sys
 import MySQLdb
 from os.path import abspath, exists
 from django.conf import settings
+import datetime
 
-SEEKSERVER = settings['DATABASES']['seek']
-DMACSERVER = settings['DATABASES']['default']
+SEEK_DATABASE = settings.SEEK_DATABASE
+NEXTSEEK_DATABASE = settings.NEXTSEEK_DATABASE
+
+SECURE_FILE_PRIV = "/var/lib/mysql-files/"
 
 class DBconn_mysql(object):
     def __init__(self, whichDB=None):
@@ -46,11 +49,11 @@ class DBconn_mysql(object):
 
     def __dbchoices(self, whichDB):
         if whichDB=='SEEK':
-            mysqldb = SEEKSERVER
-        elif whichDB=='DMAC':
-            mysqldb = DMACSERVER
+            mysqldb = settings.DATABASES[SEEK_DATABASE]
+        elif whichDB=='NEXTSEEK':
+            mysqldb = settings.DATABASES[NEXTSEEK_DATABASE]
         else:
-            mysqldb = DMACSERVER
+            mysqldb = settings.DATABASES[NEXTSEEK_DATABASE]
         
         return mysqldb
 
@@ -135,23 +138,22 @@ class DBconn_mysql(object):
     
     def __convertSQLString(self, value):
         if not self.__is_numeric(value):
-            strValue = '"' + MySQLdb.escape_string(value) + '"'
+            #strValue = '"' + MySQLdb.escape_string(value) + '"'
+            strValue = "'" + str(value) + "'"
         else:
             strValue = str(value)
             
         return strValue
 
     def __insertOneRecord(self, table, record):
-        #print("__insertOneRecord")
         columns = []
         row = []
         for key, value in record.items():
             columns.append(key)
             strValue = self.__convertSQLString(value)
             row.append(strValue)
-                
+
         insert_sql = "INSERT INTO %s (%s) VALUES (%s);" % (table, ','.join(columns), ','.join(row))
-        #print(insert_sql)
         sqlqueries = []
         sqlqueries.append(insert_sql)
         return self.__runTransaction(sqlqueries)
@@ -337,18 +339,22 @@ class DBconn_mysql(object):
                 row.append(value)
             rows.append(row)
         return self.__insertRecords(table, columns, rows)
+
+    def exportRecords(self, table, filename=None):
+        if filename is None:
+            filedate = datetime.datetime.now().strftime("%Y%m%d")
+            filename = SECURE_FILE_PRIV + table + "-" + filedate + ".txt"
+        elif SECURE_FILE_PRIV not in filename:
+            filename = SECURE_FILE_PRIV + filename
         
-    def exportRecords(self, table, filename):
-        columns = headers
-        rows = []
-        for record in records:
-            row = []
-            for header in headers:
-                try:
-                    value = record[header]
-                except:
-                    value = ''
-                row.append(value)
-            rows.append(row)
-        return self.__insertRecords(table, columns, rows)    
-        
+        sqlquery = 'SELECT * INTO OUTFILE "%s" FROM %s ' % (filename, table) + ';'
+        try:
+            # Execute the query
+            self.cursor.execute(sqlquery)
+            msg = 'Successful in exporting %s table into %s' % (table, filename)
+            print(msg)
+            return 1
+        except Exception as e:
+            msg = 'Error in exporting %s table into %s: %s' % (table, filename, e)
+            print(msg)
+            return 0
