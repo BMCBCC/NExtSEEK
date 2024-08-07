@@ -343,14 +343,20 @@ class DBconn_mysql(object):
     def exportRecords(self, table, filename=None):
         if filename is None:
             filedate = datetime.datetime.now().strftime("%Y%m%d")
-            filename = SECURE_FILE_PRIV + table + "-" + filedate + ".txt"
+            filename = SECURE_FILE_PRIV + table + ".txt"
         elif SECURE_FILE_PRIV not in filename:
             filename = SECURE_FILE_PRIV + filename
+
+        backup_filename = filename + ".bk"
+
+        if os.path.exists(filename):
+            os.rename(filename, backup_filename)
         
         sqlquery = 'SELECT * INTO OUTFILE "%s" FROM %s ' % (filename, table) + ';'
         try:
             # Execute the query
             self.cursor.execute(sqlquery)
+            os.remove(backup_filename)
             msg = 'Successful in exporting %s table into %s' % (table, filename)
             print(msg)
             return 1
