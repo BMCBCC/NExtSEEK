@@ -19,8 +19,8 @@ from dmac.conversion import handle_uploaded_file, correctFileName, sizeof_fmt, g
 
 from django.conf import settings
 from django import forms
-from dbtable_assay_assets import DBtable_assay_assets
-from dbtable_content_blobs import DBtable_content_blobs
+from .dbtable_assay_assets import DBtable_assay_assets
+from .dbtable_content_blobs import DBtable_content_blobs
 
 DOWNLOAD_DIRECTORY  = settings.MEDIA_ROOT + "/download/"
 DOWNLOAD_DIRECTORY_LINK = settings.MEDIA_URL + '/download/'
@@ -37,7 +37,6 @@ SOPS_DEFAULT = {
     'description':'',
     'created_at':'',
     'updated_at':'',
-    'last_used_at':'',
     'version':1,
     'first_letter':'',
     'other_creators':'',
@@ -112,7 +111,6 @@ class DBtable_sops(DBtable):
             'description',
             'created_at',
             'updated_at',
-            'last_used_at',
             'version',
             'first_letter',
             'other_creators',
@@ -298,7 +296,7 @@ class DBtable_sops(DBtable):
         
         report = {}
         df_id, asset_type, dfrecord = self.__defineSOP(creator, originalfilename)
-        if df_id>0:
+        if int(df_id)>0:
             report['msg'] = SOP_ERRORCODE['205'] + originalfilename
             report['status'] = 0
             dfrecord['notes'] = report['msg']

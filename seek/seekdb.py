@@ -5,7 +5,7 @@ from django.conf import settings
 import hashlib
 import os
 import json
-from pandas.io.json import json_normalize
+from pandas import json_normalize
 from dmac.conversion import convertDicToOptions
 
 import logging
@@ -80,7 +80,7 @@ class SeekDB(object):
         userInfo = {}
         status = True
         msg = ''
-        if user_id<=0:
+        if int(user_id)<=0:
             msg = "User id not valid: " + str(user_id)
             status = False
             userInfo['userdata'] = None
@@ -311,7 +311,7 @@ class SeekDB(object):
     
     def getInfoObject(self, object_url, object_id):
         objectdata = None
-        if object_id<=0:
+        if int(object_id)<=0:
             return objectdata
         
         queryurl = object_url + str(object_id)
@@ -1188,19 +1188,19 @@ class SeekDB(object):
     
         study_options_dic = {}
         allstudies = {}
-        for iid, investigation in allinvestigations.iteritems():
+        for iid, investigation in allinvestigations.items():
             studies = self.getStudies(investigation, True)
             study_options = convertDicToOptions(studies)
             study_options_dic[iid] = study_options
         
-            for sid, study in studies.iteritems():
+            for sid, study in studies.items():
                 if sid not in allstudies:
                     allstudies[sid] = study
             
 
         study_options_dic = json.dumps(study_options_dic)
         assay_options_dic = {}
-        for sid, study in allstudies.iteritems():
+        for sid, study in allstudies.items():
             assays = self.getAssays(study, True)
             assay_options = convertDicToOptions(assays)
             assay_options_dic[sid] = assay_options

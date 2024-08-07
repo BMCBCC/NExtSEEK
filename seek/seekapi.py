@@ -115,7 +115,7 @@ class SeekAPI(object):
         return htmlpage
         
     def __getHtmlpageDiv(self, htmlpage, div_id):
-        from BeautifulSoup import BeautifulSoup
+        from bs4 import BeautifulSoup
         parsed_html = BeautifulSoup(htmlpage)
         bodyhtml = parsed_html.body.find('div', attrs={'id':div_id})
         bodytext = bodyhtml.text

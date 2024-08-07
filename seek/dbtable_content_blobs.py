@@ -56,6 +56,7 @@ class DBtable_content_blobs(DBtable):
             'file_size',
             'created_at',
             'updated_at'
+            'deleted',
         ]
         
         self.uniqueFields = ['original_filename']

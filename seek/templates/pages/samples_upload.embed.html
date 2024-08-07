@@ -1,5 +1,5 @@
 <script type="text/javascript">
-	var template_options = {{ report.template_options|safe }};
+	var template_options = {{report.template_options|safe}};
 	
 	function showSampleErrorMsg(errorMsg) {
 		var header = '<div class="alert alert-danger alert-block"><h4 class="alert-heading">Sample Upload Failed!</h4></div>';
@@ -90,7 +90,7 @@
 		formdata.append('filename', excelfile.name);
 		formdata.append("instituion_id", instituion_id);
 		formdata.append("people_id", people_id);
-		formdata.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+		formdata.append('csrfmiddlewaretoken', '{{csrf_token}}');
 		$.ajax('/seek/sampleupload/',
 			{
 				type: 'POST',
@@ -123,8 +123,77 @@
 		});
 		return;
 	}
+
+	function showSampleValidationInfoMsg(infoMsg) {
+		var header = '<div class="alert alert-info alert-block"><h4 class="alert-heading">Info!</h4></div>';
+		var todo = '<div><h5><b>The array sheet has been validated successfully.</b></h5></div>';
+		var msginfo = '<div><h5>' + infoMsg + '</h5></div>';
+		var content = header + todo + msginfo;
+		$.messager.alert({
+			title: 'Sample validated...',
+			msg: content,
+			icon: 'info',
+			width: 500
+		});
+		return;
+	}
+
+	function showSampleValidationErrorMsg(infoMsg) {
+		var header = '<div class="alert alert-info alert-block"><h4 class="alert-heading">Info!</h4></div>';
+		var todo = '<div><h5><b>The array sheet has failed validation.</b></h5></div>';
+		var msginfo = '<div><h5>' + infoMsg + '</h5></div>';
+		var content = header + todo + msginfo;
+		$.messager.alert({
+			title: 'Sample validated...',
+			msg: content,
+			icon: 'info',
+			width: 500
+		});
+		return;
+	}
+
+	function validateSamples(rec) {
+		var excelfile = document.getElementById('id_samplevalidationfile').files[0];
+		if (!excelfile) {
+			alert("Warning: No valid sample sheet in excel is selected.");
+			return;
+		}
+		
+		var formdata = new FormData($('form').get(0));
+		formdata.append('excelfile_upload', excelfile);
+		formdata.append('csrfmiddlewaretoken', '{{csrf_token}}');
+		$.ajax('/seek/samplesvalidate/',
+			{
+				type: 'POST',
+				enctype: "multipart/form-data",
+				data: formdata,
+				processData: false,
+				contentType: false,
+				success: console.log('success!')
+			}
+		)
+		.done(function( data ) {
+			var obj = jQuery.parseJSON(data);
+			var msg = obj.msg;
+			var message = obj.message;
+			$('#messages').text(message);
+			var status = obj.status;
+			var link = obj.link;
+			if(status>0){
+				showSampleInfoMsg(msg);
+
+			}
+			else if(status==0){
+				showSampleErrorMsg(msg);
+			}
+			if(link){
+				window.location.href = link;
+			}
+		});
+		return;
+	}
 	
-	var lab_options = {{ report.lab_options|safe }};
+	var lab_options = {{report.lab_options|safe}};
 	
 	function getLabUsers(rec) {
 		if(rec.id==0){
@@ -160,22 +229,49 @@
 					<table class="table" align="center" style="width:70%">
 						<thead>
 							<tr>
-								<th style="width:40%;">Sample Templates</th>
-
+								<th style="width:40%;">Sample Validation Check</th>
 								<th style="width:60%;">Sample Excel sheet for uploading</th>
 							</tr>
 						</thead>
-
 						<tbody>
 							<tr>
-								<td><input id="sample_template" class="easyui-combobox" name="sample_template" style="width:50%;" data-options="showItemIcon: true, data: template_options, valueField:'id', textField:'title', editable: false, panelHeight:'auto', label: '', labelPosition: 'top', onSelect: function(rec){ displayTemplate(rec); }"><br>
-								<a href="#" class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true" onclick="downloadTemplate()">Download Sample Template</a></td>
-
-								<td><input type="file" name="sampleexcelname" id="id_sampleexcelname" required="" style="height:28px;width:220px"><br>
-								<label for="user_labs">Lab:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label> <input id="user_labs" class="easyui-combobox" name="user_labs" style="width:50%;" data-options="showItemIcon: true, data: lab_options, valueField:'id', textField:'title', groupField:'group', editable: false, panelHeight:'auto', label: '', labelPosition: 'top', onSelect: function(rec){ getLabUsers(rec); }"><br>
-								<label for="user_names">Creator:</label> <input id="user_names" class="easyui-combobox" name="user_names" style="width:50%;" data-options=" showItemIcon: true, valueField:'id', textField:'title', editable: false, panelHeight:'auto', label: '', labelPosition: 'top', onSelect: function(rec){ ; }"><br>
-								<br>
-								<a href="#" class="easyui-linkbutton" data-options="iconCls:'icon-add',plain:true" onclick="uploadSamples()">Upload Samples</a></td>
+								<td>
+									<input type="file" name="samplevalidationfile" id="id_samplevalidationfile" required="" style="height:28px;width:220px"><br>
+									<a href="#" class="easyui-linkbutton" data-options="iconCls:'icon-add',plain:true" onclick="validateSamples()">Validate Samples</a>
+								</td>
+								<td>
+									<input type="file" name="sampleexcelname" id="id_sampleexcelname" required="" style="height:28px;width:220px"><br>
+									<label for="user_labs">Lab:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
+									<input id="user_labs" class="easyui-combobox" name="user_labs" style="width:50%;"
+										data-options="
+											showItemIcon: true,
+											data: lab_options,
+											valueField:'id',
+											textField:'title',
+											groupField:'group',
+											editable: false,
+											panelHeight:'auto',
+											label: '',
+											labelPosition: 'top',
+											onSelect: function(rec){getLabUsers(rec);}
+									">
+									<br>
+									<label for="user_names">Creator:&nbsp;&nbsp;</label>
+									<input id="user_names" class="easyui-combobox" name="user_names" style="width:50%;"
+										data-options="
+											showItemIcon: true,
+											valueField:'id',
+											textField:'title',
+											editable: false,
+											panelHeight:'auto',
+											label: '',
+											labelPosition: 'top',
+											onSelect: function(rec){ ; }
+									">
+									<br>
+									<br>
+									<a href="#" class="easyui-linkbutton" data-options="iconCls:'icon-add',plain:true" onclick="uploadSamples()">Upload Samples</a>
+								</td>
 							</tr>
 						</tbody>
 					</table>

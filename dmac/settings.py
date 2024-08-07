@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals
 import os
 
 from django import VERSION as DJANGO_VERSION
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 
 ######################
@@ -156,6 +156,21 @@ DATABASES = {
         # Set to empty string for default. Not used with sqlite3.
         "PORT": "",
     }
+
+    "seek": {
+        # Add "postgresql_psycopg2", "mysql", "sqlite3" or "oracle".
+        "ENGINE": "django.db.backends.",
+        # DB name or path to database file if using sqlite3.
+        "NAME": "",
+        # Not used with sqlite3.
+        "USER": "",
+        # Not used with sqlite3.
+        "PASSWORD": "",
+        # Set to empty string for localhost. Not used with sqlite3.
+        "HOST": "",
+        # Set to empty string for default. Not used with sqlite3.
+        "PORT": "",
+    }
 }
 
 
@@ -175,23 +190,22 @@ CACHE_MIDDLEWARE_KEY_PREFIX = PROJECT_APP
 
 # URL prefix for static files.
 # Example: "http://media.lawrence.com/static/"
-#STATIC_URL = "/static/"
-STATIC_URL = "/themes/SmartAdmin/static/"
+STATIC_URL = "/static/"
 
 # Absolute path to the directory static files should be collected to.
 # Don't put anything in this directory yourself; store your static files
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
 # Example: "/home/media/media.lawrence.com/static/"
-STATIC_ROOT = os.path.join(PROJECT_ROOT, STATIC_URL.strip("/"))
+STATIC_ROOT = "/static"
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash.
 # Examples: "http://media.lawrence.com/media/", "http://example.com/media/"
-MEDIA_URL = STATIC_URL + "media/"
+MEDIA_URL = "/media/"
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
-MEDIA_ROOT = os.path.join(PROJECT_ROOT, *MEDIA_URL.strip("/").split("/"))
+MEDIA_ROOT = "/app/media"
 
 # Package/module name to import the root urlpatterns from for the project.
 ROOT_URLCONF = "%s.urls" % PROJECT_APP
@@ -200,13 +214,10 @@ TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": [
-            #os.path.join(PROJECT_ROOT, "templates")
-            #(os.path.join(PROJECT_ROOT, "themes.amai.templates"),
-             
-            (os.path.join(PROJECT_ROOT, "themes.SmartAdmin.templates"),
-                os.path.join(PROJECT_ROOT, "templates")),
+            #os.path.join(PROJECT_ROOT, "templates"),
+            #os.path.join(PROJECT_ROOT, "themes.amai.templates"),
+            os.path.join(PROJECT_ROOT, "themes.SmartAdmin.templates"),
         ],
-        "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
                 "django.contrib.auth.context_processors.auth",
@@ -220,8 +231,13 @@ TEMPLATES = [
                 "mezzanine.conf.context_processors.settings",
                 "mezzanine.pages.context_processors.page",
             ],
-            "builtins": [
-                "mezzanine.template.loader_tags",
+            #"builtins": [
+                #"mezzanine.template.loader_tags",
+            #],
+            "loaders": [
+                "mezzanine.template.loaders.host_themes.Loader",
+                "django.template.loaders.filesystem.Loader",
+                "django.template.loaders.app_directories.Loader",
             ],
         },
     },
@@ -240,6 +256,7 @@ INSTALLED_APPS = (
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
+    "django.contrib.messages",
     "django.contrib.redirects",
     "django.contrib.sessions",
     "django.contrib.sites",
@@ -256,17 +273,19 @@ INSTALLED_APPS = (
     "mezzanine.twitter",
     "mezzanine.accounts",
     'widget_tweaks',
-    #'django_crontab',
-    #'rest_framework',
-    #'rest_framework.authtoken',
-    #'rest_auth',
-    #'api_app',
+
+    'django_crontab',
+    'rest_framework',
+    'rest_framework.authtoken',
+    'dj_rest_auth',
+    'api_app',
+
 )
 
 # List of middleware classes to use. Order is important; in the request phase,
 # these middleware classes will be applied in the order given, and in the
 # response phase the middleware will be applied in reverse order.
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = (
     "mezzanine.core.middleware.UpdateCacheMiddleware",
 
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -275,14 +294,14 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
+    #'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     "mezzanine.core.request.CurrentRequestMiddleware",
     "mezzanine.core.middleware.RedirectFallbackMiddleware",
-    "mezzanine.core.middleware.TemplateForDeviceMiddleware",
-    "mezzanine.core.middleware.TemplateForHostMiddleware",
+    #"mezzanine.core.middleware.TemplateForDeviceMiddleware",
+    #"mezzanine.core.middleware.TemplateForHostMiddleware",
     "mezzanine.core.middleware.AdminLoginInterfaceSelectorMiddleware",
     "mezzanine.core.middleware.SitePermissionMiddleware",
     "mezzanine.pages.middleware.PageMiddleware",
@@ -367,6 +386,7 @@ SERVER_IPADDRESS = 'your IP address'
 
 ALLOWED_HOSTS = ['*']
 SESSION_COOKIE_DOMAIN = 'your IP address'
+CSRF_TRUSTED_ORIGINS = ['server domain']
 
 EMAIL_USE_TLS = True
 EMAIL_HOST = 'your smtp server'
@@ -379,17 +399,28 @@ DEFAULT_FROM_EMAIL = SERVER_EMAIL = 'your email address'
 DATABASE_ROUTERS = ['seek.dbrouters.CustomRouter']
 
 # used in dmac/views.py for managing session and authentication of user login
-SEEK_URL = "http://" + SERVER_IPADDRESS + ":3000"
+# SEEK_URL = "http://" + SERVER_IPADDRESS + ":3000"
+NEXTSEEK_DATABASE = "default"
+SEEK_HOSTNAME = "example.com"
+SEEK_URL = "https://" + SEEK_HOSTNAME
 SEEK_DATABASE = "seek"
 SEEK_SERVER = SEEK_URL
 SEEK_JS_URL = SEEK_URL
 
-VIRTUOSO_URL = "http://" + SERVER_IPADDRESS + ":8890/sparql/"
-VIRTUOSO_JS_URL = "http://" + SERVER_IPADDRESS + ":8890/sparql"
+VIRTUOSO_URL = "http://" + SEEK_HOSTNAME+ ":8890/sparql/"
+VIRTUOSO_JS_URL = "http://" + SEEK_HOSTNAME + ":8890/sparql"
 
-SEEK_DATAFILE_SERVER = 'http://' + SERVER_IPADDRESS + ':portNumber'
+SEEK_DATAFILE_SERVER = 'http://' + SEEK_HOSTNAME + ':portNumber'
 SEEK_DATAFILE_ROOT = MEDIA_ROOT + "/uploads/"
 SEEK_DATAFILE_ROOT_WEBLINK = MEDIA_URL + "uploads/"
+
+CRONJOBS = [
+    ('0 2 * * *', seek.cron_job.my_cron_job),
+    ('0 20 * * *', api_app.updateTrees.renewTreesCronjob)
+]
+
+AUTH_PROFILE_MODULE = "seek.User_profile"
+ACCOUNTS_PROFILE_MODEL = "seek.User_profile"
 
 LOGGING = {
     'version': 1,
@@ -428,5 +459,67 @@ LOGGING = {
     }
 }
 
-#PUBLISH_URL = "https://fairdomhub.org"
+# PUBLISH_URL = "https://fairdomhub.org"
 
+#refer to: https://blog.csdn.net/cuipengchong/article/details/73738416
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': "%(asctime)s %(levelname)s %(message)s",
+            'datefmt': "%a, %d %b %Y %H:%M:%S"
+        },
+    },
+    'handlers': {
+        'django_crontab': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'django_crontab.log',
+            'formatter': 'verbose'
+        },
+        'logfile': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'django.log',
+            'formatter': 'verbose' 
+        },
+        'seekfile': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'seek.log',
+            'formatter': 'verbose'
+        },
+    },
+    'loggers': {
+        'django_crontab.crontab': {
+            'handlers': ['django_crontab'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'django': {
+            'handlers':['logfile'],
+            'propagate': True,
+            'level':'DEBUG',
+        },
+        'seek': {
+            'handlers':['seekfile'],
+            'propagate': True,
+            'level':'DEBUG', 
+        }
+    },
+}
+
+# https://newbedev.com/using-django-with-postman-detail-csrf-failed-csrf-token-missing-or-incorrect
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        #'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    #'DEFAULT_PARSER_CLASSES': [
+    #    'rest_framework.parsers.JSONParser',
+    #],
+}

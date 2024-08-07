@@ -16,7 +16,9 @@ import simplejson
 import json
 import datetime
 
-from csv_excel import load_file, load_excelfile
+#from csv_excel import load_file, load_excelfile
+from dmac import csv_excel
+#from pandas import read_excel
 
 DOWNLOAD_DIRECTORY  = settings.MEDIA_ROOT + "/download/"
 DOWNLOAD_DIRECTORY_LINK = settings.MEDIA_URL + '/download/' 
@@ -175,7 +177,8 @@ class DataGrid(object):
             return msg, status, jdata, total
         
         headersMapping = self.dbtable.headersMapping()
-        csvdata = load_file(excelfile, headersMapping)
+        csvdata = csv_excel.load_file(excelfile, headersMapping)
+        #csvdata = read_excel(excelfile).to_dict()
         status = csvdata['status']
         msg = csvdata['msg']
         

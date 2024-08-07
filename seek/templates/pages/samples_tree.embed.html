@@ -46,8 +46,11 @@
             border-left: 8px solid transparent;
         }
     </style>
+
+<div class="chart">
+</div>
 <script>
-    var data = {{report.treeData_multiparents|safe}};
+    var data = {{report.treeData_multiparents|safe}};
 
     var data0 = {
 	'name': "Sample tree: current node",
@@ -103,14 +106,19 @@
     });
 
     var svg = d3.select('.chart').append('svg:svg')
-    .attr("class", "svg_container").attr("width", w).attr("height", h).style("overflow", "scroll").style("background-color", "#EEEEEE").append("svg:g").attr("class", "drawarea").append("svg:g")
-    .attr('transform', 'translate(-' + w * 0.3 + ', 0)')
+	.attr("class", "svg_container")
+	.attr("width", w)
+	.attr("height", h)
+	.style("overflow", "scroll")
+	.style("background-color", "#EEEEEE")
+	.append("svg:g")
+	.attr("class", "drawarea")
+	.append("svg:g")
+	.attr('transform', 'translate(-' + w * 0.3 + ', 0)')
 
     function drawMultiParentTree() {
 	var nodes = tree.nodes(root);
-
 	nodes = _.uniq(nodes, 'id');
-
 	_.each(nodes, function(o, i) {
 	    var itemsOfTheSameDepth = _.where(nodes, {
 		depth: o.depth
@@ -121,7 +129,10 @@
 	});
 
 	//tooltip
-	var tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
+	var tooltip = d3.select("body")
+	    .append("div")
+	    .attr("class", "tooltip")
+	    .style("opacity", 0);
 
 	var links = tree.links(nodes);
 
@@ -131,37 +142,53 @@
 	    });
 	});
 
-	var link = svg.selectAll("path").data(links).enter().append("svg:path").attr('class', function(d) {
-	    return ( !! d.source) ? d.source.id : "root";
-	}).classed('link', true).attr('d', diagonal);
+	var link = svg.selectAll("path")
+	    .data(links)
+	    .enter()
+	    .append("svg:path")
+	    .attr('class', function(d) {
+		return ( !! d.source) ? d.source.id : "root";
+	    })
+	    .classed('link', true)
+	    .attr('d', diagonal);
 
-	var node = svg.selectAll('g.node').data(nodes)
-	.enter().append("svg:g").attr("transform", function(d) {
-	    return "translate(" + d.y + "," + d.x + ")";
-	}).on('mouseup', function(d) {
-	    d3.selectAll('path.link').classed('hover', false);
-	    d3.selectAll("." + d.id).classed("hover", true).moveToFront();
-	    _.pluck(d.children, 'id').forEach(function(id) {
-		d3.selectAll('.' + id).classed('hover', true).moveToFront();
-	    });
+	var node = svg.selectAll('g.node')
+	    .data(nodes)
+	    .enter()
+	    .append("svg:g")
+	    .attr("transform", function(d) {
+		return "translate(" + d.y + "," + d.x + ")";
+	    })
+	    .on('mouseup', function(d) {
+		d3.selectAll('path.link').classed('hover', false);
+		d3.selectAll("." + d.id).classed("hover", true).moveToFront();
+		_.pluck(d.children, 'id')
+		.forEach(function(id) {
+		    d3.selectAll('.' + id).classed('hover', true).moveToFront();
+		});
 
-	    if (d.children) {
-		d._children = d.children;
-		d.children = null;
-	    } else {
-		d.children = d._children;
-		d._children = null;
-	    }
-
-	}).on('mouseover', function(d) {
+		if (d.children) {
+		    d._children = d.children;
+		    d.children = null;
+		} else {
+		    d.children = d._children;
+		    d._children = null;
+		}
+	})
+	.on('mouseover', function(d) {
 	    if ( !! d.description) {
 		tooltip.transition().duration(200).style('opacity', .9);
-
-		tooltip.html(d.description).style('left', (d3.event.pageX) + 'px').style('top', ((d3.event.pageY) + 8) + "px")
+		tooltip.html(d.description)
+		    .style('left', (d3.event.pageX) + 'px')
+		    .style('top', ((d3.event.pageY) + 8) + "px")
 	    }
-	}).on('mouseout', function(d) {
-	    tooltip.transition().duration(500).style('opacity', 0);
-	}).on('click', function(d) {
+	})
+	.on('mouseout', function(d) {
+	    tooltip.transition()
+		.duration(500)
+		.style('opacity', 0);
+	})
+	.on('click', function(d) {
 	    var strWindowFeatures = "";
 	    var URL = "/seek/sampletree/uid=" + d.id + "/";
 	    var win = window.open(URL, "_blank", strWindowFeatures);
@@ -221,5 +248,3 @@
     loadData(data);
 </script>
 
-<div class="chart">
-</div>

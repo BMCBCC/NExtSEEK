@@ -29,6 +29,13 @@ class DBtable_ontology(DBtable):
         self.fulltablename = self.tablemodel
         self.viewtablename = self.dbname + '.' + self.tablename
         self.fields = [
+            'id',
+            'label',
+            'sample_controlled_vocab_id',
+            'created_at',
+            'updated_at',
+            'iri',
+            'parent_irl',
         ]
         
         self.uniqueFields = []
@@ -93,7 +100,7 @@ class DBtable_ontology(DBtable):
         ontologyInfo['headers_required'] = headers_required
         ontologyInfo['ontologyTypes'] = ontologyTypes
         
-        from dbtable_sampletype import DBtable_sampletype
+        from seek.dbtable_sampletype import DBtable_sampletype
         sampletype = DBtable_sampletype("DEFAULT")
         ontologyInfo['sampletype'] = sampletype.getOneRecord(sampleType_id)
         ontologyInfo['sampleType_id'] = sampleType_id

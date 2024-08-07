@@ -136,7 +136,7 @@ class Sample_attributes(models.Model):
     unit_id = models.IntegerField(default=None)
     is_title = models.BooleanField(default=0)
     template_column_index = models.IntegerField(default=None)
-    accessor_name = models.CharField(max_length=255, default=None)
+    original_accessor_name = models.CharField(max_length=255, default=None)
     sample_controlled_vocab_id = models.IntegerField(default=None)
     linked_sample_type_id = models.IntegerField(default=None)
     
@@ -192,8 +192,8 @@ class Samples(models.Model):
 class Projects_samples(models.Model):
     _DATABASE = SEEK_DATABASE
     
-    project_id = models.IntegerField(default=None, primary_key=True)
-    sample_id = models.IntegerField(default=None, primary_key=True)
+    project_id = models.IntegerField(default=None)
+    sample_id = models.IntegerField(default=None)
     
     def __unicode__(self):
         uuid = str(self.project_id) + '-' + str(self.sample_id)
@@ -216,7 +216,6 @@ class Documents(models.Model):
     policy_id = models.IntegerField(default=None)
     doi = models.CharField(max_length=255, default=None)
     license = models.CharField(max_length=255, default=None)
-    last_used_at = models.DateTimeField(null=False)
     created_at = models.DateTimeField(null=False)
     updated_at = models.DateTimeField(null=False)
     other_creators = models.TextField(default=None)
@@ -236,7 +235,6 @@ class Data_files(models.Model):
     title = models.CharField(max_length=255, default=None)
     description = models.TextField(default=None)
     template_id = models.IntegerField(default=None)
-    last_used_at = models.DateTimeField(null=False)
     created_at = models.DateTimeField(null=False)
     updated_at = models.DateTimeField(null=False)
     version = models.IntegerField(default=1)
@@ -303,8 +301,8 @@ class Policies(models.Model):
     name = models.CharField(max_length=255, default=None)
     sharing_scope = models.IntegerField(default=None)
     access_type = models.IntegerField(default=0)
-    use_whitelist = models.BooleanField(default=None)
-    use_blacklist = models.BooleanField(default=None)
+    use_allowlist = models.BooleanField(default=None)
+    use_denylist = models.BooleanField(default=None)
     created_at = models.DateTimeField(null=False)
     updated_at = models.DateTimeField(null=False)
     
@@ -338,7 +336,6 @@ class Sops(models.Model):
     description = models.TextField(default=None)
     created_at = models.DateTimeField(null=False)
     updated_at = models.DateTimeField(null=False)
-    last_used_at = models.DateTimeField(null=False)
     version = models.IntegerField(default=1)
     first_letter = models.CharField(max_length=1, default=None)
     other_creators = models.TextField(default=None)
@@ -387,8 +384,6 @@ class Projects(models.Model):
     last_jerm_run = models.DateTimeField()
     uuid = models.CharField(max_length=255, default=None)
     programme_id = models.IntegerField()
-    ancestor_id = models.IntegerField()
-    parent_id = models.IntegerField()
     
     default_license = models.CharField(max_length=255, default=None)
     use_default_policy = models.IntegerField()

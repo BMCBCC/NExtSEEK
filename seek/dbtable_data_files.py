@@ -23,8 +23,8 @@ from django.conf import settings
 from django import forms
 from django.db.models import Q
 
-from dbtable_assay_assets import DBtable_assay_assets
-from dbtable_content_blobs import DBtable_content_blobs
+from .dbtable_assay_assets import DBtable_assay_assets
+from .dbtable_content_blobs import DBtable_content_blobs
 
 DOWNLOAD_DIRECTORY  = settings.MEDIA_ROOT + "/download/"
 DOWNLOAD_DIRECTORY_LINK = settings.MEDIA_URL + '/download/'
@@ -37,7 +37,6 @@ DATA_FILES_DEFAULT = {
     'title':'',
     'description':'',
     'template_id':None,
-    'last_used_at':'',
     'created_at':'',
     'updated_at':'',
     'version':1,
@@ -103,7 +102,6 @@ class DBtable_data_files(DBtable):
             'title',
             'description',
             'template_id',
-            'last_used_at',
             'created_at',
             'updated_at',
             'version',
@@ -114,7 +112,8 @@ class DBtable_data_files(DBtable):
             'doi',
             'license',
             'simulation_data',
-            'deleted_contributor'
+            'deleted_contributor',
+            'file_template_id',
         ]
         
         self.uniqueFields = ['title']
@@ -348,12 +347,13 @@ class DBtable_data_files(DBtable):
         dfrecord['content_type'] = content_type
         
         fullfilename = dfrecord['fullfilename']
-        if df_id>0:
-            report['msg'] = DATAFILE_ERRORCODE['101']
-            report['status'] = -1
-            dfrecord['notes'] = report['msg']
-            report['newrow'] = dfrecord
-            return report
+        if df_id is not None:
+            if df_id>0:
+                report['msg'] = DATAFILE_ERRORCODE['101']
+                report['status'] = -1
+                dfrecord['notes'] = report['msg']
+                report['newrow'] = dfrecord
+                return report
         
         handle_uploaded_file(infile, fullfilename)
         md5Now = getFileChecksum(fullfilename, 'MD5')
@@ -446,7 +446,7 @@ class DBtable_data_files(DBtable):
                 if istest:
                     print('Skip sample update in a test run.')
                 else:
-                    from dbtable_sample import DBtable_sample
+                    from seek.dbtable_sample import DBtable_sample
                     dbsample = DBtable_sample()
                     msg, status = dbsample.updateSampleDFurl(submitter, sample_uid, originalfilename, df_link)
                     if not status:
@@ -932,7 +932,7 @@ class DBtable_data_files(DBtable):
         dbcb = DBtable_content_blobs("DEFAULT")
         
         sampleDic_rev = {}
-        for key, value in sampleDic.iteritems():
+        for key, value in sampleDic.items():
             sampleDic_rev[key] = value
             if "file_" in key:
                 filename = value

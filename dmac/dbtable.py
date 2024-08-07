@@ -1,7 +1,7 @@
 import simplejson
-from dbconnection import DBconnection
-from datagrid_custom import DataGrid
-from conversion import toInt, convertBoolstrToInt
+from dmac.dbconnection import DBconnection
+from dmac.datagrid_custom import DataGrid
+from dmac.conversion import toInt, convertBoolstrToInt
 from django.conf import settings
 from django import forms
 
@@ -109,7 +109,7 @@ class DBtable(object):
         status = 1
         try:
             record_new = self.reformatRecordForDB(username, record)
-        except Exception, e:
+        except Exception as e:
             status = 0
             msg = str(e)
             logger.debug(msg)
@@ -273,7 +273,7 @@ class DBtable(object):
         recordDB = self.getOneRecord(primarykeyvalue)
         record = {}
         if pk==0 or not recordDB:
-            for key, value in self.formDefault.iteritems():
+            for key, value in self.formDefault.items():
                 record[key] = value
             if pk==0:
                 record["pk"] = self.getLatestPrimarykey()
@@ -281,7 +281,7 @@ class DBtable(object):
                 record["pk"] = primarykeyvalue
             record['form_msg'] = 'Fill new form'
         else:
-            for formfield, dbfield in self.formMapping.iteritems():
+            for formfield, dbfield in self.formMapping.items():
                 record[formfield] = recordDB[dbfield]
             record['form_msg'] = 'Revise form'
                 
@@ -297,7 +297,7 @@ class DBtable(object):
         if request.method == 'POST':
             report = self.getFormDate(pk)
             postdata = request.POST
-            for key, value in postdata.iteritems():
+            for key, value in postdata.items():
                 report[key] = value
             form = self.setForm(request.POST)
             if form.is_valid():
@@ -317,7 +317,7 @@ class DBtable(object):
                     report['form_status'] = status
                     
                     report['operation'] = operation
-                except Exception, e:
+                except Exception as e:
                     error = "Form field has exception: " + str(e)
                     form.errors['__all__'] = form.error_class([error])
                     report['form_status'] = 0
@@ -340,10 +340,10 @@ class DBtable(object):
     def getRecordFromForm(self, login_user, form):
         status = 1
         record = {}
-        for dbfield, value in self.formDefault.iteritems():
+        for dbfield, value in self.formDefault.item():
             record[dbfield] = value
         
-        for formfield, dbfield in self.formMapping.iteritems():
+        for formfield, dbfield in self.formMapping.item():
             record[dbfield] = form.cleaned_data[formfield]
         
         record['LastUpdate_KRB_Name'] = login_user

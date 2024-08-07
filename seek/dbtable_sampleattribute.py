@@ -6,8 +6,8 @@ import simplejson
 import logging
 logger = logging.getLogger(__name__)
 
-from .models import Sample_attributes
-from .dbtable_attributetype import DBtable_attributetype
+from seek.models import Sample_attributes
+from seek.dbtable_attributetype import DBtable_attributetype
 from dmac.dbtable import DBtable
 from dmac.csv_excel import load_file, load_excelfile
 from dmac.conversion import toDateClass, is_numeric, toFloat, toBinaryTinyInt, toString, getDefaultDate
@@ -38,9 +38,14 @@ class DBtable_sampleattribute(DBtable):
             'unit_id',
             'is_title',
             'template_column_index',
-            'accessor_name',
+            'original_accessor_name',
             'sample_controlled_vocab_id',
-            'linked_sample_type_id'
+            'linked_sample_type_id',
+            'pid',
+            'description',
+            'isa_tag_id',
+            'allow_cv_free_text',
+            'template_attribute_id',
         ]
         
         self.uniqueFields = ['title', 'sample_type_id']
@@ -91,7 +96,7 @@ class DBtable_sampleattribute(DBtable):
         attributeInfo['headers_required'] = headers_required
         attributeInfo['attributeTypes'] = attributeTypes
         
-        from dbtable_sampletype import DBtable_sampletype
+        from seek.dbtable_sampletype import DBtable_sampletype
         sampletype = DBtable_sampletype("DEFAULT")
         attributeInfo['sampletype'] = sampletype.getOneRecord(sampleType_id)
         attributeInfo['sampleType_id'] = sampleType_id
@@ -473,7 +478,7 @@ class DBtable_sampleattribute(DBtable):
                 value = getDefaultDate()
             elif key=="template_column_index":
                 value = record['pos']
-            elif key=="accessor_name":
+            elif key=="original_accessor_name":
                 title = record['title']
                 value = title.lower()
             else:
@@ -507,8 +512,7 @@ class DBtable_sampleattribute(DBtable):
             if id in attributes_old:
                 attribute = attributes_old[id]
                 title_old = attribute['title']
-                if title_new.lower()!=title_old.lower():
-                    attri_renamed[title_new.lower()] = title_old.lower()
+                if title_new!=title_old:
+                    attri_renamed[title_new] = title_old
         
         return attri_renamed
-        

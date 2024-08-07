@@ -3,24 +3,24 @@ import os, sys
 import MySQLdb
 import datetime
 from os.path import abspath, exists
-from iocsv import saveCsvfile
-from conversion import toString, cleanString
+from dmac.iocsv import saveCsvfile
+from dmac.conversion import toString, cleanString
 
 class DBconnection(object):
     def __init__(self, whichDB, dbname=''):
         self.__dbconn = None
         self.dbtype = whichDB
         if whichDB=="DJANGO":
-            from dbconn_django import DBconn_django
+            from dmac.dbconn_django import DBconn_django
             self.__dbconn = DBconn_django()
         elif whichDB=="SEEK":
-            from dbconn_django import DBconn_django
+            from dmac.dbconn_django import DBconn_django
             self.__dbconn = DBconn_django()
         elif whichDB=="MYSQL":
-            from dbconn_mysql import DBconn_mysql
+            from dmac.dbconn_mysql import DBconn_mysql
             self.__dbconn = DBconn_mysql()
         else:
-            from dbconn_django import DBconn_django
+            from dmac.dbconn_django import DBconn_django
             self.__dbconn = DBconn_django()
         
     def getPrimarykey(self, table, field, keyword):
@@ -50,7 +50,7 @@ class DBconnection(object):
         
     def storeOneRecord(self, tablemodel, record, primarykey=None, primaryvalue=None, excludeKeys=[]):
         id, msg = self.__dbconn.storeOneRecord(tablemodel, record)
-        if id>0:
+        if int(id)>0:
             primarykey = id
         else:
             primarykey = 0
@@ -92,13 +92,13 @@ class DBconnection(object):
             
     def __updateRecordViaKeyword(self, tablemodel, uniqueField, uniqueKeyword, record):
         id = self.getPrimarykey(tablemodel, uniqueField, uniqueKeyword)
-        if id<=0:
+        if int(id)<=0:
             msg = "Warning: The primary key for the table is not valid."
             logger.debug(msg)
             return -1, msg
             
         record_update = self.__dbconn.retrieveOneRecord(tablemodel, id)
-        for key, value in record.iteritems():
+        for key, value in record.items():
             if key == "id":
                 if value!=id:
                     msg = "Error: The primary key not consistent."
@@ -112,7 +112,7 @@ class DBconnection(object):
 
     def updateNotesViaKeyword(self, tablemodel, uniqueField, uniqueKeyword, notes):
         id = self.getPrimarykey(tablemodel, uniqueField, uniqueKeyword)
-        if id<=0:
+        if int(id)<=0:
             msg = "Warning: The primary key for the table is not valid."
             logger.debug(msg)
             return -1, msg
@@ -241,7 +241,7 @@ class DBconnection(object):
         record = {}
         keyword = datadic[unqiuefield]
         id = self.getPrimarykey(tablemodel, unqiuefield, keyword.strip())
-        if id>0:
+        if int(id)>0:
             record['id'] = id
        
         for field in expectedfields:

@@ -1,7 +1,8 @@
 import csv
 import openpyxl
 from openpyxl.cell.read_only import EmptyCell
-from conversion import toString
+from dmac.conversion import toString
+import simplejson
 
 def handle_uploaded_file(file, output):
     destination = open(output, 'wb+')
@@ -64,13 +65,13 @@ def convertToDicList(columns, rows):
     return datadiclist
       
 def checkHeaders(headersExpected, headersUploaded):
-    headersExpectedNew = [x.lower() for x in headersExpected]
-    headersUploadedNew = [x.lower() for x in headersUploaded]
+    #headersExpectedNew = [x.lower() for x in headersExpected]
+    #headersUploadedNew = [x.lower() for x in headersUploaded]
     
     n = 0
     missing = []
-    for header in headersExpectedNew:
-        if header not in headersUploadedNew:
+    for header in headersExpected:
+        if header not in headersUploaded:
             n += 1
             missing.append(header)
                 
@@ -80,7 +81,7 @@ def load_csvfile_diclist(csvfile, headersKnown=[]):
     csvdata = load_csvfile(csvfile)
     csv_diclist = []
     if csvdata['status']:
-        logger.debug('csvfile loaded okay')
+        print('csvfile loaded okay')
     else:
         return csv_diclist
     
@@ -125,7 +126,7 @@ def load_csvfile_diclist_renamed(csvfile, headersmapping):
     filename = csvfile.name
     csvdata = load_csvfile(csvfile)
     if csvdata['status']:
-        logger.debug('csvfile loaded okay')
+        print('csvfile loaded okay')
     else:
         svdata['diclist'] = []
         return csvdata
@@ -161,10 +162,10 @@ def load_excelfile_1stSheet(excelfile, headersmapping):
         filedata['msg'] = "No valid sheet is opened in the file: " + excelfile.name
         return filedata
     
-    headersmappingLower = {}
-    for key, value in headersmapping.iteritems():
-        keyLower = key.lower()
-        headersmappingLower[keyLower] = value
+    #headersmappingLower = {}
+    #for key, value in headersmapping.items():
+    #    keyLower = key.lower()
+    #    headersmappingLower[keyLower] = value
     
     worksheet1 = worksheets[0]
     sheet = workbook.get_sheet_by_name(worksheet1)
@@ -194,15 +195,15 @@ def load_excelfile_1stSheet(excelfile, headersmapping):
             for cell in row:
                 key = columns[i]
                 i += 1
-                keyLower = key.lower()
-                if keyLower in headersmappingLower:
-                    newkey = headersmappingLower[keyLower]
+                #keyLower = key.lower()
+                if key in headersmapping:
+                    newkey = headersmapping[key]
                     value = cell.value
                     if value is None:
                         value = ''
                     rowdic[newkey] = value
                 else:
-                    logger.debug("key not found in the key mapping: ", key)
+                    print("key not found in the key mapping: ", key)
                 
             diclist.append(rowdic)
             
@@ -342,11 +343,49 @@ def modifyExcelCell(excelfile, rowNumber, colNumber, cellText, titleIn="sheet 1"
     ci = sheet.cell(row = rowNumber, column = colNumber)
     ci.value = cellText
     wb.save(excelfile)
+
+def removeRedundancy(headers, diclist):
+    diclist_new = []
+    uniqueList = []
+    for dici in diclist:
+        dicj = {}
+        for index, header in enumerate(headers):
+            if header in dici:
+                value = dici[header]
+                if value is not None:
+                    dicj[header] = value
+        
+        dicistr = simplejson.dumps(dicj, default=str)
+        if dicistr not in uniqueList:
+            uniqueList.append(dicistr)
+            diclist_new.append(dici)
+    return diclist_new
+
+def getNotEmptyHeaders(headers, diclist):
+    print("Number of columns before filtering: %d"%len(headers))
+    headers_notEmpty = []
+    for header in headers:
+        notEmpty = False
+        for dici in diclist:
+            if header in dici:
+                value = toString(dici[header])
+                nv = len(value.strip())
+                if nv>0:
+                    notEmpty = True
+                    break
+                    
+        if notEmpty:
+            headers_notEmpty.append(header)
+            
+    print("Number of columns after filtering: %d"%len(headers_notEmpty))
+    return headers_notEmpty      
     
-    
-def saveExcelDiclist(excelfile, headers, diclist, titleIn="sheet 1", isNewSheet=True):
+def saveExcelDiclist(excelfile, headers, diclist, titleIn="sheet 1", isNewSheet=True, excludeEmptyColumns=False):
     if not isNewSheet:
         return modifyExcelDiclist(excelfile, headers, diclist, titleIn)
+        
+    if excludeEmptyColumns:
+        headers = getNotEmptyHeaders(headers, diclist)
         
     wb = openpyxl.Workbook() 
     sheet = wb.active
@@ -367,6 +406,7 @@ def saveExcelDiclist(excelfile, headers, diclist, titleIn="sheet 1", isNewSheet=
             ci.value = toString(item)
 
     wb.save(excelfile)
+  
     
 def reviseExcelDiclist(excelfile, headers, diclist, sheet_name="sheet 1"):
     wb = openpyxl.load_workbook(filename=excelfile)
@@ -469,4 +509,63 @@ def load_excelfile_asdic(excelfile):
         filedata['msg'] = "Error: No sheet loaded file. "
     return filedata
     
+def AddExcelDiclist(excelfile, headers, diclist, titleIn="sheet 1", excludeEmptyColumns=False):
+    ''' Add a new sheet into the existing excel file.
     
+    Refer to: https://stackoverflow.com/questions/66417010/how-to-write-multiple-sheetswith-sheetnames-in-excel-using-openpyxl-and-python
+    '''
+    if excludeEmptyColumns:
+        headers = getNotEmptyHeaders(headers, diclist) 
+    
+    wb = openpyxl.load_workbook(filename=excelfile)
+    if titleIn in wb:
+        sheet = wb[titleIn]
+    else:
+        sheet = wb.create_sheet(titleIn)
+    
+    rowi = 0
+    for index, item in enumerate(headers):
+        ci = sheet.cell(row = (rowi+1), column = (index+1))
+        ci.value = item
+        
+    for dici in diclist:
+        rowi += 1
+        for index, header in enumerate(headers):
+            if header in dici:
+                item = dici[header]
+            else:
+                item = ""
+            ci = sheet.cell(row = (rowi+1), column = (index+1))
+            ci.value = toString(item)
+
+    wb.save(excelfile)
+    
+def getConstantRows(headers, diclist):
+    headers_noneConstant = []
+    diclist_constant = []
+    n = len(headers)
+    for header in headers:
+        #print("header in check: %d, %s"%(n, header))
+        n -= 1
+        isConstant = True
+        
+        value0 = None
+        for dici in diclist:
+            if header in dici:
+                value = dici[header]
+                if value0 is None:
+                    value0 = value
+                elif value != value0:
+                    isConstant = False
+            
+        if isConstant:
+            dici = {}
+            dici["Sample attribute"] = header
+            dici["Constant value"] = value0
+            diclist_constant.append(dici)
+        else:
+            headers_noneConstant.append(header)
+    
+    headers_constant = ["Sample attribute", "Constant value"]
+    return headers_noneConstant, diclist_constant, headers_constant
+

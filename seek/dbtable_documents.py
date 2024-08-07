@@ -37,7 +37,6 @@ class DBtable_documents(DBtable):
             'policy_id',
             'doi',
             'license',
-            'last_used_at',
             'created_at',
             'updated_at',
             'other_creators',

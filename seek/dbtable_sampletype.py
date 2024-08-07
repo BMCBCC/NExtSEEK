@@ -6,10 +6,10 @@ import time, json
 import logging
 logger = logging.getLogger(__name__)
 
-from .seekapi import SeekAPI
-from .models import Sample_types
+from seek.seekapi import SeekAPI
+from seek.models import Sample_types
 from dmac.dbtable import DBtable
-from dbtable_sampleattribute import DBtable_sampleattribute
+from seek.dbtable_sampleattribute import DBtable_sampleattribute
 
 SAMPLETYPE_FILTER_MAPPING = {
 }
@@ -26,6 +26,18 @@ class DBtable_sampletype(DBtable):
         self.fulltablename = self.tablemodel
         self.viewtablename = self.dbname + '.' + self.tablename
         self.fields = [
+            'id',
+            'title',
+            'uuid',
+            'created_at',
+            'updated_at',
+            'first_letter',
+            'description',
+            'uploaded_template',
+            'contributor_id',
+            'deleted_contributor',
+            'template_id',
+            'other_creators',
         ]
         
         self.uniqueFields = []

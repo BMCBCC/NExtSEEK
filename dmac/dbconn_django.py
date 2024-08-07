@@ -12,9 +12,11 @@ from django.db.models import Q
 
 import datetime
 import simplejson
+import logging
+logger = logging.getLogger(__name__)
 
-from iocsv import saveCsvfile, getString, getFloat
-from conversion import convertSQLString, is_numeric
+from dmac.iocsv import saveCsvfile, getString, getFloat
+from dmac.conversion import convertSQLString, is_numeric
 
 class DBconn_django(object):
     def __init__(self):
@@ -53,7 +55,7 @@ class DBconn_django(object):
                         value = getattr(obj,f.name)
                     except AttributeError:
                         value = None
-                    return unicode(value)
+                    return str(value)
             
             return None
         else:
@@ -157,7 +159,7 @@ class DBconn_django(object):
         record_forUpdate = self.__updateRecord(record_old, record)
         try:            
             model = tablemodel()
-            for k, v in record_forUpdate.iteritems():
+            for k, v in record_forUpdate.items():
                 setattr(model, k, v)
             model.save()
             
@@ -188,7 +190,7 @@ class DBconn_django(object):
         id = 0
         if "id" in record:
             id = record["id"]
-        if id>0:
+        if int(id) > 0:
             msg, status = self.__updateOneRecord(tablemodel, record)
         else:
             id = self.getLatestID(tablemodel)
@@ -580,7 +582,7 @@ class DBconn_django(object):
         
     def __updateRecord(self, record_fromDB, record_input):
         record_forUpdate = record_fromDB
-        for k, v in record_input.iteritems():
+        for k, v in record_input.items():
             if k in record_forUpdate:
                 v_old = record_forUpdate[k]
                 if v!=v_old:
@@ -603,7 +605,7 @@ class DBconn_django(object):
             obj = self.retrieveUniqueObj(tablemodel, primarykeyname, pid)
             
             obj = tablemodel.objects.get(person_id=7)
-            for k, v in record.iteritems():
+            for k, v in record.items():
                 setattr(obj, k, v)
             obj.save()
             transaction.savepoint_commit(sid)
@@ -776,7 +778,7 @@ class DBconn_django(object):
             cur.execute(sqlquery)
             transaction.savepoint_commit(sid)
             con.commit()
-        except MySQLdb.Error, e:
+        except MySQLdb.Error:
             sqlquery = "ROLLBACK;"
             cur.execute(sqlquery)
             transaction.savepoint_rollback(sid)
