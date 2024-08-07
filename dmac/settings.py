@@ -386,6 +386,7 @@ SERVER_IPADDRESS = 'your IP address'
 
 ALLOWED_HOSTS = ['*']
 SESSION_COOKIE_DOMAIN = 'your IP address'
+CSRF_TRUSTED_ORIGINS = ['server domain']
 
 EMAIL_USE_TLS = True
 EMAIL_HOST = 'your smtp server'
