@@ -416,7 +416,7 @@ SEEK_DATAFILE_ROOT_WEBLINK = MEDIA_URL + "uploads/"
 
 CRONJOBS = [
     ('0 2 * * *', seek.cron_job.my_cron_job),
-    ('0 20 * * *', api_app.updateTrees.renewTreesCronjob)
+    ('0 20 * * *', api_app.updateTrees.generateTrees)
 ]
 
 AUTH_PROFILE_MODULE = "seek.User_profile"
