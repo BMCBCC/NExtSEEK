@@ -708,6 +708,10 @@ class DBtable_sample(DBtable):
         
         return contributor_id
         
+    def generateTree(uid):
+        sample_id = self.getSampleID(uid)
+        logger.debug(f"sample_id to generate tree for: {sample_id}")
+        trees.generateTrees(sample_id)
         
     def __batchUploadTest(self, seekdb, sampleType, diclist, diclist_feedback, attributeInfo, attributeMapping, diclist_assay, uploadEnforced=False):
         user_seek = seekdb.user_seek
@@ -843,6 +847,8 @@ class DBtable_sample(DBtable):
                 nright += 1
                 if samplename not in uids_predefined:
                     uids_predefined[samplename] = uid
+                with ThreadPoolExecutor() as executor:
+                    executor.submit(self.generateTree, uid)
             else:
                 statusTest = False
                 msg0 += msgi +  '<br/>'
