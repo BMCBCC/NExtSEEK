@@ -863,7 +863,7 @@ def generateTrees(sanityCheck_sampleID=None):
     return
     
 
-def updateTrees():
+def updateTrees(sample_to_update=None):
     ''' Update those trees that are present in samples table but not in seek_sample_tree table.
     '''
     print("updateTrees")
@@ -948,6 +948,16 @@ def updateTrees():
     #childrenTrees = {}
     #trees = {}
     #trees = []
+
+    if sample_to_update is not None:
+        try:
+            sampleDic = sampleDics[sample_to_update]
+        except:
+            pass
+        uid = sampleDic['UID']
+        status = saveSampleTree(conn_dmac, sample_to_update, uid,sampleUIDs)
+        return
+    
     for i in range(nsamples):
         sample_id = last_sample_id + i + 1
         #dici, diclist = dbsample.getSampleInfo(sample_id)
