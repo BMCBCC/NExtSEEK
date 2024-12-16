@@ -126,8 +126,24 @@ def sample(request, id):
     report = {}
     report['bodyhtml'] = bodyhtml
     report['sample_id'] = sample_id
+
     dbsample = DBtable_sample()
-    report['treeData_multiparents'] = dbsample.createSampleMultiParentTree(sample_id)
+
+    db = settings.DATABASES['default']
+    conn = MySQLdb.connect(host=db['HOST'],
+                           user=db['USER'],
+                           passwd=db['PASSWORD'],
+                           db=db['NAME'])
+    cursor = conn.cursor()
+
+    cursor.execute(f"SELECT full FROM seek_sample_tree WHERE sample_id='{sample_id}'")
+
+    cursor_results = cursor.fetchone()
+    if cursor_results is not None:
+        report['treeData_multiparents'] = json.loads(cursor_results[0])[0]
+    else:
+        report['treeData_multiparents'] = dbsample.createSampleMultiParentTree(sample_id)
+
     # This treeData_multiparents does not have the complete tree information
     sampledic, samplelist = dbsample.getSampleInfo(sample_id)
     report['sampledic'] = sampledic

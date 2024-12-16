@@ -465,7 +465,7 @@ def getSamples():
 def myfunction(a, b):
   return a + b
 
-def saveSampleTree(conn_dmac, uid, sampleUIDs, id=None):
+def saveSampleTree(conn_dmac, sample_id, uid, sampleUIDs, id=None):
     status = 0
     try:
         tree = sampleUIDs[uid]
@@ -478,11 +478,26 @@ def saveSampleTree(conn_dmac, uid, sampleUIDs, id=None):
     if id is not None:
         record['id'] = id
         
-    #record['sample_id'] = sample_id
+    record['sample_id'] = sample_id
     record['uuid'] = uid
     record['parents'] = simplejson.dumps(tree['parents'], default=str)
+    if uid in record['parents']:
+        print(f"Sample {uid} is its own parent. Not generating tree.")
+        return 0
     record['children'] = simplejson.dumps(tree['children'], default=str)
-    record['full'] = simplejson.dumps(tree['parentTree'], default=str)
+    # record['full'] = simplejson.dumps(tree['parentTree'], default=str)
+    fullTree = createSampleChildrenTree(uid, sampleUIDs)[0]
+    while len(parents) > 0:
+        for parent in parents:
+            fullTree = {'name': parent, 'id': parent, 'children': [fullTree]}
+        try:
+            parents = sampleUIDs[parent]['parents']
+        except:
+            parents = []
+    try:
+        record['full'] = simplejson.dumps([fullTree], default=str)
+    except:
+        return 0
     #record['updated'] = str(datetime.datetime.now(tz=get_current_timezone()))
     record['updated'] = str(datetime.datetime.now())
     #print(tree)
@@ -749,7 +764,7 @@ def generateTrees(sanityCheck_sampleID=None):
         
         uid = sampleDic['uid']
         '''
-        status = saveSampleTree(conn_dmac, uid, sampleUIDs, id)
+        status = saveSampleTree(conn_dmac, sample_id, uid, sampleUIDs, id)
         if status==1:
             np += 1
         else:
@@ -812,7 +827,7 @@ def generateTrees(sanityCheck_sampleID=None):
         
         uid = sampleDic['uid']
         '''
-        status = saveSampleTree(conn_dmac, uid, sampleUIDs, id)
+        status = saveSampleTree(conn_dmac, sample_id, uid, sampleUIDs, id)
         if status==1:
             np += 1
         else:
@@ -949,8 +964,8 @@ def updateTrees():
         if id % 1000 == 0:
             print(id)
         
-        uid = sampleDic['uid']
-        status = saveSampleTree(conn_dmac, uid, sampleUIDs)
+        uid = sampleDic['UID']
+        status = saveSampleTree(conn_dmac, sample_id, uid, sampleUIDs)
         
         '''
         conn_dmac.storeOneRecord('seek_sample_tree', tree)
@@ -1062,7 +1077,7 @@ def renewTrees():
         '''
         if id % 1000 == 0:
             print(id)
-        status = saveSampleTree(conn_dmac, uid, sampleUIDs, id)
+        status = saveSampleTree(conn_dmac, sample_id, uid, sampleUIDs, id)
         if status==1:
             np += 1
         else:
