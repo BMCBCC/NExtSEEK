@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.shortcuts import redirect
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, FileResponse, Http404
 
 import csv
 import hashlib
@@ -9,6 +9,7 @@ import os
 import re
 import subprocess
 import time
+import requests
 import uuid
 import tempfile
 import random
@@ -988,8 +989,6 @@ def sampleFindAjax(request):
     
 def sampleDelete(request):
     ret = request.GET
-    allids = ret['allids']
-    sample_ids = json.loads(allids)
     
     seekdb = SeekDB(None, None, None)
     user_seek = seekdb.getSeekLogin(request)
@@ -1000,6 +999,12 @@ def sampleDelete(request):
     link = DOWNLOAD_DIRECTORY_LINK + filename
     
     dbsample = DBtable_sample()
+
+    if 'allids' in ret:
+        sample_ids = json.loads(ret['allids'])
+    elif 'alluids' in ret:
+        sample_uids = json.loads(ret['alluids'])
+        sample_ids = list(map(dbsample.getSampleID, sample_uids))
     sdata = dbsample.deleteSamples(user_seek, downloadfile, link, sample_ids)
     return HttpResponse(sdata)
     
@@ -1437,7 +1442,16 @@ def samplesValidate(request):
                 if set(expected_sheets) != set(actual_sheets):
                     missing_sheets = set(expected_sheets) - set(actual_sheets)
                     extra_sheets = set(actual_sheets) - set(expected_sheets)
-                    message += f"Missing sheets: {missing_sheets}, Extra sheets: {extra_sheets}"
+                    if set(['Instructions', 'Samples', 'Assay']) & missing_sheets:
+                        message += f"Missing sheets: {missing_sheets}. Please fix this and reupload sheet."
+                        status += 1
+                        data = {'msg': message, 'status': status, 'link': ''}
+                        if message is not None and '<br/>' in message:
+                            data['message'] = message.replace('<br/>', '\n')
+                        else:
+                            data['message'] = message
+                        return HttpResponse(simplejson.dumps(data, default=str))
+                    message += f"Extra sheets: {extra_sheets}"
                     status += 1
                 else:
                     message += "\n\nSheets match what is expected ✅"
@@ -1463,7 +1477,12 @@ def samplesValidate(request):
                 # Assuming the modified CSV is already loaded into a DataFrame called 'df'
 
                 df_instructions = df['Instructions'].tolist()
-                database_field_column = instructions_sheet['Database Field'].tolist()
+                try:
+                    database_field_column = instructions_sheet['Database Field'].tolist()
+                except:
+                    message = 'Error: No database field column in the Instructions sheet'
+                    data = {'msg': message, 'status': 0, 'link': ''}
+                    return HttpResponse(simplejson.dumps(data, default=str))
 
                 statusChanged = False
                 for entry in database_field_column:
