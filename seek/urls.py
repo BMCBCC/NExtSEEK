@@ -72,5 +72,11 @@ urlpatterns = [
     re_path(r'^search/', views.searchAdvanced, name='searchAdvanced'),
     re_path(r'^searchAdvanced/', views.searchingAdvanced, name='searchingAdvanced'),
     re_path(r'^searchUIDs/', views.searchingUIDs, name='searchingUIDs'),
+
+    re_path(r'nhpinfo/(?P<nhp_name>[\w-]+)/$', views.nhp_info, name='nhp_info'),
+    re_path(r'nhpdata/(?P<nhp_name>[\w-]+)/$', views.get_nhp_data, name='nhp_data'),
+    re_path(r'^eventdata/(?P<nhp_name>[\w-]+)/(?P<event_type>[\w.-]+)/(?P<date>[\w-]+)/$', views.fetch_event_data, name='event_data'),
+    re_path(r'^sample_timeline/.*$', TemplateView.as_view(template_name="sample_timeline.html")),
+
 ]
 
