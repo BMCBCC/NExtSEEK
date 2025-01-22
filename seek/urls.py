@@ -1,4 +1,5 @@
 from django.urls import re_path
+from filebrowser.sites import site
 from . import views
 
 urlpatterns = [
@@ -7,8 +8,8 @@ urlpatterns = [
     re_path(r'^samples/query/', views.sampleQuery, name='sampleQuery'),
     re_path(r'^samples/search/', views.sampleSearch, name='sampleSearch'),
     re_path(r'^samples/searching/', views.sampleSearching, name='sampleSearching'),
-    re_path(r'^retrieve/samples/', views.retrieveSamples, name='retrieveSamples'),
     re_path(r'^templates/', views.templatesList, name="templatesList"),
+    re_path(r'^retrieve/samples/', views.retrieveSamples, name='retrieveSamples'),
     
     re_path(r'^samples/attributes/', views.sampleAttributes, name='sampleAttributes'),
     re_path(r'^samples/retrieveType/', views.getSampleType, name='getSampleType'),
@@ -46,9 +47,9 @@ urlpatterns = [
     re_path(r'^datafile/query/', views.datafileQuery, name='datafileQuery'),
     re_path(r'^datafiles/publish/(?P<dfids>\d+(,\d+)*)/$',views.publish_datafiles, name='publish_datafiles'),
 
-    re_path(r'^datafile/uid=(?P<uid>[\w.-]{0,256})/$', views.datafileDownload, name='datafileDownload'),
+    re_path(r'^datafile/uid=(?P<uid>[\w.\-()_+]{0,256})/$', views.datafileDownload, name='datafileDownload'),
 
-    re_path(r'^sop/uid=(?P<uid>[\w.-]{0,256})/$', views.sopDownload, name='sopDownload'),
+    re_path(r'^sop/uid=(?P<uid>[\w.\-()_+]{0,256})/$', views.sopDownload, name='sopDownload'),
     re_path(r'^sops/publish/(?P<sopids>\d+(,\d+)*)/$',views.publish_sops, name='publish_sops'),
     
     re_path(r'^sop/query/', views.sopQuery, name='sopQuery'),
