@@ -1,0 +1,85 @@
+<script type="text/javascript">
+    function deleteSamples(url_delete) {
+        sample_uids_text = document.getElementById('_easyui_textbox_input3').value; 
+        sample_uids = sample_uids_text.trim().split('\n');
+
+        if (sample_uids.length == 0) {
+                alert('No samples input for deletion.');
+                return;
+        }
+        var num = sample_uids.length;
+        var n = num.toString();
+        var alluids = JSON.stringify(sample_uids);
+        var msg = 'You have selected ' + n + ' samples for deletion.\n'
+        msg += 'You must be the owner of samples or the administrator to proceed.'
+        msg += 'Please type "DELETE" to confirm the deletion,\n'
+        msg += 'which is not recoverable. '
+        $.messager.prompt('Deleting samples', msg, function(r) {
+            if (r) {
+                if (r != 'DELETE') {
+                    alert('you type: ' + r + ', which must be "DELETE" to proceed.');
+                    return
+                } else {
+                }
+            } else {
+                return;
+            }
+
+            var win = $.messager.progress({
+                title: 'Please waiting',
+                msg: 'Deleting samples ...'
+            });
+
+            $.get(url_delete, {
+                'alluids': alluids
+            }, function(data) {
+                $.messager.progress('close');
+                var obj = jQuery.parseJSON(data);
+                var msg = obj.msg;
+                var status = obj.status;
+                var link = obj.link;
+                var diclist = obj.diclist;
+
+                if (status == 1) {
+                    window.location.href = link;
+                } else {
+                    alert(msg);
+                }
+                return;
+            });
+            return;
+        });
+    }
+</script>
+<div class="span12">
+	<form method="post" enctype="multipart/form-data" action="">
+		{% csrf_token %} 
+		<div class="well">
+			<h4>Delete the listed sample UIDs. Values are delimited by new lines.</h4>
+			<div class="row show-grid">
+				<table class="table" align="center" style="width:100%">
+					<thead>
+						<tr>
+							<th>Enter list of SEEK UIDs:</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td><input id="input_searchUIDs" class="easyui-textbox" label="" name="input_searchUIDs" multiline="true" style="width:100%;height:120px"></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="row show-grid">
+				<div class="col-xs-6 col-sm-4 col-md-4"></div>
+				<div class="col-xs-6 col-sm-4 col-md-4">
+                    <a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls: 'icon-remove', plain: true" onclick="deleteSamples('/seek/samples/delete/')">Delete samples</a>
+				</div>
+				<div class="col-xs-6 col-sm-4 col-md-4"></div>
+			</div>
+		</div>
+	</form>
+</div>
+
+
+
