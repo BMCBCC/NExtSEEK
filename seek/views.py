@@ -1545,4 +1545,38 @@ def samplesValidate(request):
                 
     return HttpResponse(simplejson.dumps(data, default=str))       
 
- 
+def getTemplateFolders(directory_path):
+    folders = {}
+    try:
+        for item in os.listdir(directory_path):
+            path = os.path.join(directory_path, item)
+            if os.path.isdir(path):
+                folders[item] = getTemplateFolders(path)
+            else:
+                folders[item] = None
+    except OSError:
+        return {}
+    return folders
+
+def templatesList(request):
+    seekdb = SeekDB(None, None, None)
+    user_seek = seekdb.getSeekLogin(request, False)
+
+    if not user_seek['status']:
+        url_redirect = '/login/?next=/seek/templates'
+        return HttpResponseRedirect(url_redirect)
+    else:
+        headers = {'Accept': 'application/json'}
+        r = requests.get(user_seek['server'] + '/projects', auth=(user_seek['username'], user_seek['password']), headers=headers)
+        projects = [p['id'] for p in r.json()['data']]
+
+        if not settings.TEMPLATES_PROJECT_ID in projects:
+            msg = "You are not in the correct project to access this page"
+            status = 0
+            data = {'msg': msg, 'status': status, 'link': ""}
+            return HttpResponse(simplejson.dumps(data, default=str))
+
+    directory_path = settings.TEMPLATES_PATH
+    folders = getTemplateFolders(directory_path)
+
+    return render(request, 'templatesList.html', {'folders': folders})

@@ -8,6 +8,7 @@ urlpatterns = [
     re_path(r'^samples/search/', views.sampleSearch, name='sampleSearch'),
     re_path(r'^samples/searching/', views.sampleSearching, name='sampleSearching'),
     re_path(r'^retrieve/samples/', views.retrieveSamples, name='retrieveSamples'),
+    re_path(r'^templates/', views.templatesList, name="templatesList"),
     
     re_path(r'^samples/attributes/', views.sampleAttributes, name='sampleAttributes'),
     re_path(r'^samples/retrieveType/', views.getSampleType, name='getSampleType'),

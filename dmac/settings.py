@@ -419,6 +419,9 @@ CRONJOBS = [
     ('0 20 * * *', api_app.updateTrees.updateTrees)
 ]
 
+TEMPLATES_PATH = ''
+TEMPLATES_PROJECT_ID = ''
+
 AUTH_PROFILE_MODULE = "seek.User_profile"
 ACCOUNTS_PROFILE_MODEL = "seek.User_profile"
 
