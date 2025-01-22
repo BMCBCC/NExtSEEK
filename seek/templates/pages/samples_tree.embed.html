@@ -99,7 +99,7 @@
 	var realHeight = window.innerHeight;
 	//var realWidth = graph.width;
 	//var realHeight = graph.height;
-	var m = [40, 240, 40, 240],
+	var m = [0, 0, 0, 0],
 		//w = realWidth -m[0] -m[0],
 		w = realWidth - m[1] - m[1],
 		h = realHeight - m[0] - m[2],
@@ -129,7 +129,7 @@
 		.append("svg:g")
 		.attr("class", "drawarea")
 		.append("svg:g")
-		.attr('transform', 'translate(-' + w * 0.3 + ', 0)')
+		.attr('transform', 'translate(-' + w * 0.3 + ', -' + h / 2 + ')')
 
 	function drawMultiParentTree() {
 		var nodes = tree.nodes(root);
