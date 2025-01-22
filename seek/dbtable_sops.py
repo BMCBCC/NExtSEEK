@@ -71,6 +71,7 @@ FILETYPES_SOP_SUPPORTED = [
     "text/plain",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "application/msword"
+    "application/zip"
 ]
 
 SOP_ERRORCODE = {
