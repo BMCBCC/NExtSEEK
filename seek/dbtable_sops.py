@@ -71,6 +71,7 @@ FILETYPES_SOP_SUPPORTED = [
     "text/plain",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "application/msword"
+    "application/zip"
 ]
 
 SOP_ERRORCODE = {
@@ -296,11 +297,12 @@ class DBtable_sops(DBtable):
         
         report = {}
         df_id, asset_type, dfrecord = self.__defineSOP(creator, originalfilename)
-        if int(df_id)>0:
-            report['msg'] = SOP_ERRORCODE['205'] + originalfilename
-            report['status'] = 0
-            dfrecord['notes'] = report['msg']
-            report['newrow'] = dfrecord
+        if df_id is not None:
+            if int(df_id)>0:
+                report['msg'] = SOP_ERRORCODE['205'] + originalfilename
+                report['status'] = 0
+                dfrecord['notes'] = report['msg']
+                report['newrow'] = dfrecord
             
         userid = creator['user_id']
         project_id = creator['projectid']
@@ -776,7 +778,7 @@ class DBtable_sops(DBtable):
             logger.debug(msg)
             return fullfilename, filename, status, msg
         
-        status = 1
+        status = 2
         return fullfilename, filename, status, msg
     
     def download(self, user_seek, allids, downloadallterms):

@@ -53,8 +53,7 @@ def getParentUIDs(sampleDic):
 
 
 def getChildrenUIDs(conn_seek, currentuid):
-    #sqlquery = "select uuid from samples where json_metadata like '%" + currentuid + "';"
-    sqlquery = "select * from samples where json_metadata like '%" + currentuid + "';"
+    sqlquery = "select uuid, json_metadata from samples where json_extract(json_metadata, '$.UID')='" + currentuid + "' OR find_in_set('" + currentuid + "', replace(json_unquote(json_extract(json_metadata, '$.Parent')), ';', ',')) > 0"
     records = conn_seek.retrieveRecordsDiclist(sqlquery)
     
     #records = self.db.retrieveRecords(self.tablemodel, 'json_metadata', currentuid)
@@ -317,7 +316,7 @@ def getSampleTree(sample_id, sampleDics, conn_seek, childrenTreeIn=None):
     except:
         return sampleTree
     
-    uid = sampleDic['uid']
+    uid = sampleDic['UID']
     #tree = Sample_tree()
     #tree.id = id
     #tree.sample_id = sample_id
@@ -329,26 +328,26 @@ def getSampleTree(sample_id, sampleDics, conn_seek, childrenTreeIn=None):
     
     sampleTree['parents'] = getParentUIDs(sampleDic) 
     sampleTree['children'] = getChildrenUIDs(conn_seek, uid)
-    return sampleTree
+    #return sampleTree
         
     if childrenTreeIn is None:
         #childrenTree = self.createSampleChildrenTree(sample_id)
-        childrenTree = createSampleChildrenTree(sample_id, sampleDics)
+        childrenTree = createSampleChildrenTree(uid, sampleDics)
     else:
         childrenTree = childrenTreeIn
     sampleTree['children'] = childrenTree
         
     includeChilren = True
     #fullTreeList, parent_uids = self.__createMultiParentTree(sample_id, includeChilren, childrenTree)
-    fullTreeList, parent_uids = createMultiParentTree(sample_id, includeChilren, childrenTree)
+    fullTreeList, parent_uids = createMultiParentTree(uid, childrenTree, includeChildren)
     sampleTree['full'] = fullTreeList
         
-    if parent_uids is None:
-        sampleTree['parents'] = ''
-    elif len(parent_uids)==0:
-        sampleTree['parents'] = ''
-    else:
-        sampleTree['parents'] = ';'.join(parent_uids)
+    # if parent_uids is None:
+    #     sampleTree['parents'] = ''
+    # elif len(parent_uids)==0:
+    #     sampleTree['parents'] = ''
+    # else:
+    #     sampleTree['parents'] = ';'.join(parent_uids)
     return sampleTree
 
 def getSampleTree0(sample, conn_seek):
@@ -482,11 +481,12 @@ def saveSampleTree(conn_dmac, sample_id, uid, sampleUIDs, id=None):
     record['uuid'] = uid
     record['parents'] = simplejson.dumps(tree['parents'], default=str)
     if uid in record['parents']:
-        print(f"Sample {uid} is its own parent. Not generating tree.")
+        print(f"Sample {uid} is its own parent. Not generating tree for it to avoid infinite recursion.")
         return 0
     record['children'] = simplejson.dumps(tree['children'], default=str)
     # record['full'] = simplejson.dumps(tree['parentTree'], default=str)
     fullTree = createSampleChildrenTree(uid, sampleUIDs)[0]
+    parents = tree['parents']
     while len(parents) > 0:
         for parent in parents:
             fullTree = {'name': parent, 'id': parent, 'children': [fullTree]}
@@ -616,7 +616,7 @@ def getSampleTreesChildren(sample_uid, sampleUIDs):
     sampleUIDs[sample_uid] = sampleTree
     
     #print(sampleTree)
-    return sampleUIDs
+    # return sampleUIDs
         
     includeChilren = True
     #fullTreeList, parent_uids = self.__createMultiParentTree(sample_id, includeChilren, childrenTree)
@@ -764,7 +764,7 @@ def generateTrees(sanityCheck_sampleID=None):
         
         uid = sampleDic['uid']
         '''
-        status = saveSampleTree(conn_dmac, sample_id, uid, sampleUIDs, id)
+        status = saveSampleTree(conn_dmac, uid, sampleUIDs, id)
         if status==1:
             np += 1
         else:
@@ -796,6 +796,8 @@ def generateTrees(sanityCheck_sampleID=None):
         
         if sanityCheck_sampleID is not None and sanityCheck_sampleID==sample_id:
             sampleTree = sampleUIDs[uid]
+            sampleTree['id'] = sample_id
+            print(sampleTree)
             print(sampleTree['parents'])
             print(sampleTree['children'])
             print(sampleTree["parentTree"])
@@ -827,14 +829,14 @@ def generateTrees(sanityCheck_sampleID=None):
         
         uid = sampleDic['uid']
         '''
-        status = saveSampleTree(conn_dmac, sample_id, uid, sampleUIDs, id)
+        status = saveSampleTree(conn_dmac, uid, sampleUIDs, id)
         if status==1:
             np += 1
         else:
             nn += 1
             break
     print('Number of samples with parent tree generated: %d'%np)
-    #print('Number of samples without renewal: %d'%nn)
+    print('Number of samples without renewal: %d'%nn)
     #now = datetime.now(tz=get_current_timezone())
     #print(str(now))
     
@@ -844,6 +846,7 @@ def generateTrees(sanityCheck_sampleID=None):
     print('total parentTree time: %d mins %d s'%(mi, se))
     
     if sanityCheck_sampleID is not None:
+        saveTreesToDB(conn_dmac, [sampleTree], sampleUIDs)
         return
 
     #saveTrees(sampleUIDs)
@@ -863,7 +866,7 @@ def generateTrees(sanityCheck_sampleID=None):
     return
     
 
-def updateTrees():
+def updateTrees(sample_to_update=None):
     ''' Update those trees that are present in samples table but not in seek_sample_tree table.
     '''
     print("updateTrees")
@@ -948,6 +951,16 @@ def updateTrees():
     #childrenTrees = {}
     #trees = {}
     #trees = []
+
+    if sample_to_update is not None:
+        try:
+            sampleDic = sampleDics[sample_to_update]
+        except:
+            pass
+        uid = sampleDic['UID']
+        status = saveSampleTree(conn_dmac, sample_to_update, uid, sampleUIDs)
+        return
+    
     for i in range(nsamples):
         sample_id = last_sample_id + i + 1
         #dici, diclist = dbsample.getSampleInfo(sample_id)
@@ -1077,7 +1090,7 @@ def renewTrees():
         '''
         if id % 1000 == 0:
             print(id)
-        status = saveSampleTree(conn_dmac, sample_id, uid, sampleUIDs, id)
+        status = saveSampleTree(conn_dmac, uid, sampleUIDs, id)
         if status==1:
             np += 1
         else:

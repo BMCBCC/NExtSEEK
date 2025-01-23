@@ -1,4 +1,6 @@
 from django.urls import re_path
+from filebrowser.sites import site
+from django.views.generic import TemplateView
 from . import views
 
 urlpatterns = [
@@ -7,6 +9,7 @@ urlpatterns = [
     re_path(r'^samples/query/', views.sampleQuery, name='sampleQuery'),
     re_path(r'^samples/search/', views.sampleSearch, name='sampleSearch'),
     re_path(r'^samples/searching/', views.sampleSearching, name='sampleSearching'),
+    re_path(r'^templates/', views.templatesList, name="templatesList"),
     re_path(r'^retrieve/samples/', views.retrieveSamples, name='retrieveSamples'),
     
     re_path(r'^samples/attributes/', views.sampleAttributes, name='sampleAttributes'),
@@ -45,9 +48,9 @@ urlpatterns = [
     re_path(r'^datafile/query/', views.datafileQuery, name='datafileQuery'),
     re_path(r'^datafiles/publish/(?P<dfids>\d+(,\d+)*)/$',views.publish_datafiles, name='publish_datafiles'),
 
-    re_path(r'^datafile/uid=(?P<uid>[\w.-]{0,256})/$', views.datafileDownload, name='datafileDownload'),
+    re_path(r'^datafile/uid=(?P<uid>[\w.\-()_+]{0,256})/$', views.datafileDownload, name='datafileDownload'),
 
-    re_path(r'^sop/uid=(?P<uid>[\w.-]{0,256})/$', views.sopDownload, name='sopDownload'),
+    re_path(r'^sop/uid=(?P<uid>[\w.\-()_+]{0,256})/$', views.sopDownload, name='sopDownload'),
     re_path(r'^sops/publish/(?P<sopids>\d+(,\d+)*)/$',views.publish_sops, name='publish_sops'),
     
     re_path(r'^sop/query/', views.sopQuery, name='sopQuery'),
@@ -70,5 +73,11 @@ urlpatterns = [
     re_path(r'^search/', views.searchAdvanced, name='searchAdvanced'),
     re_path(r'^searchAdvanced/', views.searchingAdvanced, name='searchingAdvanced'),
     re_path(r'^searchUIDs/', views.searchingUIDs, name='searchingUIDs'),
+
+    re_path(r'nhpinfo/(?P<nhp_name>[\w-]+)/$', views.nhp_info, name='nhp_info'),
+    re_path(r'nhpdata/(?P<nhp_name>[\w-]+)/$', views.get_nhp_data, name='nhp_data'),
+    re_path(r'^eventdata/(?P<nhp_name>[\w-]+)/(?P<event_type>[\w.-]+)/(?P<date>[\w-]+)/$', views.fetch_event_data, name='event_data'),
+    re_path(r'^sample_timeline/.*$', TemplateView.as_view(template_name="sample_timeline.html")),
+
 ]
 

@@ -10,10 +10,10 @@ that allows active data management by establishing more discrete sample types wh
 
 ## Release notes
 
-### Version 1.2.0
-Release date: *August 8, 2024*
+### Version 1.3.0
+Release date: *January 23, 2025*
 
-This release concludes the move to Python 3.6 and implements a new sample validation feature on the sample upload page.
+This release adds some quality of life improvements to dropdown inputs, adds a templates page, and adds a timeline feature for NHP sample types. The timeline feature is based on code made by [Taisha Joseph](https://github.com/tavjo)
 
 ## Installation
 

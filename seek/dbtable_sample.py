@@ -378,14 +378,17 @@ class DBtable_sample(DBtable):
         return record_new, newSample
         
     def __updateSampleProject(self, user_seek, sample_id):
+        username = user_seek['username']
+        user_id = user_seek['user_id']
         project_id = user_seek['projectid']
 
         db = settings.DATABASES[SEEK_DATABASE]
         conn = MySQLdb.connect(host=db['HOST'], user=db['USER'], passwd=db['PASSWORD'], db=db['NAME'])
         conn.autocommit(False)
+        cursor = conn.cursor()
 
         try:
-            cursor.execute(f"INSERT INTO projects_samples (project_id, sample_id) VALUES ({project_id, {sample_id}})")
+            cursor.execute(f"INSERT INTO projects_samples (project_id, sample_id) VALUES ({project_id}, {sample_id})")
             conn.commit()
         except:
             conn.rollback()
@@ -707,12 +710,7 @@ class DBtable_sample(DBtable):
             return -1
         
         return contributor_id
-        
-    def generateTree(uid):
-        sample_id = self.getSampleID(uid)
-        logger.debug(f"sample_id to generate tree for: {sample_id}")
-        trees.generateTrees(sample_id)
-        
+       
     def __batchUploadTest(self, seekdb, sampleType, diclist, diclist_feedback, attributeInfo, attributeMapping, diclist_assay, uploadEnforced=False):
         user_seek = seekdb.user_seek
         username = user_seek['username']
@@ -3620,7 +3618,7 @@ class DBtable_sample(DBtable):
             project_id = filtersdic['project_id']
             if int(project_id)>0:
                 sqlquery_filter = sqlquery_filter.replace('WHERE ', 'WHERE (')
-                sqlquery_filter = sqlquery_filter + ")"# AND D.project_id=" + str(project_id)    
+                sqlquery_filter = sqlquery_filter + ") AND D.project_id=" + str(project_id)
             
         logger.debug(sqlquery_filter)
         return sqlquery_filter
