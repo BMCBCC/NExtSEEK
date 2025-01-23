@@ -1,5 +1,6 @@
 from django.urls import re_path
 from filebrowser.sites import site
+from django.views.generic import TemplateView
 from . import views
 
 urlpatterns = [
