@@ -513,7 +513,7 @@ def is_json_serializable(data):
     except (TypeError, OverflowError):
         return False
 
-def generate_combined_object(events: dict, nhp_id: str, filename: str):
+def generate_combined_object(events: dict, nhp_id: str):
     logger.info("Starting to generate combined JSON object.")
     
     # Step 1: Add nhp_id to each dataframe
@@ -551,12 +551,9 @@ def generate_combined_object(events: dict, nhp_id: str, filename: str):
     logger.info(f"Total records to be saved: {len(combined_objects)}")
     logger.info(f"Total records skipped: {skipped_records}")
     
-    # Proceed to save only valid records
-    save_to_json(combined_objects, filename)
-    
     return combined_objects
 
-def get_event_data(nhp_name, event_type, date, filename="./app/api/data/event_data.json"):
+def get_event_data(nhp_name, event_type, date):
 
     print(f"Getting event data for {nhp_name} on {event_type} on {date}")
     start_time = time.time()
@@ -614,28 +611,24 @@ def get_event_data(nhp_name, event_type, date, filename="./app/api/data/event_da
         print(f"Error getting event data: {e}")
         return []
 
-    save_to_json(processed_data, filename)
     end_time = time.time()
     print(f"Total time to get event data: {end_time - start_time:.2f} seconds")
     return processed_data
 
 ## Run all function, aka my version of __MAIN__
 ## All you need to do is run 1) Gen Files and 2) Update_all_Files
-def run_All(NHP_Name, filename="nhp_data.json"):
+def run_All(NHP_Name):
     start_time = time.time()
     nhp_metadata = get_nhp_data(NHP_Name) 
     # print(nhp_metadata)
 
-    # Define the output directory and filename
-    output_dir = "./app/api/data/"
-    output_file_path = os.path.join(output_dir, filename)
     input_list = ["imaging", "treatment", "studydesign", "specimen", "visits"]
 
     # Generate data files
     myevents = update_all_datafiles(input_list, nhp_metadata)
     
     # Save combined JSON
-    combined_json = generate_combined_object(myevents, NHP_Name, filename=output_file_path)
+    combined_json = generate_combined_object(myevents, NHP_Name)
     
     end_time = time.time()
     print(f"Total time for run_All: {end_time - start_time:.2f} seconds")

@@ -170,7 +170,7 @@ def fetch_NHP_IMG(all_data):
         logger.error(f"Error fetching NHP IMG metadata: {e}")
         return None
 
-def save_nhp_info_to_json(nhp_name, filename="./app/api/data/NHP_info.json") -> List[NHPInfo]:
+def save_nhp_info_to_json(nhp_name) -> List[NHPInfo]:
     """
     Save NHP metadata to a JSON file.
 
@@ -206,12 +206,5 @@ def save_nhp_info_to_json(nhp_name, filename="./app/api/data/NHP_info.json") -> 
         logger.error(f"Validation error: {ve}")
 
     logger.info(processed_data)
-    # Export data to JSON
-    try:
-        with open(filename, 'w') as json_file:
-            json.dump([processed_data], json_file, indent=4)
-        logger.info(f"NHP information successfully saved to {filename}")
-        return processed_data
-    except Exception as e:
-        logger.error(f"Error saving NHP information to JSON: {e}")
-        return []
+
+    return processed_data
