@@ -1,17 +1,17 @@
 # core/database.py
 import os
 from mysql.connector import pooling, Error
-from dotenv import load_dotenv
+from django.conf import settings
 
-load_dotenv()
+db = settings.DATABASES['seek']
 
 db_config = {
-    'user': os.getenv('DB_USER'),
-    'password': os.getenv('DB_PASSWORD'),
-    'host': os.getenv('DB_HOST'),
-    'database': os.getenv('DB_NAME'),
-    'pool_size': int(os.getenv('DB_POOL_SIZE', 5)),  # Default pool size is 5
-    'pool_name': 'my_pool',
+    'user': db['USER'],
+    'password': db['PASSWORD'],
+    'host': db['HOST'],
+    'database': db['NAME'],
+    'pool_size': int(db.get('POOL_SIZE', 5)),  # Default pool size is 5
+    'pool_name': 'timeline_pool',
     'pool_reset_session': True,
 }
 
