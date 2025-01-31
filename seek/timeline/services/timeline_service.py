@@ -6,7 +6,7 @@ import pandas as pd
 import time
 # import argparse  # Add this import at the top
 import os  # Add this import at the top
-from ..services.nhp_service import get_nhp_data, fetch_NHP_PAV, fetch_NHP_TIS, fetch_NHP_IMG
+from ..services.nhp_service import get_timeline_data, fetch_NHP_PAV, fetch_NHP_TIS, fetch_NHP_IMG
 # from ..utils.helpers import get_NHP_name
 import logging
 from datetime import datetime
@@ -49,6 +49,10 @@ def transform_json_metadata_to_dataframe(metadata):
     df = df.loc[:, (df != '').any(axis=0)]  # Drop columns where all values are empty strings
     return df
 
+##########################
+# PAV functions
+##########################
+
 ##runs json_metadata transformation for PAV
 def PAV_to_dataframe(all_data):
     """
@@ -69,46 +73,6 @@ def PAV_to_dataframe(all_data):
         print(f"Error processing PAV metadata: {e}")
         return pd.DataFrame()  # Return an empty DataFrame on error
 
-###runs json_metadata transformation for TIS
-def TIS_to_dataframe(all_data):
-    """
-    Fetches and transforms NHP TIS metadata into a DataFrame.
-
-    Args:
-        all_data (list): The metadata for the NHP.
-
-    Returns:
-        pd.DataFrame: A DataFrame containing the transformed TIS metadata.
-    """
-    try:
-        TIS_Metadata = fetch_NHP_TIS(all_data)
-        # Transform the json_metadata into a DataFrame
-        return transform_json_metadata_to_dataframe(TIS_Metadata)
-    except Exception as e:
-        print(f"Error processing TIS metadata: {e}")
-        return pd.DataFrame()  # Return an empty DataFrame on error
-
-def IMG_to_dataframe(all_data):
-    """
-    Fetches and transforms NHP IMG metadata into a DataFrame.
-
-    Args:
-        all_data (list): The metadata for the NHP.
-
-    Returns:
-        pd.DataFrame: A DataFrame containing the transformed IMG metadata.
-    """
-    try:
-        IMG_Metadata = fetch_NHP_IMG(all_data)
-        # print(IMG_Metadata)
-        if IMG_Metadata is None:
-            print(f"No IMG data found.")
-            return pd.DataFrame()
-        # Transform the json_metadata into a DataFrame
-        return transform_json_metadata_to_dataframe(IMG_Metadata)
-    except Exception as e:
-        print(f"Error processing IMG metadata: {e}")
-        return pd.DataFrame()  # Return an empty DataFrame on error
 
 ##format treatments for the treatment track
 def process_treatments(all_data):
@@ -155,6 +119,104 @@ def process_treatments(all_data):
     expanded_df = expand_treatments(df)
     return expanded_df
 
+#process visits for visit track
+def process_visits(all_data):
+    df = PAV_to_dataframe(all_data)
+    if df.empty:
+        print(f"No PAV data found.")
+        return
+    columns_to_keep = ["UID", "Name","SampleCreationDate", "Protocol", "Type"]
+    for col in columns_to_keep:
+        if col not in df.columns:
+            df[col] = pd.NA  # Initialize missing columns with NA or a default value
+    # Select only the required columns
+    df = df.sort_values(by='Name')
+    df['Name'] = df['Name'].str.split('-').str[0]
+    df = df[columns_to_keep]
+    return df
+
+def edit_treatment_datafile(all_data):
+    # Extract the NHP ID from the file path
+    # Get and process the DataFrame
+    df = process_treatments(all_data)
+    if df.empty:
+        print(f"No treatment data found.")
+        return
+    # Define the header for the treatment data file
+    headers = [
+        "PATIENT_ID", "START_DATE", "STOP_DATE", 
+        "EVENT_TYPE", "UID", "TREATMENT", "TYPE", 
+        "ROUTE", "DOSE", "DOSE_UNITS", "TREATMENT_PARENT", "PARENT"
+    ]
+    # Create START_DATE and STOP_DATE columns from SampleCreationDate
+    df['START_DATE'] = df['SampleCreationDate'].astype(str)
+    df['STOP_DATE'] = df['SampleCreationDate'].astype(str)
+    # Map columns to new header names
+    df.rename(columns={
+        'Name': 'PATIENT_ID',
+        'Treatment': 'TREATMENT',
+        'TreatmentType': 'TYPE',
+        'TreatmentRoute': 'ROUTE',
+        'TreatmentDose': 'DOSE',
+        'TreatmentDoseUnits': 'DOSE_UNITS',
+        'TreatmentParent': 'TREATMENT_PARENT'
+    }, inplace=True)
+    # Add the EVENT_TYPE column
+    df['EVENT_TYPE'] = 'TREATMENT'
+    df['PARENT'] = df['UID']
+    # Reorder columns to match the header
+    df = df[headers]
+    print(f"Updated treatment data file")
+    return df
+
+def edit_visits_datafile(all_data):
+    # nhp_id = extract_id_from_raw_df(raw_df)
+    df = process_visits(all_data)
+    if df.empty:
+        print(f"No visit data found.")
+        return
+    # Define the header for the treatment data file
+    headers = [
+        "PATIENT_ID", "START_DATE", "STOP_DATE", 
+        "EVENT_TYPE", "UID", "TYPE","PROTOCOL"
+    ]
+    # Create START_DATE and STOP_DATE columns from SampleCreationDate
+    df['START_DATE'] = df['SampleCreationDate'].astype(str)
+    df['STOP_DATE'] = df['SampleCreationDate'].astype(str)
+    df['EVENT_TYPE'] = 'PAV'
+    df['Type'] = 'PAV'
+    df.rename(columns={
+        'Name': 'PATIENT_ID',
+        'Protocol': 'PROTOCOL',
+        'Type': 'TYPE'
+    }, inplace=True)
+        # Reorder columns to match the header
+    df = df[headers]
+    return df
+
+##########################
+# TIS functions
+##########################
+
+###runs json_metadata transformation for TIS
+def TIS_to_dataframe(all_data):
+    """
+    Fetches and transforms NHP TIS metadata into a DataFrame.
+
+    Args:
+        all_data (list): The metadata for the NHP.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the transformed TIS metadata.
+    """
+    try:
+        TIS_Metadata = fetch_NHP_TIS(all_data)
+        # Transform the json_metadata into a DataFrame
+        return transform_json_metadata_to_dataframe(TIS_Metadata)
+    except Exception as e:
+        print(f"Error processing TIS metadata: {e}")
+        return pd.DataFrame()  # Return an empty DataFrame on error
+
 ## processes tissues for tissue track
 def process_tissues(all_data):
     df = TIS_to_dataframe(all_data)
@@ -168,6 +230,64 @@ def process_tissues(all_data):
     df.loc[~df['Type'].isin(['Blood', 'Bronchoalveolar Lavage']), 'Type'] = 'Tissue Extraction'
     df['Type'] = "TIS::" + df['Type']
     return df
+
+def edit_specimen_datafile(all_data):
+    df = process_tissues(all_data)
+    if df.empty:
+        print(f"No specimen data found.")
+        return
+    
+    headers = ["PATIENT_ID", "START_DATE", "STOP_DATE", 
+               "EVENT_TYPE", "SAMPLE_ID", "UID", "TYPE","PARENT", "ORGAN", "ORGAN_DETAIL", "CFU"]
+    # Remove duplicate columns if any
+    df = df.loc[:, ~df.columns.duplicated()]
+    # Create START_DATE and STOP_DATE columns from SampleCreationDate
+    df['START_DATE'] = df['SampleCreationDate'].astype(str)
+    df['STOP_DATE'] = df['SampleCreationDate'].astype(str)
+    # Map columns to new header names
+    df.rename(columns={
+        'Name': 'SAMPLE_ID',
+        'Type': 'TYPE',
+        'Parent':"PARENT",
+        'Organ': 'ORGAN',
+        'OrganDetail': 'ORGAN_DETAIL'
+    }, inplace=True)
+    # Add the EVENT_TYPE column
+    df['EVENT_TYPE'] = 'TIS'
+    # Ensure all required columns are present
+    existing_columns = df.columns.intersection(headers)
+    df = df[existing_columns]
+    # Reindex DataFrame to match the headers, filling missing columns with empty strings
+    df = df.reindex(columns=headers, fill_value='')
+    df = df.sort_values(by='START_DATE')
+    return df
+
+##########################
+# IMG functions
+##########################
+
+def IMG_to_dataframe(all_data):
+    """
+    Fetches and transforms NHP IMG metadata into a DataFrame.
+
+    Args:
+        all_data (list): The metadata for the NHP.
+        NHP_name (str): The UID of the NHP.
+    Returns:
+        pd.DataFrame: A DataFrame containing the transformed IMG metadata.
+    """
+    try:
+        IMG_Metadata = fetch_NHP_IMG(all_data)
+        # print(IMG_Metadata)
+        if IMG_Metadata is None:
+            print(f"No IMG data found.")
+            return pd.DataFrame()
+        # Transform the json_metadata into a DataFrame
+        return transform_json_metadata_to_dataframe(IMG_Metadata)
+    except Exception as e:
+        print(f"Error processing IMG metadata: {e}")
+        return pd.DataFrame()  # Return an empty DataFrame on error
+
 
 ## processes images for image track
 def process_images(all_data):
@@ -205,6 +325,8 @@ def process_images(all_data):
         # Extract the 'Name' value from the parsed dictionary
         if 'Name' in json_metadata_dict:
             name_value = json_metadata_dict['Name']
+        elif 'File_PrimaryData' in json_metadata_dict:
+            name_value = json_metadata_dict['File_PrimaryData'].split("_")[1]
         else:
             name_value = ""
         
@@ -223,21 +345,6 @@ def process_images(all_data):
         print(f"An unexpected error occurred: {e}")
     return pd.DataFrame()
 
-#process visits for visit track
-def process_visits(all_data):
-    df = PAV_to_dataframe(all_data)
-    if df.empty:
-        print(f"No PAV data found.")
-        return
-    columns_to_keep = ["UID", "Name","SampleCreationDate", "Protocol", "Type"]
-    for col in columns_to_keep:
-        if col not in df.columns:
-            df[col] = pd.NA  # Initialize missing columns with NA or a default value
-    # Select only the required columns
-    df = df.sort_values(by='Name')
-    df['Name'] = df['Name'].str.split('-').str[0]
-    df = df[columns_to_keep]
-    return df
 
 def get_parent_date(df, record, all_data):
     """
@@ -283,41 +390,49 @@ def get_parent_date(df, record, all_data):
         logger.error(f"Error retrieving parent date for UID '{record}': {e}")
         return datetime.today()
 
-###These functions update the datafiles with the actual metadata from the database
-    
-def edit_treatment_datafile(all_data):
+def edit_imaging_datafile(all_data):
     # Extract the NHP ID from the file path
+    # nhp_id = extract_id_from_raw_df(raw_df)
     # Get and process the DataFrame
-    df = process_treatments(all_data)
+    df = process_images(all_data)
     if df.empty:
-        print(f"No treatment data found.")
+        print(f"No imaging data found.")
         return
-    # Define the header for the treatment data file
+    
+    # check if SampleCreationDate is empty or NaT, if so, get the parent date
+    for i in range(len(df)):
+        if pd.isna(df["SampleCreationDate"].iloc[i]) or df["SampleCreationDate"].iloc[i] == "" or df["SampleCreationDate"].iloc[i].lower() == "nat":
+            df.loc[i, "SampleCreationDate"] = get_parent_date(df, df["UID"].iloc[i], all_data)
+
+    # Define the header for the imaging data file
     headers = [
         "PATIENT_ID", "START_DATE", "STOP_DATE", 
-        "EVENT_TYPE", "UID", "TREATMENT", "TYPE", 
-        "ROUTE", "DOSE", "DOSE_UNITS", "TREATMENT_PARENT", "PARENT"
+        "EVENT_TYPE","TYPE","NAME", "UID", "LINK", "PARENT"
     ]
     # Create START_DATE and STOP_DATE columns from SampleCreationDate
     df['START_DATE'] = df['SampleCreationDate'].astype(str)
     df['STOP_DATE'] = df['SampleCreationDate'].astype(str)
+    # Handle NaT (Not a Time) for empty or missing SampleCreationDate
+    df['START_DATE'] = df['START_DATE']#.replace('', pd.NaT)
+    df['STOP_DATE'] = df['STOP_DATE']#.replace('', pd.NaT)
+    df['EVENT_TYPE'] = 'D.IMG'
     # Map columns to new header names
     df.rename(columns={
-        'Name': 'PATIENT_ID',
-        'Treatment': 'TREATMENT',
-        'TreatmentType': 'TYPE',
-        'TreatmentRoute': 'ROUTE',
-        'TreatmentDose': 'DOSE',
-        'TreatmentDoseUnits': 'DOSE_UNITS',
-        'TreatmentParent': 'TREATMENT_PARENT'
+        'File_PrimaryData': 'NAME',
+        'Link_PrimaryData': 'LINK',
+        'Type': 'TYPE',
+        'UID': 'UID',
+        'PATIENT_ID': 'PATIENT_ID',
+        'Parent': 'PARENT'
     }, inplace=True)
-    # Add the EVENT_TYPE column
-    df['EVENT_TYPE'] = 'TREATMENT'
-    df['PARENT'] = df['UID']
     # Reorder columns to match the header
     df = df[headers]
-    print(f"Updated treatment data file")
+    print(f"Updated imaging data file")
     return df
+
+##########################
+# Study Design functions
+##########################
 
 def edit_studydesign_datafile(all_data):
     # Define the vlookup dictionary for study design notes
@@ -367,102 +482,10 @@ def edit_studydesign_datafile(all_data):
 
     df = pd.DataFrame(data = content_lines, columns = headers)
     return df
-    
-def edit_specimen_datafile(all_data):
-    df = process_tissues(all_data)
-    if df.empty:
-        print(f"No specimen data found.")
-        return
-    
-    headers = ["PATIENT_ID", "START_DATE", "STOP_DATE", 
-               "EVENT_TYPE", "SAMPLE_ID", "UID", "TYPE","PARENT", "ORGAN", "ORGAN_DETAIL", "CFU"]
-    # Remove duplicate columns if any
-    df = df.loc[:, ~df.columns.duplicated()]
-    # Create START_DATE and STOP_DATE columns from SampleCreationDate
-    df['START_DATE'] = df['SampleCreationDate'].astype(str)
-    df['STOP_DATE'] = df['SampleCreationDate'].astype(str)
-    # Map columns to new header names
-    df.rename(columns={
-        'Name': 'SAMPLE_ID',
-        'Type': 'TYPE',
-        'Parent':"PARENT",
-        'Organ': 'ORGAN',
-        'OrganDetail': 'ORGAN_DETAIL'
-    }, inplace=True)
-    # Add the EVENT_TYPE column
-    df['EVENT_TYPE'] = 'TIS'
-    # Ensure all required columns are present
-    existing_columns = df.columns.intersection(headers)
-    df = df[existing_columns]
-    # Reindex DataFrame to match the headers, filling missing columns with empty strings
-    df = df.reindex(columns=headers, fill_value='')
-    df = df.sort_values(by='START_DATE')
-    return df
 
-def edit_imaging_datafile(all_data):
-    # Extract the NHP ID from the file path
-    # nhp_id = extract_id_from_raw_df(raw_df)
-    # Get and process the DataFrame
-    df = process_images(all_data)
-    if df.empty:
-        print(f"No imaging data found.")
-        return
-    
-    # check if SampleCreationDate is empty or NaT, if so, get the parent date
-    for i in range(len(df)):
-        if pd.isna(df["SampleCreationDate"].iloc[i]) or df["SampleCreationDate"].iloc[i] == "" or df["SampleCreationDate"].iloc[i].lower() == "nat":
-            df.loc[i, "SampleCreationDate"] = get_parent_date(df, df["UID"].iloc[i], all_data)
-
-    # Define the header for the imaging data file
-    headers = [
-        "PATIENT_ID", "START_DATE", "STOP_DATE", 
-        "EVENT_TYPE","TYPE","NAME", "UID", "LINK", "PARENT"
-    ]
-    # Create START_DATE and STOP_DATE columns from SampleCreationDate
-    df['START_DATE'] = df['SampleCreationDate'].astype(str)
-    df['STOP_DATE'] = df['SampleCreationDate'].astype(str)
-    # Handle NaT (Not a Time) for empty or missing SampleCreationDate
-    df['START_DATE'] = df['START_DATE']#.replace('', pd.NaT)
-    df['STOP_DATE'] = df['STOP_DATE']#.replace('', pd.NaT)
-    df['EVENT_TYPE'] = 'D.IMG'
-    # Map columns to new header names
-    df.rename(columns={
-        'File_PrimaryData': 'NAME',
-        'Link_PrimaryData': 'LINK',
-        'Type': 'TYPE',
-        'UID': 'UID',
-        'PATIENT_ID': 'PATIENT_ID',
-        'Parent': 'PARENT'
-    }, inplace=True)
-    # Reorder columns to match the header
-    df = df[headers]
-    print(f"Updated imaging data file")
-    return df
-    
-def edit_visits_datafile(all_data):
-    # nhp_id = extract_id_from_raw_df(raw_df)
-    df = process_visits(all_data)
-    if df.empty:
-        print(f"No visit data found.")
-        return
-    # Define the header for the treatment data file
-    headers = [
-        "PATIENT_ID", "START_DATE", "STOP_DATE", 
-        "EVENT_TYPE", "UID", "TYPE","PROTOCOL"
-    ]
-    # Create START_DATE and STOP_DATE columns from SampleCreationDate
-    df['START_DATE'] = df['SampleCreationDate'].astype(str)
-    df['STOP_DATE'] = df['SampleCreationDate'].astype(str)
-    df['EVENT_TYPE'] = 'PAV'
-    df['Type'] = 'PAV'
-    df.rename(columns={
-        'Name': 'PATIENT_ID',
-        'Protocol': 'PROTOCOL',
-        'Type': 'TYPE'
-    }, inplace=True)
-        # Reorder columns to match the header
-    df = df[headers]
-    return df
+##########################
+# General functions & functions to combine data
+##########################
 
 def update_all_datafiles(input_list, all_data):
     new_dict = {}
@@ -551,14 +574,17 @@ def generate_combined_object(events: dict, nhp_id: str):
     logger.info(f"Total records to be saved: {len(combined_objects)}")
     logger.info(f"Total records skipped: {skipped_records}")
     
+    # Proceed to save only valid records
+    # save_to_json(combined_objects, filename)
+    
     return combined_objects
 
-def get_event_data(nhp_name, event_type, date):
+def get_event_data(nhp_uid, event_type, date):
 
-    print(f"Getting event data for {nhp_name} on {event_type} on {date}")
+    print(f"Getting event data for {nhp_uid} on {event_type} on {date}")
     start_time = time.time()
 
-    nhp_metadata = get_nhp_data(nhp_name)
+    nhp_metadata = get_timeline_data(nhp_uid)
     if not nhp_metadata:
         print(f"No NHP metadata found.")
         return []
@@ -611,38 +637,30 @@ def get_event_data(nhp_name, event_type, date):
         print(f"Error getting event data: {e}")
         return []
 
+    # save_to_json(processed_data, filename)
     end_time = time.time()
     print(f"Total time to get event data: {end_time - start_time:.2f} seconds")
     return processed_data
 
 ## Run all function, aka my version of __MAIN__
 ## All you need to do is run 1) Gen Files and 2) Update_all_Files
-def run_All(NHP_Name):
+def run_All(NHP_uid):
     start_time = time.time()
-    nhp_metadata = get_nhp_data(NHP_Name) 
+    nhp_metadata = get_timeline_data(NHP_uid) 
     # print(nhp_metadata)
 
+    # Define the output directory and filename
+    # output_dir = "./app/api/data/"
+    # output_file_path = os.path.join(output_dir, filename)
     input_list = ["imaging", "treatment", "studydesign", "specimen", "visits"]
 
     # Generate data files
     myevents = update_all_datafiles(input_list, nhp_metadata)
     
     # Save combined JSON
-    combined_json = generate_combined_object(myevents, NHP_Name)
+    combined_json = generate_combined_object(myevents, NHP_uid)
     
     end_time = time.time()
     print(f"Total time for run_All: {end_time - start_time:.2f} seconds")
     print("\n")
     return combined_json
-
-# if __name__ == "__main__":
-#     parser = argparse.ArgumentParser(description="Process NHP metadata and generate JSON output.")
-#     parser.add_argument("--NHP_name", type=str, default="NHP-220630FLY-15", help="The NHP name to process.")
-#     parser.add_argument("--filename1", type=str, default="nhp_data.json", help="The output JSON filename.")
-#     parser.add_argument("--event_type", type=str, default="TIS", help="The event type to process.")
-#     parser.add_argument("--date", type=str, default="2019-05-06", help="The date to process.")
-#     parser.add_argument("--filename2", type=str, default="event_data.json", help="The output JSON filename.")
-    
-#     args = parser.parse_args()
-#     run_All(args.NHP_name)
-#     get_event_data(args.NHP_name, args.event_type, args.date)
