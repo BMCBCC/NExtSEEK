@@ -69,7 +69,9 @@ def _total_and_rows(api_result_full: dict) -> tuple[int | None, int, list]:
 
 
 def from_bundle(bundle: dict, *, session_id: str, turn_id: int) -> NSTurnContext:
-    api_full = bundle.get("api_result_full") or {}
+    from chat_nextseek.artifacts import load_api_result_full
+
+    api_full = load_api_result_full(bundle)
     ok = bool(api_full.get("ok", True))
     total, row_count, rows = _total_and_rows(api_full)
     first = rows[0] if rows and isinstance(rows[0], dict) else {}

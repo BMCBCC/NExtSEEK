@@ -19,6 +19,7 @@ from ..helpers import (
     strip_html_recursive,
 )
 from ..schemas.schema_helper import call_llm_structured
+from ..artifacts import load_api_result_full
 from ..schemas import (
     MemoryCoderOutput,
 )
@@ -97,7 +98,7 @@ def _load_memory_json_payload(result_bundle: dict) -> tuple[str, Any, list[tuple
         result_bundle.get("memory_payload")
         or result_bundle.get("model_outputs", {}).get("memory_payload")
         or result_bundle.get("graph_result")
-        or result_bundle.get("api_result_full")
+        or load_api_result_full(result_bundle)
         or result_bundle.get("api_result_slim")
         or {}
     )
@@ -240,7 +241,7 @@ def _legacy_memory_agent_answer(config: ChatConfig, user_query: str, result_bund
     if not context_parts:
         inline = (
             result_bundle.get("graph_result")
-            or result_bundle.get("api_result_full")
+            or load_api_result_full(result_bundle)
             or result_bundle.get("api_result_slim")
             or {}
         )

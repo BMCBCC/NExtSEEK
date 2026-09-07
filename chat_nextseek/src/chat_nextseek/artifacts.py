@@ -57,6 +57,44 @@ def _drop_none_values(value: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in value.items() if v is not None}
 
 
+def _payload_is_on_disk(path: str | Path | None) -> bool:
+    """True when a durable copy of the payload really exists at ``path``."""
+    if not path:
+        return False
+    try:
+        return Path(path).is_file()
+    except (OSError, ValueError):
+        return False
+
+
+def load_api_result_full(bundle: Any) -> dict[str, Any]:
+    """The full API result for a bundle, wherever it happens to live.
+
+    Bundles written before this stored the payload inline; bundles written now
+    store only ``raw_result_path`` and leave the bytes on disk. Every in-process
+    reader goes through here so both shapes work and neither has to care.
+
+    Returns ``{}`` rather than raising when the file has been pruned: a reader
+    that renders nothing is a much better outcome than a 500 on an old chat.
+    """
+    if not isinstance(bundle, dict):
+        return {}
+
+    inline = bundle.get("api_result_full")
+    if inline:
+        return inline if isinstance(inline, dict) else {}
+
+    path = bundle.get("raw_result_path") or (bundle.get("paths") or {}).get("raw_result_path")
+    if not path:
+        return {}
+    try:
+        with open(path, "rb") as fh:
+            loaded = json.load(fh)
+    except (OSError, ValueError):
+        return {}
+    return loaded if isinstance(loaded, dict) else {}
+
+
 def build_metadata_bundle(
     *,
     bundle_id: int,
@@ -91,20 +129,23 @@ def build_metadata_bundle(
     parser, planner, tool, reporter, graph, and chatter stages.
     """
     paths = paths or {}
+    # The result payloads live at top level ONLY. They used to be stored here as
+    # well, which doubled every bundle: on production a 13.5 MB search result
+    # became a ~27 MB row and the write died with (2006, 'Server has gone away')
+    # inside the background thread, losing a turn that had otherwise succeeded.
+    # Nothing reads them back through this dict -- grepping the whole tree for
+    # `model_outputs` finds only `memory_payload` (agents/memory.py:98) and
+    # `terminal_reply`, which the orchestrator writes here itself -- so the
+    # second copy was pure cost, worst at exactly the moment it mattered most.
+    # The plans stay: they are small and this is their documented home.
     model_outputs = _drop_none_values(
         {
             "parser_plan": parser_plan,
             "api_plan": api_plan,
-            "api_result_full": api_result_full,
-            "api_result_slim": api_result_slim,
             "graph_plan": graph_plan,
-            "graph_result": graph_result,
             "reporter_plan": reporter_plan,
-            "reporter_result": reporter_result,
-            "report_writer_output": report_writer_output,
             "planner_output": planner_output,
             "multi_parser_plan": multi_parser_plan,
-            "step_results": step_results,
             "terminal_reply": terminal_reply,
             "provisional_reply": provisional_reply,
             "memory_payload": memory_payload,
@@ -143,7 +184,20 @@ def build_metadata_bundle(
         "method": method,
         "request_body": request_body,
         "query_params": query_params,
-        "api_result_full": api_result_full,
+        # POINTER, NOT PAYLOAD. The full result is already written to disk as
+        # api_result_bundle_<id>.json and its path recorded below as
+        # raw_result_path, so storing it here too put a third copy of the same
+        # bytes into MySQL -- results_history and last_debug are written by
+        # session_adapter.save() in ONE update, and a 13.5 MB search became
+        # ~40 MB of statement and died with (2006, 'Server has gone away'),
+        # losing a turn that had already succeeded.
+        #
+        # Kept inline only when nothing on disk holds it (the artifact write
+        # failed, or this path records no raw_result_path). Losing the result
+        # outright would be far worse than a large row, so the fallback is to
+        # behave exactly as before. Read it back with load_api_result_full().
+        **({} if _payload_is_on_disk(paths.get("raw_result_path"))
+           else {"api_result_full": api_result_full}),
         "api_result_slim": api_result_slim,
         "raw_result_path": paths.get("raw_result_path"),
         "graph_plan": graph_plan,

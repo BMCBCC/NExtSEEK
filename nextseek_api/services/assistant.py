@@ -102,7 +102,7 @@ from nextseek_api.helpers import resolve_seek_auth, SeekAPIClient
 
 from chat_nextseek.orchestrator import run_query, run_query_plan, run_pipeline_launch
 from chat_nextseek.config import ChatConfig
-from nextseek_api.assistant.session_adapter import DictSessionAdapter
+from nextseek_api.assistant.session_adapter import DictSessionAdapter, SessionSaveError
 from nextseek_api.assistant.pipeline_adapter import make_db_event_callback
 
 logger = logging.getLogger(__name__)
@@ -413,6 +413,36 @@ def _safe_artifact_path(src) -> Path | None:
         except ValueError:
             continue
     return None
+
+
+def _save_session_or_report(adapter, chat_session, send_event, session_id) -> None:
+    """Persist the turn, and TELL THE USER if it could not be persisted.
+
+    This used to be a bare ``adapter.save()`` in a ``finally:`` outside the
+    caller's own ``try/except``. When the write failed the exception killed the
+    background thread, ``_auto_title_if_unset`` never ran, and the user was left
+    with a chat that had streamed a correct answer and then emptied itself on
+    reload -- with no error anywhere they could see. A turn that cannot be saved
+    is a failed turn and has to look like one.
+    """
+    try:
+        adapter.save()
+    except SessionSaveError as exc:
+        logger.error("session %s: turn completed but was not saved", session_id)
+        if send_event:
+            send_event("query_error", {
+                "error": (
+                    "This answer was not saved to the conversation and will be "
+                    "gone if you reload. The result was too large to store."
+                ),
+                "agent": "session",
+                "session_id": session_id,
+            })
+        return
+    except Exception:
+        logger.exception("session %s: unexpected failure saving the turn", session_id)
+        return
+    _auto_title_if_unset(chat_session)
 
 
 class AssistantViewSet(viewsets.ViewSet):
@@ -808,8 +838,8 @@ class AssistantViewSet(viewsets.ViewSet):
                     "session_id": resolved_session_id,
                 })
             finally:
-                adapter.save()
-                _auto_title_if_unset(chat_session)
+                _save_session_or_report(
+                    adapter, chat_session, send_event, resolved_session_id)
                 event_queue.put(None)  # sentinel
 
         thread = threading.Thread(target=_run_pipeline, daemon=True)
@@ -937,8 +967,8 @@ class AssistantViewSet(viewsets.ViewSet):
                     "session_id": resolved_session_id,
                 })
             finally:
-                adapter.save()
-                _auto_title_if_unset(chat_session)
+                _save_session_or_report(
+                    adapter, chat_session, send_event, resolved_session_id)
 
         thread = threading.Thread(target=_run_pipeline, daemon=True)
         thread.start()
@@ -1040,8 +1070,24 @@ class AssistantViewSet(viewsets.ViewSet):
                 status.HTTP_400_BAD_REQUEST,
             )
 
-        payload = bundle_metadata(bundle) if part == "metadata" else bundle
-        suffix = ".metadata" if part == "metadata" else ""
+        if part == "metadata":
+            payload = bundle_metadata(bundle)
+            suffix = ".metadata"
+        else:
+            # Rehydrate the full result for consumers on the far side of HTTP.
+            # The DB now stores only raw_result_path, but the Container-CC plugin
+            # reads bundles through this endpoint (_nextseek_runner.py:311) from a
+            # container with no access to /app/outputs, so the wire format has to
+            # keep carrying what it always carried. A pruned file simply leaves
+            # the key absent rather than failing the download.
+            from chat_nextseek.artifacts import load_api_result_full
+
+            payload = bundle
+            if "api_result_full" not in bundle:
+                full = load_api_result_full(bundle)
+                if full:
+                    payload = {**bundle, "api_result_full": full}
+            suffix = ""
 
         # Rendered here rather than through DRF so the file a human opens is
         # indented; JSONRenderer emits one compact line.

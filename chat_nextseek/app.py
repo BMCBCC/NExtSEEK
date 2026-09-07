@@ -10,6 +10,7 @@ from chat_nextseek.config import ChatConfig
 from chat_nextseek.orchestrator import run_query, run_query_plan
 
 from chat_nextseek.tee import Tee
+from chat_nextseek.artifacts import load_api_result_full
 
 @st.cache_resource
 def _get_config() -> ChatConfig:
@@ -246,7 +247,7 @@ elif latest_bundle and latest_bundle.get("mode") == "graph_query":
     # graph results are rendered as markdown in chat; show cypher + meta in expander
 else:
     if latest_bundle:
-        api_full = latest_bundle.get("api_result_full")
+        api_full = load_api_result_full(latest_bundle)
         bundle_id = latest_bundle.get("id")
     else:
         last_debug = st.session_state.get("last_debug", {})

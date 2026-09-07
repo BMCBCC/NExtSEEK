@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 
 from .text import strip_html
+from ..artifacts import load_api_result_full
 
 # tool_nextseek_api_request hard-defaults this. A search matching more rows than this
 # silently returns one page, so it must be disclosed rather than left implicit.
@@ -354,7 +355,7 @@ def summarize_pinned_bundle(session) -> str:
     if not isinstance(last, dict):
         return ""
     user_q = last.get("user_query") or ""
-    data = (last.get("api_result_full") or {}).get("data") or {}
+    data = (load_api_result_full(last) or {}).get("data") or {}
     # advanced_search/new_search pin rows under 'samples'; graph under 'nodes'; others 'rows'.
     rows = data.get("rows") or data.get("samples") or data.get("nodes") or []
     return f"last search: query={user_q!r}, ~{len(rows) if isinstance(rows, list) else 0} rows"
@@ -373,7 +374,7 @@ def uids_from_last_search(session) -> list[str]:
     for bundle in reversed(history):
         if not isinstance(bundle, dict):
             continue
-        api_full = bundle.get("api_result_full") or {}
+        api_full = load_api_result_full(bundle)
         data = api_full.get("data") if isinstance(api_full, dict) else None
         rows = []
         if isinstance(data, dict):

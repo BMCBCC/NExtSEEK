@@ -13,6 +13,11 @@ own -- and both responses are pretty-printed, since a human opens these files.
 """
 
 import json
+import os
+import tempfile
+from pathlib import Path
+
+from django.conf import settings
 
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -149,3 +154,75 @@ class DownloadBundleFormatTests(TestCase):
         resp = self.client.get(self._url("?part=nonsense"))
 
         self.assertEqual(resp.status_code, 400)
+
+
+class RehydrationForHttpConsumersTests(TestCase):
+    """The Container-CC plugin reads bundles over HTTP (_nextseek_runner.py:311)
+    and has no access to /app/outputs, so the endpoint must put the payload back
+    for it. Storing a pointer in the DB must not change what the wire carries."""
+
+    databases = {"default"}
+
+    def setUp(self):
+        self.user = User.objects.create_user("rehydrateuser", password="testpass")
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+        patcher = patch(
+            "nextseek_api.services.assistant.UserInParticipatingProject.has_permission",
+            return_value=True,
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.out = Path(settings.BASE_DIR) / "outputs" / "test_rehydrate"
+        self.out.mkdir(parents=True, exist_ok=True)
+
+    def _url(self, q=""):
+        return (f"/nextseek_api/assistant/sessions/{self.session.session_id}"
+                f"/bundles/3/{q}")
+
+    def _session_with(self, bundle):
+        self.session = ChatSession.objects.create(
+            user=self.user, results_history=[bundle]
+        )
+
+    def test_a_pointer_bundle_is_served_with_the_payload_inlined(self):
+        payload = {"data": [{"uid": "NHP-1"}, {"uid": "NHP-2"}]}
+        f = tempfile.NamedTemporaryFile(suffix=".json", delete=False,
+                                        dir=str(self.out), mode="w")
+        json.dump(payload, f); f.close()
+        self.addCleanup(lambda: os.path.exists(f.name) and os.unlink(f.name))
+        self._session_with({"id": 3, "mode": "new_search", "raw_result_path": f.name})
+
+        body = json.loads(self.client.get(self._url()).content)
+
+        self.assertEqual(body["api_result_full"], payload)
+
+    def test_an_old_inline_bundle_is_served_unchanged(self):
+        payload = {"data": [{"uid": "OLD-1"}]}
+        self._session_with({"id": 3, "mode": "new_search", "api_result_full": payload})
+
+        body = json.loads(self.client.get(self._url()).content)
+
+        self.assertEqual(body["api_result_full"], payload)
+
+    def test_a_pruned_file_does_not_break_the_download(self):
+        self._session_with({"id": 3, "mode": "new_search",
+                            "raw_result_path": str(self.out / "gone.json")})
+
+        resp = self.client.get(self._url())
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("api_result_full", json.loads(resp.content))
+
+    def test_the_metadata_summary_never_rehydrates_the_payload(self):
+        payload = {"data": [{"uid": "NHP-1"}]}
+        f = tempfile.NamedTemporaryFile(suffix=".json", delete=False,
+                                        dir=str(self.out), mode="w")
+        json.dump(payload, f); f.close()
+        self.addCleanup(lambda: os.path.exists(f.name) and os.unlink(f.name))
+        self._session_with({"id": 3, "mode": "new_search", "raw_result_path": f.name})
+
+        body = json.loads(self.client.get(self._url("?part=metadata")).content)
+
+        self.assertNotIn("api_result_full", body)
+        self.assertEqual(body["raw_result_path"], f.name)

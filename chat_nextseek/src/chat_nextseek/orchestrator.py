@@ -14,7 +14,12 @@ from typing import TYPE_CHECKING, Any, Callable
 if TYPE_CHECKING:
     from streamlit.runtime.state.session_state_proxy import SessionStateProxy
 
-from .artifacts import ArtifactStore, build_metadata_bundle, build_saved_report_file_manifest
+from .artifacts import (
+    ArtifactStore,
+    build_metadata_bundle,
+    build_saved_report_file_manifest,
+    load_api_result_full,
+)
 from .chat_memory import append_turn, build_tool_summary_for_mode, resolve_bundle_for_recall
 from .pipeline import agent as pipeline_agent
 from .agents import (
@@ -809,8 +814,11 @@ def run_query(
                 bundle_id=bundle.get("id"),
             )
             debug_payload["api_plan"] = bundle.get("api_plan")
-            api_full = bundle.get("api_result_full") or {}
-            debug_payload["api_result_full"] = api_full
+            api_full = load_api_result_full(bundle)
+            # NOT debug_payload["api_result_full"]: last_debug is the other JSON
+            # column session_adapter.save() writes in the same UPDATE, so putting
+            # the payload here doubled the row again. raw_json_path + the slim
+            # copy + api_result_meta are what the panel actually renders.
             debug_payload["raw_json_path"] = bundle.get("raw_result_path") or bundle.get("graph_debug_path")
             debug_payload["api_result_meta"] = {
                 "ok": api_full.get("ok") if isinstance(api_full, dict) else None,
@@ -1254,7 +1262,6 @@ def run_query(
             debug_payload["api_result_meta"] = build_api_result_meta(
                 api_result_full, api_plan_dict, bundle_id=bundle_id)
             debug_payload["api_result_slim"] = api_result_slim
-            debug_payload["api_result_full"] = api_result_full
             debug_payload["raw_json_path"] = raw_json_path
             debug_payload["error_context"] = None
             if not api_result_full.get("ok"):

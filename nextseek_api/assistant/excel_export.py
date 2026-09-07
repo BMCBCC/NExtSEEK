@@ -467,7 +467,9 @@ def generate_search_xlsx(bundle: dict[str, Any]) -> bytes:
 
     Flattens JSON:API response data into a tabular format.
     """
-    api_result = bundle.get("api_result_full") or {}
+    from chat_nextseek.artifacts import load_api_result_full
+
+    api_result = load_api_result_full(bundle)
     data_list = api_result.get("data") or []
 
     wb = openpyxl.Workbook()

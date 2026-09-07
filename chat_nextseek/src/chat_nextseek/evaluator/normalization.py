@@ -11,6 +11,7 @@ from collections.abc import Mapping
 from typing import Any
 from uuid import UUID
 
+from ..artifacts import load_api_result_full
 from .models import (
     EvaluatorLookup,
     EvaluatorRawPayloads,
@@ -117,7 +118,7 @@ def _build_retry_signals(
     raw_error = result.get("error")
 
     if mode in {"new_search", "refine_last_search"}:
-        api_full = _as_dict(bundle.get("api_result_full"))
+        api_full = _as_dict(load_api_result_full(bundle))
         api_ok = api_full.get("ok")
         api_status_code = api_full.get("status_code")
         rows_returned = _extract_rows_returned(api_full.get("data"))
