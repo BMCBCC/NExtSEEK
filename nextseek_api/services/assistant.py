@@ -88,6 +88,7 @@ from nextseek_api.assistant.models_api import (
 )
 from nextseek_api.assistant.granular import OpValidationError, run_op
 from nextseek_api.assistant.write_gate import WriteBlockedError, build_gate, load_allowlist
+from nextseek_api.permissions import may_read_any_users_data
 from nextseek_api.assistant.models_db import ChatSession, QueryTask
 from nextseek_api.assistant.debug_projection import bundle_debug_entries
 from nextseek_api.assistant.bundle_download import bundle_metadata
@@ -445,6 +446,7 @@ def _save_session_or_report(adapter, chat_session, send_event, session_id) -> No
     _auto_title_if_unset(chat_session)
 
 
+@extend_schema(tags=["Nessie"])
 class AssistantViewSet(viewsets.ViewSet):
     """ViewSet for the NExtSEEK Assistant (multi-agent chat)."""
 
@@ -496,7 +498,6 @@ class AssistantViewSet(viewsets.ViewSet):
     @extend_schema(
         operation_id="Assistant: Current User",
         description=ASSISTANT_ME_DESC,
-        tags=["Assistant"],
         responses={200: AssistantUserResponse},
     )
     @action(detail=False, methods=["get"], url_path="me")
@@ -520,7 +521,6 @@ class AssistantViewSet(viewsets.ViewSet):
     @extend_schema(
         operation_id="Assistant: List Sessions",
         description=ASSISTANT_SESSIONS_LIST_DESC,
-        tags=["Assistant"],
         responses={200: SessionListResponse},
     )
     @action(detail=False, methods=["get"], url_path="sessions")
@@ -553,7 +553,6 @@ class AssistantViewSet(viewsets.ViewSet):
     @extend_schema(
         operation_id="Assistant: Create Session",
         description=ASSISTANT_SESSION_CREATE_DESC,
-        tags=["Assistant"],
         responses={201: SessionCreateResponse},
     )
     @list_sessions.mapping.post
@@ -576,7 +575,6 @@ class AssistantViewSet(viewsets.ViewSet):
     @extend_schema(
         operation_id="Assistant: Get Session",
         description=ASSISTANT_SESSION_DETAIL_DESC,
-        tags=["Assistant"],
         responses={200: SessionDetailResponse},
     )
     @action(
@@ -594,7 +592,8 @@ class AssistantViewSet(viewsets.ViewSet):
         except ChatSession.DoesNotExist:
             return _error_response("Not found", "Session not found.", status.HTTP_404_NOT_FOUND)
 
-        if session.user_id != request.user.pk:
+        if (session.user_id != request.user.pk
+                and not may_read_any_users_data(request.user)):
             return _error_response("Forbidden", "You do not own this session.", status.HTTP_403_FORBIDDEN)
 
         history = session.results_history or []
@@ -672,7 +671,6 @@ class AssistantViewSet(viewsets.ViewSet):
     @extend_schema(
         operation_id="Assistant: Rename Session",
         description=ASSISTANT_SESSION_PATCH_DESC,
-        tags=["Assistant"],
         request=SessionPatchRequest,
         responses={200: SessionListItem},
     )
@@ -712,7 +710,6 @@ class AssistantViewSet(viewsets.ViewSet):
     @extend_schema(
         operation_id="Assistant: Delete Session",
         description=ASSISTANT_SESSION_DELETE_DESC,
-        tags=["Assistant"],
         responses={204: None},
     )
     @get_session.mapping.delete
@@ -738,7 +735,6 @@ class AssistantViewSet(viewsets.ViewSet):
     @extend_schema(
         operation_id="Assistant: Query (SSE)",
         description=ASSISTANT_QUERY_DESC,
-        tags=["Assistant"],
         request=QueryRequest,
         responses={200: None},
         examples=[
@@ -867,7 +863,6 @@ class AssistantViewSet(viewsets.ViewSet):
     @extend_schema(
         operation_id="Assistant: Query (Async)",
         description=ASSISTANT_QUERY_ASYNC_DESC,
-        tags=["Assistant"],
         request=QueryRequest,
         responses={202: AsyncQueryResponse},
         examples=[
@@ -987,7 +982,6 @@ class AssistantViewSet(viewsets.ViewSet):
     @extend_schema(
         operation_id="Assistant: Task Progress",
         description=ASSISTANT_TASK_PROGRESS_DESC,
-        tags=["Assistant"],
         responses={200: TaskProgressResponse},
     )
     @action(
@@ -1003,7 +997,8 @@ class AssistantViewSet(viewsets.ViewSet):
         try:
             query_task = QueryTask.objects.select_related("session").get(
                 task_id=task_id,
-                user=request.user,
+                **({} if may_read_any_users_data(request.user)
+                   else {"user": request.user}),
             )
         except QueryTask.DoesNotExist:
             return _error_response(
@@ -1032,7 +1027,6 @@ class AssistantViewSet(viewsets.ViewSet):
     @extend_schema(
         operation_id="Assistant: Download Bundle",
         description=ASSISTANT_BUNDLE_DOWNLOAD_DESC,
-        tags=["Assistant"],
     )
     @action(
         detail=False,
@@ -1049,7 +1043,8 @@ class AssistantViewSet(viewsets.ViewSet):
         except ChatSession.DoesNotExist:
             return _error_response("Not found", "Session not found.", status.HTTP_404_NOT_FOUND)
 
-        if chat_session.user_id != request.user.pk:
+        if (chat_session.user_id != request.user.pk
+                and not may_read_any_users_data(request.user)):
             return _error_response("Forbidden", "You do not own this session.", status.HTTP_403_FORBIDDEN)
 
         history = chat_session.results_history or []
@@ -1106,7 +1101,6 @@ class AssistantViewSet(viewsets.ViewSet):
     @extend_schema(
         operation_id="Assistant: Download Artifact",
         description="Download a specific artifact from a bundle as an Excel file.",
-        tags=["Assistant"],
     )
     @action(
         detail=False,
@@ -1133,7 +1127,8 @@ class AssistantViewSet(viewsets.ViewSet):
         except ChatSession.DoesNotExist:
             return _error_response("Not found", "Session not found.", status.HTTP_404_NOT_FOUND)
 
-        if chat_session.user_id != request.user.pk:
+        if (chat_session.user_id != request.user.pk
+                and not may_read_any_users_data(request.user)):
             return _error_response("Forbidden", "You do not own this session.", status.HTTP_403_FORBIDDEN)
 
         history = chat_session.results_history or []
@@ -1296,7 +1291,6 @@ class AssistantViewSet(viewsets.ViewSet):
     @extend_schema(
         operation_id="Assistant: List Test Cases",
         description=ASSISTANT_TEST_CASES_DESC,
-        tags=["Assistant"],
         responses={200: TestCaseListResponse},
     )
     @action(detail=False, methods=["get"], url_path="test-cases")
@@ -1426,7 +1420,6 @@ class AssistantViewSet(viewsets.ViewSet):
     @extend_schema(
         operation_id="Assistant: Entity Extract",
         description="Resolve sampletypes/assays/keywords from a query (entity_agent).",
-        tags=["Assistant"],
         request=EntityOpRequest,
         responses={200: EntityOpResponse, 401: OpErrorResponse, 422: OpErrorResponse},
     )
@@ -1437,7 +1430,6 @@ class AssistantViewSet(viewsets.ViewSet):
     @extend_schema(
         operation_id="Assistant: Parse",
         description="Build a parser plan for a query (entity_agent -> parser_agent).",
-        tags=["Assistant"],
         request=ParseOpRequest,
         responses={200: ParseOpResponse, 401: OpErrorResponse, 422: OpErrorResponse},
     )
@@ -1448,7 +1440,6 @@ class AssistantViewSet(viewsets.ViewSet):
     @extend_schema(
         operation_id="Assistant: Graph",
         description="Build a Cypher plan (graph_agent) and execute it against Neo4j.",
-        tags=["Assistant"],
         request=GraphOpRequest,
         responses={200: GraphOpResponse, 401: OpErrorResponse, 422: OpErrorResponse},
     )
@@ -1459,7 +1450,6 @@ class AssistantViewSet(viewsets.ViewSet):
     @extend_schema(
         operation_id="Assistant: API Read",
         description="Build an API request from a parser plan and execute a read-safe call.",
-        tags=["Assistant"],
         request=ApiReadRequest,
         responses={200: ApiReadResponse, 401: OpErrorResponse, 403: OpErrorResponse,
                    422: OpErrorResponse},
@@ -1474,7 +1464,6 @@ class AssistantViewSet(viewsets.ViewSet):
             "Execute a write API call from a parser plan. Gated: runs only when "
             "confirmed_write is the boolean true; otherwise returns WRITE_BLOCKED."
         ),
-        tags=["Assistant"],
         request=ApiWriteRequest,
         responses={200: ApiWriteResponse, 401: OpErrorResponse, 403: OpErrorResponse,
                    422: OpErrorResponse},
@@ -1486,7 +1475,6 @@ class AssistantViewSet(viewsets.ViewSet):
     @extend_schema(
         operation_id="Assistant: Report",
         description="Run a summary report (samples/protocols/published/rppr) via run_reporter_summary.",
-        tags=["Assistant"],
         request=ReportOpRequest,
         responses={200: ReportOpResponse, 401: OpErrorResponse, 422: OpErrorResponse},
     )
@@ -1497,7 +1485,6 @@ class AssistantViewSet(viewsets.ViewSet):
     @extend_schema(
         operation_id="Assistant: Generate Submission",
         description="Generate a repository submission report (GEO/SRA/NFCORE/PRIDE) via report_writer_agent.",
-        tags=["Assistant"],
         request=SubmissionRequest,
         responses={200: SubmissionResponse, 401: OpErrorResponse, 422: OpErrorResponse},
     )
@@ -1508,7 +1495,6 @@ class AssistantViewSet(viewsets.ViewSet):
     @extend_schema(
         operation_id="Assistant: Run Ls",
         description="Recursive read-only listing (ls -laR) of a finished Luria run dir (reingest step 1).",
-        tags=["Assistant"],
         request=RunLsRequest,
         responses={401: OpErrorResponse, 422: OpErrorResponse},
     )
@@ -1519,7 +1505,6 @@ class AssistantViewSet(viewsets.ViewSet):
     @extend_schema(
         operation_id="Assistant: Build Upload Xlsx",
         description="Render NExtSEEK 4-sheet upload workbook(s) from reingest rows (one per sample type).",
-        tags=["Assistant"],
         request=BuildUploadXlsxRequest,
         responses={401: OpErrorResponse, 422: OpErrorResponse},
     )

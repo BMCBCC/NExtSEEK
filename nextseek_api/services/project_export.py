@@ -312,6 +312,12 @@ class ProjectExportViewSet(viewsets.ViewSet):
             (200, "application/json"): ProjectExportResponse,
             (200, XLSX_CONTENT_TYPE): _XLSX_RESPONSE,
         },
+        examples=[OpenApiExample(
+            name="JSON export of project 2558",
+            value={"project_id": 2558, "sample_count": 84548,
+                   "sample_types": ["PAT", "TIS", "DNA"]},
+            response_only=True,
+        )],
     )
     def retrieve(self, request, pk=None):
         """GET /admin/project-export/{project_id}/?output_format=xlsx

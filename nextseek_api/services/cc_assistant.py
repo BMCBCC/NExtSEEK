@@ -39,6 +39,10 @@ from drf_spectacular.utils import extend_schema, OpenApiExample
 from pydantic import ValidationError
 
 from nextseek_api.assistant.models_api import AsyncQueryResponse, QueryRequest, TaskProgressResponse
+from nextseek_api.permissions import may_read_any_users_data
+from nextseek_api.assistant.descriptions_cc import (
+    NESSIE_CC_QUERY_ASYNC_DESC, NESSIE_QUERY_ASYNC_DESC, NESSIE_TASK_PROGRESS_DESC,
+)
 from nextseek_api.assistant.models_db import ChatSession, QueryTask
 from nextseek_api.assistant.session_adapter import DictSessionAdapter
 from nextseek_api.assistant.pipeline_adapter import make_db_event_callback
@@ -467,6 +471,7 @@ def _decide_route(user, req, *, force_cc: bool, session=None, history: list[rout
     return decision
 
 
+@extend_schema(tags=["Nessie"])
 class CCAssistantViewSet(viewsets.ViewSet):
     """Router + Container-Claude-Code assistant (additive to AssistantViewSet)."""
 
@@ -795,11 +800,7 @@ class CCAssistantViewSet(viewsets.ViewSet):
     # ------------------------------------------------------------------ routes
     @extend_schema(
         operation_id="CC Assistant: Query (Async, routed)",
-        description="Router-dispatched async query. The dmac_assistant BAML router "
-                    "decides between the deterministic NExtSEEK pipeline (chat_nextseek) "
-                    "and the sandboxed Container-Claude-Code agent. Returns a task_id; "
-                    "stream progress over the existing ws/assistant/progress/{task_id}/.",
-        tags=["Assistant (CC)"],
+        description=NESSIE_QUERY_ASYNC_DESC,
         request=QueryRequest,
         responses={202: AsyncQueryResponse},
         examples=[OpenApiExample(
@@ -821,12 +822,14 @@ class CCAssistantViewSet(viewsets.ViewSet):
 
     @extend_schema(
         operation_id="CC Assistant: Query (Async, force Container-CC)",
-        description="Force the Container-Claude-Code route (bypass the router). "
-                    "Runs a sandboxed claude container; streams progress over the "
-                    "existing assistant websocket.",
-        tags=["Assistant (CC)"],
+        description=NESSIE_CC_QUERY_ASYNC_DESC,
         request=QueryRequest,
         responses={202: AsyncQueryResponse},
+        examples=[OpenApiExample(
+            name="Turn pinned to the Container-CC engine",
+            value={"query": "List the files in my run directory", "mode": "standard"},
+            request_only=True,
+        )],
     )
     @action(detail=False, methods=["post"], url_path="cc/query/async")
     def cc_query_async(self, request):
@@ -841,10 +844,18 @@ class CCAssistantViewSet(viewsets.ViewSet):
 
     @extend_schema(
         operation_id="CC Assistant: Task Progress (poll fallback)",
-        description="Poll a routed/CC task's progress (same shape as the existing "
-                    "assistant). The websocket is the primary channel; this is the fallback.",
-        tags=["Assistant (CC)"],
+        description=NESSIE_TASK_PROGRESS_DESC,
         responses={200: TaskProgressResponse},
+        examples=[OpenApiExample(
+            name="A finished turn",
+            value={"task_id": "4a5c12ad-9063-4df1-8439-e201b36bedaf",
+                   "session_id": "c0062000-1f4b-4a7e-9d3c-2b8e5a1d7f60",
+                   "status": "completed",
+                   "progress": [{"event": "route_decided",
+                                 "data": {"route": "container_cc", "source": "forced"}}],
+                   "result": {"reply": "..."}},
+            response_only=True,
+        )],
     )
     @action(detail=False, methods=["get"], url_path=r"tasks/(?P<task_id>[0-9a-f-]+)/progress")
     def task_progress(self, request, task_id=None):
@@ -852,9 +863,10 @@ class CCAssistantViewSet(viewsets.ViewSet):
         if not authed:
             return err
         try:
-            query_task = QueryTask.objects.select_related("session").get(
-                task_id=task_id, user=request.user,
-            )
+            _tasks = QueryTask.objects.select_related("session")
+            if not may_read_any_users_data(request.user):
+                _tasks = _tasks.filter(user=request.user)
+            query_task = _tasks.get(task_id=task_id)
         except QueryTask.DoesNotExist:
             return _error_response("Not found", "Task not found or you do not own it.", status.HTTP_404_NOT_FOUND)
         return Response(
@@ -923,7 +935,8 @@ class CCAssistantViewSet(viewsets.ViewSet):
         from nextseek_api.batch_upload.celery_app import app as celery_app
         from nextseek_api.batch_upload.job_index import user_owns_job
 
-        if not user_owns_job(request.user.pk, job_id):
+        if not (user_owns_job(request.user.pk, job_id)
+                or may_read_any_users_data(request.user)):
             return Response({"error": "not found"}, status=404)
         r = AsyncResult(job_id, app=celery_app)
         resp = {"job_id": job_id, "state": r.state, "meta": {}, "result": None}
@@ -957,7 +970,10 @@ class CCAssistantViewSet(viewsets.ViewSet):
         from nextseek_api.cc_assistant.cc_provision import resolve_user_project, build_user_dirs
         from nextseek_api.cc_assistant.cc_engine import _safe_relpath
 
-        cs = ChatSession.objects.filter(user=request.user, session_id=session).first()
+        _sessions = ChatSession.objects.all()
+        if not may_read_any_users_data(request.user):
+            _sessions = _sessions.filter(user=request.user)
+        cs = _sessions.filter(session_id=session).first()
         if cs is None:
             raise Http404("no such session")
         key = request.query_params.get("key", "")
@@ -1002,7 +1018,10 @@ class CCAssistantViewSet(viewsets.ViewSet):
         from nextseek_api.assistant.models_db import ChatSession, CCSessionTranscript
         from nextseek_api.cc_assistant.cc_transcript_store import decompress
 
-        cs = ChatSession.objects.filter(user=request.user, session_id=session).first()
+        _sessions = ChatSession.objects.all()
+        if not may_read_any_users_data(request.user):
+            _sessions = _sessions.filter(user=request.user)
+        cs = _sessions.filter(session_id=session).first()
         if cs is None:
             raise Http404("no such session")
         cc_sid = request.query_params.get("cc_session_id")

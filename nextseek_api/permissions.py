@@ -28,3 +28,23 @@ class IsSuperUser(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         return self.has_permission(request, view)
+
+
+def may_read_any_users_data(user) -> bool:
+    """True when ``user`` may read records belonging to somebody else.
+
+    The per-session assistant endpoints are ownership-scoped: they answer only
+    for the caller's own sessions, which is right for the chat UI and useless
+    for an operator diagnosing a report from another account. Superusers are
+    let past that scoping so a support request can be answered without shelling
+    into the box.
+
+    ``is_superuser`` alone, for the reason given on :class:`IsSuperUser`:
+    ``dmac.views.userSynchronization`` sets ``is_staff`` on every SEEK user at
+    login, so an ``is_staff`` test here would widen these endpoints to everyone.
+    """
+    return bool(
+        user
+        and getattr(user, "is_authenticated", False)
+        and getattr(user, "is_superuser", False)
+    )

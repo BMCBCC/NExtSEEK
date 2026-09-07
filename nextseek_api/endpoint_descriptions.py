@@ -1260,3 +1260,28 @@ TEMPLATE_GENERATE_DESC = (
     "- 'Generate a template for PAT, TIS and DNA'\n"
     "- 'Download the blank upload sheet for D.SEQ'\n"
 )
+
+NESSIE_SESSION_DEBUG_DESC = (
+    "**SUMMARY:** Everything recorded about one Nessie chat session — the database row, the per-turn ledger, the tasks, the CC transcripts and "
+    "the artifact paths on disk — in one response, for any engine.\n\n"
+    "**USE WHEN:** Diagnosing a session that misbehaved: a turn that vanished, a reply that never persisted, an 'Internal pipeline error', a "
+    "missing output file, or a session so large it breaks MySQL. Works identically for a nextseek_query turn, a container_cc turn, a pipeline "
+    "wizard turn and a turn that failed before producing anything.\n\n"
+    "**DO NOT USE WHEN:** The caller wants a turn's actual result data — use `GET assistant/sessions/{session_id}/bundles/{bundle_id}/`; the "
+    "caller is the session's own user rendering their chat — use `GET assistant/sessions/{session_id}/?include=turns`, which filters to "
+    "answerable turns.\n\n"
+    "**ACCEPTS:** A UUID path parameter, resolved first as a chat session id and then as a query task id, so a task id copied out of a log "
+    "works directly. Optional `?include=` accepts a comma-separated subset of `transcripts,bundles,progress,last_debug,all` to opt into the "
+    "bulk payloads that are otherwise reported only by size. Optional `?turn=` limits `turns` to one index.\n\n"
+    "**RETURNS:** `200` with `resolved_as`, `session` (identity plus counts), `sizes` (byte sizes of the three JSON columns and the largest "
+    "bundle), `turns` (unfiltered, including failed and non-answer turns), `tasks`, `ledger`, `transcripts`, `files` (each stat-ed at read time "
+    "for `exists` and `size_bytes`) and `warnings` naming any condition already known to cause an incident.\n\n"
+    "**ERROR CODES:** `401` when unauthenticated; `403` for an authenticated caller who is not a Django superuser, including a user with "
+    "`is_staff` set, which every SEEK login sets; `404` when the UUID matches no session and no task.\n\n"
+    "**TRIGGER PHRASES:** debug a session, inspect chat session, why did this turn fail, what happened in session, session diagnostics, "
+    "where are the output files for this session\n\n"
+    "**EXAMPLES:**\n"
+    "- 'Why did session 4a5c12ad-9063-4df1-8439-e201b36bedaf return an internal pipeline error?'\n"
+    "- 'Show me every file this chat session wrote and whether it still exists'\n"
+    "- 'How big did this session's results_history get?'\n"
+)

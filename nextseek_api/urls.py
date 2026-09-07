@@ -41,6 +41,8 @@ router.register(r"assistant", views.AssistantViewSet, basename="assistant")
 router.register(r"cc-assistant", views.CCAssistantViewSet, basename="cc-assistant")
 router.register(r"evaluator", views.EvaluatorViewSet, basename="evaluator")
 router.register(r"admin/project-export", views.ProjectExportViewSet, basename="admin-project-export")
+router.register(r"nessie", views.NessieViewSet, basename="nessie")
+router.register(r"nessie", views.NessieChatViewSet, basename="nessie-chat")
 
 
 urlpatterns = [
