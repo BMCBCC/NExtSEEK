@@ -21,9 +21,11 @@ import type {
   QueryErrorData,
   RouteDecidedData,
   CcTurnMetaData,
+  Turn,
 } from "@/lib/types/api";
 import type { DebugData, DebugEntry } from "@/lib/types/chat";
 import { makeDebugEntry, routeDecidedSummary, ccTurnMetaSummary, queryErrorSummary } from "@/lib/debugEntries";
+import { debugForTurns } from "@/lib/debugForTurns";
 
 export function EmbeddedApp() {
   const [rightOpen, setRightOpen] = useState(false);
@@ -35,7 +37,6 @@ export function EmbeddedApp() {
   const sessionAuthRef = useRef(new SessionAuthService());
   const serviceRef = useRef(new NextseekApiService(sessionAuthRef.current));
   const [isQuerying, setIsQuerying] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   const { messages, addUserMessage, addAssistantMessage, addSystemMessage, updateLastAssistantMessage, hydrateFromTurns } = useMessages();
@@ -68,9 +69,16 @@ export function EmbeddedApp() {
       });
     },
   });
+  const hydrateChat = useCallback((turns: Turn[]) => {
+    hydrateFromTurns(turns);
+    // The panel and its downloads follow the chat being opened. Without this
+    // they kept the last *run* turn's entries and bundle id.
+    setDebugData(debugForTurns(turns));
+  }, [hydrateFromTurns]);
+
   const sessions = useSessions({
     service: serviceRef.current,
-    hydrate: hydrateFromTurns,
+    hydrate: hydrateChat,
     onRouteChange: chatRoute.push,
   });
   sessionsRef.current = sessions;
@@ -198,7 +206,6 @@ export function EmbeddedApp() {
       serviceRef.current
         .submitQuery(text, mode, opts, handleProgress, handleQueryError)
         .finally(() => {
-          setSessionId(serviceRef.current.sessionId);
           setIsQuerying(false);
         });
     },
@@ -229,9 +236,13 @@ export function EmbeddedApp() {
 
   const handleDownload = useCallback(
     (format: string) => {
-      if (sessionId && debugData.bundleId) serviceRef.current.downloadBundle(sessionId, debugData.bundleId, format);
+      // The chat on screen, not the last one a query was sent in. `sessionId`
+      // was only ever set in submitQuery's .finally(), so after switching chats
+      // this downloaded the previous chat's bundle.
+      const sid = sessions.activeSessionId ?? serviceRef.current.sessionId;
+      if (sid && debugData.bundleId) serviceRef.current.downloadBundle(sid, debugData.bundleId, format);
     },
-    [sessionId, debugData.bundleId],
+    [sessions.activeSessionId, debugData.bundleId],
   );
 
   const toggleSidebar = useCallback(() => {

@@ -9,6 +9,7 @@ import { getForceRoute } from "@/lib/forceRoute";
 import { getUseProd } from "@/lib/useProd";
 import { getMaxTurnLength } from "@/lib/maxTurnLength";
 import { adoptTerminalSession } from "@/lib/sessionAdoption";
+import { debugForTurns } from "@/lib/debugForTurns";
 import type {
   ProgressEvent,
   AgentStartedData,
@@ -19,6 +20,7 @@ import type {
   QueryErrorData,
   RouteDecidedData,
   CcTurnMetaData,
+  Turn,
 } from "@/lib/types/api";
 import type { DebugData, DebugEntry } from "@/lib/types/chat";
 import { makeDebugEntry, routeDecidedSummary, ccTurnMetaSummary, queryErrorSummary } from "@/lib/debugEntries";
@@ -66,9 +68,16 @@ export function AppLayout({ credentialError, isAdmin = false }: AppLayoutProps) 
       });
     },
   });
+  const hydrateChat = useCallback((turns: Turn[]) => {
+    hydrateFromTurns(turns);
+    // The panel and its downloads follow the chat being opened; kept in step
+    // with EmbeddedApp, since the two shells are maintained by hand.
+    setDebugData(debugForTurns(turns));
+  }, [hydrateFromTurns]);
+
   const sessions = useSessions({
     service: apiService,
-    hydrate: hydrateFromTurns,
+    hydrate: hydrateChat,
     onRouteChange: chatRoute.push,
   });
   sessionsRef.current = sessions;
@@ -221,9 +230,12 @@ export function AppLayout({ credentialError, isAdmin = false }: AppLayoutProps) 
 
   const handleDownload = useCallback(
     (format: string) => {
-      if (sessionId && debugData.bundleId) downloadBundle(sessionId, debugData.bundleId, format);
+      // The chat on screen, not the last one a query was sent in. Kept in step
+      // with EmbeddedApp: these two shells are maintained by hand.
+      const sid = sessions.activeSessionId ?? sessionId;
+      if (sid && debugData.bundleId) downloadBundle(sid, debugData.bundleId, format);
     },
-    [sessionId, debugData.bundleId, downloadBundle],
+    [sessions.activeSessionId, sessionId, debugData.bundleId, downloadBundle],
   );
 
   const toggleSidebar = useCallback(() => {
