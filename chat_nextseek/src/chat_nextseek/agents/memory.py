@@ -19,7 +19,7 @@ from ..helpers import (
     strip_html_recursive,
 )
 from ..schemas.schema_helper import call_llm_structured
-from ..artifacts import load_api_result_full
+from ..artifacts import load_api_result_full, load_memory_payload
 from ..schemas import (
     MemoryCoderOutput,
 )
@@ -38,7 +38,7 @@ def _load_memory_json_payload(result_bundle: dict) -> tuple[str, Any, list[tuple
     Prefers canonical in-memory payloads, then saved JSON artifacts, then inline bundle data.
     """
     file_entries = collect_bundle_files(result_bundle)
-    memory_payload = result_bundle.get("memory_payload")
+    memory_payload = load_memory_payload(result_bundle)
     if isinstance(memory_payload, dict) and memory_payload:
         return "bundle memory_payload", strip_html_recursive(memory_payload), file_entries
 
@@ -95,7 +95,8 @@ def _load_memory_json_payload(result_bundle: dict) -> tuple[str, Any, list[tuple
                 )
 
     inline = (
-        result_bundle.get("memory_payload")
+        load_memory_payload(result_bundle)
+        # model_outputs no longer carries a copy; kept for older bundles.
         or result_bundle.get("model_outputs", {}).get("memory_payload")
         or result_bundle.get("graph_result")
         or load_api_result_full(result_bundle)

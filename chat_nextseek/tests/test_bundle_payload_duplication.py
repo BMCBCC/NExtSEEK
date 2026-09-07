@@ -42,8 +42,10 @@ def test_the_heavy_result_payloads_are_not_stored_twice():
         assert heavy not in b["model_outputs"], f"{heavy} is duplicated in model_outputs"
 
 
-def test_the_plans_and_the_two_read_keys_stay_in_model_outputs():
-    """Plans are small, and these are the only keys anything reads back."""
+def test_the_plans_stay_in_model_outputs():
+    """Plans are small and this is their documented home. memory_payload is NOT
+    here: it is 13 MB of rows on a large search and both readers take the
+    top-level copy first."""
     b = _bundle(
         parser_plan={"mode": "new_search"},
         api_plan={"endpoint": "/x/"},
@@ -56,8 +58,9 @@ def test_the_plans_and_the_two_read_keys_stay_in_model_outputs():
 
     mo = b["model_outputs"]
     for kept in ("parser_plan", "api_plan", "graph_plan", "reporter_plan",
-                 "memory_payload", "search_context", "terminal_reply"):
+                 "search_context", "terminal_reply"):
         assert kept in mo, f"{kept} must remain in model_outputs"
+    assert "memory_payload" not in mo
 
 
 def test_dropping_the_duplicate_roughly_halves_a_large_bundle():
@@ -136,3 +139,74 @@ def test_accessor_degrades_to_empty_rather_than_raising(tmp_path):
     assert load_api_result_full({"raw_result_path": str(tmp_path / "gone.json")}) == {}
     assert load_api_result_full({}) == {}
     assert load_api_result_full(None) == {}
+
+
+# --- memory_payload is a THIRD copy of the same rows -------------------------
+# Measured on production after the first fix shipped: results_history was still
+# 26,190,151 bytes for one search, because memory_payload = {"data":
+# api_result_full["data"], ...} (orchestrator.py:1302) and was ALSO duplicated
+# into model_outputs. Both readers (agents/memory.py:41 and :98) prefer the
+# top-level copy, so the model_outputs one never fires.
+
+def test_memory_payload_is_not_duplicated_into_model_outputs():
+    b = _bundle(memory_payload={"data": BIG["data"], "endpoint": "/x/"})
+
+    assert "memory_payload" in b, "the copy both readers actually use"
+    assert "memory_payload" not in b["model_outputs"]
+
+
+def test_memory_payload_drops_the_rows_it_shares_with_the_file(tmp_path):
+    """It holds the SAME list object as api_result_full, already on disk."""
+    f = tmp_path / "r.json"
+    f.write_text(json.dumps(BIG))
+    rows = BIG["data"]
+
+    b = _bundle(
+        api_result_full={"data": rows},
+        memory_payload={"data": rows, "endpoint": "/x/", "tool": "new_search"},
+        paths={"raw_result_path": str(f)},
+    )
+
+    assert "data" not in b["memory_payload"], "the rows are on disk already"
+    assert b["memory_payload"]["endpoint"] == "/x/", "the rest must survive"
+    assert len(json.dumps(b, default=str)) < 5000
+
+
+def test_a_memory_payload_that_is_not_the_api_rows_is_left_alone(tmp_path):
+    """Graph and planner turns build their own payload. Identity, not shape, is
+    what says 'these are the rows already written to that file'."""
+    f = tmp_path / "r.json"
+    f.write_text(json.dumps(BIG))
+
+    b = _bundle(
+        api_result_full={"data": BIG["data"]},
+        memory_payload={"data": {"rows": [1, 2, 3], "total": 3}},
+        paths={"raw_result_path": str(f)},
+    )
+
+    assert b["memory_payload"]["data"] == {"rows": [1, 2, 3], "total": 3}
+
+
+def test_the_accessor_puts_the_rows_back(tmp_path):
+    from chat_nextseek.artifacts import load_memory_payload
+
+    f = tmp_path / "r.json"
+    f.write_text(json.dumps(BIG))
+    b = {"memory_payload": {"endpoint": "/x/"}, "raw_result_path": str(f)}
+
+    assert load_memory_payload(b)["data"] == BIG["data"]
+
+
+def test_the_accessor_leaves_an_intact_payload_untouched():
+    from chat_nextseek.artifacts import load_memory_payload
+
+    b = {"memory_payload": {"data": [1, 2], "endpoint": "/x/"}}
+
+    assert load_memory_payload(b)["data"] == [1, 2]
+
+
+def test_the_accessor_survives_a_bundle_with_no_memory_payload():
+    from chat_nextseek.artifacts import load_memory_payload
+
+    assert load_memory_payload({}) is None
+    assert load_memory_payload({"memory_payload": {}}) in (None, {})

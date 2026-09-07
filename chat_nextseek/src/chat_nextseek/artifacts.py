@@ -67,6 +67,46 @@ def _payload_is_on_disk(path: str | Path | None) -> bool:
         return False
 
 
+def _slim_memory_payload(memory_payload, api_result_full, raw_result_path):
+    """Drop the rows memory_payload shares with the file already on disk.
+
+    ``memory_payload["data"]`` is the SAME list object as
+    ``api_result_full["data"]`` (orchestrator.py:1302), so on a large search it
+    was a third 13 MB copy of rows that were already written to
+    api_result_bundle_<id>.json. Read it back with load_memory_payload().
+
+    Identity, not shape, decides. A graph or planner turn builds its own payload
+    (orchestrator.py:1780 stores ``{"rows": ..., "total": ...}``), which is a
+    different object and is left completely alone.
+    """
+    if not isinstance(memory_payload, dict) or "data" not in memory_payload:
+        return memory_payload
+    if not _payload_is_on_disk(raw_result_path):
+        return memory_payload
+    rows = api_result_full.get("data") if isinstance(api_result_full, dict) else None
+    if memory_payload["data"] is not rows:
+        return memory_payload
+    return {k: v for k, v in memory_payload.items() if k != "data"}
+
+
+def load_memory_payload(bundle: Any) -> dict[str, Any] | None:
+    """A bundle's memory payload with its rows put back.
+
+    Mirrors load_api_result_full: newer bundles omit ``data`` because the same
+    rows are on disk, older ones carry it inline, and a pruned file simply
+    leaves the key absent rather than raising.
+    """
+    if not isinstance(bundle, dict):
+        return None
+    payload = bundle.get("memory_payload")
+    if not isinstance(payload, dict) or not payload:
+        return payload
+    if "data" in payload:
+        return payload
+    rows = load_api_result_full(bundle).get("data")
+    return {**payload, "data": rows} if rows is not None else payload
+
+
 def load_api_result_full(bundle: Any) -> dict[str, Any]:
     """The full API result for a bundle, wherever it happens to live.
 
@@ -148,7 +188,10 @@ def build_metadata_bundle(
             "multi_parser_plan": multi_parser_plan,
             "terminal_reply": terminal_reply,
             "provisional_reply": provisional_reply,
-            "memory_payload": memory_payload,
+            # NOT memory_payload: it is 13 MB of API rows on a large search, and
+            # both readers (agents/memory.py:41 and :98) take the top-level copy
+            # first, so this one only ever cost the write. The :98 fallback is
+            # kept for bundles written before this.
             "search_context": search_context,
         }
     )
@@ -173,7 +216,6 @@ def build_metadata_bundle(
         "user_query": user_query,
         "mode": mode,
         "model_outputs": model_outputs,
-        "memory_payload": memory_payload,
         "search_context": search_context or {},
         "terminal_reply": terminal_reply,
         "reply": terminal_reply,
@@ -198,6 +240,9 @@ def build_metadata_bundle(
         # behave exactly as before. Read it back with load_api_result_full().
         **({} if _payload_is_on_disk(paths.get("raw_result_path"))
            else {"api_result_full": api_result_full}),
+        "memory_payload": _slim_memory_payload(
+            memory_payload, api_result_full, paths.get("raw_result_path")
+        ),
         "api_result_slim": api_result_slim,
         "raw_result_path": paths.get("raw_result_path"),
         "graph_plan": graph_plan,
