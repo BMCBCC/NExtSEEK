@@ -88,3 +88,31 @@ class AliasQueryDispatchTests(TestCase):
         self.assertFalse(self.user.is_superuser)
         started = self._post("/nextseek_api/nessie/query/cc/")
         self.assertEqual(started.call_args.kwargs["force_cc"], True)
+
+
+class UploadsVerbTests(TestCase):
+    """Both verbs answer on nessie/uploads/.
+
+    Caught live on the dev box, not here: two @action decorators sharing one
+    url_path do not combine into one route. The router emits a pattern per
+    action and the first registered wins, so GET returned 405 while every unit
+    test still passed. DRF's .mapping is the mechanism for a second verb.
+    """
+    databases = {"default"}
+
+    def setUp(self):
+        self.user = User.objects.create_user("verbuser", password="pw")
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_neither_verb_is_405(self):
+        for call in (self.client.get, self.client.post):
+            with self.subTest(verb=call.__name__):
+                self.assertNotEqual(
+                    call("/nextseek_api/nessie/uploads/").status_code, 405)
+
+    def test_the_router_maps_both_verbs_to_one_pattern(self):
+        """One pattern carrying both verbs, not two patterns racing."""
+        from nextseek_api.services.nessie import NessieChatViewSet
+        self.assertEqual(set(NessieChatViewSet.uploads_list.mapping),
+                         {"get", "post"})

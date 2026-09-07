@@ -657,7 +657,7 @@ REGISTRY: list[Route] = [
           methods=("GET",), profiles="local,dev,prod", auth="smoke", expect=200,
           shape="data", note="also accepts PATCH, which the write lane sends on local and dev"),
     Route(pattern=r"^nextseek_api/^^nessie/sessions/(?P<session_id>[0-9a-fA-F-]+)/debug/$",
-          path="/nextseek_api/nessie/sessions/{session_id}/debug/",
+          path="/nextseek_api/nessie/sessions/" + _NO_SUCH_UUID + "/debug/",
           methods=("GET",), profiles="local,dev", auth="write", expect=200,
           note="admin session inspection; superuser only, so the expectation is by "
                "inspection -- the sweep never holds those rights"),

@@ -204,6 +204,22 @@ class NessieChatViewSet(viewsets.ViewSet):
     def task_progress(self, request, task_id=None):
         return _delegate(CCAssistantViewSet, "task_progress", request, task_id=task_id)
 
+    # GET owns the @action and POST hangs off it via .mapping. TWO @action
+    # decorators sharing one url_path do NOT combine: the router emits a pattern
+    # per action and the first registered wins, so the other verb answers 405.
+    # Same shape as AssistantViewSet.list_sessions / create_session.
+    @extend_schema(
+        operation_id="Nessie: Upload List",
+        description=NESSIE_UPLOAD_LIST_DESC,
+        responses={200: dict},
+        examples=[OpenApiExample(
+            name="Two staged inputs", response_only=True,
+            value={"files": ["reads_R1.fastq.gz", "reads_R2.fastq.gz"]})],
+    )
+    @action(detail=False, methods=["get"], url_path="uploads")
+    def uploads_list(self, request):
+        return _delegate(CCAssistantViewSet, "upload_list", request)
+
     @extend_schema(
         operation_id="Nessie: Upload",
         description=NESSIE_UPLOAD_DESC,
@@ -225,21 +241,9 @@ class NessieChatViewSet(viewsets.ViewSet):
             value={"job_id": "c3f1a2b4-9e17-4a02-8d55-0b1f2c3d4e5f",
                    "status": "queued"})],
     )
-    @action(detail=False, methods=["post"], url_path="uploads")
+    @uploads_list.mapping.post
     def uploads_create(self, request):
         return _delegate(CCAssistantViewSet, "upload", request)
-
-    @extend_schema(
-        operation_id="Nessie: Upload List",
-        description=NESSIE_UPLOAD_LIST_DESC,
-        responses={200: dict},
-        examples=[OpenApiExample(
-            name="Two staged inputs", response_only=True,
-            value={"files": ["reads_R1.fastq.gz", "reads_R2.fastq.gz"]})],
-    )
-    @action(detail=False, methods=["get"], url_path="uploads")
-    def uploads_list(self, request):
-        return _delegate(CCAssistantViewSet, "upload_list", request)
 
     @extend_schema(
         operation_id="Nessie: Upload Status",
