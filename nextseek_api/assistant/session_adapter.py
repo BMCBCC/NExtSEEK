@@ -3,6 +3,29 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
+import json
+import logging
+
+
+logger = logging.getLogger(__name__)
+
+
+class SessionSaveError(RuntimeError):
+    """A turn ran to completion but could not be written back to its session.
+
+    Raised so the caller can tell the user the turn was not saved. Previously
+    this escaped as a bare OperationalError out of a background thread, which
+    killed the thread and left the chat silently empty.
+    """
+
+
+def _approx_size(value) -> int:
+    """Serialized size of a payload, for saying how big the failed write was."""
+    try:
+        return len(json.dumps(value, default=str))
+    except (TypeError, ValueError):
+        return -1
+
 
 if TYPE_CHECKING:
     from .models_db import ChatSession
@@ -118,10 +141,37 @@ class DictSessionAdapter:
                 return
         except Exception:
             # Backends without row locking (or a session row that vanished) must
-            # still persist the turn rather than lose it outright.
-            pass
+            # still persist the turn rather than lose it outright. That fallback
+            # is legitimate, but a bare `pass` also hid REAL failures: on
+            # production a (2006, 'Server has gone away') here left no trace at
+            # all, and the unlocked retry below then raised out of a background
+            # thread, losing a turn that had already succeeded.
+            logger.warning(
+                "session %s: locked save failed, falling back to an unlocked write",
+                getattr(self._session, "session_id", "?"), exc_info=True,
+            )
 
         self._session.results_history = cached_history
         self._session.last_debug = last_debug
         self._session.extra_state = extra_state
-        self._session.save(update_fields=fields)
+        try:
+            self._session.save(update_fields=fields)
+        except Exception as exc:
+            # Both paths are gone, so this turn is not going to be persisted.
+            # Say so with the sizes attached: the production cause was a single
+            # UPDATE carrying results_history AND last_debug, ~40 MB between them
+            # because a 13.5 MB api_result_full was inlined into both.
+            sizes = ", ".join(
+                f"{name}={_approx_size(value):,}B"
+                for name, value in (
+                    ("results_history", cached_history),
+                    ("last_debug", last_debug),
+                    ("extra_state", extra_state),
+                )
+            )
+            msg = (
+                f"session {getattr(self._session, 'session_id', '?')}: could not "
+                f"persist the turn ({sizes}) -- {type(exc).__name__}: {exc}"
+            )
+            logger.error(msg, exc_info=True)
+            raise SessionSaveError(msg) from exc
