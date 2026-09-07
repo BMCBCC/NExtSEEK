@@ -187,7 +187,8 @@ class TestDesignSearchMatchKeywordsBinding:
         fragment, params = spi._Search__designSearchMatchKeywords(
             ["D.SEQ-240910LAU", "a' OR '1'='1"], "A.uuid"
         )
-        assert fragment == " WHERE A.uuid in (%s, %s);"
+        # No terminator: this fragment gets composed with project scoping.
+        assert fragment == " WHERE A.uuid in (%s, %s)"
         assert params == ["D.SEQ-240910LAU", "a' OR '1'='1"]
         assert "'" not in fragment
 
@@ -311,5 +312,5 @@ class TestDesignSearchAdvancedBinding:
             "categoryField": "sample_type_id",
         }
         fragment, params = Search("").designSearchAdvanced(filtersdic, {})
-        assert fragment == " WHERE A.uuid in (%s);"
+        assert fragment == " WHERE A.uuid in (%s)"
         assert params == ["a'b"]

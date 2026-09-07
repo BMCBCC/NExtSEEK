@@ -420,7 +420,7 @@ class Search():
 
         Output:
             (clause, params), the "WHERE" clause and its bound values, such as,
-                (" WHERE uid in (%s, %s);", [uid1, uid2])
+                (" WHERE uid in (%s, %s)", [uid1, uid2])
         '''
         print('designSearchMatchKeywords')
         if len(keywordList)>0:
@@ -430,11 +430,21 @@ class Search():
             tarray = "(" + ", ".join(["%s"] * len(keywordList)) + ")"
             #tablefield = 'uid'
             #tableField = SAMPLE_FILTER_MAPPING[tablefield]
-            # The trailing ';' is preserved deliberately: __sqlQuery_select_records
-            # appends filtersdic['orderby'], which defaults to " " and not "", so
-            # the ORDER BY default is already dead code and the ';' is harmless
-            # today. #93 is a binding change, not a behaviour change.
-            sqlquery_filter = " WHERE " + tableField + " in " + tarray + ";"
+            # NO trailing ';'. This is a WHERE *fragment*, and callers compose
+            # more SQL onto the end of it: both wrappers in
+            # _sqlQuery_select_records_filters_advanced do
+            #     fragment.replace('WHERE ', 'WHERE (', 1) + ") AND " + clause
+            # so a terminator here lands INSIDE the parentheses and ends the
+            # statement mid-query. Live on production 2026-09-07, every
+            # project-scoped UID search returned
+            #     (1064, "...near ';) AND EXISTS (SELECT 1 FROM projects_samples"
+            # reported to the caller as HTTP 502.
+            #
+            # It was previously kept on the grounds that the ';' was "harmless
+            # today"; that stopped being true when project scoping shipped and
+            # started appending to this fragment. A fragment must stay
+            # composable.
+            sqlquery_filter = " WHERE " + tableField + " in " + tarray
             params = list(keywordList)
         else:
             sqlquery_filter = " "
