@@ -173,12 +173,36 @@ def _session_metas(user, current_id, paths, mem_cfg, project_dirname=None):
     # consumers is cc_sweep.select_sweep_targets, which wants the sessions that
     # are IDLE (the OLDEST updated_at). A LIMIT N would hand it the N LEAST
     # idle sessions and silently stop sweeping everything else.
-    qs = (
+    # 2026-09-07: the fix above was not enough. `extra_state` is ITSELF a JSON
+    # column -- it holds chat_log -- so keeping it in the SELECT still put it in
+    # the filesort, and it outgrew the buffer: measured on production,
+    # sort_buffer_size=262,144 against a largest extra_state of 288,291 bytes.
+    # One row was bigger than the whole buffer, so every Container-CC turn for
+    # that account failed with 1038, surfacing as "Internal pipeline error".
+    #
+    # Order over small columns ONLY, then read the JSON back by id with no
+    # ORDER BY, which needs no filesort at all. Same two-step shape as
+    # assistant._most_recent_session. The ordering itself is still load-bearing
+    # (cc_sweep.select_sweep_targets wants the most idle sessions), so it is
+    # preserved exactly -- it just no longer drags the payload through the sort.
+    ordered_ids = list(
         ChatSession.objects.filter(user=user)
-        .only("session_id", "extra_state", "updated_at")
         .order_by("-updated_at")
+        .values_list("session_id", flat=True)
     )
-    for s in qs:
+    by_id = (
+        ChatSession.objects.filter(session_id__in=ordered_ids)
+        # .order_by() with no arguments is load-bearing: the model carries a
+        # default Meta.ordering, which in_bulk inherits, and that would put the
+        # filesort straight back on the query that selects extra_state.
+        .order_by()
+        .only("session_id", "extra_state", "updated_at")
+        .in_bulk(field_name="session_id")
+    )
+    for _sid in ordered_ids:
+        s = by_id.get(_sid)
+        if s is None:  # deleted between the two queries
+            continue
         sid = str(s.session_id)
         es = s.extra_state or {}
         session_project = es.get("cc_project_dirname") or project_dirname

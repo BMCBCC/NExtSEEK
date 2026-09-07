@@ -104,12 +104,21 @@ def test_session_metas_sorts_only_over_the_columns_it_reads(tmp_path):
     assert len(ordering) == 1, f"expected exactly one ORDER BY query, got {ordering}"
     sql = ordering[0]
 
+    # 2026-09-07: this test used to require extra_state to be IN the sorted
+    # SELECT. Production disproved that. extra_state is ITSELF a JSON column --
+    # it holds chat_log -- and it outgrew the sort buffer: measured on the box,
+    # sort_buffer_size=262,144 against a largest extra_state of 288,291 bytes.
+    # One row was bigger than the whole buffer, so the ORDER BY could never
+    # complete and every Container-CC turn for that account died with errno
+    # 1038, surfacing to the user as "Internal pipeline error".
+    #
+    # NO JSON column may enter the filesort. extra_state is now read back by id
+    # in a second, unordered query, which needs no sort at all.
     projected = _select_list(sql)
-    for col in ("session_id", "extra_state", "updated_at"):
-        assert col in projected, f"{col} must be selected, not lazily re-fetched: {sql}"
+    assert "session_id" in projected, f"the ordering must project the key: {sql}"
 
-    for col in ("last_debug", "results_history"):
-        assert col not in sql, f"multi-MB {col} entered the filesort: {sql}"
+    for col in ("extra_state", "last_debug", "results_history"):
+        assert col not in sql, f"JSON column {col} entered the filesort: {sql}"
 
 
 def test_session_metas_does_not_limit_the_sweep(tmp_path):
@@ -146,11 +155,12 @@ def _query_count(user, tmp_path):
 
 
 def test_session_metas_query_count_does_not_grow_with_session_count(tmp_path):
-    """Guards the wrong fix: deferring ``extra_state`` as well.
+    """Guards the wrong fix: re-fetching ``extra_state`` per row.
 
-    The issue body suggests deferring ``last_debug`` *and* ``extra_state``.
-    ``extra_state`` is read on every single row, so deferring it turns one
-    query into 1 + N.
+    ``extra_state`` is read on every row, so a naive deferral turns this into
+    1 + N queries. Reading it back in ONE extra query keyed by id is the point:
+    the count must stay constant in the number of sessions, not be literally
+    one. Two is correct here -- ordering over small columns, then the JSON.
     """
     User = get_user_model()
     few = User.objects.create_user("metas-few", password="x")
@@ -166,7 +176,10 @@ def test_session_metas_query_count_does_not_grow_with_session_count(tmp_path):
         f"query count grew with row count ({n_few} -> {n_many}): a field the "
         f"loop reads is deferred and re-fetched per row"
     )
-    assert n_many == 1, f"expected a single query, got {n_many}"
+    assert n_many <= 2, (
+        f"expected a constant, small query count, got {n_many}: the ordering "
+        f"query plus one keyed read of extra_state"
+    )
 
 
 def test_session_metas_reads_extra_state_without_a_second_query(tmp_path):
