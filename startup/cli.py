@@ -625,6 +625,18 @@ def rebuild(
     else:
         ui.ok(f"{policy.name} image rebuilt; runtime restart deferred by request")
 
+    # Every first-party image, not just this component's: a bare `rebuild`
+    # builds only the app image, so the routine deploy is exactly the one that
+    # can leave cc-agent's image absent for weeks. Nothing else looks -- the
+    # smoke suite never requests the Container-CC routes and cc-agent has no
+    # container to health-check. Reported here, at the top of the output, but
+    # not exited on until the end so a failure never costs the CI run.
+    image_health = validate.check_first_party_images(state.compose_project_name)
+    if image_health.ok:
+        ui.ok(f"{image_health.name}: {image_health.detail}")
+    else:
+        ui.fail(f"{image_health.name}: {image_health.detail}")
+
     # Off-box rollback baselines (DEPLOYMENT.md §5.2). Non-fatal by contract,
     # and belt-and-braces guarded: the deploy is never hostage to the registry.
     if registry_push:
@@ -681,6 +693,11 @@ def rebuild(
                     ui.info(f"report: {runner.junit_path(REPO_ROOT)}")
                 raise typer.Exit(code=rc)
             ui.ok(f"CI passed: {outcome}")
+
+    if not image_health.ok:
+        # The build itself succeeded; the box is nonetheless short an image that
+        # only a chat turn would otherwise have reported.
+        raise typer.Exit(code=1)
 
 
 def _tilde(path: Path) -> str:

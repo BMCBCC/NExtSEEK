@@ -9,7 +9,13 @@ from pathlib import Path
 from startup.lib.instance import load_instance
 from startup.steps import seek_settings
 from startup.steps.config import read_rendered_seek_public_url
-from startup.lib.docker_ops import compose_exec, compose_ps_running, DockerOpsError
+from startup.lib.docker_ops import (
+    compose_exec,
+    compose_ps_running,
+    image_exists,
+    DockerOpsError,
+)
+from startup.lib.rebuild_policy import component_policies
 from startup.lib.env import read_env
 
 
@@ -149,6 +155,89 @@ def check_cc_services(repo_root: Path, env: dict[str, str]) -> HealthResult:
     )
 
 
+def check_first_party_images(compose_project_name: str = "nextseek") -> HealthResult:
+    """Whether every image this box builds for itself is actually here.
+
+    Nothing else reports this. ``./startup.sh rebuild`` with no ``--component``
+    builds only the app image (``startup/lib/rebuild_policy.py`` -- the ``app``
+    policy's build set is ``("nextseek",)``), the smoke suite never requests the
+    Container-CC routes (``ci/routes.py`` declares both with ``path=None``), and
+    ``cc-agent`` has no container for ``check_cc_services`` or a compose
+    healthcheck to watch, by design (``docker-compose.yml``: ``command:
+    ["true"]``, ``network_mode: none``). A pruned ``dmac-assistant:poc``
+    therefore took Container-CC down on fairdata-dev underneath a fully green
+    deploy, and said so only when a user sent a chat turn.
+    """
+    name = "first-party images"
+    # image -> the --component that builds it, so the remediation is pasteable.
+    # custom-stack is skipped: it is the union of the other four, not a fifth image.
+    owner = {
+        image.local_image: policy.name
+        for policy in component_policies(compose_project_name).values()
+        if policy.name != "custom-stack"
+        for image in policy.images
+    }
+    try:
+        missing = [image for image in owner if not image_exists(image)]
+    except DockerOpsError as exc:
+        # One unreachable daemon, reported once. Probing on regardless would
+        # report all four as absent and send the operator rebuilding images
+        # that are really there.
+        return HealthResult(name=name, ok=False, detail=str(exc))
+    if missing:
+        fixes = "; ".join(
+            f"./startup.sh rebuild --component {owner[image]}" for image in missing
+        )
+        return HealthResult(
+            name=name,
+            ok=False,
+            detail=f"ABSENT: {', '.join(missing)} -- build with: {fixes}",
+        )
+    return HealthResult(
+        name=name, ok=True, detail=f"all {len(owner)} present ({', '.join(owner)})"
+    )
+
+
+def check_cc_runner(repo_root: Path, env: dict[str, str]) -> HealthResult:
+    """DEPLOYMENT.md section 6 step 6, run for the operator rather than by them.
+
+    Host-side image presence is not the same claim. This one runs inside the app
+    container, over the docker socket it actually spawns CC turns through, and so
+    covers all three legs of ``cc_engine.cc_runner_available()``: the daemon is
+    reachable from in there, the image is visible to it, and ``dmac-cc-net``
+    exists. It is the exact command the runbook asks for by hand.
+    """
+    name = "CC runner"
+    try:
+        out = compose_exec(
+            service="nextseek",
+            # The app image carries no bare `python` on PATH; `uv run --no-sync`
+            # executes in /app/.venv without modifying it (DEPLOYMENT.md 6.6).
+            command=[
+                "uv", "run", "--no-sync", "python", "-c",
+                "from nextseek_api.cc_assistant import cc_engine; "
+                "print(cc_engine.cc_runner_available())",
+            ],
+            project_dir=repo_root,
+            env=env,
+        )
+    except DockerOpsError as exc:
+        return HealthResult(name=name, ok=False, detail=str(exc))
+    reported = out.strip().splitlines()[-1] if out.strip() else ""
+    if reported.startswith("(True,"):
+        return HealthResult(
+            name=name,
+            ok=True,
+            detail=f"{reported} -- image, docker socket and dmac-cc-net all "
+                   "reachable from the app container",
+        )
+    return HealthResult(
+        name=name,
+        ok=False,
+        detail=reported or "cc_runner_available() printed nothing",
+    )
+
+
 def check_seek_url_consistency(
     repo_root: Path, state, env: dict[str, str]
 ) -> HealthResult:
@@ -220,6 +309,8 @@ def run_all_health_checks(
         check_seek_url_consistency(repo_root, load_instance(repo_root), env),
         check_proxy_token(repo_root),
         check_cc_services(repo_root, env),
+        check_first_party_images(env.get("COMPOSE_PROJECT_NAME", "nextseek")),
+        check_cc_runner(repo_root, env),
     ]
     return results
 
@@ -239,4 +330,8 @@ def run_app_health_checks(
         check_prod_overlay_guard(repo_root),
         check_proxy_token(repo_root),
         check_cc_services(repo_root, env),
+        # An app-only deploy is precisely the cohort that never rebuilds
+        # cc-agent, so it is the one that most needs to be told the image is gone.
+        check_first_party_images(env.get("COMPOSE_PROJECT_NAME", "nextseek")),
+        check_cc_runner(repo_root, env),
     ]

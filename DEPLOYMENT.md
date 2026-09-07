@@ -451,6 +451,9 @@ docker exec nextseek uv run manage.py showmigrations nextseek_api | tail -5
 # 6. CC route wired — expect: (True, 'ok')
 #    (the image has NO bare `python` on PATH — use `uv run --no-sync`, which
 #    executes in the app env /app/.venv without modifying it)
+#    Step 9 below now runs this same command for you, as doctor's "CC runner"
+#    check, and `./startup.sh rebuild` additionally fails when any first-party
+#    image is absent. Run it by hand when you want the answer on its own.
 docker exec nextseek uv run --no-sync python -c "from nextseek_api.cc_assistant import cc_engine; print(cc_engine.cc_runner_available())"
 
 # 7. OI-3 peers untouched (app-only deploy) — expect: uptime/health
@@ -462,7 +465,9 @@ docker image inspect nextseek-nextseek:pre-<name> --format '{{.Id}}'
 
 # 9. Health suite — expect: exit 0. Run from a checkout with uv on PATH
 #    (NOT via the §3.3 docker:cli helper — it has no uv, and doctor's HTTP
-#    probes need host-loopback access).
+#    probes need host-loopback access). Includes "first-party images" (all four
+#    built images present on the host) and "CC runner" (step 6, run in the app
+#    container).
 ./startup.sh doctor
 ```
 

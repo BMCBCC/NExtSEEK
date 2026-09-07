@@ -383,7 +383,7 @@ def test_rebuild_reports_verified_rollback_tag(
     repo: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from startup.lib import docker_ops
-    from startup.steps import registry_push, rollback_tags
+    from startup.steps import registry_push, rollback_tags, validate
 
     _saved_state(repo)
     monkeypatch.setattr(
@@ -400,6 +400,13 @@ def test_rebuild_reports_verified_rollback_tag(
     monkeypatch.setattr(docker_ops, "compose_build", lambda **kwargs: None)
     monkeypatch.setattr(docker_ops, "compose_up", lambda **kwargs: None)
     monkeypatch.setattr(registry_push, "push_baselines", lambda *args, **kwargs: ())
+    monkeypatch.setattr(
+        validate,
+        "check_first_party_images",
+        lambda compose_project_name: validate.HealthResult(
+            name="first-party images", ok=True, detail="all 4 present"
+        ),
+    )
     monkeypatch.setattr(ci_runner, "run_ci", lambda *args, **kwargs: 0)
 
     result = runner.invoke(cli.app, ["rebuild"])
@@ -649,7 +656,12 @@ def test_ci_exits_with_the_suite_return_code(
     assert "DEPLOYMENT.md" in result.output
 
 
-def _mock_rebuild(monkeypatch: pytest.MonkeyPatch) -> None:
+def _mock_rebuild(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    images_ok: bool = True,
+    image_detail: str = "all 4 present",
+) -> None:
     """Everything a rebuild touches before the CI hook, stubbed out.
 
     ``create_verified`` returning ``()`` is not a shortcut: it is what the real
@@ -657,7 +669,7 @@ def _mock_rebuild(monkeypatch: pytest.MonkeyPatch) -> None:
     exercise the first-build path.
     """
     from startup.lib import docker_ops
-    from startup.steps import registry_push, rollback_tags
+    from startup.steps import registry_push, rollback_tags, validate
 
     monkeypatch.setattr(
         rollback_tags, "create_verified", lambda images, build_root: ()
@@ -665,6 +677,13 @@ def _mock_rebuild(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(docker_ops, "compose_build", lambda **kwargs: None)
     monkeypatch.setattr(docker_ops, "compose_up", lambda **kwargs: None)
     monkeypatch.setattr(registry_push, "push_baselines", lambda *args, **kwargs: ())
+    monkeypatch.setattr(
+        validate,
+        "check_first_party_images",
+        lambda compose_project_name: validate.HealthResult(
+            name="first-party images", ok=images_ok, detail=image_detail
+        ),
+    )
 
 
 def test_rebuild_runs_ci_with_the_readiness_gate(
@@ -1079,6 +1098,63 @@ def test_install_ci_next_steps_abbreviate_a_home_relative_credential_path(
     joined = "\n".join(cli._ci_next_step_lines("prod"))
     assert "~/.config/nextseek/ci.env" in joined
     assert str(Path.home()) not in joined
+
+
+def test_rebuild_exits_non_zero_when_a_first_party_image_is_absent_afterwards(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The incident this exists for: a deploy that finishes green while
+    dmac-assistant:poc is gone, taking Container-CC down until a user sends a
+    chat turn. `./startup.sh doctor` reports it too, but doctor's exit code is
+    read by nothing -- the rebuild hook's is."""
+    _saved_state(repo, ci_profile="dev")
+    _mock_rebuild(
+        monkeypatch,
+        images_ok=False,
+        image_detail=(
+            "ABSENT: dmac-assistant:poc -- build with: "
+            "./startup.sh rebuild --component cc-agent"
+        ),
+    )
+    monkeypatch.setattr(ci_runner, "run_ci", lambda *a, **k: 0)
+
+    result = runner.invoke(cli.app, ["rebuild"])
+
+    assert result.exit_code == 1
+    compact = "".join(result.output.split())
+    assert "ABSENT:dmac-assistant:poc" in compact
+    assert "--componentcc-agent" in compact
+    # The absent image must not suppress the CI run: it is a separate defect,
+    # and the suite is the slow half of the deploy to throw away.
+    assert "CIpassed" in compact
+
+
+def test_rebuild_image_health_failure_yields_to_a_failing_ci_code(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Both broken: report both, exit with CI's code, which is the specific one."""
+    _saved_state(repo, ci_profile="dev")
+    _mock_rebuild(monkeypatch, images_ok=False, image_detail="ABSENT: dmac-assistant:poc")
+    monkeypatch.setattr(ci_runner, "run_ci", lambda *a, **k: 3)
+
+    result = runner.invoke(cli.app, ["rebuild"])
+
+    assert result.exit_code == 3
+    compact = "".join(result.output.split())
+    assert "ABSENT:dmac-assistant:poc" in compact
+    assert "CIfailedafterrebuild" in compact
+
+
+def test_rebuild_with_no_ci_still_exits_non_zero_on_absent_images(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _saved_state(repo, ci_profile="dev")
+    _mock_rebuild(monkeypatch, images_ok=False, image_detail="ABSENT: dmac-assistant:poc")
+
+    result = runner.invoke(cli.app, ["rebuild", "--no-ci"])
+
+    assert result.exit_code == 1
+    assert "ABSENT: dmac-assistant:poc" in result.output
 
 
 def test_rebuild_announces_a_first_build_when_no_rollback_source_exists(

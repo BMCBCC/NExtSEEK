@@ -259,6 +259,12 @@ def test_run_all_health_checks_surfaces_cc_warnings_and_services(monkeypatch, tm
     monkeypatch.setattr(validate, "run_django_check", lambda repo, env: validate.HealthResult("django check", True, "ok"))
     monkeypatch.setattr(validate, "check_prod_overlay_guard", lambda repo: validate.HealthResult("prod overlay", True, "ok"))
     monkeypatch.setattr(validate, "compose_ps_running", lambda services, project_dir, env: calls.append(list(services)) or services)
+    monkeypatch.setattr(validate, "image_exists", lambda name: True)
+    monkeypatch.setattr(
+        validate,
+        "check_cc_runner",
+        lambda repo, env: validate.HealthResult("CC runner", True, "(True, 'ok')"),
+    )
 
     results = validate.run_all_health_checks({}, tmp_path, env={})
     by_name = {r.name: r for r in results}
@@ -294,6 +300,12 @@ def test_app_health_checks_exclude_seek_and_neo4j(monkeypatch, tmp_path):
         "compose_ps_running",
         lambda services, project_dir, env: list(services),
     )
+    monkeypatch.setattr(validate, "image_exists", lambda name: True)
+    monkeypatch.setattr(
+        validate,
+        "check_cc_runner",
+        lambda repo, env: validate.HealthResult("CC runner", True, "(True, 'ok')"),
+    )
 
     results = validate.run_app_health_checks(
         {"nextseek": 18000, "seek": 13000, "neo4j_http": 17474},
@@ -305,6 +317,7 @@ def test_app_health_checks_exclude_seek_and_neo4j(monkeypatch, tmp_path):
     assert {result.name for result in results} == {
         "NExtSEEK", "django check", "prod overlay guard",
         "bedrock proxy token", "cc services",
+        "first-party images", "CC runner",
     }
 
 
@@ -464,3 +477,169 @@ def test_cli_health_summary_no_token_warning_when_token_present(monkeypatch, tmp
     assert warn_lines == []
     assert any("bedrock proxy token" in line for line in ok_lines)
     assert any("cc services" in line for line in ok_lines)
+
+
+# ---------------------------------------------------------------------------
+# first-party image health (the gap that let Container-CC die under a green deploy)
+# ---------------------------------------------------------------------------
+
+def _proxy_secret(tmp_path: Path, token: str = "") -> None:
+    out = tmp_path / "docker" / "bedrock-proxy" / "proxy-secret.env"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(f'AWS_BEARER_TOKEN_BEDROCK="{token}"\n')
+
+
+def test_check_first_party_images_probes_every_canonical_image(monkeypatch):
+    probed = []
+    monkeypatch.setattr(
+        validate, "image_exists", lambda name: probed.append(name) or True
+    )
+
+    result = validate.check_first_party_images("nextseek")
+
+    assert result.ok is True
+    assert sorted(probed) == [
+        "dmac-assistant:poc",
+        "nextseek-bedrock-proxy:latest",
+        "nextseek-nextseek:latest",
+        "nextseek-ns-sidecar:latest",
+    ]
+
+
+def test_check_first_party_images_honours_the_compose_project_name(monkeypatch):
+    """A namespaced instance builds its app image under its own project name."""
+    probed = []
+    monkeypatch.setattr(
+        validate, "image_exists", lambda name: probed.append(name) or True
+    )
+
+    validate.check_first_party_images("nextseek-v2")
+
+    assert "nextseek-v2-nextseek:latest" in probed
+
+
+def test_check_first_party_images_names_the_absent_one_and_how_to_build_it(monkeypatch):
+    monkeypatch.setattr(
+        validate, "image_exists", lambda name: name != "dmac-assistant:poc"
+    )
+
+    result = validate.check_first_party_images("nextseek")
+
+    assert result.ok is False
+    assert "dmac-assistant:poc" in result.detail
+    assert "--component cc-agent" in result.detail
+    # The three that are present must not be reported as problems.
+    assert "nextseek-ns-sidecar:latest" not in result.detail
+
+
+def test_check_first_party_images_reports_a_daemon_outage_rather_than_four_absences(
+    monkeypatch,
+):
+    def explode(name):
+        raise validate.DockerOpsError("docker image ls failed (exit 1): daemon unreachable")
+
+    monkeypatch.setattr(validate, "image_exists", explode)
+
+    result = validate.check_first_party_images("nextseek")
+
+    assert result.ok is False
+    assert "daemon unreachable" in result.detail
+    assert "--component" not in result.detail
+
+
+def test_check_cc_runner_runs_deployment_step_6_in_the_app_container(monkeypatch):
+    """Host-side image presence does not prove the APP CONTAINER's docker socket
+    can see the image, which is the thing that actually failed. This runs the
+    command DEPLOYMENT.md asks the operator to run by hand, in the same place."""
+    seen = {}
+
+    def fake_exec(service, command, project_dir, env):
+        seen["service"] = service
+        seen["command"] = command
+        return "(True, 'ok')\n"
+
+    monkeypatch.setattr(validate, "compose_exec", fake_exec)
+
+    result = validate.check_cc_runner(Path("/repo"), env={})
+
+    assert result.ok is True
+    assert seen["service"] == "nextseek"
+    joined = " ".join(seen["command"])
+    assert "cc_runner_available" in joined
+    # The app image has no bare `python` on PATH (DEPLOYMENT.md 6.6).
+    assert "--no-sync" in seen["command"]
+
+
+def test_check_cc_runner_fails_and_carries_the_engine_s_own_reason(monkeypatch):
+    monkeypatch.setattr(
+        validate,
+        "compose_exec",
+        lambda **kwargs: "(False, \"CC image 'dmac-assistant:poc' not found\")\n",
+    )
+
+    result = validate.check_cc_runner(Path("/repo"), env={})
+
+    assert result.ok is False
+    assert "dmac-assistant:poc" in result.detail
+
+
+def test_check_cc_runner_fails_when_the_container_cannot_be_reached(monkeypatch):
+    def explode(**kwargs):
+        raise validate.DockerOpsError("docker compose exec nextseek ... failed (exit 1)")
+
+    monkeypatch.setattr(validate, "compose_exec", explode)
+
+    result = validate.check_cc_runner(Path("/repo"), env={})
+
+    assert result.ok is False
+    assert "exit 1" in result.detail
+
+
+def _stub_unrelated_health_checks(monkeypatch):
+    monkeypatch.setattr(
+        validate, "check_http", lambda name, url: validate.HealthResult(name, True, url)
+    )
+    monkeypatch.setattr(
+        validate, "run_django_check",
+        lambda repo, env: validate.HealthResult("django check", True, "ok"),
+    )
+    monkeypatch.setattr(
+        validate, "check_prod_overlay_guard",
+        lambda repo: validate.HealthResult("prod overlay guard", True, "ok"),
+    )
+    monkeypatch.setattr(
+        validate, "compose_ps_running", lambda services, project_dir, env: list(services)
+    )
+    monkeypatch.setattr(
+        validate, "check_cc_runner",
+        lambda repo, env: validate.HealthResult("CC runner", True, "(True, 'ok')"),
+    )
+
+
+def test_run_all_health_checks_reports_image_health(monkeypatch, tmp_path):
+    _proxy_secret(tmp_path)
+    _stub_unrelated_health_checks(monkeypatch)
+    monkeypatch.setattr(validate, "image_exists", lambda name: False)
+
+    results = validate.run_all_health_checks(
+        {}, tmp_path, env={"COMPOSE_PROJECT_NAME": "nextseek"}
+    )
+
+    by_name = {r.name: r for r in results}
+    assert by_name["first-party images"].ok is False
+    assert by_name["CC runner"].ok is True
+
+
+def test_app_health_checks_report_image_health_too(monkeypatch, tmp_path):
+    """An app-only deploy is precisely the cohort that never rebuilds cc-agent."""
+    _proxy_secret(tmp_path)
+    _stub_unrelated_health_checks(monkeypatch)
+    monkeypatch.setattr(validate, "image_exists", lambda name: False)
+
+    results = validate.run_app_health_checks(
+        {"nextseek": 8000}, tmp_path, env={"COMPOSE_PROJECT_NAME": "nextseek"}
+    )
+
+    by_name = {r.name: r for r in results}
+    assert by_name["first-party images"].ok is False
+    assert by_name["CC runner"].ok is True

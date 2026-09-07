@@ -32,6 +32,14 @@ Breaking one is a regression, not a refactor.
   install default (`startup/cli.py:46-47`), at the runner
   (`startup/ci/runner.py:54`) and in the diagnostic (`startup/steps/doctor.py:31-36`).
   Defaulting the other way would let a machine nobody configured run write routes.
+- **A rebuild that leaves a first-party image absent exits non-zero**
+  (`startup/cli.py`, the `image_health` check after the build, acted on at the end of
+  `rebuild`). Nothing else reports it: a bare `rebuild` builds only the app image
+  (`startup/lib/rebuild_policy.py:66`), the smoke suite never requests the Container-CC
+  routes (`ci/routes.py` declares both `path=None`), and `cc-agent` has no container for
+  a compose healthcheck to watch. `doctor` reports the same check, but its exit code is
+  read by nothing while the rebuild hook's is. The check is deliberately deferred to
+  after the CI hook so a missing image never costs the suite run.
 - **An absent rollback source is a first build, an unreachable daemon is an outage**
   (`startup/steps/rollback_tags.py`, `startup/lib/docker_ops.py:image_exists`).
   `docker image inspect` exits 1 for both, which once made `./startup.sh rebuild
