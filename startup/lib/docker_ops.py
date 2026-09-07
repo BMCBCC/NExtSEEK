@@ -176,6 +176,24 @@ def compose_ps_running(
     return [s for s in services if s in running]
 
 
+def image_exists(name: str) -> bool:
+    """True if a local image matches `name`. Raises DockerOpsError if docker cannot say.
+
+    Deliberately `docker image ls -q` rather than `docker image inspect`: inspect
+    exits 1 both for an image that is absent and for a daemon that cannot be
+    reached, and every caller here has to tell those apart -- an absent image is
+    a first build, an unreachable daemon is an outage. `ls -q` exits 0 with empty
+    stdout for the former and non-zero only for the latter.
+    """
+    result = subprocess.run(
+        ["docker", "image", "ls", "-q", name],
+        capture_output=True,
+        text=True,
+    )
+    _check(result, f"docker image ls {name}")
+    return bool(result.stdout.strip())
+
+
 def volume_exists(name: str) -> bool:
     """True if `docker volume inspect <name>` succeeds."""
     result = subprocess.run(

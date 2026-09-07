@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
+from startup.lib.docker_ops import DockerOpsError, image_exists
+
 
 class RollbackTagError(RuntimeError):
     """A required pre-rebuild rollback tag could not be proven usable."""
@@ -55,10 +57,31 @@ def create_verified(
     repo_root: Path,
     now: datetime.datetime | None = None,
 ) -> tuple[RollbackTag, ...]:
-    """Tag all sources, verify identity, and fail before any build on error."""
+    """Tag every source that exists, verify identity, and fail before any build on error.
+
+    A source that does not exist yet is SKIPPED rather than fatal, and returns no
+    RollbackTag. The invariant this function protects is "never build over the
+    only copy of a working image without a rollback point"; with no current image
+    that failure mode cannot occur, so refusing there only blocks the first build
+    of a component -- which is exactly how a pruned ``dmac-assistant:poc`` left
+    Container-CC unrecoverable by ``./startup.sh rebuild --component cc-agent``
+    on fairdata-dev. Callers see the omission in the returned tuple (compare
+    ``tag.source`` against what was asked for) and are expected to say so loudly.
+
+    A docker daemon that cannot answer stays fatal: it is an outage, not a first
+    build, and treating it as one would skip the rollback point for an image that
+    is really there.
+    """
     suffix = rollback_suffix(repo_root, now=now)
     prepared: list[RollbackTag] = []
     for source in images:
+        try:
+            if not image_exists(source):
+                continue
+        except DockerOpsError as exc:
+            raise RollbackTagError(
+                f"cannot check rollback source {source}: {exc}"
+            ) from exc
         source_id = _inspect_id(source)
         tag = f"{_repository(source)}:{suffix}"
         result = _run(["docker", "tag", source, tag])

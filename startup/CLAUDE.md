@@ -32,6 +32,12 @@ Breaking one is a regression, not a refactor.
   install default (`startup/cli.py:46-47`), at the runner
   (`startup/ci/runner.py:54`) and in the diagnostic (`startup/steps/doctor.py:31-36`).
   Defaulting the other way would let a machine nobody configured run write routes.
+- **An absent rollback source is a first build, an unreachable daemon is an outage**
+  (`startup/steps/rollback_tags.py`, `startup/lib/docker_ops.py:image_exists`).
+  `docker image inspect` exits 1 for both, which once made `./startup.sh rebuild
+  --component cc-agent` refuse to rebuild a pruned image -- the exact command its own
+  remediation pointed at. Presence is probed with `docker image ls -q`, which exits 0
+  with empty stdout for an absent image. Collapsing the two again re-breaks recovery.
 - **The off-box baseline push can never fail a deploy.** The contract is stated at
   `startup/steps/registry_push.py:8-12` and enforced by the blanket handler wrapping the
   whole step (`startup/cli.py:616-628`). A registry outage must not strand a rebuilt

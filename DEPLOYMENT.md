@@ -282,7 +282,7 @@ docker logs -f nextseek        # until gunicorn workers are up; no FAILED marker
 | Python / templates / anything baked (`nextseek_api/`, `chat_nextseek/`, `seek/`, `dmac/` except `local_settings.py`) | `./startup.sh rebuild` — rebuild the shared app image and recreate `nextseek`, which carries every app-code runtime. No `COMPOSE_PROFILES` to remember: until 2026-09-02 four workers lived in their own profile-gated services, and a rebuild without the variable exported left them running old code under `restart: unless-stopped`, looking healthy |
 | `static/` assets | rebuild + recreate, **then** `docker compose exec nextseek uv run manage.py collectstatic --noinput` |
 | `chat_frontend/` React source | `npm run build:embedded` in `chat_frontend/`, commit the emitted assets, then rebuild + recreate + collectstatic |
-| `docker/cc-runtime/**` (agent plugin/skills/CLAUDE.md/deps) | `./startup.sh rebuild --component cc-agent` — next turn uses it; no service restart |
+| `docker/cc-runtime/**` (agent plugin/skills/CLAUDE.md/deps) | `./startup.sh rebuild --component cc-agent` — next turn uses it; no service restart. Also the recovery command when `dmac-assistant:poc` has been pruned: a first build with no rollback source is announced and allowed, not refused |
 | `docker/nextseek.env` / `dmac/local_settings.py` (config only) | no build: `docker compose up -d --no-deps --force-recreate nextseek` |
 | `docker/bedrock-proxy/**` or its secret env | `./startup.sh rebuild --component bedrock-proxy` |
 | `docker/ns-sidecar/**` | `./startup.sh rebuild --component nextseek-sidecar` |

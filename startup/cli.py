@@ -579,17 +579,29 @@ def rebuild(
     ui.banner(f"Rebuilding {policy.name} for instance {state.name}")
     if build_root != REPO_ROOT:
         ui.info(f"clean deploy source: {build_root}")
+    wanted_images = [image.local_image for image in policy.images]
     with ui.spinner("creating verified pre-rebuild rollback tags"):
         try:
-            prepared = rollback_tags.create_verified(
-                [image.local_image for image in policy.images], build_root
-            )
+            prepared = rollback_tags.create_verified(wanted_images, build_root)
         except rollback_tags.RollbackTagError as exc:
+            # Reachable only when docker itself cannot answer. An image that is
+            # simply absent is a first build, handled below.
             ui.fail(str(exc))
-            ui.remediation("restore or build the missing source image before retrying")
+            ui.remediation(
+                "docker could not be queried, so no rollback point can be proven: "
+                "check the daemon (`docker info`) and retry"
+            )
             raise typer.Exit(code=1) from exc
     for tag in prepared:
         ui.ok(f"rollback tag verified: {tag.tag} ({tag.image_id})")
+    # Loud, because silence here is indistinguishable from "a rollback point
+    # was made". These are the images that did not exist to tag.
+    tagged = {tag.source for tag in prepared}
+    for image in (i for i in wanted_images if i not in tagged):
+        ui.warn(
+            f"no existing image for {image} — FIRST BUILD, no rollback point "
+            "will exist for this component"
+        )
 
     with ui.spinner(f"building {policy.name}"):
         compose_build(

@@ -206,6 +206,11 @@ def _happy_run_dispatcher(calls: list[list[str]]):
         joined = " ".join(cmd)
         if "cut" in joined:
             return MagicMock(returncode=0, stdout="LURIAKEY\n", stderr="")
+        # Image presence, as used by rollback tagging and the first-party image
+        # health check. "Happy" here means every image is present; the catch-all
+        # below returns empty stdout, which for this command means ABSENT.
+        if cmd[:4] == ["docker", "image", "ls", "-q"]:
+            return MagicMock(returncode=0, stdout="feedface\n", stderr="")
         if cmd[:2] == ["docker", "run"]:
             return MagicMock(returncode=0, stdout="/app/docker/nextseek.env.example\n", stderr="")
         if cmd[:2] == ["docker", "push"]:

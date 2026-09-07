@@ -390,7 +390,11 @@ def test_rebuild_reports_verified_rollback_tag(
         rollback_tags,
         "create_verified",
         lambda images, build_root: (
-            SimpleNamespace(tag="nextseek-nextseek:pre-test", image_id="sha256:abc"),
+            SimpleNamespace(
+                source="nextseek-nextseek:latest",
+                tag="nextseek-nextseek:pre-test",
+                image_id="sha256:abc",
+            ),
         ),
     )
     monkeypatch.setattr(docker_ops, "compose_build", lambda **kwargs: None)
@@ -402,6 +406,8 @@ def test_rebuild_reports_verified_rollback_tag(
 
     assert result.exit_code == 0, result.output
     assert "rollback tag verified: nextseek-nextseek:pre-test" in result.output
+    # A source that WAS tagged must not also be announced as a first build.
+    assert "FIRST BUILD" not in result.output
 
 
 # ---------------------------------------------------------------------------
@@ -644,7 +650,12 @@ def test_ci_exits_with_the_suite_return_code(
 
 
 def _mock_rebuild(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Everything a rebuild touches before the CI hook, stubbed out."""
+    """Everything a rebuild touches before the CI hook, stubbed out.
+
+    ``create_verified`` returning ``()`` is not a shortcut: it is what the real
+    one returns when none of the requested sources exist yet, so these tests all
+    exercise the first-build path.
+    """
     from startup.lib import docker_ops
     from startup.steps import registry_push, rollback_tags
 
@@ -1068,3 +1079,21 @@ def test_install_ci_next_steps_abbreviate_a_home_relative_credential_path(
     joined = "\n".join(cli._ci_next_step_lines("prod"))
     assert "~/.config/nextseek/ci.env" in joined
     assert str(Path.home()) not in joined
+
+
+def test_rebuild_announces_a_first_build_when_no_rollback_source_exists(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """create_verified returns no tag for an image that does not exist yet.
+    Saying nothing there reads exactly like 'a rollback point was made'."""
+    _saved_state(repo, ci_profile="dev")
+    _mock_rebuild(monkeypatch)
+    monkeypatch.setattr(ci_runner, "run_ci", lambda *a, **k: 0)
+
+    result = runner.invoke(cli.app, ["rebuild", "--component", "cc-agent"])
+
+    assert result.exit_code == 0, result.output
+    compact = "".join(result.output.split())
+    assert "dmac-assistant:poc" in compact
+    assert "FIRSTBUILD" in compact
+    assert "norollbackpoint" in compact
