@@ -221,8 +221,10 @@ describe("NextseekApiService", () => {
 
     await service.downloadBundle("sess-1", 42, "json");
 
+    // No `?format=`: DRF owns that parameter for content negotiation, and the
+    // full bundle is the default. Metadata selects with `?part=metadata`.
     expect(fetch).toHaveBeenCalledWith(
-      "http://localhost/nextseek_api/assistant/sessions/sess-1/bundles/42/?format=json",
+      "http://localhost/nextseek_api/assistant/sessions/sess-1/bundles/42/",
       expect.objectContaining({
         headers: { Authorization: "Basic dGVzdDp0ZXN0" },
       }),

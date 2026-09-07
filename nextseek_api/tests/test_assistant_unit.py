@@ -337,7 +337,9 @@ class ViewSetTests(TestCase):
             f"/nextseek_api/assistant/sessions/{session.session_id}/bundles/1/"
         )
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data["id"], 1)
+        # An indented JSON attachment now, not a DRF-rendered Response, so the
+        # downloaded file is readable; assert on the body rather than resp.data.
+        self.assertEqual(json.loads(resp.content)["id"], 1)
 
     def test_download_bundle_not_found(self):
         self.client.force_authenticate(user=self.user)

@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any
 
 import orjson
-from django.http import StreamingHttpResponse
+from django.http import StreamingHttpResponse, HttpResponse
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, BasePermission
@@ -90,6 +90,7 @@ from nextseek_api.assistant.granular import OpValidationError, run_op
 from nextseek_api.assistant.write_gate import WriteBlockedError, build_gate, load_allowlist
 from nextseek_api.assistant.models_db import ChatSession, QueryTask
 from nextseek_api.assistant.debug_projection import bundle_debug_entries
+from nextseek_api.assistant.bundle_download import bundle_metadata
 from nextseek_api.assistant.excel_export import build_artifacts
 from rest_framework.authentication import (
     BasicAuthentication,
@@ -1027,7 +1028,31 @@ class AssistantViewSet(viewsets.ViewSet):
         if bundle is None:
             return _error_response("Not found", f"Bundle {bundle_id} not found.", status.HTTP_404_NOT_FOUND)
 
-        return Response(bundle, status=status.HTTP_200_OK)
+        # The panel's two buttons select with ``part``, NOT ``format``: DRF owns
+        # ``format`` for content negotiation, and with no renderer named
+        # "metadata" it raised 404 in initial() before this body ran, which is
+        # why the Metadata button had never worked in any environment.
+        part = request.query_params.get("part") or "full"
+        if part not in ("full", "metadata"):
+            return _error_response(
+                "Bad request",
+                f"Unknown part {part!r}. Expected 'full' or 'metadata'.",
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        payload = bundle_metadata(bundle) if part == "metadata" else bundle
+        suffix = ".metadata" if part == "metadata" else ""
+
+        # Rendered here rather than through DRF so the file a human opens is
+        # indented; JSONRenderer emits one compact line.
+        return HttpResponse(
+            json.dumps(payload, indent=2, default=str, sort_keys=False),
+            content_type="application/json",
+            headers={
+                "Content-Disposition":
+                    f'attachment; filename="bundle_{bundle_id_int}{suffix}.json"',
+            },
+        )
 
     # ------------------------------------------------------------------
     # 8. GET /assistant/sessions/{sid}/bundles/{bid}/artifacts/{key}/

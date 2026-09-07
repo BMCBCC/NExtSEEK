@@ -691,8 +691,11 @@ class DownloadBundleExtraTests(TestCase):
         session = ChatSession.objects.create(user=self.user, results_history=[bundle])
         resp = self.client.get(f"/nextseek_api/assistant/sessions/{session.session_id}/bundles/42/")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data["id"], 42)
-        self.assertEqual(resp.data["mode"], "new_search")
+        # Rendered as an indented attachment rather than through DRF, so the
+        # downloaded file is readable; assert on the body, not on resp.data.
+        body = json.loads(resp.content)
+        self.assertEqual(body["id"], 42)
+        self.assertEqual(body["mode"], "new_search")
 
 
 # ============================================================================

@@ -54,11 +54,12 @@ ASSISTANT_QUERY_DESC = (
 ASSISTANT_BUNDLE_DOWNLOAD_DESC = (
     "**SUMMARY:** Download a specific result bundle from a chat session.\n\n"
     "**USE WHEN:** The user wants to download results from a previous query.\n\n"
-    "**ACCEPTS:** `session_id` and `bundle_id` as path parameters. Optional `?format=json`.\n\n"
-    "**RETURNS:** JSON bundle data with query results, API plans, and debug info.\n\n"
+    "**ACCEPTS:** `session_id` and `bundle_id` as path parameters. Optional `?part=full|metadata` (default `full`).\n\n"
+    "**RETURNS:** An indented JSON attachment. `full` is the whole bundle (query results, API plans, debug info); `metadata` is the turn's provenance without the bulk result payloads, which list their sizes under `omitted`.\n\n"
     "**TRIGGER PHRASES:** download results, get bundle, export query results\n\n"
     "**EXAMPLES:**\n"
     "- `GET /nextseek_api/assistant/sessions/abc123/bundles/1/`\n"
+    "- `GET /nextseek_api/assistant/sessions/abc123/bundles/1/?part=metadata`\n"
 )
 
 ASSISTANT_TEST_CASES_DESC = (

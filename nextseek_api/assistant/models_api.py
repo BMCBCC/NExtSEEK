@@ -172,8 +172,13 @@ class QueryErrorEvent(BaseModel):
 # --- Bundle / test cases ---
 
 class BundleDownloadParams(BaseModel):
-    """Query params for GET /assistant/sessions/{id}/bundles/{bid}/."""
-    format: str = Field("json", description="Download format")
+    """Query params for GET /assistant/sessions/{id}/bundles/{bid}/.
+
+    Selection is ``part``, not ``format``: DRF owns ``format`` for content
+    negotiation, so ``?format=metadata`` 404s in ``initial()`` before the view
+    body runs. That is why the panel's Metadata button never worked.
+    """
+    part: str = Field("full", description="'full' (whole bundle) or 'metadata' (provenance only)")
 
     model_config = ConfigDict(extra="forbid")
 

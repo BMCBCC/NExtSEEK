@@ -238,8 +238,13 @@ export class NextseekApiService {
     format: string,
   ): Promise<void> {
     const baseUrl = this.auth.getApiBaseUrl();
+    // Selection is `part`, NOT `format`. DRF owns `format` for content
+    // negotiation and has no renderer named "metadata", so `?format=metadata`
+    // 404'd before the view ran: that is why the Metadata button never worked.
+    const isMetadata = format === "metadata";
+    const query = isMetadata ? "?part=metadata" : "";
     const response = await fetch(
-      `${baseUrl}/nextseek_api/assistant/sessions/${sessionId}/bundles/${bundleId}/?format=${format}`,
+      `${baseUrl}/nextseek_api/assistant/sessions/${sessionId}/bundles/${bundleId}/${query}`,
       {
         headers: { ...this.auth.getAuthHeaders() },
       },
@@ -253,7 +258,9 @@ export class NextseekApiService {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `result_${bundleId}.${format === "json" ? "json" : "json"}`;
+    // Distinct names: both downloads used to be `result_<id>.json`, so saving
+    // one after the other looked like the second button had done nothing.
+    a.download = `bundle_${bundleId}${isMetadata ? ".metadata" : ""}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
