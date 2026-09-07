@@ -24,10 +24,20 @@ from nextseek_api.assistant.bundle_download import _size
 #: Rough MySQL thresholds worth flagging. A JSON column at or past these has
 #: already caused a live incident: a filesort over ``sort_buffer_size`` (1038)
 #: and a write over ``max_allowed_packet`` (2006).
+#: How long a pending/running task must sit untouched before it reads as an
+#: orphan rather than a turn in flight. Comfortably above the CC per-turn
+#: wall-clock ceiling, so a long agent run is never mistaken for a stall.
+STALE_TASK_SECONDS = 1800
+
 SORT_BUFFER_BYTES = 262_144
 MAX_PACKET_BYTES = 4 * 1024 * 1024
 
 INCLUDABLE = frozenset({"transcripts", "bundles", "progress", "last_debug", "all"})
+
+
+def _now():
+    from django.utils import timezone
+    return timezone.now()
 
 
 def _wants(include: Iterable[str], key: str) -> bool:
@@ -144,12 +154,20 @@ def _warnings(*, session, bundles, chat_log, tasks, sizes, files,
                       f"not exist now; the file was removed after the turn wrote it.",
         })
 
-    running = [t for t in tasks if t["status"] in ("running", "pending")]
-    if running:
+    # Only a task that has STOPPED MOVING is worth reporting. Warning on any
+    # running task fires on every live session, which is exactly when someone is
+    # watching this endpoint, so the signal has to be the age of the last update
+    # rather than the status alone. Measured on production 2026-09-07: two tasks
+    # updated 0.0 and 1.1 minutes earlier were healthy turns in flight.
+    stale = [t for t in tasks
+             if t["status"] in ("running", "pending")
+             and (t["stale_for_s"] or 0) > STALE_TASK_SECONDS]
+    if stale:
         warns.append({
-            "code": "task_still_running",
-            "detail": f"{len(running)} task(s) are still pending/running; if the "
-                      f"turn is long finished these are orphans.",
+            "code": "task_stalled",
+            "detail": f"{len(stale)} task(s) are still pending/running but have not "
+                      f"been updated for over {STALE_TASK_SECONDS // 60} minutes, "
+                      f"so they are orphans rather than turns in flight.",
         })
 
     if len(bundles) != len(chat_log) and (bundles or chat_log):
@@ -199,6 +217,10 @@ def collect(session, *, include: Iterable[str] = ()) -> dict[str, Any]:
             "progress_events": [
                 p.get("event", "") for p in (t.progress or []) if isinstance(p, dict)
             ],
+            "stale_for_s": (
+                round((_now() - t.updated_at).total_seconds(), 1)
+                if t.updated_at else None
+            ),
             "progress": (t.progress or []) if _wants(include, "progress") else None,
             "result_bytes": _size(t.result) if t.result else 0,
         }

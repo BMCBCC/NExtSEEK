@@ -272,3 +272,42 @@ class PayloadPointerTests(TestCase):
         codes = {w["code"] for w in out["warnings"]}
         self.assertIn("payload_pointer_missing_on_disk", codes)
         self.assertNotIn("manifest_entry_missing_on_disk", codes)
+
+
+class StaleTaskWarningTests(TestCase):
+    """A running task is only worth flagging once it has stopped moving.
+
+    The first production use of this endpoint flagged two healthy turns that
+    were mid-flight (updated 0.0 and 1.1 minutes earlier) as orphans, because
+    the warning keyed on status alone.
+    """
+    databases = {"default"}
+
+    def setUp(self):
+        self.owner = User.objects.create_user("owner", password="pw")
+        self.session = ChatSession.objects.create(user=self.owner)
+
+    def _task(self, status, age_s):
+        from datetime import timedelta
+        from django.utils import timezone
+        t = QueryTask.objects.create(
+            session=self.session, user=self.owner, query="q", status=status)
+        # updated_at is auto_now, so it has to be forced past the model layer.
+        QueryTask.objects.filter(pk=t.pk).update(
+            updated_at=timezone.now() - timedelta(seconds=age_s))
+        return t
+
+    def test_a_turn_in_flight_is_not_flagged(self):
+        self._task("running", 30)
+        out = session_debug.collect(self.session)
+        self.assertNotIn("task_stalled", {w["code"] for w in out["warnings"]})
+
+    def test_a_task_that_stopped_moving_is_flagged(self):
+        self._task("running", session_debug.STALE_TASK_SECONDS + 60)
+        out = session_debug.collect(self.session)
+        self.assertIn("task_stalled", {w["code"] for w in out["warnings"]})
+
+    def test_each_task_reports_how_long_it_has_sat(self):
+        self._task("running", 120)
+        out = session_debug.collect(self.session)
+        self.assertGreaterEqual(out["tasks"][0]["stale_for_s"], 119)
