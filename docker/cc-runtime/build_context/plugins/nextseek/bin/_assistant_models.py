@@ -113,6 +113,19 @@ class Turn(BaseModel):
     # nextseek-recall cannot resolve turn_id → bundle_id.
     turn_id: int | None = None
     cc_traces: list[dict[str, Any]] | None = None
+    # 2026-09-07: the server has emitted `debug_entries` on EVERY session-detail
+    # turn since 37fca9f6 (2026-09-02, "rebuild Search Details on rehydrate"),
+    # because models_api.Turn declares it and `.model_dump(mode="json")` writes
+    # the key even when the value is None. This mirror is extra="forbid", so
+    # SessionDetailResponse(**detail) raised extra_forbidden and EVERY
+    # `nextseek-recall` failed with AGENT_FAILED / exit 4 -- any user, any
+    # session, for five days -- while `query`'s bundle download, which does no
+    # model validation, kept working and hid it.
+    #
+    # Raw dicts, like `artifacts` and `cc_traces` above: entries are
+    # {agent, summary} today (assistant/debug_projection.py), and pinning that
+    # shape here would just move the drift rather than absorb it.
+    debug_entries: list[dict[str, Any]] | None = None
 
 
 class SessionDetailResponse(BaseModel):
