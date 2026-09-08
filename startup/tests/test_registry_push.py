@@ -817,3 +817,117 @@ def test_rebuild_rejects_unknown_component(mock_load: MagicMock) -> None:
     result = CliRunner().invoke(app, ["rebuild", "--component", "nextseek_nginx"])
     assert result.exit_code == 2
     assert "unknown rebuild component" in result.output
+
+
+# ---------------------------------------------------------------------------
+# A registry tag must not outlive a push that did not happen
+# ---------------------------------------------------------------------------
+
+EXPECTED_TAG = f"{REGISTRY_IMAGE}:baseline-20260806-abc1234"
+
+
+def _dispatcher_failing_at(calls: list[list[str]], verb: str, stderr: str):
+    """Happy path except `docker <verb>`, which fails."""
+    happy = _happy_run_dispatcher(calls)
+
+    def dispatch(cmd, **kwargs):
+        if cmd[:2] == ["docker", verb]:
+            calls.append(list(cmd))
+            return MagicMock(returncode=1, stdout="", stderr=stderr)
+        return happy(cmd, **kwargs)
+
+    return dispatch
+
+
+@patch("startup.steps.registry_push.subprocess.run")
+def test_a_failed_push_leaves_no_local_registry_tag(mock_run: MagicMock, repo: Path) -> None:
+    """`docker tag` runs before the push, so a push that fails leaves a name
+    claiming an image is in the registry when it is not -- and that name pins
+    the image against every cleanup that looks for pre-* tags."""
+    calls: list[list[str]] = []
+    mock_run.side_effect = _dispatcher_failing_at(calls, "push", "denied: token expired")
+
+    outcome = push_baseline(repo, compose_project_name="nextseek", today=TODAY)
+
+    assert outcome.status == "push_failed"
+    assert ["docker", "image", "rm", EXPECTED_TAG] in calls
+
+
+@patch("startup.steps.registry_push.subprocess.run")
+def test_a_failed_login_leaves_no_local_registry_tag(mock_run: MagicMock, repo: Path) -> None:
+    calls: list[list[str]] = []
+    mock_run.side_effect = _dispatcher_failing_at(calls, "login", "unauthorized")
+
+    outcome = push_baseline(repo, compose_project_name="nextseek", today=TODAY)
+
+    assert outcome.status == "push_failed"
+    assert ["docker", "image", "rm", EXPECTED_TAG] in calls
+
+
+@patch("startup.steps.registry_push.subprocess.run")
+def test_a_successful_push_keeps_the_local_registry_tag(mock_run: MagicMock, repo: Path) -> None:
+    """The tag is only removed when it would be a lie. A pushed baseline really
+    is in the registry, and the purge review buckets those separately."""
+    calls: list[list[str]] = []
+    mock_run.side_effect = _happy_run_dispatcher(calls)
+
+    outcome = push_baseline(repo, compose_project_name="nextseek", today=TODAY)
+
+    assert outcome.status == "pushed"
+    assert not any(c[:3] == ["docker", "image", "rm"] for c in calls)
+
+
+@patch("startup.steps.registry_push.subprocess.run")
+def test_the_untag_names_the_registry_tag_and_never_the_local_image(
+    mock_run: MagicMock, repo: Path,
+) -> None:
+    """The safety property. `docker image rm` on the LOCAL image would destroy
+    the thing the deploy just built; on the registry alias it only drops a name,
+    because nextseek-nextseek:latest still points at the same image."""
+    calls: list[list[str]] = []
+    mock_run.side_effect = _dispatcher_failing_at(calls, "push", "denied")
+
+    push_baseline(repo, compose_project_name="nextseek", today=TODAY)
+
+    removals = [c for c in calls if c[:3] == ["docker", "image", "rm"]]
+    assert removals == [["docker", "image", "rm", EXPECTED_TAG]]
+    assert all("nextseek-nextseek:latest" not in c for c in removals)
+
+
+@patch("startup.steps.registry_push.subprocess.run")
+def test_the_untag_runs_before_the_logout(mock_run: MagicMock, repo: Path) -> None:
+    """Logging out stays the last act on a shared box."""
+    calls: list[list[str]] = []
+    mock_run.side_effect = _dispatcher_failing_at(calls, "push", "denied")
+
+    push_baseline(repo, compose_project_name="nextseek", today=TODAY)
+
+    flat = [" ".join(c) for c in calls]
+    assert flat[-1] == "docker logout ghcr.io"
+    assert flat.index(f"docker image rm {EXPECTED_TAG}") < flat.index("docker logout ghcr.io")
+
+
+@patch("startup.steps.registry_push.subprocess.run")
+def test_an_untag_that_itself_fails_changes_nothing(mock_run: MagicMock, repo: Path) -> None:
+    """This step is contractually non-fatal. A stuck untag must not turn a
+    reported push failure into an exception out of a deploy command."""
+    calls: list[list[str]] = []
+    happy = _happy_run_dispatcher(calls)
+
+    def dispatch(cmd, **kwargs):
+        if cmd[:2] == ["docker", "push"]:
+            calls.append(list(cmd))
+            return MagicMock(returncode=1, stdout="", stderr="denied")
+        if cmd[:3] == ["docker", "image", "rm"]:
+            calls.append(list(cmd))
+            raise OSError("docker binary vanished mid-cleanup")
+        return happy(cmd, **kwargs)
+
+    mock_run.side_effect = dispatch
+
+    outcome = push_baseline(repo, compose_project_name="nextseek", today=TODAY)
+
+    assert outcome.status == "push_failed"
+    assert "denied" in outcome.detail
+    assert ["docker", "image", "rm", EXPECTED_TAG] in calls  # it was attempted
+    assert [" ".join(c) for c in calls][-1] == "docker logout ghcr.io"

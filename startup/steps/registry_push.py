@@ -222,6 +222,21 @@ def _nudge(cred_path: Path) -> str:
     )
 
 
+def _untag(tag: str) -> None:
+    """Drop a local registry alias, and never let dropping it break the step.
+
+    This is only ever an UNTAG. The image always still carries the local name it
+    was tagged FROM (``<project>-nextseek:latest``, plus that rebuild's pre-*
+    rollback tag), so docker removes the name and keeps every layer. Failure is
+    swallowed for the same reason the whole step is non-fatal: a stuck cleanup
+    must not turn a reported push failure into an exception out of a deploy.
+    """
+    try:
+        subprocess.run(["docker", "image", "rm", tag], capture_output=True, text=True)
+    except Exception:  # noqa: BLE001 -- see the contract at the top of this module
+        pass
+
+
 def push_baseline(
     repo_root: Path,
     compose_project_name: str,
@@ -287,6 +302,7 @@ def push_baseline(
             _record(repo_root, outcome)
             return outcome
 
+        outcome = None
         try:
             login = subprocess.run(
                 ["docker", "login", "ghcr.io", "-u", creds.user, "--password-stdin"],
@@ -334,7 +350,16 @@ def push_baseline(
                         registry_image=registry_image,
                     )
         finally:
+            # A name that says "this image is in the registry" must not outlive a
+            # push that did not happen. It is a lie to anyone reading `docker
+            # images`, and worse, it is a second reference that pins the image
+            # against any cleanup looking only at pre-* rollback tags. `outcome`
+            # is None here only if something raised between the tag and the push,
+            # which is also not a push.
+            if outcome is None or outcome.status != "pushed":
+                _untag(tag)
             # Shared box: never leave the credential in ~/.docker/config.json.
+            # Stays last: the credential outliving this call is the worse leak.
             subprocess.run(["docker", "logout", "ghcr.io"], capture_output=True, text=True)
 
         _record(repo_root, outcome)
