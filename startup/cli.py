@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime
+import sys
 from pathlib import Path
 
 import typer
@@ -15,7 +16,7 @@ from startup.lib.instance import (
     save_instance,
 )
 from startup.lib.ports import allocate_ports
-from startup.steps import prereqs, config, volumes, seed, seed_filestore, build, users, validate, schema_fixups, seed_cleanup, seek_settings
+from startup.steps import prereqs, config, volumes, seed, seed_filestore, build, users, validate, schema_fixups, seed_cleanup, seek_settings, disk_preflight
 
 app = typer.Typer(
     name="startup",
@@ -55,6 +56,39 @@ def _warn_if_proxy_token_empty(proxy_env_path: Path) -> None:
         )
 
 
+def _disk_preflight_or_exit(
+    *,
+    ci_profile: str | None,
+    compose_project_name: str,
+    skip: bool,
+    floor_override: int | None,
+) -> None:
+    """Measure disk before anything is built, and open the review if short.
+
+    First because it is the only cheap moment. A build that runs out partway
+    leaves a half-written image and a box with nothing left for MySQL, and the
+    two commands here are the only things on these machines that consume disk in
+    8 GB steps. The measurement always prints; the review only opens below the
+    per-profile floor, and it never deletes anything without an answer.
+    """
+    result = disk_preflight.run_preflight(
+        ci_profile=ci_profile,
+        compose_project_name=compose_project_name,
+        skip=skip,
+        floor_override=floor_override,
+        # A hooked or piped run has no terminal to answer a question, so the
+        # review prints its plan and refuses rather than blocking forever.
+        interactive=sys.stdin.isatty(),
+    )
+    if not result.proceed:
+        ui.fail(f"stopped before building: {result.reason}")
+        ui.remediation(
+            "free space and re-run, or pass --no-disk-check to build anyway "
+            "(the measurement still prints)"
+        )
+        raise typer.Exit(code=1)
+
+
 def _print_health_results(results: list[validate.HealthResult]) -> None:
     for r in results:
         printer = ui.warn if getattr(r, "warn", False) else (ui.ok if r.ok else ui.fail)
@@ -90,6 +124,8 @@ def _install_impl(
     seek_public_url: str | None = None,
     ci_profile: str = DEFAULT_CI_PROFILE,
     yes: bool = False,
+    no_disk_check: bool = False,
+    disk_floor: int | None = None,
 ) -> None:
     """Install body as plain Python with real defaults.
 
@@ -120,6 +156,19 @@ def _install_impl(
                 ui.remediation(r.remediation)
         raise typer.Exit(code=1)
     ui.ok("docker, compose, uv, disk all OK")
+
+    # prereqs' own disk check is the bootstrap floor (can this machine build at
+    # all). This is the deploy floor, which is per-profile and much higher. They
+    # answer different questions, so both run.
+    _existing_for_disk = load_instance(REPO_ROOT)
+    _disk_preflight_or_exit(
+        ci_profile=ci_profile,
+        compose_project_name=(
+            _existing_for_disk.compose_project_name if _existing_for_disk else "nextseek"
+        ),
+        skip=no_disk_check,
+        floor_override=disk_floor,
+    )
 
     # [2/9] chat_nextseek vendored
     ui.step(2, total, "Verifying vendored chat_nextseek/")
@@ -403,6 +452,16 @@ def install(
         ),
     ),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompts."),
+    no_disk_check: bool = typer.Option(
+        False,
+        "--no-disk-check",
+        help="Measure and print disk as usual, but never gate or offer a purge.",
+    ),
+    disk_floor: int | None = typer.Option(
+        None,
+        "--disk-floor",
+        help="Override the per-profile free-space floor, in GB.",
+    ),
 ) -> None:
     """First-time install: prereqs, config, volumes, seeds, build, users, validate."""
     # Thin CLI shim: NO logic here. Anything beyond this delegate would run
@@ -416,6 +475,8 @@ def install(
         seek_public_url=seek_public_url,
         ci_profile=ci_profile,
         yes=yes,
+        no_disk_check=no_disk_check,
+        disk_floor=disk_floor,
     )
 
 
@@ -506,6 +567,8 @@ def reset(
         # box as prod -- narrowing, not widening, but still a change nobody asked for.
         ci_profile=state.ci_profile or DEFAULT_CI_PROFILE,
         yes=True,
+        no_disk_check=False,
+        disk_floor=None,
     )
 
 
@@ -546,6 +609,16 @@ def rebuild(
         "--ci/--no-ci",
         help="Run the CI smoke suite after the rebuild (default: enabled).",
     ),
+    no_disk_check: bool = typer.Option(
+        False,
+        "--no-disk-check",
+        help="Measure and print disk as usual, but never gate or offer a purge.",
+    ),
+    disk_floor: int | None = typer.Option(
+        None,
+        "--disk-floor",
+        help="Override the per-profile free-space floor, in GB.",
+    ),
 ) -> None:
     """Safely rebuild a first-party component without touching volumes."""
     from startup.lib.docker_ops import compose_build, compose_up
@@ -563,6 +636,13 @@ def rebuild(
     except ValueError as exc:
         ui.fail(str(exc))
         raise typer.Exit(code=2) from exc
+
+    _disk_preflight_or_exit(
+        ci_profile=state.ci_profile,
+        compose_project_name=state.compose_project_name,
+        skip=no_disk_check,
+        floor_override=disk_floor,
+    )
 
     build_root = REPO_ROOT
     if source_tree is not None:

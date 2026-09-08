@@ -86,11 +86,16 @@ def steps(repo: Path, monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
     volumes.ensure_volumes.return_value = ["v1"]
     volumes.REQUIRED_VOLUMES = ["v1", "v2"]
 
+    disk_preflight = MagicMock()
+    disk_preflight.run_preflight.return_value = SimpleNamespace(
+        proceed=True, floor_gb=20, freed_gb=0.0, reason="above floor"
+    )
+
     mocks = SimpleNamespace(
         prereqs=prereqs, config=config, seed=seed, seed_filestore=seed_filestore,
         schema_fixups=schema_fixups, seek_settings=seek_settings,
         seed_cleanup=seed_cleanup, users=users, validate=validate,
-        build=build, volumes=volumes,
+        build=build, volumes=volumes, disk_preflight=disk_preflight,
     )
     for name in vars(mocks):
         monkeypatch.setattr(cli, name, getattr(mocks, name))
@@ -383,7 +388,7 @@ def test_rebuild_reports_verified_rollback_tag(
     repo: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from startup.lib import docker_ops
-    from startup.steps import registry_push, rollback_tags, validate
+    from startup.steps import disk_preflight, registry_push, rollback_tags, validate
 
     _saved_state(repo)
     monkeypatch.setattr(
@@ -406,6 +411,10 @@ def test_rebuild_reports_verified_rollback_tag(
         lambda compose_project_name: validate.HealthResult(
             name="first-party images", ok=True, detail="all 4 present"
         ),
+    )
+    monkeypatch.setattr(
+        disk_preflight, "run_preflight",
+        lambda **kwargs: SimpleNamespace(proceed=True, floor_gb=20, freed_gb=0.0, reason="ok"),
     )
     monkeypatch.setattr(ci_runner, "run_ci", lambda *args, **kwargs: 0)
 
@@ -669,7 +678,7 @@ def _mock_rebuild(
     exercise the first-build path.
     """
     from startup.lib import docker_ops
-    from startup.steps import registry_push, rollback_tags, validate
+    from startup.steps import disk_preflight, registry_push, rollback_tags, validate
 
     monkeypatch.setattr(
         rollback_tags, "create_verified", lambda images, build_root: ()
@@ -683,6 +692,10 @@ def _mock_rebuild(
         lambda compose_project_name: validate.HealthResult(
             name="first-party images", ok=images_ok, detail=image_detail
         ),
+    )
+    monkeypatch.setattr(
+        disk_preflight, "run_preflight",
+        lambda **kwargs: SimpleNamespace(proceed=True, floor_gb=20, freed_gb=0.0, reason="ok"),
     )
 
 
@@ -1173,3 +1186,101 @@ def test_rebuild_announces_a_first_build_when_no_rollback_source_exists(
     assert "dmac-assistant:poc" in compact
     assert "FIRSTBUILD" in compact
     assert "norollbackpoint" in compact
+
+
+# ---------------------------------------------------------------------------
+# disk preflight, the first step of both build commands
+# ---------------------------------------------------------------------------
+
+def _capture_preflight(monkeypatch, proceed: bool = True) -> list[dict]:
+    from startup.steps import disk_preflight
+
+    seen: list[dict] = []
+
+    def fake(**kwargs):
+        seen.append(kwargs)
+        return SimpleNamespace(proceed=proceed, floor_gb=20, freed_gb=0.0, reason="t")
+
+    monkeypatch.setattr(disk_preflight, "run_preflight", fake)
+    return seen
+
+
+def test_rebuild_measures_disk_before_it_builds_anything(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _saved_state(repo, ci_profile="prod")
+    _mock_rebuild(monkeypatch)
+    seen = _capture_preflight(monkeypatch)
+    built: list[int] = []
+    from startup.lib import docker_ops
+    monkeypatch.setattr(docker_ops, "compose_build", lambda **kw: built.append(1))
+    monkeypatch.setattr(ci_runner, "run_ci", lambda *a, **k: 0)
+
+    result = runner.invoke(cli.app, ["rebuild"])
+
+    assert result.exit_code == 0, result.output
+    assert len(seen) == 1
+    assert seen[0]["ci_profile"] == "prod"
+    assert seen[0]["compose_project_name"] == "nextseek"
+    assert built == [1]
+
+
+def test_rebuild_stops_before_building_when_the_preflight_refuses(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Short of disk is a refusal to start, not a warning to read afterwards."""
+    _saved_state(repo, ci_profile="dev")
+    _mock_rebuild(monkeypatch)
+    _capture_preflight(monkeypatch, proceed=False)
+    built: list[int] = []
+    from startup.lib import docker_ops
+    monkeypatch.setattr(docker_ops, "compose_build", lambda **kw: built.append(1))
+
+    result = runner.invoke(cli.app, ["rebuild"])
+
+    assert result.exit_code == 1
+    assert built == []
+
+
+def test_rebuild_no_disk_check_asks_the_preflight_to_skip(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _saved_state(repo, ci_profile="dev")
+    _mock_rebuild(monkeypatch)
+    seen = _capture_preflight(monkeypatch)
+    monkeypatch.setattr(ci_runner, "run_ci", lambda *a, **k: 0)
+
+    result = runner.invoke(cli.app, ["rebuild", "--no-disk-check"])
+
+    assert result.exit_code == 0, result.output
+    assert seen[0]["skip"] is True
+
+
+def test_rebuild_disk_floor_overrides_the_profile(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _saved_state(repo, ci_profile="prod")
+    _mock_rebuild(monkeypatch)
+    seen = _capture_preflight(monkeypatch)
+    monkeypatch.setattr(ci_runner, "run_ci", lambda *a, **k: 0)
+
+    result = runner.invoke(cli.app, ["rebuild", "--disk-floor", "8"])
+
+    assert result.exit_code == 0, result.output
+    assert seen[0]["floor_override"] == 8
+
+
+def test_install_measures_disk_too(repo: Path, steps) -> None:
+    result = runner.invoke(cli.app, ["install", "--yes", "--ci-profile", "dev"])
+    assert result.exit_code == 0, result.output
+    steps.disk_preflight.run_preflight.assert_called_once()
+    assert steps.disk_preflight.run_preflight.call_args.kwargs["ci_profile"] == "dev"
+
+
+def test_install_stops_when_the_preflight_refuses(repo: Path, steps) -> None:
+    steps.disk_preflight.run_preflight.return_value = SimpleNamespace(
+        proceed=False, floor_gb=30, freed_gb=0.0, reason="still short"
+    )
+    result = runner.invoke(cli.app, ["install", "--yes"])
+    assert result.exit_code == 1
+    steps.build.build_and_start_nextseek.assert_not_called()

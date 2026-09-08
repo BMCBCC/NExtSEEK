@@ -277,6 +277,18 @@ docker logs -f nextseek        # until gunicorn workers are up; no FAILED marker
 
 ### 3.2 What change needs what action
 
+Every command in this table measures free disk before it builds anything, and
+prints what it found. Above the floor for this box's `ci_profile` (20 GB on
+local and dev, 30 GB on prod and on a box with no profile set) that is one line
+and nothing else. Below it, the rebuild stops and opens an interactive review of
+what may be deleted: old rollback tags behind the current rollback point, local
+registry baseline tags, dangling layers, and the build cache, in that order.
+Nothing is ever deleted without an answer, no volume is reachable from it, and
+the frozen `baseline-20260805` and every image a container is using are never
+offered. `--no-disk-check` keeps the measurement and skips the gate;
+`--disk-floor N` overrides the floor. A run with no terminal prints the plan and
+exits non-zero rather than blocking on a question nobody can answer.
+
 | You changed | Required action |
 |---|---|
 | Python / templates / anything baked (`nextseek_api/`, `chat_nextseek/`, `seek/`, `dmac/` except `local_settings.py`) | `./startup.sh rebuild` — rebuild the shared app image and recreate `nextseek`, which carries every app-code runtime. No `COMPOSE_PROFILES` to remember: until 2026-09-02 four workers lived in their own profile-gated services, and a rebuild without the variable exported left them running old code under `restart: unless-stopped`, looking healthy |

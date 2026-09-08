@@ -32,6 +32,21 @@ Breaking one is a regression, not a refactor.
   install default (`startup/cli.py:46-47`), at the runner
   (`startup/ci/runner.py:54`) and in the diagnostic (`startup/steps/doctor.py:31-36`).
   Defaulting the other way would let a machine nobody configured run write routes.
+- **The disk preflight never deletes anything without an answer**
+  (`startup/steps/disk_preflight.py`). It is the first thing `rebuild` and `install` do,
+  it always prints the measurement, and below the per-profile floor (20 GB local/dev,
+  30 GB prod, 30 GB for an absent profile) it opens a review. There is no flag that turns
+  it into an automatic prune. `startup/tests/test_disk_preflight.py` reads the module's
+  own source and fails if `"system", "prune"`, `"prune", "-a"`, `"--volumes"` or
+  `"volume"` ever appear in it: volumes hold the seeded data, so no code path there can
+  reach one, and a blanket prune would take the frozen baseline with it.
+- **The purge bucketer is default-deny.** An image is offered only when it matches a
+  pattern recognised as safe to lose; anything unrecognised is protected and reported as
+  such. Protection follows the image ID, not the name, because a container pins an ID and
+  a sibling tag of a running image would otherwise look deletable. `ci_profile` moves the
+  pre-filled ANSWER and never the protected set, which
+  `test_the_protected_set_is_identical_on_every_profile` pins. `dmac-assistant:poc`
+  depends on this: it is the one first-party image with no container to protect it.
 - **A rebuild that leaves a first-party image absent exits non-zero**
   (`startup/cli.py`, the `image_health` check after the build, acted on at the end of
   `rebuild`). Nothing else reports it: a bare `rebuild` builds only the app image
