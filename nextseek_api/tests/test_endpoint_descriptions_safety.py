@@ -4,16 +4,16 @@ PATCH /nextseek_api/assays/{uid}/ forwards verbatim to SEEK
 (nextseek_api/services/assays.py:196) and JSON:API PATCH on a to-many
 relationship replaces the complete list. An example that reads as "add one
 sample" therefore describes a destructive write: on assay 8 it removes 48,440
-memberships. assistant/write_gate.py is confirmation-only and does not
+memberships. NessieAI/ns/write_gate.py is confirmation-only and does not
 re-check the endpoint, so no downstream gate catches it.
 """
 
 import json
 import re
-from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
 from nextseek_api.assay_registration.schemas import (
     RegistrationAcceptedResponse,
     RegistrationRequest,
@@ -24,15 +24,13 @@ from nextseek_api.assay_registration.views import AssayRegistrationViewSet
 from nextseek_api.endpoint_descriptions import ASSAY_UPDATE_DESC
 from nextseek_api.permissions import IsSuperUser
 
-REPO = Path(__file__).resolve().parents[2]
-
 #: BOTH copies. `test_shared_context_file_is_identical_to_source` in
-#: nextseek_api/cc_assistant/tests/test_cc_context_drift_guard.py requires the
+#: NessieAI/tests/cc/test_cc_context_drift_guard.py requires the
 #: baked CC copy to equal the source byte for byte, so they change together.
 #: The baked one is the copy the CC agent actually reads.
 CATALOGS = (
-    REPO / "chat_nextseek/src/chat_nextseek/context/min_api_endpoints.json",
-    REPO / "docker/cc-runtime/build_context/plugins/nextseek/context/min_api_endpoints.json",
+    paths.CHAT_NEXTSEEK_DIR / "src" / "chat_nextseek" / "context" / "min_api_endpoints.json",
+    paths.CC_PLUGIN_DIR / "context" / "min_api_endpoints.json",
 )
 
 # Phrasings that instruct a caller to treat a complete-list PATCH as additive.

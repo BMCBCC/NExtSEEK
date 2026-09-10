@@ -20,7 +20,6 @@ import io
 import json
 import sys
 import uuid
-from pathlib import Path
 from unittest.mock import MagicMock, patch, PropertyMock
 
 import pytest
@@ -29,6 +28,7 @@ from django.core.cache import cache
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient, APIRequestFactory
 
+from NessieAI import paths
 from nextseek_api.assistant.models_db import ChatSession, QueryTask
 
 # Stub chat_nextseek.helpers.load_prompt BEFORE chat_nextseek.agents is imported.
@@ -1227,7 +1227,7 @@ class OpenApiExamplesValidateTests(TestCase):
 
         from nextseek_api.assistant.models_api import QueryRequest
 
-        repo_root = Path(__file__).resolve().parents[2]
+        repo_root = paths.REPO_ROOT
         checked = 0
         for rel in self.MODULES:
             path = repo_root / "nextseek_api" / rel
@@ -1380,7 +1380,7 @@ class MostRecentSessionSortBufferTests(TestCase):
         all go through the helper (or the two-step lookup in list_sessions)."""
         import re
 
-        repo_root = Path(__file__).resolve().parents[2]
+        repo_root = paths.REPO_ROOT
         # filter(...) -> order_by("-updated_at") -> first(), with nothing in
         # between. The helper survives because .values_list() sits in the
         # chain; list_sessions survives because it has no .first().

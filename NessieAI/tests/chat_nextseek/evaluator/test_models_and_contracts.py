@@ -4,6 +4,7 @@ import importlib.util
 from pathlib import Path
 from uuid import uuid4
 
+from NessieAI import paths
 from chat_nextseek.evaluator import (
     EvaluatorRetryContextResponse,
     EvaluatorRunSummary,
@@ -15,7 +16,7 @@ from chat_nextseek.evaluator import (
 )
 
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = paths.CHAT_NEXTSEEK_DIR
 EXTERNAL_SCHEMA_PATH = (
     Path("/Users/taishajoseph/Documents/Projects/NextSeekEval/src/schemas/evaluator.py")
 )

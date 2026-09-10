@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import importlib.util
-from pathlib import Path
 import re
 
 import tomllib
 
+from NessieAI import paths
 from chat_nextseek.evaluator.client import (
     EvaluatorBamlResult,
     EvaluatorBamlClient,
@@ -25,7 +25,7 @@ from chat_nextseek.evaluator.models import (
 )
 
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = paths.CHAT_NEXTSEEK_DIR
 
 
 class _FakeBamlRuntime:

@@ -1,5 +1,6 @@
 import json
-from pathlib import Path
+
+from NessieAI import paths
 
 
 def _agent_route(profile, agent):
@@ -16,7 +17,7 @@ def test_pipeline_agent_routed_to_tool_capable_provider_in_default():
     loop, which only the Bedrock client (provider 'anth') implements. In the
     shipping 'default' (mixed) profile it must NOT be routed to gcp/GeminiClient,
     which has no chat_with_tools and would break the agent loop."""
-    catalog_path = Path(__file__).resolve().parents[1] / "agent_model_catalog.json"
+    catalog_path = paths.CHAT_NEXTSEEK_DIR / "agent_model_catalog.json"
     catalog = json.loads(catalog_path.read_text())
     provider, model = _agent_route(catalog["default"], "pipeline_agent")
     assert provider == "anth", (

@@ -17,10 +17,11 @@ tests pass for the wrong reason. Every test therefore pins `ALLOWED_HOSTS` with
 import ast
 import os
 import tempfile
-from pathlib import Path
 from unittest.mock import Mock, patch
 
 from django.test import TestCase, override_settings
+
+from NessieAI import paths
 
 INTERNAL = "http://127.0.0.1:8000"
 INTERNAL_HOST = "127.0.0.1"
@@ -339,9 +340,9 @@ class TestDocumentedSelfIngestExample(TestCase):
     """
 
     def _documented_schema_urls(self):
-        source = Path(
-            __file__
-        ).resolve().parent.parent.joinpath("services", "schema_rag.py").read_text()
+        source = paths.REPO_ROOT.joinpath(
+            "nextseek_api", "services", "schema_rag.py"
+        ).read_text()
         tree = ast.parse(source)
         urls = []
         for node in ast.walk(tree):

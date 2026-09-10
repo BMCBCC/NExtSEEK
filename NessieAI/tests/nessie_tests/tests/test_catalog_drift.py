@@ -1,4 +1,4 @@
-"""nessie has FORKED chat_nextseek/e2e/catalog.json. This makes the fork explicit.
+"""nessie has FORKED NessieAI/tests/e2e/catalog.json. This makes the fork explicit.
 
 catalog.json still has ten other readers (chat_nextseek's own e2e suite, cli.py,
 schema_helper.py, dmac_assistant/config.py), and startup/scripts/sync_chat_nextseek.sh
@@ -36,7 +36,7 @@ def test_recorded_catalog_hash_matches_the_vendored_file():
     recorded = payload["provenance"]["catalog_sha256"]
     actual = corpus.sha256_of(corpus._BASE_CATALOG)
     assert recorded == actual, (
-        f"chat_nextseek/e2e/catalog.json changed.\n"
+        f"NessieAI/tests/e2e/catalog.json changed.\n"
         f"  recorded at adoption: {recorded}\n"
         f"  on disk now:          {actual}\n"
         f"See this test's docstring for how to resolve.")

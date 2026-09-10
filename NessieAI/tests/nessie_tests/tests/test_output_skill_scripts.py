@@ -25,10 +25,11 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
 from NessieAI.tests.nessie_tests import limits, manifest as M, runner
 
-ROOT = Path(__file__).resolve().parents[2]
-SCRIPTS = ROOT / "nessie_tests" / "output-skill" / "scripts"
+ROOT = paths.REPO_ROOT
+SCRIPTS = Path(__file__).resolve().parents[1] / "output-skill" / "scripts"
 
 
 def _load(name):

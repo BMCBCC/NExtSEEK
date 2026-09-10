@@ -15,15 +15,15 @@ duplicate the helpers, so both are exercised.
 from __future__ import annotations
 
 import importlib.util
-from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
 from chat_nextseek.evaluator import runner
 
 
 def _load_cli_module():
-    path = Path(__file__).resolve().parents[2] / "cli.py"
+    path = paths.CHAT_NEXTSEEK_DIR / "cli.py"
     spec = importlib.util.spec_from_file_location("_cli_under_test", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

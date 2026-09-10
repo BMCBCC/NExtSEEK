@@ -18,11 +18,12 @@ from __future__ import annotations
 import re
 import shutil
 import subprocess
-from pathlib import Path
 
 import pytest
 
-_SRC = Path(__file__).resolve().parent.parent / "src" / "chat_nextseek"
+from NessieAI import paths
+
+_SRC = paths.CHAT_NEXTSEEK_DIR / "src" / "chat_nextseek"
 
 # Names that pyflakes reports as "undefined" but which are NOT runtime bugs:
 # they appear only inside string / deferred annotations (``from __future__

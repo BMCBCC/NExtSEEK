@@ -13,6 +13,7 @@ from typing import Any
 
 import pytest
 
+from NessieAI import paths
 from NessieAI.build_tools.gen_op_surfaces.constants import (
     BAKED_CAPABILITIES_REL,
     CANONICAL_CAPABILITIES_REL,
@@ -43,21 +44,18 @@ from NessieAI.cc.op_registry.routes import (
     NEXTSEEK_QUERY_TOOLS,
 )
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = paths.REPO_ROOT
 CANONICAL_MD = REPO_ROOT / CANONICAL_CAPABILITIES_REL
 BAKED_MD = REPO_ROOT / BAKED_CAPABILITIES_REL
 ROUTE_JSON = REPO_ROOT / ROUTE_CAPABILITIES_REL
-EVIDENCE_PATH = (
-    REPO_ROOT / "nextseek_api/cc_assistant/op_registry/route_example_evidence.json"
-)
-CORPUS_PATH = REPO_ROOT / "nessie_tests/corpus.json"
-PLUGIN_JSON = (
-    REPO_ROOT
-    / "docker/cc-runtime/build_context/plugins/nextseek/.claude-plugin/plugin.json"
-)
-DOCKERFILE = REPO_ROOT / "docker/cc-runtime/Dockerfile"
-PLUGINS_ROOT = REPO_ROOT / "docker/cc-runtime/build_context/plugins"
-ROUTER_BAML = REPO_ROOT / "dmac_assistant/baml_src/router.baml"
+EVIDENCE_PATH = paths.CC_DIR / "op_registry" / "route_example_evidence.json"
+CORPUS_PATH = paths.NESSIE_CORPUS
+PLUGIN_JSON = paths.CC_PLUGIN_DIR / ".claude-plugin" / "plugin.json"
+DOCKERFILE = paths.CC_RUNTIME_DIR / "Dockerfile"
+PLUGINS_ROOT = paths.CC_RUNTIME_DIR / "build_context" / "plugins"
+ROUTER_BAML = paths.DMAC_ASSISTANT_DIR / "baml_src" / "router.baml"
+GENERATOR_PY = paths.NESSIE_ROOT / "build_tools" / "gen_op_surfaces" / "route_capabilities.py"
+_THIS_DIR = Path(__file__).resolve().parent
 NS_ROUTE = "nextseek_query"
 CC_ROUTE = "container_cc"
 MAX_EXAMPLES = 2
@@ -332,7 +330,7 @@ def test_ns_tools_keep_fallback_router_agent_vocabulary() -> None:
     payload = json.loads(ROUTE_JSON.read_text(encoding="utf-8"))
     ns = _route_map(payload)[NS_ROUTE]
     assert ns["tools"] == list(NEXTSEEK_QUERY_TOOLS)
-    baml = (REPO_ROOT / "dmac_assistant/baml_src/router.baml").read_text(encoding="utf-8")
+    baml = ROUTER_BAML.read_text(encoding="utf-8")
     assert "class RouteCapability" in baml
     assert "tools          string[]" in baml
     raw = subprocess.check_output(
@@ -636,15 +634,11 @@ def test_prompt_file_has_no_forbidden_placeholders() -> None:
         STALE_PIPELINE_PHRASE,
     ):
         assert phrase not in rendered
-    source = (
-        REPO_ROOT / "build_tools/gen_op_surfaces/route_capabilities.py"
-    ).read_text(encoding="utf-8")
+    source = GENERATOR_PY.read_text(encoding="utf-8")
     assert "sha256" not in source.lower() or "F-10" not in source
     tests = Path(__file__).read_text(encoding="utf-8")
     assert "route_capabilities.json" in tests
-    pins = (
-        REPO_ROOT / "nextseek_api/cc_assistant/tests/test_f_constraint_pins.py"
-    ).read_text(encoding="utf-8")
+    pins = (_THIS_DIR / "test_f_constraint_pins.py").read_text(encoding="utf-8")
     assert "test_route_capabilities_unmodified" in pins
     assert "was deleted" in pins.lower() or "deleted here" in pins
 
@@ -659,10 +653,10 @@ def test_whole_file_render_is_byte_stable_and_loader_clean() -> None:
 def test_no_f10_hash_pin_restored() -> None:
     digest = hashlib.sha256(ROUTE_JSON.read_bytes()).hexdigest()
     search_roots = [
-        REPO_ROOT / "nextseek_api/assistant/tests/test_route_capabilities.py",
-        REPO_ROOT / "nextseek_api/cc_assistant/tests/test_f_constraint_pins.py",
-        REPO_ROOT / "nextseek_api/cc_assistant/tests/test_baml_router_schema.py",
-        REPO_ROOT / "build_tools/gen_op_surfaces/route_capabilities.py",
+        _THIS_DIR / "test_route_capabilities.py",
+        _THIS_DIR / "test_f_constraint_pins.py",
+        _THIS_DIR / "test_baml_router_schema.py",
+        GENERATOR_PY,
     ]
     for path in search_roots:
         text = path.read_text(encoding="utf-8")

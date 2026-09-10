@@ -1,7 +1,7 @@
 """Hermetic tests for PLAN-7 Task 4: the ported Bedrock auth-proxy source
-tree at ``docker/bedrock-proxy/``.
+tree at ``NessieAI/docker/bedrock-proxy/``.
 
-Purpose: prove that ``docker/bedrock-proxy/`` (the canonical, NExtSEEK-tracked
+Purpose: prove that ``NessieAI/docker/bedrock-proxy/`` (the canonical, NExtSEEK-tracked
 build target for the OI-3 hardened Bedrock auth-proxy sidecar) carries every
 asset the image build needs -- the ``app/`` package (config + relay logic),
 the top-level package marker, the Dockerfile, and the committed ``.example``
@@ -13,10 +13,10 @@ No Docker, no network, no DB. File-presence, hash, and grep assertions only,
 against the real repo tree checked out at test time (this is deliberately
 NOT mocked: the whole point of this suite is to catch a missing/renamed file,
 a logic drift from the pinned source, or a secret-handling regression in the
-real ``docker/bedrock-proxy/`` directory).
+real ``NessieAI/docker/bedrock-proxy/`` directory).
 
 Actually invoking ``docker build`` against this context (context =
-``docker/bedrock-proxy/``, tag ``bedrock-proxy:step7-port-test``, followed by
+``NessieAI/docker/bedrock-proxy/``, tag ``bedrock-proxy:step7-port-test``, followed by
 ``docker rmi``) is exercised separately, outside the hermetic pytest suite
 (see task-4-report.md for the command + output tail) -- building requires
 network for the base image and apt/uv dependencies, which the hermetic
@@ -31,10 +31,12 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
+
 pytestmark = pytest.mark.host_only
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-PROXY_DIR = REPO_ROOT / "NessieAI" / "docker" / "bedrock-proxy"
+PROXY_DIR = paths.BEDROCK_PROXY_DIR
 COMPOSE_FILE = REPO_ROOT / "docker-compose.yml"
 GITIGNORE_FILE = REPO_ROOT / ".gitignore"
 
@@ -58,7 +60,7 @@ REAL_SECRET_FILENAME = "proxy-secret.env"
 # sections 1-2 record that one-time manual verification); these literals are
 # those digests. Any deliberate future change to a ported proxy file must
 # consciously update BOTH the constant here AND
-# docker/bedrock-proxy/PORT-EVIDENCE.json. That is deliberate: an in-place
+# NessieAI/docker/bedrock-proxy/PORT-EVIDENCE.json. That is deliberate: an in-place
 # edit of proxy.py/config.py that also regenerates PORT-EVIDENCE.json to
 # match (defeating the dest-vs-manifest inventory test) still fails here,
 # because these expected digests do not live in the regenerable manifest.
@@ -139,7 +141,7 @@ def test_ported_file_is_byte_identical_to_pinned_source(rel_path):
         f"{rel_path} has drifted from the pinned port source "
         f"({PORT_SOURCE_COMMIT}) -- proxy logic must be ported verbatim, "
         "never rewritten. A deliberate change must update both "
-        "PINNED_SOURCE_SHA256 and docker/bedrock-proxy/PORT-EVIDENCE.json "
+        "PINNED_SOURCE_SHA256 and NessieAI/docker/bedrock-proxy/PORT-EVIDENCE.json "
         "consciously."
     )
 
@@ -169,7 +171,7 @@ def test_config_py_carries_runtime_token_injection_from_env():
 
 # ==========================================================================
 # Dockerfile: build-context adaptation is comment/path-level only (this port
-# builds with context = docker/bedrock-proxy/ itself, not the source's
+# builds with context = NessieAI/docker/bedrock-proxy/ itself, not the source's
 # repo-root context), never a logic change.
 # ==========================================================================
 
@@ -177,7 +179,7 @@ def test_config_py_carries_runtime_token_injection_from_env():
 def test_dockerfile_copy_source_matches_this_ports_build_context():
     """The pinned source's Dockerfile COPYs `bedrock-proxy/app/` because its
     compose sets `context: ..` (repo root). This port's hermetic guard builds
-    with context = docker/bedrock-proxy/ itself (see success conditions), so
+    with context = NessieAI/docker/bedrock-proxy/ itself (see success conditions), so
     the COPY source must be the context-relative `app/`, not the source's
     repo-root-relative `bedrock-proxy/app/`."""
     text = _read(PROXY_DIR / "Dockerfile")
@@ -358,7 +360,7 @@ def test_standalone_sidecar_compose_not_ported():
     """The pinned source's bedrock-proxy/docker-compose.yml is a standalone
     sidecar compose (its own `name:`/network join) -- reference only. Root
     compose wiring is Task 5's job, so this port must not carry a
-    docker-compose.yml of its own under docker/bedrock-proxy/."""
+    docker-compose.yml of its own under NessieAI/docker/bedrock-proxy/."""
     assert not (PROXY_DIR / "docker-compose.yml").is_file(), (
         "NessieAI/docker/bedrock-proxy/ must not carry a standalone docker-compose.yml "
         "-- root-compose wiring is Task 5's job (PLAN-7)."
@@ -397,7 +399,7 @@ def test_port_evidence_file_inventory_matches_ported_files():
 
 
 # ==========================================================================
-# Secret-safety: no real secrets committed anywhere under docker/bedrock-proxy/
+# Secret-safety: no real secrets committed anywhere under NessieAI/docker/bedrock-proxy/
 # ==========================================================================
 
 
@@ -419,4 +421,4 @@ def test_no_secret_looking_values_anywhere_under_bedrock_proxy():
             continue
         for m in _SECRET_VALUE_RE.finditer(text):
             hits.append((str(path.relative_to(PROXY_DIR)), m.group(0)[:12]))
-    assert not hits, f"secret-looking values found under docker/bedrock-proxy/: {hits}"
+    assert not hits, f"secret-looking values found under NessieAI/docker/bedrock-proxy/: {hits}"

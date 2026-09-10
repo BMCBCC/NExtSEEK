@@ -832,7 +832,7 @@ def test_the_cc_routing_simulation_quoted_in_the_docs_is_reproducible():
     # by a bare acknowledgement.
     assert len(merged) - len(green) == 362, (  # 295 -> 362: 2026-08-06 question set: 58 authored, 6 retired, 76 deselected, 4 promoted out of the atlas set.
         f"{len(merged) - len(green)} of {len(merged)} red — update the figure in "
-        f"nessie_tests/README.md and nessie_tests/tests/test_evaluate.py")
+        f"NessieAI/tests/nessie_tests/README.md and NessieAI/tests/nessie_tests/tests/test_evaluate.py")
 
     # The three cases this task added are all RED here, which is why the green
     # set is unchanged at 13 and the red count moved 267 -> 270. A write-refusal

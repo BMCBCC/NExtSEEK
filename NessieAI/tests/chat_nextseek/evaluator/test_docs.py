@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
 from chat_nextseek.evaluator.runner import build_parser
 
 
-DOC_ROOT = Path(__file__).resolve().parents[2] / "src" / "chat_nextseek" / "evaluator"
+DOC_ROOT = paths.CHAT_NEXTSEEK_DIR / "src" / "chat_nextseek" / "evaluator"
 DOCS_DIR = DOC_ROOT / "docs"
 REQUIRED_DOCS = {
     DOC_ROOT / "README.md": ["Quickstart", "docs/operations.md"],

@@ -433,7 +433,7 @@ def test_compose_ns_sidecar_service_has_no_host_ports_key():
 
 
 # ==========================================================================
-# PORT-EVIDENCE.json traceability (mirrors docker/bedrock-proxy/PORT-EVIDENCE.json)
+# PORT-EVIDENCE.json traceability (mirrors NessieAI/docker/bedrock-proxy/PORT-EVIDENCE.json)
 # ==========================================================================
 
 

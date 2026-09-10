@@ -232,7 +232,7 @@ def test_every_floored_family_exists_in_the_corpus():
 # misroute.
 # --------------------------------------------------------------------------- #
 
-_DOCS = "nessie_tests/README.md, output-skill/SKILL.md and output-skill/REFERENCE.md"
+_DOCS = "NessieAI/tests/nessie_tests/README.md, output-skill/SKILL.md and output-skill/REFERENCE.md"
 
 
 def _prepolicy():

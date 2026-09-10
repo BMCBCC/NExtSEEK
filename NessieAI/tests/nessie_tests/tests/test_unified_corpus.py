@@ -36,7 +36,7 @@ CORPUS = UNIFIED
 
 
 def test_corpus_json_exists_and_parses():
-    assert UNIFIED.is_file(), "nessie_tests/corpus.json is missing; it is hand-owned and nothing regenerates it"
+    assert UNIFIED.is_file(), "NessieAI/tests/nessie_tests/corpus.json is missing; it is hand-owned and nothing regenerates it"
     json.loads(UNIFIED.read_text(encoding="utf-8"))
 
 

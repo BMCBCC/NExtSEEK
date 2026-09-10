@@ -17,6 +17,7 @@ import os
 import time
 from pathlib import Path
 
+from NessieAI import paths
 from chat_nextseek.config import ChatConfig
 
 
@@ -132,7 +133,7 @@ def test_committed_baked_projects_db_resolves_published_data_to_1(tmp_path):
     import json
 
     baked = (
-        Path(__file__).resolve().parents[1]
+        paths.CHAT_NEXTSEEK_DIR
         / "src" / "chat_nextseek" / "context" / "projects_db.json"
     )
     projects = json.loads(baked.read_text(encoding="utf-8"))

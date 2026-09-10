@@ -1,10 +1,10 @@
 """Hermetic regression test for the ``generate-submission`` op hydration bug.
 
-The op lives in ``nextseek_api/assistant/granular.py`` (which normally requires
-django/mysqlclient), but its chat_nextseek dependencies are imported lazily
-inside the handler. We exploit that: we stub the ``nextseek_api.assistant``
-package chain and the lazily-imported ``chat_nextseek.*`` modules, then import
-``granular.py`` directly from its file path so this runs on the hermetic box.
+The op lives in ``NessieAI/ns/granular.py``, and its chat_nextseek dependencies
+are imported lazily inside the handler. We exploit that: we stub the one
+module-level import it makes (``NessieAI.ns.write_gate``) and the
+lazily-imported ``chat_nextseek.*`` modules, then import ``granular.py``
+directly from its file path so this runs on the hermetic box.
 
 Bug: ``_generate_submission`` built ``ReportWriterPlan(reporter_context={"uids":
 uids})`` and handed it straight to ``report_writer_agent``. The report writer is
@@ -19,13 +19,13 @@ from __future__ import annotations
 import importlib.util
 import sys
 import types
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 
-_REPO = Path(__file__).resolve().parents[2]
-_GRANULAR_PY = _REPO / "nextseek_api" / "assistant" / "granular.py"
+from NessieAI import paths
+
+_GRANULAR_PY = paths.NS_DIR / "granular.py"
 
 # Real-ish sample metadata for the two UIDs from the bug report, shaped the way
 # fetch_reporter_metadata (tool_nextseek_api_request) returns it.
@@ -71,21 +71,17 @@ def _load_granular_with_stubs():
     # 1) Stub the NessieAI.ns.write_gate import that granular does at
     #    module top level (avoids pulling django).
     saved = {k: sys.modules.get(k) for k in (
-        "nextseek_api", "nextseek_api.assistant", "NessieAI.ns.write_gate",
+        "NessieAI.ns.write_gate",
         "chat_nextseek", "chat_nextseek.portable", "chat_nextseek.schemas",
         "chat_nextseek.schemas.chat", "chat_nextseek.helpers",
     )}
 
-    pkg_ns = types.ModuleType("nextseek_api"); pkg_ns.__path__ = []
-    pkg_assist = types.ModuleType("nextseek_api.assistant"); pkg_assist.__path__ = []
     mod_wg = types.ModuleType("NessieAI.ns.write_gate")
 
     class WriteBlockedError(Exception):
         pass
 
     mod_wg.WriteBlockedError = WriteBlockedError
-    sys.modules["nextseek_api"] = pkg_ns
-    sys.modules["nextseek_api.assistant"] = pkg_assist
     sys.modules["NessieAI.ns.write_gate"] = mod_wg
 
     # 2) Stub the chat_nextseek modules that _generate_submission lazily imports.

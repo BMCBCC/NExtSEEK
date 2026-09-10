@@ -2,11 +2,11 @@
 from __future__ import annotations
 
 import ast
-from pathlib import Path
 
 import pytest
 
 from nextseek_api.assistant.models_db import ChatSession, TurnLedger
+from NessieAI import paths
 from NessieAI.router.route_monitoring import (
     AlertKind,
     MONITORING_DISCLAIMER,
@@ -198,7 +198,7 @@ def test_summary_includes_alerts_when_baseline_provided():
 
 
 def test_route_monitoring_module_has_no_publish_imports():
-    path = Path(__file__).resolve().parent.parent / "route_monitoring.py"
+    path = paths.ROUTER_DIR / "route_monitoring.py"
     tree = ast.parse(path.read_text())
     banned = {
         "publish",

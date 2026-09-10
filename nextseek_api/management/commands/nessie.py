@@ -1,6 +1,6 @@
 """``manage.py nessie`` — run the Nessie router-aware assistant test harness.
 
-Runs the ``nessie_tests`` harness (see ``nessie_tests/README.md``) from inside
+Runs the ``nessie_tests`` harness (see ``NessieAI/tests/nessie_tests/README.md``) from inside
 the trusted Django process, so the full-tier bundle reader (which imports Django
 models) works with no separate ``django.setup()`` bootstrap.
 
@@ -18,10 +18,10 @@ from pathlib import Path
 
 from django.core.management.base import BaseCommand
 
-# This file is nextseek_api/management/commands/nessie.py; the repo root (which
-# holds the top-level ``nessie_tests`` package) is four parents up.
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-_CORPUS = _REPO_ROOT / "nessie_tests" / "corpus.json"
+from NessieAI import paths
+
+# The hand-owned harness corpus, NessieAI/tests/nessie_tests/corpus.json.
+_CORPUS = paths.NESSIE_CORPUS
 
 
 class Command(BaseCommand):

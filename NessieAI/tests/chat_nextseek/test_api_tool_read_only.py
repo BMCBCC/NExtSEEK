@@ -26,10 +26,10 @@ No test in this file performs real I/O.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
 import chat_nextseek.helpers.tools.nextseek_api as api
 from chat_nextseek.helpers.tools.nextseek_api import (
     _READ_POST_PATHS,
@@ -293,7 +293,7 @@ def test_canonical_callers_are_byte_identical_to_before(transport):
 
 def _catalog() -> list[dict]:
     path = (
-        Path(__file__).resolve().parent.parent
+        paths.CHAT_NEXTSEEK_DIR
         / "src" / "chat_nextseek" / "context" / "min_api_endpoints_enriched.json"
     )
     return json.loads(path.read_text())

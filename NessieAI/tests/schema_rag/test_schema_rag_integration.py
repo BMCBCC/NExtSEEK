@@ -17,7 +17,6 @@ Use --exclude-tag=slow to skip these tests in CI/quick test runs.
 import os
 import shutil
 import tempfile
-from pathlib import Path
 from unittest.mock import patch, Mock
 
 import yaml
@@ -29,12 +28,16 @@ from rest_framework.test import APITestCase, APIClient
 from rest_framework.authtoken.models import Token
 from rest_framework import status
 
+from NessieAI import paths
+
 
 # FAIRDOM SEEK OpenAPI schema URL
 SEEK_OPENAPI_URL = "https://fairdomhub.org/api/definitions/openapi-v3-resolved.yaml"
 
 # Vendored copy of the schema the URL above serves (fetched 2026-07-22).
-FIXTURE_PATH = Path(__file__).parent / "fixtures" / "fairdomhub_openapi_v3_resolved.yaml"
+FIXTURE_PATH = (
+    paths.REPO_ROOT / "nextseek_api" / "tests" / "fixtures" / "fairdomhub_openapi_v3_resolved.yaml"
+)
 
 _HTTP_METHODS = {"get", "post", "put", "patch", "delete", "head", "options", "trace"}
 

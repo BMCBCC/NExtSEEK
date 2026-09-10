@@ -15,9 +15,10 @@ Verified statically (AST) rather than by import: importing the planner pulls in
 from __future__ import annotations
 
 import ast
-from pathlib import Path
 
-_AGENTS = Path(__file__).resolve().parents[1] / "src" / "chat_nextseek" / "agents"
+from NessieAI import paths
+
+_AGENTS = paths.CHAT_NEXTSEEK_DIR / "src" / "chat_nextseek" / "agents"
 _PLANNER = _AGENTS / "planner" / "agent.py"
 _PARSER = _AGENTS / "parser.py"
 

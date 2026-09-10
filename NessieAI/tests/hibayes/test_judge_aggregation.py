@@ -1,14 +1,9 @@
 """Tests for DD-44 aggregation (Lane A host hermetic)."""
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import pytest
-
-REPO = Path(__file__).resolve().parents[2]
-if str(REPO) not in sys.path:
-    sys.path.insert(0, str(REPO))
 
 from NessieAI.hibayes.judge import (  # noqa: E402
     aggregate_needs_human_review,

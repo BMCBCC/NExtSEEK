@@ -43,9 +43,14 @@ from nextseek_api.services.sample_provenance import (
 
 logger = logging.getLogger(__name__)
 
+# Pinned to a commit, not a branch. The file moved to NessieAI/chat_nextseek/
+# on dev, so a branch URL names a missing path on whichever side of that move
+# the branch sits. This commit holds the file at its pre-move path; re-pin to a
+# later commit (and the NessieAI/ path) once main carries the move.
+_CONTEXTDB_COMMIT = "68fd1c2f4ad798626d148495e580c65d8999c91d"
 CONTEXTDB_URL = (
-    "https://github.com/BioMicroCenter/NExtSEEK/blob/main/"
-    "chat_nextseek/src/chat_nextseek/context/sampletypes_db.json"
+    "https://github.com/BioMicroCenter/NExtSEEK/blob/"
+    f"{_CONTEXTDB_COMMIT}/chat_nextseek/src/chat_nextseek/context/sampletypes_db.json"
 )
 
 README_SHEET = "README"

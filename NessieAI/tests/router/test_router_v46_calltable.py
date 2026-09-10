@@ -10,8 +10,7 @@ from NessieAI.router import transport_trace
 
 pytestmark = pytest.mark.django_db
 
-_REPO = Path(__file__).resolve().parents[3]
-_FLAG_OFF_BASELINE = _REPO / "evidence" / "fixtures" / "plan018-v4-6-flag-off-baseline.json"
+_FLAG_OFF_BASELINE = Path(__file__).resolve().parent / "fixtures" / "plan018-v4-6-flag-off-baseline.json"
 
 
 @pytest.fixture(autouse=True)

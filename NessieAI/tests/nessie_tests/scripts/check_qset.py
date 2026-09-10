@@ -12,7 +12,7 @@ from __future__ import annotations
 import json, re, sys, collections
 from pathlib import Path
 
-CORPUS = Path(sys.argv[1] if len(sys.argv) > 1 else "nessie_tests/corpus.json")
+CORPUS = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).resolve().parents[1] / "corpus.json"
 payload = json.loads(CORPUS.read_text(encoding="utf-8"))
 sel = [v for b in payload["families"].values() for v in b["variants"]
        if v.get("is_bayesian") and v.get("status") == "active"]

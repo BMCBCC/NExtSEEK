@@ -66,11 +66,12 @@ import json
 import pathlib
 import sys
 
-# This script ships INSIDE nessie_tests (…/nessie_tests/output-skill-bayesian/
-# scripts/), so the repo root is four levels up. Put it on the path BEFORE the
-# nessie_tests imports: a subprocess launched as `python build_bayes_report.py`
-# gets the script's own directory as sys.path[0], never the repo root.
-ROOT = pathlib.Path(__file__).resolve().parents[3]
+# This script ships INSIDE the harness (NessieAI/tests/nessie_tests/
+# output-skill-bayesian/scripts/), so the repo root is six levels up. Put it on
+# the path BEFORE the NessieAI imports: a subprocess launched as
+# `python build_bayes_report.py` gets the script's own directory as
+# sys.path[0], never the repo root.
+ROOT = pathlib.Path(__file__).resolve().parents[5]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 

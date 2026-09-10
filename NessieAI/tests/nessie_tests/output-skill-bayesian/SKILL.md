@@ -21,27 +21,27 @@ without regrading.
 ## The sequence
 
 ```bash
-# 0. the paid run (see nessie_tests/README.md; this is the expensive step)
-python -m nessie_tests --bayesian --out ./nessie_bayes_out
+# 0. the paid run (see NessieAI/tests/nessie_tests/README.md; this is the expensive step)
+python -m NessieAI.tests.nessie_tests --bayesian --out ./nessie_bayes_out
 
 # 1. pull the artifacts the run left behind, into ./nessie_bayes_out/artifacts/
-python -m nessie_tests.collect --run ./nessie_bayes_out
+python -m NessieAI.tests.nessie_tests.collect --run ./nessie_bayes_out
 #    Reads through the RUNNING `nextseek` container: task rows and transcripts
 #    out of its Django ORM, trees out of `docker cp`. Add `--host <box> --user
 #    <acct>` for a run executed on the dev box; the default is the local daemon.
 #    `zstandard` is the one non-stdlib thing this step needs on THIS side (the
 #    transcripts arrive compressed); without it every CC arm's session.jsonl is
 #    recorded unreadable, and the step says so before it starts. No install:
-#      uv run --no-project --with zstandard python -m nessie_tests.collect --run ./nessie_bayes_out
+#      uv run --no-project --with zstandard python -m NessieAI.tests.nessie_tests.collect --run ./nessie_bayes_out
 
 # 2. the HiBayes CSVs (also decides which arms are EXCLUDED, see below)
-python -m nessie_tests.export --run ./nessie_bayes_out        # writes hibayes_eval_rows_{ns,cc}.csv,
+python -m NessieAI.tests.nessie_tests.export --run ./nessie_bayes_out        # writes hibayes_eval_rows_{ns,cc}.csv,
                                                               # hibayes_functional_eval_inputs.csv,
                                                               # excluded.csv, unobserved.csv,
                                                               # arm_diagnostics.csv
 
 # 3. the blind report
-python nessie_tests/output-skill-bayesian/scripts/build_bayes_report.py \
+python NessieAI/tests/nessie_tests/output-skill-bayesian/scripts/build_bayes_report.py \
     --run ./nessie_bayes_out --out ./nessie_bayes_out/report_bayes.html
 
 # 4. GRADE IT. Open it in a browser and work through every arm.
@@ -54,14 +54,14 @@ python3 -m http.server 8901 --directory ./nessie_bayes_out
 cp <dmac-assistant stage C output> ./nessie_bayes_out/stage_c.json
 
 # 6. rebuild the report with the verdicts in it, and reveal
-python nessie_tests/output-skill-bayesian/scripts/build_bayes_report.py \
+python NessieAI/tests/nessie_tests/output-skill-bayesian/scripts/build_bayes_report.py \
     --run ./nessie_bayes_out --out ./nessie_bayes_out/report_bayes.html
 #    Reload, re-import grades.json if the browser store was cleared, press
 #    "Reveal all" (it unlocks only once every gradable arm is graded), and read
 #    the Disagreements filter. That set is the output of this whole exercise.
 
 # 7. the joined table
-python nessie_tests/output-skill-bayesian/scripts/merge_grades.py \
+python NessieAI/tests/nessie_tests/output-skill-bayesian/scripts/merge_grades.py \
     --run ./nessie_bayes_out --grades ./grades.json --out ./nessie_bayes_out/graded_rows.csv
 ```
 
@@ -70,11 +70,11 @@ copy, unchanged — it handles both transports:
 
 ```bash
 # run executed on the dev box (the default target is fairdata-dev)
-python nessie_tests/output-skill/scripts/fetch_run.py --out ./nessie_bayes_out ...
+python NessieAI/tests/nessie_tests/output-skill/scripts/fetch_run.py --out ./nessie_bayes_out ...
 
 # run executed on THIS workstation -- pass an empty --host to go straight to the
 # local docker daemon. `ssh localhost` is not a fallback; there is no sshd.
-python nessie_tests/output-skill/scripts/fetch_run.py --host "" --out ./nessie_bayes_out ...
+python NessieAI/tests/nessie_tests/output-skill/scripts/fetch_run.py --host "" --out ./nessie_bayes_out ...
 ```
 
 The local form is the one a `--bayesian` run needs today, because the container
@@ -82,9 +82,9 @@ this pipeline was built against runs on the workstation.
 
 ## Step 1: what the collection actually reads
 
-`nessie_tests/collect.py` takes its sources by INJECTION --
+`NessieAI/tests/nessie_tests/collect.py` takes its sources by INJECTION --
 `collect.collect(manifest, out_dir, sources)` -- and
-`nessie_tests/sources.py::DockerSources` is the one concrete implementation.
+`NessieAI/tests/nessie_tests/sources.py::DockerSources` is the one concrete implementation.
 Everything goes through the running `nextseek` container, so **no database
 credential ever reaches the host and nothing is added to the host test lane**:
 
@@ -251,8 +251,8 @@ templates/report_bayes.html.tpl   the page: three columns per question, blind ga
 ```
 
 `merge_grades`'s logic lives in the importable package
-`nessie_tests/output_skill_bayesian/merge_grades.py` (underscores), under test in
-`nessie_tests/tests/test_merge_grades.py`. A hyphenated directory is not a Python
+`NessieAI/tests/nessie_tests/output_skill_bayesian/merge_grades.py` (underscores), under test in
+`NessieAI/tests/nessie_tests/tests/test_merge_grades.py`. A hyphenated directory is not a Python
 identifier, so nothing under `output-skill-bayesian/` can be imported, and a
 script that cannot be imported cannot be unit tested -- both scripts in the
 sibling `output-skill/` rotted for exactly that reason. The script here exists
@@ -260,11 +260,11 @@ only to give this file a path to name. Change behaviour in the package, not in
 the script.
 
 The other four modules the sequence uses are plain `nessie_tests` modules, not
-skill files: `nessie_tests/collect.py`, `nessie_tests/sources.py`,
-`nessie_tests/export.py` and `nessie_tests/bayes_manifest.py`.
+skill files: `NessieAI/tests/nessie_tests/collect.py`, `NessieAI/tests/nessie_tests/sources.py`,
+`NessieAI/tests/nessie_tests/export.py` and `NessieAI/tests/nessie_tests/bayes_manifest.py`.
 
 `build_bayes_report.py` takes `--run` (the run directory), `--out`, and
-optionally `--corpus` (defaults to `nessie_tests/corpus.json`, which is where the
+optionally `--corpus` (defaults to `NessieAI/tests/nessie_tests/corpus.json`, which is where the
 questions come from) and `--fragment` (drop the `<head>` skeleton, for the
 Artifact publisher; the default is a complete document, because this page is
 opened and graded rather than published).

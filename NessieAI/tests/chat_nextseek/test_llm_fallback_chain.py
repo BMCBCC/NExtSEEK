@@ -20,11 +20,11 @@ from __future__ import annotations
 
 import json
 import types
-from pathlib import Path
 
 import pytest
 from pydantic import BaseModel
 
+from NessieAI import paths
 from chat_nextseek import llm_clients
 from chat_nextseek.config import ChatConfig
 from chat_nextseek.llm_clients import (
@@ -98,7 +98,7 @@ def _flatten_profile(profile: dict) -> dict[str, dict]:
 
 def _shipped_catalog() -> dict[str, dict]:
     raw = json.loads(
-        (Path(__file__).resolve().parents[1] / "agent_model_catalog.json").read_text()
+        (paths.CHAT_NEXTSEEK_DIR / "agent_model_catalog.json").read_text()
     )
     return {name: _flatten_profile(p) for name, p in raw.items() if not name.startswith("_")}
 

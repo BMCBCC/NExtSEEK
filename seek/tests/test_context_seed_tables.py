@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
+
 ROOT = Path(__file__).resolve().parents[2]
 SQL = ROOT / "startup" / "seed" / "sql"
 
@@ -28,7 +30,7 @@ def test_assay_context_seed_carries_every_row_from_the_committed_export():
     Not a magic 217: read the export, so a regenerated seed stays honest.
     """
     export = json.loads(
-        (ROOT / "chat_nextseek" / "src" / "chat_nextseek" / "context"
+        (paths.CHAT_NEXTSEEK_DIR / "src" / "chat_nextseek" / "context"
          / "assays_db.json").read_text()
     )
     sql = (SQL / "assay_context.sql").read_text()

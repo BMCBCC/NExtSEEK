@@ -1,8 +1,10 @@
 """F §12.2: assistant_reply Optional (absent/None on non-answer turns, never ""
 when present); answered-entry filtering; writer outputs satisfy the validator."""
 import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+from NessieAI import paths
+
+sys.path.insert(0, str(paths.CHAT_NEXTSEEK_DIR / "src"))
 
 import pytest
 from chat_nextseek import chat_memory as cm

@@ -34,9 +34,10 @@ def test_mutation_mixed_batch_kind_fails():
 
 def test_monitoring_module_ast_has_no_publish_call():
     import ast
-    from pathlib import Path
 
-    path = Path(__file__).resolve().parents[2] / "cc_assistant" / "route_monitoring.py"
+    from NessieAI import paths
+
+    path = paths.ROUTER_DIR / "route_monitoring.py"
     tree = ast.parse(path.read_text())
     for node in ast.walk(tree):
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):

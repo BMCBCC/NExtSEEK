@@ -1188,7 +1188,7 @@ _DEADLINE_CONSEQUENCE = (
 
 _COLLECTION_GAP = (
     "Run step 1 first: `python -m NessieAI.tests.nessie_tests.collect --run <run>` (see "
-    "nessie_tests/output-skill-bayesian/SKILL.md). Proceeding anyway is "
+    "NessieAI/tests/nessie_tests/output-skill-bayesian/SKILL.md). Proceeding anyway is "
     "supported; reading the result as a measured run is not.")
 
 

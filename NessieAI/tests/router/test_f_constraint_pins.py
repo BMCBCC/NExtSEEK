@@ -2,13 +2,13 @@
 Update a pin ONLY with an enumerated commit-body note explaining why."""
 import hashlib
 import inspect
-from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
 from NessieAI.router import router as cc_router
 
-_REPO = Path(__file__).resolve().parents[3]
+_REPO = paths.REPO_ROOT
 
 # NOTE: test_route_capabilities_unmodified (a sha256 pin on
 # route_capabilities.json) was deleted here. Its premise — "the registry is
@@ -17,7 +17,7 @@ _REPO = Path(__file__).resolve().parents[3]
 # registry is *meant* to change; what must hold are its invariants.
 #
 # Replaced by behavioural coverage in
-# nextseek_api/assistant/tests/test_route_capabilities.py, notably
+# NessieAI/tests/router/test_route_capabilities.py, notably
 # test_every_user_facing_tool_has_a_task_family — the test that would have caught
 # system_agent sitting in nextseek_query.tools with no family behind it.
 
@@ -29,7 +29,7 @@ def test_heuristic_untouched():                      # F-9
 
 
 def test_r03_log_block_untouched():                  # R-03
-    p = _REPO / "dmac_assistant" / "src" / "dmac_assistant" / "router" / "agent.py"
+    p = paths.DMAC_ASSISTANT_DIR / "src" / "dmac_assistant" / "router" / "agent.py"
     src = p.read_text()
     assert "# R-03: never log reasoning text or user_query" in src
     # The router_decision log call must not carry reasoning text or the query.

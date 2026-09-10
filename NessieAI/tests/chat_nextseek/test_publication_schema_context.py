@@ -6,9 +6,10 @@ with the wrong casing returns null rather than raising.
 """
 
 import json
-from pathlib import Path
 
-CONTEXT = Path(__file__).resolve().parents[1] / "src" / "chat_nextseek" / "context"
+from NessieAI import paths
+
+CONTEXT = paths.CHAT_NEXTSEEK_DIR / "src" / "chat_nextseek" / "context"
 
 
 def _min_schema():

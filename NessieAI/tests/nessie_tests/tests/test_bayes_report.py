@@ -12,9 +12,10 @@ import re
 import subprocess
 import sys
 
+from NessieAI import paths
 from NessieAI.tests.nessie_tests import bayes_manifest, collect, export
 
-ROOT = pathlib.Path(__file__).resolve().parents[2]
+ROOT = paths.REPO_ROOT
 SKILL_DIR = pathlib.Path(__file__).resolve().parents[1] / "output-skill-bayesian"
 SCRIPTS = SKILL_DIR / "scripts"
 
@@ -528,7 +529,7 @@ def test_every_module_command_in_the_runbook_has_an_entry_point():
     """`python -m NessieAI.tests.nessie_tests.X` needs BOTH a `main` and a `__main__` block. A
     module carrying `main` alone still exits 0 and does nothing from a shell,
     which is the exact shape of the defect."""
-    named = set(re.findall(r"python -m (nessie_tests\.[A-Za-z_.]+)", _skill_text()))
+    named = set(re.findall(r"python -m (NessieAI\.tests\.nessie_tests\.[A-Za-z_.]+)", _skill_text()))
 
     assert named, "the runbook names no module commands at all"
     for dotted in sorted(named):
@@ -540,7 +541,7 @@ def test_every_module_command_in_the_runbook_has_an_entry_point():
 
 
 def test_every_script_command_in_the_runbook_exists_and_is_executable():
-    named = set(re.findall(r"python (nessie_tests/[\w./-]+\.py)", _skill_text()))
+    named = set(re.findall(r"python (NessieAI/tests/nessie_tests/[\w./-]+\.py)", _skill_text()))
 
     assert named, "the runbook names no scripts at all"
     for rel in sorted(named):
@@ -578,4 +579,4 @@ def test_the_runbook_points_at_the_importable_merge_grades():
     the wrong file."""
     text = _skill_text()
 
-    assert "nessie_tests/output_skill_bayesian/merge_grades.py" in text
+    assert "NessieAI/tests/nessie_tests/output_skill_bayesian/merge_grades.py" in text

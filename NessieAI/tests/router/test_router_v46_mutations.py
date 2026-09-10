@@ -1,24 +1,22 @@
 """V4-6 mutation killers — prove oracle tests fail on forbidden edits."""
 import hashlib
-from pathlib import Path
 from unittest import mock
 
 import pytest
 
+from NessieAI import paths
 from NessieAI.router import router as cc_router
-
-_REPO = Path(__file__).resolve().parents[3]
 
 
 def test_mutation_route_field_on_classifier_baml_fails_schema_oracle():
-    text = (_REPO / "dmac_assistant" / "baml_src" / "classifier.baml").read_text()
+    text = (paths.DMAC_ASSISTANT_DIR / "baml_src" / "classifier.baml").read_text()
     body = text.split("class ClassificationDecision")[1].split("function")[0]
     assert "route" not in body
     assert "model_class" not in body
 
 
 def test_mutation_legacy_router_prompt_pin_still_holds():
-    text = (_REPO / "dmac_assistant" / "baml_src" / "router.baml").read_text()
+    text = (paths.DMAC_ASSISTANT_DIR / "baml_src" / "router.baml").read_text()
     assert text.count("{{ input.user_query }}") == 1
 
 
@@ -83,6 +81,6 @@ def test_mutation_extra_route_on_flag_off_still_single_call(settings):
 
 
 def test_mutation_dual_router_baml_identity():
-    a = _REPO / "dmac_assistant" / "baml_src" / "router.baml"
-    b = _REPO / "docker" / "cc-runtime" / "baml_src" / "router.baml"
+    a = paths.DMAC_ASSISTANT_DIR / "baml_src" / "router.baml"
+    b = paths.CC_RUNTIME_DIR / "baml_src" / "router.baml"
     assert hashlib.sha256(a.read_bytes()).hexdigest() == hashlib.sha256(b.read_bytes()).hexdigest()

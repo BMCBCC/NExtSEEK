@@ -1,15 +1,9 @@
 """Mutation tests for DD-44 aggregation operators (V5-3 oracle)."""
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 from typing import Callable
 
 import pytest
-
-REPO = Path(__file__).resolve().parents[2]
-if str(REPO) not in sys.path:
-    sys.path.insert(0, str(REPO))
 
 from NessieAI.hibayes import judge  # noqa: E402
 from NessieAI.hibayes.judge_models import (  # noqa: E402

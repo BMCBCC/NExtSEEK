@@ -3,19 +3,19 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from io import StringIO
-from pathlib import Path
 from uuid import uuid4
 
 import pytest
 
 from contextlib import redirect_stdout
 
+from NessieAI import paths
 from chat_nextseek.evaluator.dashboard.data_adapter import compute_dashboard_data, parse_batch_report
 from chat_nextseek.evaluator.dashboard.render import _PLACEHOLDER, find_latest_report, main, render, to_js_format
 from chat_nextseek.evaluator.reports import EvalBatchReport, EvalReport, JudgmentSummary, RetryDecisionSummary, RetryOutcome
 
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = paths.CHAT_NEXTSEEK_DIR
 TEMPLATE_PATH = REPO_ROOT / "src/chat_nextseek/evaluator/dashboard/dashboard-template.html"
 
 

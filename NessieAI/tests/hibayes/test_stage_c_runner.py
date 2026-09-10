@@ -1,14 +1,9 @@
 """Tests for exactly-three Stage C runner and replay."""
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import pytest
-
-REPO = Path(__file__).resolve().parents[2]
-if str(REPO) not in sys.path:
-    sys.path.insert(0, str(REPO))
 
 from NessieAI.hibayes.attempt_store import AttemptStore  # noqa: E402
 from NessieAI.hibayes.judge import STAGE_C_STATUS_COMPLETE, aggregate_outcome  # noqa: E402

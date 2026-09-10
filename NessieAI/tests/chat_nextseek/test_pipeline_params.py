@@ -1,9 +1,10 @@
 import json
-from pathlib import Path
 
 import pytest
 
-NFCORE_DIR = Path(__file__).resolve().parent.parent / "src" / "chat_nextseek" / "reports" / "templates" / "nfcore"
+from NessieAI import paths
+
+NFCORE_DIR = paths.CHAT_NEXTSEEK_DIR / "src" / "chat_nextseek" / "reports" / "templates" / "nfcore"
 
 
 def _load(name):

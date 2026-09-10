@@ -293,7 +293,7 @@ class AuthTests(GranularEndpointBase):
 
 def test_chat_nextseek_resolves_to_merged_tree():
     import chat_nextseek
-    assert "chat_nextseek/src" in chat_nextseek.__file__.replace("\\", "/")
+    assert "NessieAI/chat_nextseek/src" in chat_nextseek.__file__.replace("\\", "/")
 
 
 class ReingestEndpointTests(GranularEndpointBase):

@@ -15,6 +15,7 @@ __all__ = [
     "REPO_ROOT",
     "NESSIE_ROOT",
     "CHAT_NEXTSEEK_DIR",
+    "DMAC_ASSISTANT_DIR",
     "NESSIE_CORPUS",
     "DMAC_BUILD_CONTEXT",
     "CC_DIR",
@@ -43,9 +44,13 @@ CHAT_NEXTSEEK_DIR = NESSIE_ROOT / "chat_nextseek"
 # The hand-owned test corpus. The live router also reads it (family labels).
 NESSIE_CORPUS = NESSIE_ROOT / "tests" / "nessie_tests" / "corpus.json"
 
+# The router and judge unit (dist dmac-assistant, import name dmac_assistant).
+# Its baml_src/ and build_context/ sit beside its src/.
+DMAC_ASSISTANT_DIR = NESSIE_ROOT / "dmac_assistant"
+
 # route_capabilities.json (generated) and router_model_class_map.json
 # (hand-kept). Stays inside the dmac_assistant unit, next to src/.
-DMAC_BUILD_CONTEXT = NESSIE_ROOT / "dmac_assistant" / "build_context"
+DMAC_BUILD_CONTEXT = DMAC_ASSISTANT_DIR / "build_context"
 
 # Engine packages whose sources gate tests and inventories read by path.
 CC_DIR = NESSIE_ROOT / "cc"

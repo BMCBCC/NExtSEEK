@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Regenerate startup/seed/sql/assay_context.sql from the committed JSON export.
 
-Source: chat_nextseek/src/chat_nextseek/context/assays_db.json, itself a
+Source: NessieAI/chat_nextseek/src/chat_nextseek/context/assays_db.json, itself a
 `SELECT * FROM dmac.assay_context` against production, mapped by
-chat_nextseek/src/chat_nextseek/config.py::map_assay.
+NessieAI/chat_nextseek/src/chat_nextseek/config.py::map_assay.
 
 Run from the repo root:  python scripts/generate_assay_context_seed.py
 """
@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPORT = ROOT / "chat_nextseek/src/chat_nextseek/context/assays_db.json"
+EXPORT = ROOT / "NessieAI/chat_nextseek/src/chat_nextseek/context/assays_db.json"
 DEST = ROOT / "startup/seed/sql/assay_context.sql"
 
 # Exported JSON key -> database column. The column spellings are map_assay's

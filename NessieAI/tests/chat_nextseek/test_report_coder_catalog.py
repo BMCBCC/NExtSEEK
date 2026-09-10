@@ -1,5 +1,6 @@
 import json
-from pathlib import Path
+
+from NessieAI import paths
 
 
 def _agents_in_profile(body: dict) -> set:
@@ -12,7 +13,7 @@ def _agents_in_profile(body: dict) -> set:
 
 def test_report_coder_registered_in_every_profile():
     catalog = json.loads(
-        (Path(__file__).resolve().parents[1] / "agent_model_catalog.json").read_text()
+        (paths.CHAT_NEXTSEEK_DIR / "agent_model_catalog.json").read_text()
     )
     for profile, body in catalog.items():
         if profile.startswith("_"):

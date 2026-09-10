@@ -21,7 +21,7 @@ create "needs-ruling" "5319e7" "Blocked on a maintainer decision"
 
 # area: open set; these are the seeded starters (validator SEEDED_AREAS)
 AREA="c5def5"
-create "area: cc_assistant"   "$AREA" "Container-CC subsystem: nextseek_api/cc_assistant/, docker/cc-runtime/, agent plugin + skills"
+create "area: cc_assistant"   "$AREA" "Container-CC subsystem: NessieAI/cc/, NessieAI/docker/cc-runtime/, agent plugin + skills"
 create "area: chat_nextseek"  "$AREA" "NS pipeline package: router, entity/parser/api agents, prompts, catalogs"
 create "area: nextseek_api"   "$AREA" "REST API layer not covered by a narrower area"
 create "area: seek-proxy"     "$AREA" "SEEK passthrough ViewSet family (samples, studies, investigations, ...)"
@@ -31,7 +31,7 @@ create "area: batch-upload"   "$AREA" "Batch-upload plugin family (_batch_upload
 create "area: sample-search"  "$AREA" "Sample search / advanced_search code paths"
 create "area: project-search" "$AREA" "Project/investigation/study discovery paths"
 create "area: router"         "$AREA" "BAML route decision, route_capabilities, history context"
-create "area: schema-rag"     "$AREA" "nextseek_api/schema_rag/ ingest/embedding/query"
+create "area: schema-rag"     "$AREA" "NessieAI/schema_rag/ ingest/embedding/query"
 create "area: search-solr"    "$AREA" "SEEK/Solr indexing and search"
 create "area: graph-neo4j"    "$AREA" "Neo4j data, sync, graph queries"
 create "area: deployment"     "$AREA" "Compose topology, images, env/config delivery, live-instance concerns"

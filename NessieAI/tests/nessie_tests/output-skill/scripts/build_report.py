@@ -75,6 +75,21 @@ def default_verdict(entry) -> str:
     return DEFAULT_VERDICT.get(entry.get("status"), "real")
 
 
+def harness_dir(repo):
+    """The harness package inside the checkout at `repo`.
+
+    `NessieAI/tests/nessie_tests/` since the NessieAI move. A checkout from
+    before it holds the harness at `nessie_tests/`, and an old run is often
+    reported against the tree it ran on, so that layout is tried second.
+    """
+    repo = pathlib.Path(repo)
+    new = repo / "NessieAI" / "tests" / "nessie_tests"
+    for cand in (new, repo / "nessie_tests"):
+        if cand.is_dir():
+            return cand
+    return new
+
+
 def load_graph_limit_sentinels(repo):
     """`GRAPH_LIMIT_SENTINELS` read from the tree being reported on.
 
@@ -87,13 +102,13 @@ def load_graph_limit_sentinels(repo):
     `--repo` first, because the report describes THAT tree's corpus; the copy
     beside this script is the fallback for a skill checked out on its own.
     """
-    for p in (pathlib.Path(repo) / "nessie_tests" / "limits.py", LIMITS_DEFAULT):
+    for p in (harness_dir(repo) / "limits.py", LIMITS_DEFAULT):
         if p.exists():
             spec = importlib.util.spec_from_file_location("_nessie_limits", p)
             mod = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(mod)
             return mod.GRAPH_LIMIT_SENTINELS
-    sys.exit(f"cannot find nessie_tests/limits.py under {repo} or beside this script")
+    sys.exit(f"cannot find the harness limits.py under {repo} or beside this script")
 
 STANDALONE = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
               '<meta name="viewport" content="width=device-width,initial-scale=1">\n'
@@ -192,7 +207,7 @@ def main():
     # `corpus.merged`'s override rule to describe the right case. corpus.json has
     # one definition per id, retired ones included -- and reading those matters,
     # because an OLD manifest can name a case retired since.
-    corpus_raw = lj(repo / "nessie_tests" / "corpus.json")
+    corpus_raw = lj(harness_dir(repo) / "corpus.json")
     variants = flatten(corpus_raw)
     # A --cases run is driven by variants defined INLINE in the probe file, which
     # `corpus.select_cases` returns at run time but which never enter the corpus. The

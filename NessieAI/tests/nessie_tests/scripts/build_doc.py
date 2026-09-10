@@ -8,7 +8,9 @@ import json, pathlib, sys, collections, csv
 S = pathlib.Path("/tmp/claude-1000/-home-cdemu-code-dmac-docker/"
                  "7c6b89bb-13b7-48d6-8ccd-7b0eda6e02a0/scratchpad")
 spec = json.loads((S / "qset.json").read_text())
-corpus = json.loads(pathlib.Path("nessie_tests/corpus.json").read_text())
+HERE = pathlib.Path(__file__).resolve()
+corpus = json.loads((HERE.parents[1] / "corpus.json").read_text())
+DOC_OUT = HERE.parents[4] / "docs" / "nessie-question-set-2026-08-06.md"
 byid = {v["id"]: v for b in corpus["families"].values() for v in b["variants"]}
 doc = spec["doc"]
 
@@ -510,8 +512,7 @@ W("6. **59 atlas variants remain unread.** They run in the free tiers and are ex
 W("   from every measurement. Worth a pass before a third study.")
 W("")
 
-pathlib.Path("docs/nessie-question-set-2026-08-06.md").write_text("\n".join(lines) + "\n",
-                                                                 encoding="utf-8")
+DOC_OUT.write_text("\n".join(lines) + "\n", encoding="utf-8")
 print("wrote docs/nessie-question-set-2026-08-06.md",
       len(lines), "lines;", n_keep, "kept /", n_reword, "reworded /", n_new, "new;",
       len(graded_keep), "kept ids carry a 2026-08-06 grade")

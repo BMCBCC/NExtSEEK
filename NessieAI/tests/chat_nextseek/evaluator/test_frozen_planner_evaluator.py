@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from pathlib import Path
+from NessieAI import paths
 
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = paths.CHAT_NEXTSEEK_DIR
 
 
 def test_plan_evaluator_agent_symbol_present():

@@ -4,17 +4,18 @@ it) (G-4, F-10).
 
 This module does NOT pin route_capabilities.json. The sha256 pin that once did
 was deliberately deleted (see the note atop
-nextseek_api/cc_assistant/tests/test_f_constraint_pins.py): the registry is
+NessieAI/tests/router/test_f_constraint_pins.py): the registry is
 *meant* to change, so a content hash gated nothing. Its successor is the
-behavioural suite nextseek_api/assistant/tests/test_route_capabilities.py,
+behavioural suite NessieAI/tests/router/test_route_capabilities.py,
 which asserts the registry's invariants instead of its bytes. Do not
 reintroduce a hash pin here.
 """
 from pathlib import Path
 
-_REPO = Path(__file__).resolve().parents[3]
-A = _REPO / "dmac_assistant" / "baml_src" / "router.baml"
-B = _REPO / "docker" / "cc-runtime" / "baml_src" / "router.baml"
+from NessieAI import paths
+
+A = paths.DMAC_ASSISTANT_DIR / "baml_src" / "router.baml"
+B = paths.CC_RUNTIME_DIR / "baml_src" / "router.baml"
 
 # The canonical prompt region between the routes loop's close and the
 # unrelated-guard paragraph. Byte-exact (G-4): comments, rewording, or ANY
@@ -50,8 +51,8 @@ def test_module_docstring_does_not_claim_a_hash_pin():
                if ln.startswith("import ") or ln.startswith("from ")]
     assert not [ln for ln in imports if "hashlib" in ln], imports
     # ...and the docstring points at the guard that actually exists.
-    successor = _REPO / "nextseek_api" / "assistant" / "tests" / "test_route_capabilities.py"
-    assert "assistant/tests/test_route_capabilities.py" in doc
+    successor = Path(__file__).resolve().parent / "test_route_capabilities.py"
+    assert "tests/router/test_route_capabilities.py" in doc
     assert successor.is_file()
 
 
