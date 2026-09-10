@@ -1,16 +1,16 @@
 """chat_nextseek E2E test runner — entry point.
 
-Usage:
-  uv run e2e.py                        # sample + run at ratio 0.33
-  uv run e2e.py --ratio 0.5
-  uv run e2e.py --ratio full           # alias for 1.0
-  uv run e2e.py --seed 42
-  uv run e2e.py --family pipeline_nfcore
-  uv run e2e.py --variant adv.basic
-  uv run e2e.py --rerun outputs/e2e_<ts>/manifest.json [--failed-only]
-  uv run e2e.py --list [--family <name>]
-  uv run e2e.py --report outputs/e2e_<ts>/   # regenerate HTML from existing run
-  uv run e2e.py --playwright              # Front-2 spot tests (Phase E)
+Run from the repository root (or /app in the container):
+  python -m NessieAI.tests.e2e                        # sample + run at ratio 0.33
+  python -m NessieAI.tests.e2e --ratio 0.5
+  python -m NessieAI.tests.e2e --ratio full           # alias for 1.0
+  python -m NessieAI.tests.e2e --seed 42
+  python -m NessieAI.tests.e2e --family pipeline_nfcore
+  python -m NessieAI.tests.e2e --variant adv.basic
+  python -m NessieAI.tests.e2e --rerun outputs/e2e_<ts>/manifest.json [--failed-only]
+  python -m NessieAI.tests.e2e --list [--family <name>]
+  python -m NessieAI.tests.e2e --report outputs/e2e_<ts>/   # regenerate HTML from existing run
+  python -m NessieAI.tests.e2e --playwright              # Front-2 spot tests (Phase E)
 """
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ import argparse
 import sys
 from pathlib import Path
 
-CATALOG_PATH = Path(__file__).parent / "e2e" / "catalog.json"
+CATALOG_PATH = Path(__file__).resolve().parent / "catalog.json"
 
 
 def _parse_ratio(s: str) -> float:
@@ -62,7 +62,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--video", action="store_true",
                    help="With --playwright, capture video.webm per browser variant.")
     p.add_argument("--init-env", action="store_true",
-                   help="Generate chat_nextseek/.env from sibling docker + dmac files (target: docker-local).")
+                   help="Generate NessieAI/chat_nextseek/.env from sibling docker + dmac files (target: docker-local).")
     p.add_argument("--force", action="store_true",
                    help="With --init-env, overwrite an existing .env.")
 
@@ -77,7 +77,8 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(f"[e2e] wrote {path} (target: docker-local)")
         print(f"[e2e] API_USER/API_PASS default to demo/demopassword; edit {path} if your docker user differs")
-        print(f"[e2e] next: `uv run e2e.py --list` to verify, or `uv run e2e.py --variant advanced.basic_ndma` to smoke-test")
+        print("[e2e] next: `python -m NessieAI.tests.e2e --list` to verify, or "
+              "`python -m NessieAI.tests.e2e --variant advanced.basic_ndma` to smoke-test")
         return 0
 
     if args.list:

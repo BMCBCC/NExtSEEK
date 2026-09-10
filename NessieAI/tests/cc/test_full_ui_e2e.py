@@ -1,32 +1,34 @@
-"""Hermetic tests for nextseek_api/cc_assistant/scripts/full_ui_e2e.py (Task 12).
+"""Hermetic tests for NessieAI/tests/cc/scripts/full_ui_e2e.py (Task 12).
 
 No live browser, no live LLM spend, no real MySQL. `run_variant_browser` and
 `fetch_chat_session_row` are monkeypatched at the `full_ui_e2e` module level
 for every test.
 
-Run exactly as specified for this task (ephemeral pytest-only env, no
-project deps, no conftest.py — proves the orchestrator's own import surface
-really is limited to the e2e package + mysql helper + stdlib, as required):
+Run exactly as specified for this task, from the repository root (ephemeral
+pytest-only env, no project deps, no conftest.py: this proves the
+orchestrator's own import surface really is limited to the e2e package +
+mysql helper + stdlib, as required):
 
-    cd /home/taishajo/work/NExtSEEK-merge && \\
-      uv run --no-project --with pytest python -m pytest -q --noconftest \\
-      nextseek_api/cc_assistant/tests/test_full_ui_e2e.py
+    uv run --no-project --with pytest python -m pytest -q --noconftest \\
+      NessieAI/tests/cc/test_full_ui_e2e.py
 
 That environment has NEITHER pydantic NOR playwright NOR mysql-connector
 installed (verified directly: `uv run --no-project --with pytest python -c
 "import pydantic"` -> ModuleNotFoundError). full_ui_e2e.py's top-level
 imports are `from NessieAI.tests.e2e.catalog import ...`, `from NessieAI.tests.e2e.criteria import
 check_pass`, `from NessieAI.tests.e2e.playwright.mysql import fetch_chat_session_row`, and
-`from NessieAI.tests.e2e.playwright.runner import run_variant_browser` — the real
-chat_nextseek/e2e/catalog.py needs pydantic and chat_nextseek/e2e/playwright/
-runner.py needs playwright, neither available here. So this file installs
-lightweight fake `e2e.*` modules into sys.modules BEFORE importing
-full_ui_e2e (Python's import system checks sys.modules first, so the F4
-sys.path.insert() inside full_ui_e2e.py never actually reaches disk here —
-harmless no-op in this test, exercised for real by chat_nextseek's own
-pytest run of tests/test_e2e_playwright_runner.py, see
+`from NessieAI.tests.e2e.playwright.runner import run_variant_browser`. The real
+NessieAI/tests/e2e/catalog.py needs pydantic and NessieAI/tests/e2e/playwright/
+runner.py needs playwright, neither available here. So, unless the real
+NessieAI.tests.e2e package is already imported, this file puts lightweight
+fake `NessieAI.tests.e2e.*` modules into sys.modules while it loads
+full_ui_e2e (Python's import system checks sys.modules first, so nothing is
+read from disk), then restores those sys.modules entries: the script keeps
+the fakes it bound at import, and no module collected later in the same
+session can import a fake by accident. The real modules are exercised by
+NessieAI/tests/chat_nextseek/test_e2e_playwright_runner.py; see
 test_run_variant_browser_returns_and_persists_session_id there for the F4a
-regression proof `mysql.connector` is never imported either, since
+regression proof. `mysql.connector` is never imported either, since
 `_OrchestratorConfig._connect_db` imports it lazily on first *call*, and no
 test here ever lets a real DB connection be attempted (fetch_chat_session_row
 is always monkeypatched).
@@ -53,23 +55,21 @@ from pathlib import Path
 import pytest
 
 
-# ── Fake e2e.* modules (installed once, before importing full_ui_e2e) ────
+# ── Fake NessieAI.tests.e2e.* modules (in sys.modules only while full_ui_e2e loads) ──
+
+_E2E = "NessieAI.tests.e2e"
 
 
-def _install_fake_e2e_modules() -> None:
-    if "e2e" in sys.modules:
-        return
-
-    e2e_pkg = types.ModuleType("e2e")
+def _fake_e2e_modules() -> dict[str, types.ModuleType]:
+    e2e_pkg = types.ModuleType(_E2E)
     e2e_pkg.__path__ = []  # mark as a package
-    sys.modules["e2e"] = e2e_pkg
 
-    # -- e2e.catalog: plain duck-typed stand-ins for the real pydantic models
-    # (chat_nextseek/e2e/catalog.py:11-29). Field names/defaults mirror the
+    # -- catalog: plain duck-typed stand-ins for the real pydantic models
+    # (NessieAI/tests/e2e/catalog.py:11-29). Field names/defaults mirror the
     # real PassCriterion(field, op, value=None) / Turn(label, query,
     # pass_criteria=[]) / Variant(family, id, name, turns, tags=[],
     # requires_env=[]) exactly.
-    catalog_mod = types.ModuleType("e2e.catalog")
+    catalog_mod = types.ModuleType(f"{_E2E}.catalog")
 
     class PassCriterion:
         def __init__(self, field, op, value=None):
@@ -95,16 +95,15 @@ def _install_fake_e2e_modules() -> None:
     catalog_mod.PassCriterion = PassCriterion
     catalog_mod.Turn = Turn
     catalog_mod.Variant = Variant
-    sys.modules["e2e.catalog"] = catalog_mod
 
-    # -- e2e.criteria: minimal check_pass covering only what these tests'
+    # -- criteria: minimal check_pass covering only what these tests'
     # ui_text.assistant_reply / mentions|contains|eq|nonempty criteria need.
-    # Real semantics (chat_nextseek/e2e/criteria.py) are exercised by
-    # chat_nextseek's own pytest suite (tests/test_e2e_criteria*.py); this
+    # Real semantics (NessieAI/tests/e2e/criteria.py) are exercised by
+    # NessieAI/tests/chat_nextseek/test_e2e_criteria*.py; this
     # stand-in only has to prove full_ui_e2e's *plumbing* into check_pass
     # (debug/criteria/browser_ctx/console_text/mysql_chat_log/run_root
     # wiring) is correct, which does not require the full DSL.
-    criteria_mod = types.ModuleType("e2e.criteria")
+    criteria_mod = types.ModuleType(f"{_E2E}.criteria")
 
     def check_pass(debug, criteria, *, session=None, last_reply=None, run_root=None,
                     browser_ctx=None, console_text=None, mysql_chat_log=None):
@@ -128,39 +127,63 @@ def _install_fake_e2e_modules() -> None:
         return all_passed, results
 
     criteria_mod.check_pass = check_pass
-    sys.modules["e2e.criteria"] = criteria_mod
 
-    playwright_pkg = types.ModuleType("e2e.playwright")
+    playwright_pkg = types.ModuleType(f"{_E2E}.playwright")
     playwright_pkg.__path__ = []
-    sys.modules["e2e.playwright"] = playwright_pkg
 
-    mysql_mod = types.ModuleType("e2e.playwright.mysql")
+    mysql_mod = types.ModuleType(f"{_E2E}.playwright.mysql")
 
     def fetch_chat_session_row(config, session_id, *, env="dev"):  # pragma: no cover — always monkeypatched in tests
         return []
 
     mysql_mod.fetch_chat_session_row = fetch_chat_session_row
-    sys.modules["e2e.playwright.mysql"] = mysql_mod
 
-    runner_mod = types.ModuleType("e2e.playwright.runner")
+    runner_mod = types.ModuleType(f"{_E2E}.playwright.runner")
 
     def run_variant_browser(variant, config, out_dir, **kwargs):  # pragma: no cover — always monkeypatched in tests
         raise NotImplementedError("tests must monkeypatch full_ui_e2e.run_variant_browser")
 
     runner_mod.run_variant_browser = run_variant_browser
-    runner_mod.__name__ = "e2e.playwright.runner"
-    sys.modules["e2e.playwright.runner"] = runner_mod
+
+    return {
+        module.__name__: module
+        for module in (e2e_pkg, catalog_mod, criteria_mod, playwright_pkg, mysql_mod, runner_mod)
+    }
 
 
-_install_fake_e2e_modules()
+_SCRIPT_PATH = Path(__file__).resolve().parent / "scripts" / "full_ui_e2e.py"
 
-_SCRIPT_PATH = Path(__file__).resolve().parents[3] / "nextseek_api/cc_assistant/scripts/full_ui_e2e.py"
-_spec = importlib.util.spec_from_file_location(
-    "NessieAI.tests.cc.scripts.full_ui_e2e", _SCRIPT_PATH
-)
-full_ui_e2e = importlib.util.module_from_spec(_spec)
-sys.modules[_spec.name] = full_ui_e2e
-_spec.loader.exec_module(full_ui_e2e)
+
+def _load_full_ui_e2e() -> types.ModuleType:
+    """Load the orchestrator against the fakes, then put sys.modules back.
+
+    When the real e2e package is already imported (a module collected earlier
+    in this session imported it), the orchestrator binds the real modules, as
+    it always has. Otherwise the fakes stand in for the import only: left in
+    sys.modules they would shadow the real package for every module collected
+    after this one.
+    """
+    fakes = {} if _E2E in sys.modules else _fake_e2e_modules()
+    absent = object()
+    saved = {name: sys.modules.get(name, absent) for name in fakes}
+    sys.modules.update(fakes)
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "NessieAI.tests.cc.scripts.full_ui_e2e", _SCRIPT_PATH
+        )
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+    finally:
+        for name, previous in saved.items():
+            if previous is absent:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = previous
+    return module
+
+
+full_ui_e2e = _load_full_ui_e2e()
 
 
 # ── Fixtures / helpers ────────────────────────────────────────────────────

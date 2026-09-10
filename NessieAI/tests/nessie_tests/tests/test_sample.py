@@ -1,9 +1,6 @@
 """Tests for corpus.sample (per-family fractional sampling)."""
 from NessieAI.tests.nessie_tests import corpus
-from nessie_tests.pathsetup import ensure_e2e_importable
-
-ensure_e2e_importable()
-from NessieAI.tests.e2e.catalog import Turn, Variant  # noqa: E402
+from NessieAI.tests.e2e.catalog import Turn, Variant
 
 
 def _v(family, id):

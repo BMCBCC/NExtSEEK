@@ -3,12 +3,12 @@ import json
 import random
 import re
 from pathlib import Path
-from nessie_tests.pathsetup import ensure_e2e_importable
 
-ensure_e2e_importable()
-from NessieAI.tests.e2e.catalog import load_catalog, Catalog, PassCriterion, Variant  # noqa: E402
+from NessieAI.tests import e2e as _e2e_pkg
+from NessieAI.tests.e2e.catalog import load_catalog, Catalog, PassCriterion, Variant
 
-_BASE_CATALOG = Path(__file__).resolve().parents[1] / "chat_nextseek" / "e2e" / "catalog.json"
+# The e2e catalog this corpus was adopted from; tests/test_catalog_drift.py hashes it.
+_BASE_CATALOG = Path(_e2e_pkg.__file__).resolve().parent / "catalog.json"
 
 
 def sha256_of(path) -> str:

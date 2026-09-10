@@ -17,10 +17,10 @@ Test harness:
   uv run cli.py -st                          # E2E test suite (default ratio 0.33)
   uv run cli.py -ft                          # E2E full run (ratio=1.0)
 
-E2E test suite (routes through e2e.runner.run_main):
+E2E test suite (runs `python -m NessieAI.tests.e2e` from the NExtSEEK checkout root):
   uv run cli.py -st                           # default ratio 0.33 sample of catalog variants
   uv run cli.py -ft                           # full run (ratio=1.0, all variants)
-  uv run e2e.py --help                        # advanced flags: --seed, --family, --variant, --rerun, --report, ...
+  python -m NessieAI.tests.e2e --help         # from the checkout root; advanced flags: --seed, --family, --variant, --rerun, --report, ...
 """
 
 from __future__ import annotations
@@ -30,7 +30,8 @@ import json
 import os
 import shlex
 import subprocess
-from contextlib import contextmanager
+import sys
+from pathlib import Path
 from typing import Sequence
 
 from dotenv import load_dotenv
@@ -39,11 +40,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def _run(command: Sequence[str], env: dict[str, str] | None = None) -> int:
+def _run(
+    command: Sequence[str],
+    env: dict[str, str] | None = None,
+    cwd: Path | None = None,
+) -> int:
     """Execute a subprocess command, mirroring it to stdout and preserving the exit code."""
     print(f"[cli] Running: {shlex.join(command)}")
     try:
-        result = subprocess.run(command, check=False, env=env)
+        result = subprocess.run(command, check=False, env=env, cwd=cwd)
         return result.returncode
     except KeyboardInterrupt:
         print("\n[cli] Interrupted")
@@ -195,30 +200,6 @@ def _build_prod_subprocess_env(enabled: bool) -> dict[str, str] | None:
     return env
 
 
-@contextmanager
-def _prod_env_override(enabled: bool):
-    """Temporarily map the standard env var names to production values in-process."""
-    if not enabled:
-        yield
-        return
-
-    overrides = _build_prod_config_map(True)
-    previous = {key: os.environ.get(key) for key, value in overrides.items() if isinstance(value, str)}
-    previous["CHAT_NEXTSEEK_CONFIG_SOURCE_ENV_NAMES"] = os.environ.get("CHAT_NEXTSEEK_CONFIG_SOURCE_ENV_NAMES")
-    try:
-        for key, value in overrides.items():
-            if isinstance(value, str):
-                os.environ[key] = value
-        os.environ["CHAT_NEXTSEEK_CONFIG_SOURCE_ENV_NAMES"] = json.dumps(_build_prod_source_env_names(True))
-        yield
-    finally:
-        for key, value in previous.items():
-            if value is None:
-                os.environ.pop(key, None)
-            else:
-                os.environ[key] = value
-
-
 def _build_streamlit_command(
     mode: str | None,
     extra_args: list[str],
@@ -333,21 +314,39 @@ def cmd_query_plan(args: argparse.Namespace) -> int:
 
 
 
+def _nessie_checkout_root() -> Path | None:
+    """The NExtSEEK checkout holding this package: the first parent with NessieAI/__init__.py."""
+    for parent in Path(__file__).resolve().parents:
+        if (parent / "NessieAI" / "__init__.py").is_file():
+            return parent
+    return None
+
+
 def cmd_smart_test(args: argparse.Namespace) -> int:
-    """Route -st (smart test) and -ft (full test) through the new e2e.py runner.
+    """Route -st (smart test) and -ft (full test) to the e2e runner.
+
+    The e2e suite is NessieAI.tests.e2e in the NExtSEEK checkout, not part of
+    this package, and NessieAI is importable only from the checkout root. So
+    the runner is started as `python -m NessieAI.tests.e2e` with the root as
+    its working directory; run outputs land under <checkout root>/outputs/.
 
     Legacy flag semantics:
       -st               -> e2e --ratio 0.33 (default sample)
       -ft               -> e2e --ratio full (all variants)
     """
-    from pathlib import Path
-    from NessieAI.tests.e2e.runner import run_main
-
-    catalog_path = Path(__file__).parent / "e2e" / "catalog.json"
-    ratio = 1.0 if getattr(args, "full_test", False) else 0.33
+    root = _nessie_checkout_root()
+    if root is None:
+        print(
+            "[cli] -st/-ft need the NExtSEEK checkout: no NessieAI/ package above "
+            f"{Path(__file__).resolve().parent}. Run `python -m NessieAI.tests.e2e` "
+            "from the checkout root instead.",
+            file=sys.stderr,
+        )
+        return 2
+    ratio = "full" if getattr(args, "full_test", False) else "0.33"
     profile = args.mode or os.environ.get("NEXTSEEK_MODE", "mixed")
-    with _prod_env_override(bool(args.prod)):
-        return run_main(catalog_path, ratio=ratio, profile=profile)
+    command = [sys.executable, "-m", "NessieAI.tests.e2e", "--ratio", ratio, "--profile", profile]
+    return _run(command, env=_build_prod_subprocess_env(bool(args.prod)), cwd=root)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -375,10 +374,10 @@ def build_parser() -> argparse.ArgumentParser:
             "\n"
             "  Test harness:\n"
             "    uv run cli.py -t -r 260127                 generate comparison report from reference run YYMMDD folder\n"
-            "  E2E test suite (routes through e2e.runner.run_main):\n"
+            "  E2E test suite (runs python -m NessieAI.tests.e2e from the checkout root):\n"
             "    uv run cli.py -st                            default ratio 0.33 sample of catalog variants\n"
             "    uv run cli.py -ft                            full run (ratio=1.0, all variants)\n"
-            "    uv run e2e.py --help                         advanced flags (--seed, --family, --variant, --rerun, --report, ...)\n"
+            "    python -m NessieAI.tests.e2e --help          from the checkout root: advanced flags (--seed, --family, --variant, --rerun, --report, ...)\n"
         ),
     )
 
@@ -432,14 +431,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         default=False,
         dest="smart_test",
-        help="Run E2E test suite (default ratio 0.33). For advanced flags use: uv run e2e.py --help",
+        help="Run E2E test suite (default ratio 0.33). For advanced flags use: python -m NessieAI.tests.e2e --help",
     )
     parser.add_argument(
         "-ft", "--full-test",
         action="store_true",
         default=False,
         dest="full_test",
-        help="Run full E2E (ratio=1.0). Equivalent to: uv run e2e.py --ratio full",
+        help="Run full E2E (ratio=1.0). Equivalent to: python -m NessieAI.tests.e2e --ratio full",
     )
 
     parser.add_argument(

@@ -4,10 +4,7 @@ import csv
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from nessie_tests.pathsetup import ensure_e2e_importable
-
-ensure_e2e_importable()
-from NessieAI.tests.e2e.criteria import check_pass, resolve_field  # noqa: E402
+from NessieAI.tests.e2e.criteria import check_pass, resolve_field
 from NessieAI.tests.nessie_tests import route_observer as ro
 
 # Criteria in the base catalog address produced files as `api_artifact.<name>`.

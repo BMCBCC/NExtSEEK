@@ -12,23 +12,23 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from nessie_tests.pathsetup import ensure_e2e_importable
+_E2E_PACKAGE = "NessieAI.tests.e2e"
 
 
 def ensure_real_e2e_catalog() -> None:
-    """Reload chat_nextseek.e2e.catalog if a prior importer poisoned the name.
+    """Drop a stub ``NessieAI.tests.e2e.catalog`` left in ``sys.modules``.
 
-    Full-suite collection under coverage.py can leave ``e2e.catalog`` as a
-    namespace stub without ``load_catalog``. Isolated imports of this module
-    then fail closed unless the stub is dropped after putting chat_nextseek
-    first on ``sys.path``.
+    A module registered under that name without ``load_catalog`` (a test
+    double that outlived its test) would make the harness imports below fail
+    closed. The e2e package is imported by its qualified name, so no
+    ``sys.path`` setup is involved: dropping the stub and every other
+    ``NessieAI.tests.e2e`` entry lets the next import load the real modules.
     """
-    ensure_e2e_importable()
-    catalog = sys.modules.get("e2e.catalog")
+    catalog = sys.modules.get(f"{_E2E_PACKAGE}.catalog")
     if catalog is not None and not hasattr(catalog, "load_catalog"):
-        for name in [key for key in sys.modules if key == "e2e" or key.startswith("e2e.")]:
+        prefix = f"{_E2E_PACKAGE}."
+        for name in [key for key in sys.modules if key == _E2E_PACKAGE or key.startswith(prefix)]:
             del sys.modules[name]
-        ensure_e2e_importable()
 
 
 ensure_real_e2e_catalog()

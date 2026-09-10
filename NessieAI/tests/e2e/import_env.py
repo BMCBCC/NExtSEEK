@@ -10,20 +10,22 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
+from NessieAI import paths
+
 
 def _find_repo_root(start: Path) -> Path:
     """Walk up from `start` until we find a dir containing both docker/db.env and dmac/local_settings.py.
 
-    In the canonical layout this is chat_nextseek/../ (NExtSEEK/). In a git worktree
-    (e.g. NExtSEEK/.claude/worktrees/<branch>/chat_nextseek/) chat_nextseek/.. points
-    into the worktree dir, not the actual repo, so we keep walking.
+    In the canonical layout this is the checkout root (NExtSEEK/). In a git worktree
+    (e.g. NExtSEEK/.claude/worktrees/<branch>/) the worktree holds neither
+    gitignored file, so we keep walking up to the actual repo.
     """
     for candidate in (start, *start.parents):
         if (candidate / "docker" / "db.env").exists() and (candidate / "dmac" / "local_settings.py").exists():
             return candidate
-    # Fall back to the canonical parent-of-chat_nextseek layout so paths still
-    # render in error messages even when sources are missing.
-    return start.parent.parent.parent  # e2e/import_env.py -> e2e/ -> chat_nextseek/ -> NExtSEEK/
+    # Fall back to this checkout's root so paths still render in error
+    # messages even when sources are missing.
+    return paths.REPO_ROOT
 
 
 REPO_ROOT = _find_repo_root(Path(__file__).resolve())
@@ -139,9 +141,14 @@ def render_dotenv(target: str = "docker-local") -> str:
 
 
 def write_env(target: str = "docker-local", path: Path | None = None, *, force: bool = False) -> Path:
-    """Write the rendered .env to disk. Refuses to overwrite unless force=True."""
+    """Write the rendered .env to disk. Refuses to overwrite unless force=True.
+
+    The default target is NessieAI/chat_nextseek/.env: that is the file
+    chat_nextseek's load_dotenv() and cli.py find by walking up from their own
+    directory, so a .env written anywhere else is never loaded.
+    """
     if path is None:
-        path = Path(__file__).resolve().parent.parent / ".env"
+        path = paths.CHAT_NEXTSEEK_DIR / ".env"
     if path.exists() and not force:
         raise FileExistsError(f"{path} already exists. Pass force=True to overwrite.")
     content = render_dotenv(target=target)

@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
 from NessieAI.cc.op_registry.models import Backend, GateClass, Transport
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -77,13 +78,15 @@ def _interpreter() -> str:
 
 
 def _pythonpath(root: Path) -> str:
+    # The sandbox first, so its edited copies win. The checkout root supplies
+    # the rest of NessieAI, the harness (NessieAI.tests.nessie_tests and
+    # NessieAI.tests.e2e) included; the two src/ dirs shadow the image's
+    # baked copies of the editable units.
     parts = [
         str(root),
         str(REPO_ROOT),
-        str(REPO_ROOT / "dmac_assistant" / "src"),
-        str(REPO_ROOT / "chat_nextseek" / "src"),
-        str(REPO_ROOT / "chat_nextseek"),
-        str(REPO_ROOT / "dmac_assistant" / "tools" / "e2e"),
+        str(paths.NESSIE_ROOT / "dmac_assistant" / "src"),
+        str(paths.CHAT_NEXTSEEK_DIR / "src"),
     ]
     return os.pathsep.join(parts)
 

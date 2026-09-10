@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI.tests import e2e as e2e_pkg
 from NessieAI.tests.e2e.catalog import Catalog, Family, Variant, Turn, PassCriterion, load_catalog
 
 
@@ -61,7 +62,7 @@ def test_load_catalog_round_trip(tmp_path: Path):
 
 
 def test_load_real_catalog():
-    cat = load_catalog(Path(__file__).parent.parent / "e2e" / "catalog.json")
+    cat = load_catalog(Path(e2e_pkg.__file__).resolve().parent / "catalog.json")
     # 11 families: 9 original + system_question/unsupported split out + writes_unsupported added
     expected = {
         "search_advanced", "search_tree", "search_parents_by_child", "search_retrieve",

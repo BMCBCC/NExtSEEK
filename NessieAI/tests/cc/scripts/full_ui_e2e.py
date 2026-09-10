@@ -9,9 +9,9 @@ Approval artifact schema (frozen before spend; runner FAILS on drift):
                 "turns": [{"label": "main", "query": "...",
                            "pass_criteria": [{"field": "...", "op": "...", "value": ...}]}]}]}
 
-Usage:
-    python full_ui_e2e.py --approval <approval.json> --run-dir <dir> [--db-env dev|prod]
-    python full_ui_e2e.py --approval <approval.json> --run-dir <dir> --validate-only
+Usage (from the repository root; running the file by path also works):
+    python -m NessieAI.tests.cc.scripts.full_ui_e2e --approval <approval.json> --run-dir <dir> [--db-env dev|prod]
+    python -m NessieAI.tests.cc.scripts.full_ui_e2e --approval <approval.json> --run-dir <dir> --validate-only
 
 ============================================================================
 Task 12 Step 1 — pinned cost readout (verified against the merged tree, not
@@ -45,11 +45,11 @@ Task 12 fixes (F2/F3/F4), verified against the real merged-tree shapes below
 (NOT the illustrative task-12-brief.md pseudocode, which is explicitly
 illustrative/adapt-to-real-shapes):
 
-F4 (import) -- the top-level `e2e` package lives at chat_nextseek/e2e/ (sibling
-of chat_nextseek/src/, i.e. NOT part of the installed `chat_nextseek` dist); it
-is importable only when chat_nextseek/ is on sys.path. Pinned explicitly below
-(2026-07-08 hardening) rather than relying on ambient PYTHONPATH / an editable
-install picking it up.
+F4 (import) -- the e2e package is `NessieAI.tests.e2e` (NOT part of the
+installed `chat_nextseek` dist); it is importable whenever the checkout root
+(the directory holding NessieAI/) is on sys.path. `python -m` from the root
+puts it there; when this file is run by path, as
+verify_prod_readiness_manifest.py runs it, the bootstrap below does.
 
 F3 (reply text) -- chat_nextseek/e2e/playwright/runner.py::run_variant_browser
 (verified :56-223) returns turn_results entries shaped EXACTLY
@@ -129,15 +129,17 @@ import sys
 from pathlib import Path
 from urllib.parse import urlparse
 
-# F4 fix (2026-07-08): the top-level `e2e` package lives at chat_nextseek/e2e/
-# (sibling of src/, NOT in the installed chat_nextseek dist); it is importable
-# only when chat_nextseek/ is on sys.path (dev's conftest.py does this for its
-# own tests). This standalone orchestrator must pin it explicitly:
-#   scripts/full_ui_e2e.py -> parents[0]=scripts [1]=cc_assistant
-#   [2]=nextseek_api [3]=<repo root> ; <repo root>/chat_nextseek is the package parent.
-sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "chat_nextseek"))
+# F4: run by path, Python puts only this file's own directory on sys.path, so
+# NessieAI is not importable. Put the checkout root (the first parent holding
+# NessieAI/__init__.py) first. Under `python -m` or an import __package__ is
+# set, the root is already importable, and nothing is inserted.
+if not __package__:
+    for _parent in Path(__file__).resolve().parents:
+        if (_parent / "NessieAI" / "__init__.py").is_file():
+            sys.path.insert(0, str(_parent))
+            break
 
-from NessieAI.tests.e2e.catalog import PassCriterion, Turn, Variant  # noqa: E402  (dev e2e package, path-pinned above)
+from NessieAI.tests.e2e.catalog import PassCriterion, Turn, Variant  # noqa: E402
 from NessieAI.tests.e2e.criteria import check_pass  # noqa: E402
 from NessieAI.tests.e2e.playwright.mysql import fetch_chat_session_row  # noqa: E402  (the mysql helper, per Step 1)
 from NessieAI.tests.e2e.playwright.runner import run_variant_browser  # noqa: E402
