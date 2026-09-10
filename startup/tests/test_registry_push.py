@@ -164,6 +164,23 @@ def test_gate_fails_on_local_settings(mock_run: MagicMock) -> None:
 
 
 @patch("startup.steps.registry_push.subprocess.run")
+def test_gate_probe_searches_subdirectories_for_secret_env_files(mock_run: MagicMock) -> None:
+    """A shell glob does not descend, so `/app/*secret*.env` never saw the proxy
+    token below /app/docker/bedrock-proxy/ (now /app/NessieAI/docker/...). The
+    probe must search the whole tree, skip *.example, and a nested hit must fail."""
+    nested = "/app/NessieAI/docker/bedrock-proxy/proxy-secret.env"
+    mock_run.side_effect = _gate_run_dispatcher(
+        f"/app/docker/nextseek.env.example\n{nested}\n"
+    )
+    ok, detail = baked_secret_gate("img:latest")
+    assert ok is False
+    assert nested in detail
+    script = mock_run.call_args_list[0].args[0][-1]
+    assert "find /app -name '*secret*.env*'" in script
+    assert "! -name '*.example'" in script
+
+
+@patch("startup.steps.registry_push.subprocess.run")
 def test_gate_allows_known_benign_luriakey_env(mock_run: MagicMock) -> None:
     """/app/.env with ONLY the LURIAKEY key is the user-accepted 2026-08-05
     known-benign residue (a file path, not a credential)."""

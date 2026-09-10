@@ -252,35 +252,28 @@ def test_cc_runtime_dockerfile_copy_lines_reference_only_existing_sources():
 
 
 # ==========================================================================
-# Negative test: compose CC image build context must NOT be
-# docker/cc-runner/Dockerfile (G7-3) -- docker/cc-runner/ is a deliberately
-# separate, non-production lean proof image.
+# Negative tests: docker/cc-runner/ was a separate, non-production lean proof
+# image that no compose service built. The NessieAI move deleted it (dead
+# build context). It must not come back, and the compose CC image build
+# context must never point at it (G7-3).
 # ==========================================================================
 
 
-def test_cc_runner_lean_proof_image_still_present_and_untouched():
-    """docker/cc-runner/ is explicitly out of scope for this port -- it must
-    remain in place as the lean proof image, not be deleted or overwritten."""
-    dockerfile = CC_RUNNER / "Dockerfile"
-    assert dockerfile.is_file()
-    text = _read(dockerfile)
-    assert "lean" in text.lower() or "deliberately minimal" in text.lower()
+def test_cc_runner_lean_proof_image_is_retired():
+    """The retired lean proof image must not reappear, at its old path or
+    under NessieAI/docker/."""
+    for stale in (CC_RUNNER, REPO_ROOT / "NessieAI" / "docker" / "cc-runner"):
+        assert not stale.exists(), f"retired lean proof image is back: {stale}"
 
 
-def test_cc_runtime_and_cc_runner_dockerfiles_are_genuinely_distinct():
-    """docker/cc-runtime/Dockerfile must not just be a copy of
-    docker/cc-runner/Dockerfile under a new path -- it is the fuller,
-    production-capable image (node+uv+baked plugin+BAML client), not the
-    lean proof image."""
+def test_cc_runtime_dockerfile_is_the_full_image():
+    """docker/cc-runtime/Dockerfile is the fuller, production-capable image
+    (node+uv+baked plugin+BAML client), not a lean proof image: it installs
+    uv / syncs a Python venv and bakes the nextseek plugin's context
+    catalogs."""
     runtime_text = _read(CC_RUNTIME / "Dockerfile")
-    runner_text = _read(CC_RUNNER / "Dockerfile")
-    assert runtime_text != runner_text
-    # The lean proof image never installs uv / syncs a Python venv / bakes
-    # the nextseek plugin's context catalogs; the full runtime image does.
     assert "uv sync" in runtime_text
-    assert "uv sync" not in runner_text
     assert "COPY build_context/plugins/nextseek/" in runtime_text
-    assert "COPY build_context/plugins/nextseek/" not in runner_text
 
 
 def test_compose_cc_build_context_is_not_cc_runner_dockerfile():

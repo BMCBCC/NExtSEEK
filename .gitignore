@@ -174,8 +174,10 @@ docker/db.env
 
 # Bedrock auth-proxy real secret env (holds AWS_BEARER_TOKEN_BEDROCK). Never
 # tracked; injected into the proxy container only at runtime via compose
-# env_file: (gate G6). See docker/bedrock-proxy/proxy-secret.env.example.
-docker/bedrock-proxy/proxy-secret.env
+# env_file: (gate G6). See NessieAI/docker/bedrock-proxy/proxy-secret.env.example.
+# A pattern, not an exact path: an exact path silently stops matching when the
+# directory moves (it lived at docker/bedrock-proxy/ before the NessieAI move).
+**/proxy-secret.env
 internal_docs/
 .cursor/
 # .claude/ is local agent state — ignored except the committed project skills.
@@ -187,33 +189,27 @@ embedding_models/
 setup-celery-worker.sh
 outputs
 CLAUDE.md
-# The cc-agent image's in-container CLAUDE.md is a required Dockerfile COPY
-# input (committed-but-generated; refresh via `python -m
-# build_tools.ingest_nextseek_docs`). Carve it out of the bare rule above so
-# clean clones can build the image.
-!docker/cc-runtime/container/CLAUDE.md
-# The 19 subsystem CLAUDE.md files are repo CONTENT, not local agent state:
+# The subsystem CLAUDE.md files are repo CONTENT, not local agent state:
 # each is the agent-facing half of a documented subsystem boundary, paired with
 # the README.md beside it. The bare rule above still ignores stray local
 # CLAUDE.md files anywhere else in the tree.
+# Every CLAUDE.md under NessieAI/ is re-included by one glob. That includes the
+# cc-agent image's in-container CLAUDE.md
+# (NessieAI/docker/cc-runtime/container/CLAUDE.md), a required Dockerfile COPY
+# input (committed-but-generated; refresh via `python -m
+# NessieAI.build_tools.ingest_nextseek_docs`), so clean clones can build it.
+!NessieAI/**/CLAUDE.md
 !nextseek_api/CLAUDE.md
-!nextseek_api/cc_assistant/CLAUDE.md
-!nextseek_api/eval/CLAUDE.md
 !nextseek_api/batch_upload/CLAUDE.md
 !nextseek_api/attributes/CLAUDE.md
 !nextseek_api/assistant/CLAUDE.md
-!chat_nextseek/CLAUDE.md
 !seek/CLAUDE.md
-!nessie_tests/CLAUDE.md
-!chat_frontend/CLAUDE.md
 !startup/CLAUDE.md
-!build_tools/CLAUDE.md
 !scripts/CLAUDE.md
 !docker/CLAUDE.md
 !dmac/CLAUDE.md
 !ci/CLAUDE.md
 !api_app/CLAUDE.md
-!dmac_assistant/CLAUDE.md
 !themes/CLAUDE.md
 .python-version
 .serena/
@@ -233,10 +229,10 @@ startup/.ci-last-run.xml
 # their own, so committing them would collide across boxes for no gain.
 startup/ci-reports/
 
-# Generated BAML router client (regenerate via baml-cli generate --from dmac_assistant/baml_src)
-dmac_assistant/src/dmac_assistant/router/baml_client/
+# Generated BAML router client (regenerate via baml-cli generate --from NessieAI/dmac_assistant/baml_src)
+NessieAI/dmac_assistant/src/dmac_assistant/router/baml_client/
 # Second generators.baml target (e2e judge client); Task 12 04-baml-setup bind-mounts it.
-dmac_assistant/tools/e2e/baml_client/
+NessieAI/dmac_assistant/tools/e2e/baml_client/
 
 # Local design specs + plans (working docs, not part of the public repo).
 # Excluded level-by-level so a single file can be re-included below; git will not descend
@@ -267,6 +263,9 @@ startup/seed/filestore.tar.gz
 # tree is ~325M per run. They are deliverables, not source, and a `git add -A`
 # that swept one in would be very hard to undo.
 nessie_bayes_*/
+# Ad-hoc nessie harness output directories (for example nessie_out_routing_<date>/).
+# Same reasoning: run output, not source.
+nessie_out*/
 
 # graphify knowledge-graph output: ~62MB per build, of which graph.json alone is
 # ~29MB. Regenerable from the tree at any time (`/graphify . --update`), so it is

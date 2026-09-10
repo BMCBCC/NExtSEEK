@@ -1,16 +1,25 @@
-# chat_nextseek is installed via local-path uv source (pyproject.toml [tool.uv.sources]).
-# Once it goes public, switch to git+hash and add `chat_nextseek/` back here.
-# For now we COPY the dir into the image but skip its heavy / stateful subtrees.
-chat_nextseek/.venv/
-chat_nextseek/.git/
-.claude/
-chat_nextseek/outputs/
-chat_nextseek/old/
-chat_nextseek/__pycache__/
-chat_nextseek/**/__pycache__/
-chat_nextseek/.python-version
-chat_nextseek/.claude/
-chat_nextseek/.mcp.json
+# chat_nextseek and dmac_assistant are installed from local-path uv sources
+# (pyproject.toml [tool.uv.sources]) under NessieAI/. We COPY the tree into the
+# image but skip heavy, stateful or machine-local subtrees, at any depth.
+**/.venv/
+**/.mcp.json
+**/.claude/
+NessieAI/chat_nextseek/.git/
+NessieAI/chat_nextseek/outputs/
+NessieAI/chat_nextseek/old/
+# Only the unit's own copy: a root .python-version would steer `uv sync` in the
+# Dockerfile, so it is deliberately not matched at every depth.
+NessieAI/chat_nextseek/.python-version
+# Pre-move location. After a git pull a box can still hold untracked leftovers
+# here (.venv, outputs, .mcp.json); nothing tracked lives here any more.
+chat_nextseek/
+# Frozen records, never read at runtime.
+NessieAI/history/
+# The app image has no npm step (the chat bundle is committed under static/).
+**/node_modules/
+# NessieAI/tests/ is deliberately NOT excluded: the live router reads
+# NessieAI/tests/nessie_tests/corpus.json, and the in-container test lanes need
+# the tests. test_build_context_env_guard.py pins this.
 
 # Python build / runtime caches
 .venv/
@@ -34,7 +43,8 @@ logs/
 # Local runtime config / secrets — provided at runtime, never needed in the image:
 #   dmac/local_settings.py  is bind-mounted over /app/dmac/local_settings.py
 #   docker/db.env, docker/nextseek.env  are injected via compose env_file
-#   docker/bedrock-proxy/proxy-secret.env  is the proxy's env_file (real Bedrock token)
+#   NessieAI/docker/bedrock-proxy/proxy-secret.env  is the proxy's env_file (real
+#     Bedrock token); matched at any depth, so a moved directory stays covered
 # Excluding them keeps plaintext config/secrets out of the `COPY . /app/` layer.
 # PATTERNS, not exact names: ad-hoc operator copies (nextseek.env.bak.<date>,
 # rotation backups, a root .env) carry the same secrets and must never enter the
@@ -44,8 +54,8 @@ dmac/local_settings.py
 docker/db.env*
 docker/nextseek.env*
 !docker/nextseek.env.example
-docker/bedrock-proxy/proxy-secret.env*
-!docker/bedrock-proxy/proxy-secret.env.example
+**/proxy-secret.env*
+!**/proxy-secret.env.example
 .env
 **/.env
 **/*.env.bak*

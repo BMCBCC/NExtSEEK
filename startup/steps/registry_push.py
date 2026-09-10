@@ -146,8 +146,13 @@ def baked_secret_gate(
     catch-all because push_baseline wraps everything."""
     probe = _image_sh(
         image,
-        "ls /app/.env /app/*secret*.env /app/docker/*env* "
-        "/app/dmac/local_settings.py /home/user/.env /opt/dmac/.env 2>/dev/null; true",
+        "ls /app/.env /app/docker/*env* "
+        "/app/dmac/local_settings.py /home/user/.env /opt/dmac/.env 2>/dev/null; "
+        # Secret env files at ANY depth under /app. A shell glob does not
+        # descend into subdirectories, so `/app/*secret*.env` never saw the
+        # Bedrock proxy token (docker/bedrock-proxy/, now
+        # NessieAI/docker/bedrock-proxy/). Committed *.example templates are fine.
+        "find /app -name '*secret*.env*' ! -name '*.example' 2>/dev/null; true",
         run_limits=run_limits,
     )
     if probe.returncode != 0:

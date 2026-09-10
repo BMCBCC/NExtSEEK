@@ -78,6 +78,9 @@ MUST_BE_EXCLUDED = [
     # the three canonical rendered secret files
     "docker/db.env",
     "docker/nextseek.env",
+    "NessieAI/docker/bedrock-proxy/proxy-secret.env",
+    # the proxy secret's pre-move path: a box keeps it there until the
+    # operator moves it by hand, so it must stay excluded too
     "docker/bedrock-proxy/proxy-secret.env",
     "dmac/local_settings.py",
     # the ad-hoc operator copies that actually leaked into an image (2026-07-29)
@@ -88,6 +91,7 @@ MUST_BE_EXCLUDED = [
     "docker/db.env.old",
     # root compose-interpolation env and any nested real .env
     ".env",
+    "NessieAI/chat_nextseek/.env",
     "chat_nextseek/.env",
     # bak copies at arbitrary depth / with suffixes
     "some/deep/dir/foo.env.bak2",
@@ -97,11 +101,14 @@ MUST_BE_EXCLUDED = [
 MUST_BE_INCLUDED = [
     # committed templates and examples stay in the build context
     "docker/nextseek.env.example",
-    "docker/bedrock-proxy/proxy-secret.env.example",
+    "NessieAI/docker/bedrock-proxy/proxy-secret.env.example",
     "startup/templates/nextseek.env.template",
     "startup/templates/db.env.template",
-    "chat_frontend/.env.example",
-    "chat_nextseek/.env.example",
+    "NessieAI/chat_frontend/.env.example",
+    "NessieAI/chat_nextseek/.env.example",
+    # the live router reads the harness corpus at runtime, so NessieAI/tests/
+    # must ship in the image: a future rule excluding it has to fail loudly
+    "NessieAI/tests/nessie_tests/corpus.json",
     # sanity: ordinary source stays included
     "README.md",
     "dmac/settings.py",
@@ -132,7 +139,8 @@ def test_gitignore_covers_env_bak_copies():
         ".env",
         "docker/nextseek.env",
         "docker/db.env",
-        "docker/bedrock-proxy/proxy-secret.env",
+        # any depth: the proxy secret moved to NessieAI/docker/bedrock-proxy/
+        "**/proxy-secret.env",
     ):
         assert required in lines, f".gitignore lost the `{required}` rule"
 
@@ -290,8 +298,7 @@ def _host_only_by_node_id(filename: str):
 def test_tests_reading_image_absent_inputs_are_host_only():
     """Every node id in IMAGE_ABSENT_INPUTS must carry @pytest.mark.host_only.
 
-    AST, not import: this package has no ``__init__.py`` (so there is no dotted
-    path to the sibling), and ``test_issue_conventions_guard`` exec's
+    AST, not import: ``test_issue_conventions_guard`` exec's
     ``scripts/validate_issue.py`` at import time -- a side effect this
     assertion has no business triggering.
     """

@@ -34,7 +34,7 @@ import pytest
 pytestmark = pytest.mark.host_only
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-PROXY_DIR = REPO_ROOT / "docker" / "bedrock-proxy"
+PROXY_DIR = REPO_ROOT / "NessieAI" / "docker" / "bedrock-proxy"
 COMPOSE_FILE = REPO_ROOT / "docker-compose.yml"
 GITIGNORE_FILE = REPO_ROOT / ".gitignore"
 
@@ -230,7 +230,7 @@ def test_real_secret_file_not_present_in_ported_tree():
         for p in PROXY_DIR.rglob("*")
         if p.is_file() and p.name == REAL_SECRET_FILENAME
     ]
-    assert not hits, f"real secret file committed under docker/bedrock-proxy/: {hits}"
+    assert not hits, f"real secret file committed under NessieAI/docker/bedrock-proxy/: {hits}"
 
 
 @pytest.mark.skipif(
@@ -245,11 +245,11 @@ def test_real_secret_filename_is_gitignored():
     an explicit .gitignore entry (root .gitignore, matching the existing
     docker/nextseek.env / docker/db.env convention)."""
     text = _read(GITIGNORE_FILE)
-    assert f"docker/bedrock-proxy/{REAL_SECRET_FILENAME}" in text or (
+    assert f"NessieAI/docker/bedrock-proxy/{REAL_SECRET_FILENAME}" in text or (
         f"**/{REAL_SECRET_FILENAME}" in text
     ), (
         "root .gitignore must exclude the real "
-        f"docker/bedrock-proxy/{REAL_SECRET_FILENAME} from tracking."
+        f"NessieAI/docker/bedrock-proxy/{REAL_SECRET_FILENAME} from tracking."
     )
 
 
@@ -259,7 +259,7 @@ def test_real_secret_filename_is_dockerignored():
     never enter the Docker build context."""
     text = _read(PROXY_DIR / ".dockerignore")
     assert REAL_SECRET_FILENAME in text, (
-        "docker/bedrock-proxy/.dockerignore must exclude "
+        "NessieAI/docker/bedrock-proxy/.dockerignore must exclude "
         f"{REAL_SECRET_FILENAME} from the build context."
     )
 
@@ -270,10 +270,10 @@ def test_real_secret_filename_is_excluded_from_root_build_context():
     clone legitimately holds it on disk for compose env_file:, and without
     this entry every nextseek image bakes the Bedrock token into /app."""
     text = _read(REPO_ROOT / ".dockerignore")
-    assert f"docker/bedrock-proxy/{REAL_SECRET_FILENAME}" in text or (
+    assert f"NessieAI/docker/bedrock-proxy/{REAL_SECRET_FILENAME}" in text or (
         f"**/{REAL_SECRET_FILENAME}" in text
     ), (
-        "root .dockerignore must exclude docker/bedrock-proxy/"
+        "root .dockerignore must exclude NessieAI/docker/bedrock-proxy/"
         f"{REAL_SECRET_FILENAME} from the nextseek image build context."
     )
 
@@ -302,7 +302,8 @@ def test_real_secret_file_is_not_git_tracked():
     import subprocess
 
     result = subprocess.run(
-        ["git", "ls-files", "docker/bedrock-proxy/"],
+        # the unit's path, plus its pre-move path where a box may still hold it
+        ["git", "ls-files", "--", "NessieAI/docker/bedrock-proxy/", "docker/bedrock-proxy/"],
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
