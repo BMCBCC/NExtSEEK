@@ -3,9 +3,11 @@ pathlib.Path.stat (PosixPath uses __slots__ — `monkeypatch.setattr(<Path>, "st
 raises `AttributeError: 'PosixPath' object attribute 'stat' is read-only`). Instead
 create real files and set distinct mtimes with os.utime."""
 import os
-from pathlib import Path
 
-_NSAPI = Path(__file__).resolve().parents[2]
+from NessieAI import paths
+
+_CC_ENGINE = paths.CC_DIR / "cc_engine.py"
+_SERVICE = paths.REPO_ROOT / "nextseek_api" / "services" / "cc_assistant.py"
 
 
 def test_newest_jsonl_respects_min_mtime(tmp_path):
@@ -26,7 +28,7 @@ def test_run_cc_turn_sets_turn_start_ts_before_container():
     `client.containers.run` substring (which is now that helper's internal
     implementation detail and would appear earlier in the file regardless of
     `run_cc_turn`'s internal ordering)."""
-    src = (_NSAPI / "cc_assistant" / "cc_engine.py").read_text()
+    src = _CC_ENGINE.read_text()
     body = src[src.index("def run_cc_turn("):]
     idx_ts = body.index("translator._turn_start_ts")
     idx_run = body.index("_spawn_with_stale_name_retry(client")
@@ -35,11 +37,11 @@ def test_run_cc_turn_sets_turn_start_ts_before_container():
 
 def test_cc_engine_actually_invokes_on_turn_complete():
     """RED if run_cc_turn's persist block never CALLS the callback (Task 11 Step 2)."""
-    src = (_NSAPI / "cc_assistant" / "cc_engine.py").read_text()
+    src = _CC_ENGINE.read_text()
     assert "on_turn_complete(TurnCompletePayload(" in src
 
 
 def test_services_wires_append_cc_turn_complete_into_run_cc_turn():
     """RED if services/cc_assistant.py stops passing the real writer (Task 11 Step 3)."""
-    src = (_NSAPI / "services" / "cc_assistant.py").read_text()
+    src = _SERVICE.read_text()
     assert "on_turn_complete=_append_cc_turn_complete" in src

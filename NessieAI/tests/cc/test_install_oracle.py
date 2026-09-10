@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
 from NessieAI.cc.op_registry import (
     InstallDiscovery,
     InstallOracleError,
@@ -15,8 +16,8 @@ from NessieAI.cc.op_registry import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_PLUGINS_ROOT = REPO_ROOT / "docker" / "cc-runtime" / "build_context" / "plugins"
-DEFAULT_DOCKERFILE = REPO_ROOT / "docker" / "cc-runtime" / "Dockerfile"
+DEFAULT_PLUGINS_ROOT = paths.CC_RUNTIME_DIR / "build_context" / "plugins"
+DEFAULT_DOCKERFILE = paths.CC_RUNTIME_DIR / "Dockerfile"
 
 SHIM_PREFIX = "nextseek-"
 

@@ -16,6 +16,7 @@ try:
 except ImportError:
     from router_context import HistoryTurn
 
+from NessieAI import paths
 from NessieAI.router import posterior_selector
 from NessieAI.router import transport_trace
 from NessieAI.router.baml_introspect import declared_family_members, validate_member
@@ -68,15 +69,19 @@ class RouteDecision:
     attempted_source: str | None = None
 
 
-def _build_context_dir() -> Path | None:
-    try:
-        from django.conf import settings
+def _build_context_dir() -> Path:
+    """The dmac_assistant build context (route_capabilities.json and
+    router_model_class_map.json), from the checkout and required to exist.
 
-        base = Path(settings.BASE_DIR)
-    except Exception:
-        base = Path(__file__).resolve().parents[2]
-    cand = base / "dmac_assistant" / "build_context"
-    return cand if cand.is_dir() else None
+    It used to be BASE_DIR/dmac_assistant/build_context, returned as None when
+    missing; a None hands the choice to the DMAC_* env overrides, and a stale
+    override then drops every turn to the heuristic with only a WARNING.
+    """
+    ctx = paths.DMAC_BUILD_CONTEXT
+    if not ctx.is_dir():
+        logger.error("CC router: dmac_assistant build context missing at %s", ctx)
+        raise FileNotFoundError(f"dmac_assistant build context missing: {ctx}")
+    return ctx
 
 
 def _resolve_model_id(model_class_key: str | None) -> str | None:

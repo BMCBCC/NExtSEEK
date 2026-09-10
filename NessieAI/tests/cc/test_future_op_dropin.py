@@ -18,41 +18,48 @@ from NessieAI import paths
 from NessieAI.cc.op_registry.models import Backend, GateClass, Transport
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-PLUGIN_REL = Path("docker/cc-runtime/build_context/plugins/nextseek")
+PLUGIN_REL = Path("NessieAI/docker/cc-runtime/build_context/plugins/nextseek")
 SKILL_REL = Path(".claude/skills/add-cc-op/SKILL.md")
 EXPORT_MOD = "NessieAI.cc.op_registry.export"
 GEN_MOD = "NessieAI.build_tools.gen_op_surfaces"
-AUDIT_REL = Path("nextseek_api/cc_assistant/tests/test_op_registry_audit.py")
-OPS_REL = Path("nextseek_api/cc_assistant/op_registry/ops.py")
+AUDIT_REL = Path("NessieAI/tests/cc/test_op_registry_audit.py")
+OPS_REL = Path("NessieAI/cc/op_registry/ops.py")
 RUNNER_REL = PLUGIN_REL / "bin" / "_nextseek_runner.py"
 BATCH_REL = PLUGIN_REL / "bin" / "_batch_upload_runner.py"
 WS_REL = PLUGIN_REL / "bin" / "_ws_contract.py"
-GRANULAR_REL = Path("nextseek_api/assistant/granular.py")
-WRITE_GATE_REL = Path("nextseek_api/assistant/write_gate.py")
-CLAUDE_MD_REL = Path("docker/cc-runtime/container/CLAUDE.md")
-DOCKERFILE_REL = Path("docker/cc-runtime/Dockerfile")
-ROUTE_CAP_REL = Path("dmac_assistant/build_context/route_capabilities.json")
-OPS_JSON_REL = Path("nextseek_api/cc_assistant/op_registry/ops.json")
+GRANULAR_REL = Path("NessieAI/ns/granular.py")
+WRITE_GATE_REL = Path("NessieAI/ns/write_gate.py")
+CLAUDE_MD_REL = Path("NessieAI/docker/cc-runtime/container/CLAUDE.md")
+DOCKERFILE_REL = Path("NessieAI/docker/cc-runtime/Dockerfile")
+ROUTE_CAP_REL = Path("NessieAI/dmac_assistant/build_context/route_capabilities.json")
+OPS_JSON_REL = Path("NessieAI/cc/op_registry/ops.json")
 BAKED_OPS_REL = PLUGIN_REL / "context" / "ops.json"
 COMMANDS_REL = PLUGIN_REL / "commands" / "nextseek.md"
 SKILL_NEXTSEEK_REL = PLUGIN_REL / "skills" / "nextseek" / "SKILL.md"
 SKILL_BATCH_REL = PLUGIN_REL / "skills" / "nextseek-batch-upload" / "SKILL.md"
 
+# NessieAI is one regular package, and Python never merges two copies of a
+# regular package: the sandbox's NessieAI/ wins whole, so it must carry every
+# subpackage the child processes import (the op registry, the generator, the
+# harness it reads corpus.json through), each with its __init__.py.
 COPY_PATHS = (
+    Path("NessieAI/__init__.py"),
+    Path("NessieAI/paths.py"),
+    Path("NessieAI/cc/__init__.py"),
+    Path("NessieAI/cc/op_registry"),
+    Path("NessieAI/ns"),
+    Path("NessieAI/build_tools"),
+    Path("NessieAI/tests/__init__.py"),
+    Path("NessieAI/tests/cc/__init__.py"),
+    AUDIT_REL,
+    Path("NessieAI/tests/nessie_tests"),
+    Path("NessieAI/tests/e2e"),
     PLUGIN_REL,
-    Path("docker/cc-runtime/Dockerfile"),
-    Path("docker/cc-runtime/container/CLAUDE.md"),
+    DOCKERFILE_REL,
+    CLAUDE_MD_REL,
     Path("docker-compose.yml"),
-    Path("nextseek_api/cc_assistant/op_registry"),
-    Path("nextseek_api/cc_assistant/tests/test_op_registry_audit.py"),
-    Path("nextseek_api/cc_assistant/__init__.py"),
-    Path("nextseek_api/__init__.py"),
-    Path("nextseek_api/assistant/granular.py"),
-    Path("nextseek_api/assistant/write_gate.py"),
-    Path("nextseek_api/assistant/read_safe_endpoints.json"),
-    Path("dmac_assistant/build_context/route_capabilities.json"),
-    Path("chat_nextseek/src/chat_nextseek/context/capabilities.md"),
-    Path("nessie_tests/corpus.json"),
+    ROUTE_CAP_REL,
+    Path("NessieAI/chat_nextseek/src/chat_nextseek/context/capabilities.md"),
 )
 
 STEP_HEADINGS = (
@@ -78,10 +85,9 @@ def _interpreter() -> str:
 
 
 def _pythonpath(root: Path) -> str:
-    # The sandbox first, so its edited copies win. The checkout root supplies
-    # the rest of NessieAI, the harness (NessieAI.tests.nessie_tests and
-    # NessieAI.tests.e2e) included; the two src/ dirs shadow the image's
-    # baked copies of the editable units.
+    # The sandbox first: its NessieAI/ is a complete package (COPY_PATHS), so
+    # its edited copies win and the checkout's NessieAI is never consulted. The
+    # two src/ dirs shadow the image's baked copies of the editable units.
     parts = [
         str(root),
         str(REPO_ROOT),
@@ -113,10 +119,6 @@ def _copy_sandbox(tmp: Path) -> Path:
             shutil.copytree(src, dest, dirs_exist_ok=True)
         elif src.is_file():
             shutil.copy2(src, dest)
-    (root / "nextseek_api" / "cc_assistant" / "tests").mkdir(parents=True, exist_ok=True)
-    init = root / "nextseek_api" / "cc_assistant" / "tests" / "__init__.py"
-    if not init.exists():
-        init.write_text("", encoding="utf-8")
     return root
 
 

@@ -8,6 +8,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from NessieAI import paths
+
 _QUERY_RUNNER = "_nextseek_runner.py"
 _BATCH_RUNNER = "_batch_upload_runner.py"
 _OP_PREFIX = "nextseek-"
@@ -17,10 +19,7 @@ PUBLISHED_PATH_SUFFIXES = frozenset({"report", "generate-submission"})
 
 
 def default_bin_dir() -> Path:
-    return (
-        Path(__file__).resolve().parents[2]
-        / "docker/cc-runtime/build_context/plugins/nextseek/bin"
-    )
+    return paths.CC_PLUGIN_BIN
 
 
 def _runner_for_shim(path: Path) -> str | None:

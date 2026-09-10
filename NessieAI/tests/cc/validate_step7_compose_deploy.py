@@ -71,8 +71,9 @@ MBP_HOST_LABEL_RE = re.compile(r"\bmbp\b|macbook[\s_-]*pro", re.IGNORECASE)
 MBP_SNAPSHOT_BASENAME = "integration_plan_snapshot.json"
 
 # The single accepted live-evidence dir (PLAN-3 Task 13 Step 9; user decision
-# 2026-06-30: handoff-only fallback rejected).
-LIVE_EVIDENCE_PATH_LITERAL = "nextseek_api/cc_assistant/evidence/3-ui-based-io-live/"
+# 2026-06-30: handoff-only fallback rejected). Frozen under NessieAI/history/
+# since the NessieAI move; must equal step7_preflight_collector.LIVE_EVIDENCE_PATH.
+LIVE_EVIDENCE_PATH_LITERAL = "NessieAI/history/cc/evidence/3-ui-based-io-live/"
 LIVE_GATE_TRANSCRIPT_REL = LIVE_EVIDENCE_PATH_LITERAL + "live_gate_transcript.txt"
 
 REQUIRED_FILE_HASH_KEYS = ("docker-compose.yml", "docker/nextseek.env.example", "DEPLOY.md")
@@ -176,7 +177,7 @@ _NEXTSEEK_PASSWORD_UNREDACTED_RE = re.compile(
 )
 
 # Task 16 debt fix: pinned to the single allowed Bedrock model id (the
-# bedrock-proxy allowlist -- docker/bedrock-proxy/app/config.py's
+# bedrock-proxy allowlist -- NessieAI/docker/bedrock-proxy/app/config.py's
 # `_DEFAULT_ALLOWED_MODELS`, mirrored here as `_CC_OPUS_MODEL_ID` /
 # `validate_cc_acceptance.OPUS`), NOT a `\S+` wildcard that would accept a
 # proxy invoke-200 for ANY model id. A generic wildcard here would pass even
@@ -1559,7 +1560,7 @@ def check_cost_ledger_valid(ctx: Context) -> tuple[str, bool, str]:
     if not isinstance(entries, list) or not entries:
         return name, False, "cost_ledger.entries missing or empty"
     source_map = _try_load_json(
-        Path(__file__).resolve().parents[1] / "acceptance_evidence" / "step7" / "cost_source_map.json"
+        Path(__file__).resolve().parent / "step7_catalog" / "cost_source_map.json"
     ) or {}
     map_ops = source_map.get("ops") or {}
     problems: list[str] = []
@@ -1738,7 +1739,7 @@ CHECKS: list[Callable[[Context], tuple[str, bool, str]]] = [
 
 def default_repo_root() -> Path:
     """The NExtSEEK repo containing this validator module
-    (tests/ -> cc_assistant -> nextseek_api -> repo root)."""
+    (tests/cc -> tests -> NessieAI -> repo root)."""
     return Path(__file__).resolve().parents[3]
 
 

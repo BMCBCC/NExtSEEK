@@ -2,12 +2,12 @@
 SESSION (user ruling PD-5) and materializes the result like recall."""
 import json
 import sys
-from pathlib import Path
 
 import pytest
 
-_BIN = Path(__file__).resolve().parents[3] / "docker" / "cc-runtime" / \
-    "build_context" / "plugins" / "nextseek" / "bin"
+from NessieAI import paths
+
+_BIN = paths.CC_PLUGIN_BIN
 sys.path.insert(0, str(_BIN))
 
 import _nextseek_runner as runner

@@ -15,10 +15,20 @@ import sys
 import tempfile
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-TESTS = REPO_ROOT / "nextseek_api" / "cc_assistant" / "tests"
+# Run by path, Python puts only this file's own directory on sys.path, so
+# NessieAI is not importable. Put the checkout root (the first parent holding
+# NessieAI/__init__.py) first. Under `python -m` or an import __package__ is
+# set, the root is already importable, and nothing is inserted.
+if not __package__:
+    for _parent in Path(__file__).resolve().parents:
+        if (_parent / "NessieAI" / "__init__.py").is_file():
+            sys.path.insert(0, str(_parent))
+            break
+
+from NessieAI import paths  # noqa: E402
+
+REPO_ROOT = paths.REPO_ROOT
+TESTS = Path(__file__).resolve().parents[1]
 
 
 def _run_validator(bundle: Path, repo: Path) -> tuple[int, str]:

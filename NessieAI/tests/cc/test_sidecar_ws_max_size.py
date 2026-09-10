@@ -16,12 +16,10 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-_ROOT = Path(__file__).resolve().parents[3]
-_SERVER = _ROOT / "docker" / "ns-sidecar" / "app" / "server.py"
-_CLIENT = (
-    _ROOT / "docker" / "cc-runtime" / "build_context" / "plugins"
-    / "nextseek" / "bin" / "_sidecar_client.py"
-)
+from NessieAI import paths
+
+_SERVER = paths.NS_SIDECAR_DIR / "app" / "server.py"
+_CLIENT = paths.CC_PLUGIN_BIN / "_sidecar_client.py"
 _EXPECTED = 16 * 1024 * 1024
 
 

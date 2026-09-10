@@ -1,14 +1,15 @@
 """Guard that runtime CC code does not revive the legacy flat-root provisioning."""
-from pathlib import Path
+from NessieAI import paths
 
 
-ROOT = Path(__file__).resolve().parents[1]
-SERVICE = ROOT.parents[0] / "services" / "cc_assistant.py"
+ROOT = paths.CC_DIR
+SERVICE = paths.REPO_ROOT / "nextseek_api" / "services" / "cc_assistant.py"
+# cc_sweep stayed in the Django shell at nextseek_api/cc_assistant/. The run-1c
+# live probe went to NessieAI/history/ (frozen), so it is no longer runtime code.
 RUNTIME_FILES = [
     ROOT / "cc_config.py",
     ROOT / "cc_engine.py",
-    ROOT / "cc_sweep.py",
-    ROOT / "evidence" / "run_1c_claude_md_live_probe.py",
+    paths.REPO_ROOT / "nextseek_api" / "cc_assistant" / "cc_sweep.py",
     SERVICE,
 ]
 

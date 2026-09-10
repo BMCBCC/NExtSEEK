@@ -6,9 +6,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from NessieAI import paths
 
 __all__ = [
     "CorpusSnapshot",
@@ -18,7 +21,12 @@ __all__ = [
     "runtime_type_builder",
 ]
 
-_CORPUS_PATH = Path(__file__).resolve().parents[2] / "nessie_tests" / "corpus.json"
+logger = logging.getLogger(__name__)
+
+# The hand-owned harness corpus, NessieAI/tests/nessie_tests/corpus.json. The live
+# router reads it too, and every caller swallows a failure here, so a missing
+# file is logged at ERROR in corpus_snapshot().
+_CORPUS_PATH = paths.NESSIE_CORPUS
 
 
 @dataclass(frozen=True)
@@ -31,12 +39,23 @@ class CorpusSnapshot:
 
 
 def _repo_root() -> Path:
-    return Path(__file__).resolve().parents[2]
+    return paths.REPO_ROOT
 
 
 def corpus_snapshot(path: Path | None = None) -> CorpusSnapshot:
     corpus_path = path or _CORPUS_PATH
-    raw = corpus_path.read_bytes()
+    try:
+        raw = corpus_path.read_bytes()
+    except OSError as exc:
+        # Every caller catches this (router classification at router.py and the
+        # posterior leg), so without this line both switch off silently.
+        logger.error(
+            "task-family corpus unreadable at %s (%s): classification and "
+            "posterior routing are off",
+            corpus_path,
+            exc,
+        )
+        raise
     payload = json.loads(raw.decode())
     families_obj = payload.get("families") or {}
     if not isinstance(families_obj, dict):

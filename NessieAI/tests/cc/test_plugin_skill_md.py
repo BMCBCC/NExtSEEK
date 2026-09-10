@@ -11,12 +11,10 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from NessieAI import paths
+
 REPO_ROOT = Path(__file__).resolve().parents[3]
-SKILL_PATH = (
-    REPO_ROOT
-    / "docker" / "cc-runtime" / "build_context" / "plugins" / "nextseek"
-    / "skills" / "nextseek" / "SKILL.md"
-)
+SKILL_PATH = paths.CC_PLUGIN_DIR / "skills" / "nextseek" / "SKILL.md"
 
 CAPABILITY_MATRIX_TOOLS = (
     "nextseek-api-write",

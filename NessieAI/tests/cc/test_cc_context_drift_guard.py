@@ -2,9 +2,9 @@
 
 Two copies of the NExtSEEK context pack exist:
 
-* ``chat_nextseek/src/chat_nextseek/context/`` — the source of truth, edited by
+* ``NessieAI/chat_nextseek/src/chat_nextseek/context/``: the source of truth, edited by
   humans and consumed in-process by the ``nextseek_query`` engine.
-* ``docker/cc-runtime/build_context/plugins/nextseek/context/`` — a hand-copied
+* ``NessieAI/docker/cc-runtime/build_context/plugins/nextseek/context/``: a hand-copied
   duplicate baked into the ``dmac-assistant:poc`` image and mounted into every
   ephemeral Container-CC agent as its ground truth for endpoints/vocabulary.
 
@@ -17,7 +17,7 @@ live privilege regression (#65a).
 
 A third axis is guarded further down: ``read_safe_endpoints.json`` has no
 counterpart in the source pack, but it does have one outside both directories —
-``nextseek_api/assistant/read_safe_endpoints.json``, the copy the Django write
+``NessieAI/ns/read_safe_endpoints.json``, the copy the Django write
 gate actually loads to permit or block an ``api-read`` op (#83).
 
 These tests are the missing sync check. Hermetic: stdlib only, no docker, no
@@ -30,19 +30,19 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
+
 REPO_ROOT = Path(__file__).resolve().parents[3]
-SOURCE_DIR = REPO_ROOT / "chat_nextseek" / "src" / "chat_nextseek" / "context"
-BAKED_DIR = (
-    REPO_ROOT / "docker" / "cc-runtime" / "build_context" / "plugins" / "nextseek" / "context"
-)
+SOURCE_DIR = paths.CHAT_NEXTSEEK_DIR / "src" / "chat_nextseek" / "context"
+BAKED_DIR = paths.CC_PLUGIN_DIR / "context"
 
 # ---------------------------------------------------------------------------
 # #83: the enforcing copy of the read-safe allowlist
 # ---------------------------------------------------------------------------
 # read_safe_endpoints.json exists at exactly TWO paths in this repo (the sidecar
-# has none — docker/ns-sidecar/app/write_gate.py says so in its first line):
+# has none: NessieAI/docker/ns-sidecar/app/write_gate.py says so in its first line):
 #
-#   nextseek_api/assistant/read_safe_endpoints.json   ENFORCED. write_gate's
+#   NessieAI/ns/read_safe_endpoints.json   ENFORCED. write_gate's
 #       default_allowlist_path() resolves here; build_gate() blocks any api-read
 #       whose (endpoint, METHOD) is absent from it.
 #   docker/.../plugins/nextseek/context/read_safe_endpoints.json   ADVERTISED.
@@ -50,11 +50,11 @@ BAKED_DIR = (
 #       believes is read-safe.
 #
 # The equality set below cannot reach the enforced copy: _shared_names() is an
-# INTERSECTION of SOURCE_DIR and BAKED_DIR, and neither is nextseek_api/assistant/.
+# INTERSECTION of SOURCE_DIR and BAKED_DIR, and neither is NessieAI/ns/.
 # So this pair gets its own explicit comparison. If the advertised copy and the
 # enforced copy disagree, the agent's belief about what it may call and the gate
 # that constrains it are out of step, and nothing else in the tree notices.
-ENFORCED_ALLOWLIST = REPO_ROOT / "nextseek_api" / "assistant" / "read_safe_endpoints.json"
+ENFORCED_ALLOWLIST = paths.READ_SAFE_ENDPOINTS
 BAKED_ALLOWLIST = BAKED_DIR / "read_safe_endpoints.json"
 
 # The baked pack is small and hand-maintained, so it is pinned exactly. Pinning
@@ -502,7 +502,7 @@ def test_post_as_read_endpoints_are_attested_in_the_read_safety_audit():
 # absent from the allowlist. Removing it from min_api_endpoints.json instead is
 # a maintainer ruling, not a test change, and is left open.
 SCHEMA_RAG_RETRIEVE = ("POST", "/nextseek_api/schema_rag/retrieve/")
-SCHEMA_RAG_SERVICE = REPO_ROOT / "nextseek_api" / "schema_rag" / "service.py"
+SCHEMA_RAG_SERVICE = paths.NESSIE_ROOT / "schema_rag" / "service.py"
 SCHEMA_RAG_RETRIEVE_FN = "retrieve_endpoints"
 SCHEMA_RAG_INGEST_FN = "ingest_schema"
 

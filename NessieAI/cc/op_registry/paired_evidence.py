@@ -33,6 +33,7 @@ def ensure_real_e2e_catalog() -> None:
 
 ensure_real_e2e_catalog()
 
+from NessieAI import paths
 from NessieAI.tests.nessie_tests import bayes_manifest as bm
 from NessieAI.tests.nessie_tests import corpus
 from NessieAI.tests.nessie_tests import export as nexport
@@ -66,8 +67,8 @@ FORCED_IMAGE_BY_ARM = dict(nexport.ARM_IMAGE)
 DEFAULT_ZIP_PATH = Path(
     "/home/taishajo/work/NExtSEEK-dev/testquestions-2026-08-07/testquestions.zip"
 )
-REPO_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_CORPUS_PATH = REPO_ROOT / "nessie_tests" / "corpus.json"
+REPO_ROOT = paths.REPO_ROOT
+DEFAULT_CORPUS_PATH = paths.NESSIE_CORPUS
 CANONICAL_EVIDENCE_PATH = Path(__file__).resolve().parent / "route_example_evidence.json"
 
 SCHEMA_VERSION = "route_example_evidence/v1"

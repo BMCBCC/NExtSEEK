@@ -119,7 +119,7 @@ def test_transcript_migration_marker_accepts_showmigrations_form(tmp_path):
         b'{"cc_traces": []}\n'
     )
     repo, sha = _make_git_repo(tmp_path, {
-        "nextseek_api/cc_assistant/evidence/3-ui-based-io-live/live_gate_transcript.txt": content,
+        "NessieAI/history/cc/evidence/3-ui-based-io-live/live_gate_transcript.txt": content,
     })
     bundle = tmp_path / "bundle"
     tracker = tmp_path / "tracker" / "integration-plan.json"
@@ -133,7 +133,7 @@ def test_transcript_migration_marker_accepts_showmigrations_form(tmp_path):
 def test_transcript_missing_migration_marker_fails(tmp_path):
     content = b"cc_assistant.upload\ncc_traces excerpt\n"  # no migration marker at all
     repo, sha = _make_git_repo(tmp_path, {
-        "nextseek_api/cc_assistant/evidence/3-ui-based-io-live/live_gate_transcript.txt": content,
+        "NessieAI/history/cc/evidence/3-ui-based-io-live/live_gate_transcript.txt": content,
     })
     bundle = tmp_path / "bundle"
     tracker = tmp_path / "tracker" / "integration-plan.json"
@@ -147,7 +147,7 @@ def test_transcript_missing_migration_marker_fails(tmp_path):
 def test_transcript_missing_cc_upload_marker_fails(tmp_path):
     content = b"Applying nextseek_api.0007_ccsessiontranscript... OK\ncc_traces excerpt\n"
     repo, sha = _make_git_repo(tmp_path, {
-        "nextseek_api/cc_assistant/evidence/3-ui-based-io-live/live_gate_transcript.txt": content,
+        "NessieAI/history/cc/evidence/3-ui-based-io-live/live_gate_transcript.txt": content,
     })
     bundle = tmp_path / "bundle"
     tracker = tmp_path / "tracker" / "integration-plan.json"
@@ -161,7 +161,7 @@ def test_transcript_missing_cc_upload_marker_fails(tmp_path):
 def test_transcript_missing_cc_traces_marker_fails(tmp_path):
     content = b"Applying nextseek_api.0007_ccsessiontranscript... OK\ncc_assistant.upload\n"
     repo, sha = _make_git_repo(tmp_path, {
-        "nextseek_api/cc_assistant/evidence/3-ui-based-io-live/live_gate_transcript.txt": content,
+        "NessieAI/history/cc/evidence/3-ui-based-io-live/live_gate_transcript.txt": content,
     })
     bundle = tmp_path / "bundle"
     tracker = tmp_path / "tracker" / "integration-plan.json"
@@ -182,7 +182,7 @@ def test_transcript_command_substrings_not_required(tmp_path):
         b'{"cc_traces": [{"turn": 1, "role": "user"}]}\n'
     )
     repo, sha = _make_git_repo(tmp_path, {
-        "nextseek_api/cc_assistant/evidence/3-ui-based-io-live/live_gate_transcript.txt": content,
+        "NessieAI/history/cc/evidence/3-ui-based-io-live/live_gate_transcript.txt": content,
     })
     assert b"migrate nextseek_api 0007" not in content
     assert b"inspect registered" not in content

@@ -60,10 +60,9 @@ BUDGET_CAP = float(os.environ.get("NEXTSEEK_CC_MAX_BUDGET_USD", "2.0"))
 EVID_ROOT = Path(settings.BASE_DIR) / "outputs" / "cc_acceptance"
 
 # Task 15 (G7-11) capability-gate evidence bundle root -- the SPEC-7 section 8
-# convention (nextseek_api/cc_assistant/archive/PLAN-7-compose-native-prod-deploy.md): "acceptance_evidence/step7/<run_id>/".
-STEP7_EVID_ROOT = (
-    Path(settings.BASE_DIR) / "nextseek_api" / "cc_assistant" / "tests" / "acceptance_evidence" / "step7"
-)
+# convention (NessieAI/history/cc/archive/PLAN-7-compose-native-prod-deploy.md): "acceptance_evidence/step7/<run_id>/".
+# A run-output dir beside this file; the committed catalog is in step7_catalog/.
+STEP7_EVID_ROOT = Path(__file__).resolve().parent / "acceptance_evidence" / "step7"
 GATE_NEXTSEEK_CONTAINER = os.environ.get("NEXTSEEK_CONTAINER", "nextseek")
 # nginx carries no `container_name:` pin (docker-compose.yml) -- its runtime
 # name is compose-project-prefixed. Resolved by substring match at run time

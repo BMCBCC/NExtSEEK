@@ -1,10 +1,10 @@
 """§4.A: NSTurnContext — pure bundle projection, orjson+pydantic, no LLM."""
 import sys
-from pathlib import Path
 
 import orjson
 import pytest
 
+from NessieAI import paths
 from NessieAI.cc import ns_turn_context as ntc
 
 
@@ -103,7 +103,7 @@ def test_total_and_rows_parity_with_chat_nextseek_helper():
     import importlib.util
     import types
 
-    src_root = Path(__file__).resolve().parents[3] / "chat_nextseek" / "src"
+    src_root = paths.CHAT_NEXTSEEK_DIR / "src"
     sys.path.insert(0, str(src_root))
     for mod_name in (
         "chat_nextseek",

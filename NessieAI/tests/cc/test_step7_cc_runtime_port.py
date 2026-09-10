@@ -29,10 +29,12 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
+
 pytestmark = pytest.mark.host_only
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-CC_RUNTIME = REPO_ROOT / "docker" / "cc-runtime"
+CC_RUNTIME = paths.CC_RUNTIME_DIR
 CC_RUNNER = REPO_ROOT / "docker" / "cc-runner"
 COMPOSE_FILE = REPO_ROOT / "docker-compose.yml"
 
@@ -48,7 +50,7 @@ def _read(path: Path) -> str:
 
 def test_cc_runtime_directory_exists():
     assert CC_RUNTIME.is_dir(), (
-        "docker/cc-runtime/ must exist as the canonical CC image build "
+        "NessieAI/docker/cc-runtime/ must exist as the canonical CC image build "
         "target (docker/cc-runner/ is a separate, non-production lean proof "
         "image and is NOT the canonical target)."
     )
@@ -77,7 +79,7 @@ def test_cc_runtime_build_ignore_file_present():
 def test_cc_runtime_build_ignore_covers_known_secret_filenames(secret_pattern):
     text = _read(CC_RUNTIME / ".dockerignore")
     assert secret_pattern.strip() in text, (
-        f"docker/cc-runtime/.dockerignore must exclude {secret_pattern!r} "
+        f"NessieAI/docker/cc-runtime/.dockerignore must exclude {secret_pattern!r} "
         "from the build context."
     )
 
@@ -267,7 +269,7 @@ def test_cc_runner_lean_proof_image_is_retired():
 
 
 def test_cc_runtime_dockerfile_is_the_full_image():
-    """docker/cc-runtime/Dockerfile is the fuller, production-capable image
+    """NessieAI/docker/cc-runtime/Dockerfile is the fuller, production-capable image
     (node+uv+baked plugin+BAML client), not a lean proof image: it installs
     uv / syncs a Python venv and bakes the nextseek plugin's context
     catalogs."""
@@ -360,7 +362,7 @@ def test_dmac_assistant_in_tree_package_untouched_by_this_port():
     """The Django-side dmac_assistant/ package (router BAML, run_tracker,
     etc.) is a separate, pre-existing in-tree dependency -- this port must
     not delete or shadow it."""
-    in_tree_pkg = REPO_ROOT / "dmac_assistant"
+    in_tree_pkg = paths.NESSIE_ROOT / "dmac_assistant"
     assert in_tree_pkg.is_dir()
     assert (in_tree_pkg / "pyproject.toml").is_file()
     assert (in_tree_pkg / "src" / "dmac_assistant").is_dir()

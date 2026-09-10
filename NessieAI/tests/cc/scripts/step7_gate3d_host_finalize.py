@@ -5,11 +5,11 @@ The live ``nextseek`` image has no ``.git``; preflight git probes and
 ``validate_run`` transcript re-verification run on the host worktree after
 the live bundle is copied out of the container::
 
-  docker cp nextseek:/app/nextseek_api/cc_assistant/tests/acceptance_evidence/step7/<run_id> \\
-    <worktree>/nextseek_api/cc_assistant/tests/acceptance_evidence/step7/
+  docker cp nextseek:/app/NessieAI/tests/cc/acceptance_evidence/step7/<run_id> \\
+    <worktree>/NessieAI/tests/cc/acceptance_evidence/step7/
 
-  cd <worktree> && uv run python nextseek_api/cc_assistant/scripts/step7_gate3d_host_finalize.py \\
-    nextseek_api/cc_assistant/tests/acceptance_evidence/step7/<run_id>
+  cd <worktree> && uv run python NessieAI/tests/cc/scripts/step7_gate3d_host_finalize.py \\
+    NessieAI/tests/cc/acceptance_evidence/step7/<run_id>
 """
 from __future__ import annotations
 
@@ -20,15 +20,24 @@ import subprocess
 import sys
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
+# Run by path, Python puts only this file's own directory on sys.path, so
+# NessieAI is not importable. Put the checkout root (the first parent holding
+# NessieAI/__init__.py) first. Under `python -m` or an import __package__ is
+# set, the root is already importable, and nothing is inserted.
+if not __package__:
+    for _parent in Path(__file__).resolve().parents:
+        if (_parent / "NessieAI" / "__init__.py").is_file():
+            sys.path.insert(0, str(_parent))
+            break
 
+from NessieAI import paths  # noqa: E402
 from NessieAI.tests.cc import step7_preflight_collector as preflight_mod  # noqa: E402
 from NessieAI.tests.cc.validate_step7_compose_deploy import (  # noqa: E402
     format_report,
     validate_run,
 )
+
+_REPO_ROOT = paths.REPO_ROOT
 
 PORT_SOURCE = os.environ.get("DMAC_PORT_SOURCE", "/home/taishajo/work/dmac-assistant")
 

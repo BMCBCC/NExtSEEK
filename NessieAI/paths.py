@@ -17,9 +17,18 @@ __all__ = [
     "CHAT_NEXTSEEK_DIR",
     "NESSIE_CORPUS",
     "DMAC_BUILD_CONTEXT",
+    "CC_DIR",
+    "ROUTER_DIR",
+    "NS_DIR",
+    "HISTORY_DIR",
+    "NESSIE_DOCKER_DIR",
     "CC_RUNTIME_DIR",
+    "CC_PLUGIN_DIR",
     "CC_PLUGIN_BIN",
+    "NS_SIDECAR_DIR",
+    "BEDROCK_PROXY_DIR",
     "READ_SAFE_ENDPOINTS",
+    "rebase",
 ]
 
 # NessieAI/paths.py -> parents[0] is NessieAI/, parents[1] is the repo root
@@ -38,9 +47,32 @@ NESSIE_CORPUS = NESSIE_ROOT / "tests" / "nessie_tests" / "corpus.json"
 # (hand-kept). Stays inside the dmac_assistant unit, next to src/.
 DMAC_BUILD_CONTEXT = NESSIE_ROOT / "dmac_assistant" / "build_context"
 
+# Engine packages whose sources gate tests and inventories read by path.
+CC_DIR = NESSIE_ROOT / "cc"
+ROUTER_DIR = NESSIE_ROOT / "router"
+NS_DIR = NESSIE_ROOT / "ns"
+
+# Frozen records: read-only, never collected, excluded from the image.
+HISTORY_DIR = NESSIE_ROOT / "history"
+
+# AI image build contexts (the docker/<name> suffix is kept on purpose).
+NESSIE_DOCKER_DIR = NESSIE_ROOT / "docker"
 # Build context of the cc-agent image (dmac-assistant:poc).
-CC_RUNTIME_DIR = NESSIE_ROOT / "docker" / "cc-runtime"
-CC_PLUGIN_BIN = CC_RUNTIME_DIR / "build_context" / "plugins" / "nextseek" / "bin"
+CC_RUNTIME_DIR = NESSIE_DOCKER_DIR / "cc-runtime"
+CC_PLUGIN_DIR = CC_RUNTIME_DIR / "build_context" / "plugins" / "nextseek"
+CC_PLUGIN_BIN = CC_PLUGIN_DIR / "bin"
+NS_SIDECAR_DIR = NESSIE_DOCKER_DIR / "ns-sidecar"
+BEDROCK_PROXY_DIR = NESSIE_DOCKER_DIR / "bedrock-proxy"
 
 # The granular-op write gate's allowlist. Must stay beside ns/write_gate.py.
-READ_SAFE_ENDPOINTS = NESSIE_ROOT / "ns" / "read_safe_endpoints.json"
+READ_SAFE_ENDPOINTS = NS_DIR / "read_safe_endpoints.json"
+
+
+def rebase(path: Path, root: Path) -> Path:
+    """Return ``path``, one of the constants above, under another checkout root.
+
+    For tools that take ``--root`` (a sandbox copy of the repo): the same
+    repo-relative location joined onto ``root``. Raises ValueError for a path
+    outside REPO_ROOT.
+    """
+    return Path(root) / Path(path).relative_to(REPO_ROOT)

@@ -1,8 +1,8 @@
 """Source guards for CC service wiring that is hard to import hermetically."""
-from pathlib import Path
+from NessieAI import paths
 
 
-SERVICE = Path(__file__).resolve().parents[2] / "services" / "cc_assistant.py"
+SERVICE = paths.REPO_ROOT / "nextseek_api" / "services" / "cc_assistant.py"
 
 
 def test_project_resolution_uses_user_creds_not_prod_swapped_agent_creds():

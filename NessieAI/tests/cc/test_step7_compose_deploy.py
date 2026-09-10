@@ -34,6 +34,7 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
 from NessieAI.cc import cc_engine
 from NessieAI.tests.cc import step7_preflight_collector as _collector_mod
 from NessieAI.tests.cc.step7_preflight_collector import (
@@ -920,18 +921,25 @@ def test_deploy_md_has_old_bootstrap_false_when_missing_file(tmp_path):
 # Collector: live_gate_transcript_committed truth table (size-based)
 # --------------------------------------------------------------------------
 
+# Where the collector hashes the Step-3 docs after the NessieAI move: DEPLOY.md
+# lives with the CC engine, SPEC-3/PLAN-3 were archived to frozen history.
+_FAKE_DEPLOY_MD = Path("NessieAI/cc/DEPLOY.md")
+_FAKE_STEP3_ARCHIVE = Path("NessieAI/history/cc/archive")
+
+
 def _build_fake_repo(repo_root: Path) -> None:
     (repo_root / "docker").mkdir(parents=True)
-    (repo_root / "nextseek_api" / "cc_assistant").mkdir(parents=True)
+    (repo_root / _FAKE_DEPLOY_MD).parent.mkdir(parents=True)
+    (repo_root / _FAKE_STEP3_ARCHIVE).mkdir(parents=True)
     (repo_root / "docker-compose.yml").write_text(
         "services:\n  nextseek:\n    image: nextseek\n  db:\n    image: mysql\n", encoding="utf-8"
     )
     (repo_root / "docker" / "nextseek.env.example").write_text("SEEK_HOST=seek\n", encoding="utf-8")
-    (repo_root / "nextseek_api" / "cc_assistant" / "DEPLOY.md").write_text(
+    (repo_root / _FAKE_DEPLOY_MD).write_text(
         "Phase A\ndocker network create dmac-cc-net\n", encoding="utf-8"
     )
-    (repo_root / "nextseek_api" / "cc_assistant" / "SPEC-3-ui-based-io.md").write_text("spec", encoding="utf-8")
-    (repo_root / "nextseek_api" / "cc_assistant" / "PLAN-3-ui-based-io.md").write_text("plan", encoding="utf-8")
+    (repo_root / _FAKE_STEP3_ARCHIVE / "SPEC-3-ui-based-io.md").write_text("spec", encoding="utf-8")
+    (repo_root / _FAKE_STEP3_ARCHIVE / "PLAN-3-ui-based-io.md").write_text("plan", encoding="utf-8")
 
 
 def _collect(tmp_path, git: GitProbe):
@@ -1023,8 +1031,8 @@ def test_collect_preflight_end_to_end_produces_valid_json_and_passes_validator(t
 def test_collect_preflight_optional_docs_absent_when_missing(tmp_path):
     repo_root = tmp_path / "repo"
     _build_fake_repo(repo_root)
-    (repo_root / "nextseek_api" / "cc_assistant" / "SPEC-3-ui-based-io.md").unlink()
-    (repo_root / "nextseek_api" / "cc_assistant" / "PLAN-3-ui-based-io.md").unlink()
+    (repo_root / _FAKE_STEP3_ARCHIVE / "SPEC-3-ui-based-io.md").unlink()
+    (repo_root / _FAKE_STEP3_ARCHIVE / "PLAN-3-ui-based-io.md").unlink()
     tracker = tmp_path / "state" / "integration-plan.json"
     _write_tracker(tracker, "done")
 
@@ -1150,6 +1158,26 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 COMPOSE_FILE = REPO_ROOT / "docker-compose.yml"
 
 
+def _compose_env_file_targets(node) -> list[str]:
+    """Every ``env_file:`` path the compose document names, at any depth, in
+    the short (string / list of strings) or long (``{path: ...}``) syntax."""
+    found: list[str] = []
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if key == "env_file":
+                items = value if isinstance(value, list) else [value]
+                for item in items:
+                    target = item.get("path") if isinstance(item, dict) else item
+                    if isinstance(target, str) and target:
+                        found.append(target)
+            else:
+                found.extend(_compose_env_file_targets(value))
+    elif isinstance(node, list):
+        for value in node:
+            found.extend(_compose_env_file_targets(value))
+    return found
+
+
 def _write_compose_env_files(tmp_root: Path, repo_root: Path = REPO_ROOT) -> None:
     """Synthesize the gitignored ``env_file:`` targets ``docker compose
     config`` needs to just exist and be parseable. None of their CONTENT is
@@ -1157,20 +1185,30 @@ def _write_compose_env_files(tmp_root: Path, repo_root: Path = REPO_ROOT) -> Non
     from the committed ``.example`` placeholder template (empty values, never
     a real token) so the fixture matches a genuinely fresh checkout.
 
+    The targets are read from the committed compose file itself, so the
+    fixture follows an ``env_file:`` that moves (the proxy secret moved to
+    ``NessieAI/docker/bedrock-proxy/``) instead of synthesizing a stale path.
+
     Deliberately NOT synthesized (verified empirically -- see
     ``_real_compose_config``'s docstring): ``docker/nginx.conf`` and the
-    ``docker/cc-runtime/`` / ``docker/bedrock-proxy/`` build-context
-    directories. ``docker compose config`` does not validate bind-mount host
-    paths or build-context existence, only ``env_file:`` existence.
+    ``NessieAI/docker/cc-runtime/`` / ``NessieAI/docker/bedrock-proxy/``
+    build-context directories. ``docker compose config`` does not validate
+    bind-mount host paths or build-context existence, only ``env_file:``
+    existence.
     """
-    (tmp_root / "docker").mkdir(parents=True, exist_ok=True)
-    (tmp_root / "docker" / "db.env").write_text("", encoding="utf-8")
-    (tmp_root / "docker" / "nextseek.env").write_text("", encoding="utf-8")
-    proxy_dir = tmp_root / "docker" / "bedrock-proxy"
-    proxy_dir.mkdir(parents=True, exist_ok=True)
-    example = repo_root / "docker" / "bedrock-proxy" / "proxy-secret.env.example"
+    import yaml
+
+    compose = yaml.safe_load((repo_root / "docker-compose.yml").read_text(encoding="utf-8")) or {}
+    example = paths.rebase(paths.BEDROCK_PROXY_DIR, repo_root) / "proxy-secret.env.example"
     proxy_secret_text = example.read_text(encoding="utf-8") if example.is_file() else ""
-    (proxy_dir / "proxy-secret.env").write_text(proxy_secret_text, encoding="utf-8")
+    targets = sorted(set(_compose_env_file_targets(compose)))
+    assert targets, "docker-compose.yml names no env_file targets"
+    for rel in targets:
+        target = (tmp_root / rel).resolve()
+        assert target.is_relative_to(tmp_root.resolve()), f"env_file escapes the checkout: {rel}"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        text = proxy_secret_text if target.name == "proxy-secret.env" else ""
+        target.write_text(text, encoding="utf-8")
 
 
 def _real_compose_config(tmp_path: Path, repo_root: Path = REPO_ROOT) -> dict:
@@ -1413,10 +1451,7 @@ def test_compose_yaml_text_never_mentions_srv_dmac_users():
 # golden fixture (Task 5 precedent, carried into Task 13).
 # --------------------------------------------------------------------------
 
-SIDECAR_CLIENT_FILE = (
-    REPO_ROOT / "docker" / "cc-runtime" / "build_context" / "plugins"
-    / "nextseek" / "bin" / "_sidecar_client.py"
-)
+SIDECAR_CLIENT_FILE = paths.CC_PLUGIN_BIN / "_sidecar_client.py"
 
 
 def _duration_to_seconds(value) -> float:
@@ -1567,8 +1602,8 @@ def test_nginx_conf_has_explicit_access_log_directive():
 # the two.
 # --------------------------------------------------------------------------
 
-REALSTACK_FILE = REPO_ROOT / "nextseek_api" / "cc_assistant" / "tests" / "test_cc_realstack.py"
-CC_ENGINE_FILE = REPO_ROOT / "nextseek_api" / "cc_assistant" / "cc_engine.py"
+REALSTACK_FILE = Path(__file__).resolve().parent / "test_cc_realstack.py"
+CC_ENGINE_FILE = paths.CC_DIR / "cc_engine.py"
 
 
 def test_cc_engine_bedrock_proxy_default_url_uses_service_dns_not_container_name():

@@ -76,9 +76,19 @@ from typing import Any, Callable
 
 SCHEMA_VERSION = 1
 
-# scripts -> cc_assistant -> nextseek_api -> repo root (mirrors full_ui_e2e.py's
-# own parents[3] convention for this exact directory depth).
-REPO_ROOT = Path(__file__).resolve().parents[3]
+# Run by path, Python puts only this file's own directory on sys.path, so
+# NessieAI is not importable. Put the checkout root (the first parent holding
+# NessieAI/__init__.py) first. Under `python -m` or an import __package__ is
+# set, the root is already importable, and nothing is inserted.
+if not __package__:
+    for _parent in Path(__file__).resolve().parents:
+        if (_parent / "NessieAI" / "__init__.py").is_file():
+            sys.path.insert(0, str(_parent))
+            break
+
+from NessieAI import paths  # noqa: E402
+
+REPO_ROOT = paths.REPO_ROOT
 DEFAULT_FULL_UI_E2E = Path(__file__).with_name("full_ui_e2e.py")
 DEFAULT_SURVIVALS = Path(__file__).with_name("verify_merge_survivals.py")
 

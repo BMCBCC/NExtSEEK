@@ -8,11 +8,11 @@ can never silently leak into them.
   `TurnCompletePayload(turn_id=str(run_id))` and persisted verbatim.
 Only the chat_log ENTRY's turn_id changed to a sequential int; these must not.
 """
-from pathlib import Path
+from NessieAI import paths
 
-_ENGINE = (Path(__file__).resolve().parents[1] / "cc_engine.py").read_text()
+_ENGINE = (paths.CC_DIR / "cc_engine.py").read_text()
 _SERVICE = (
-    Path(__file__).resolve().parents[2] / "services" / "cc_assistant.py"
+    paths.REPO_ROOT / "nextseek_api" / "services" / "cc_assistant.py"
 ).read_text()
 
 

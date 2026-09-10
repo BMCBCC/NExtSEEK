@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Task 9: exact `host_only` marker <-> allowlist cross-check.
 
-AST-scans every `test_*.py` file under `nextseek_api/cc_assistant/tests/`
+AST-scans every `test_*.py` file under `NessieAI/tests/cc/`
 for the `host_only` pytest marker (registered in `pyproject.toml`'s
 `[tool.pytest.ini_options]`), applied either:
 
@@ -35,8 +35,20 @@ import re
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-TESTS_DIR = REPO_ROOT / "nextseek_api" / "cc_assistant" / "tests"
+# Run by path, Python puts only this file's own directory on sys.path, so
+# NessieAI is not importable. Put the checkout root (the first parent holding
+# NessieAI/__init__.py) first. Under `python -m` or an import __package__ is
+# set, the root is already importable, and nothing is inserted.
+if not __package__:
+    for _parent in Path(__file__).resolve().parents:
+        if (_parent / "NessieAI" / "__init__.py").is_file():
+            sys.path.insert(0, str(_parent))
+            break
+
+from NessieAI import paths  # noqa: E402
+
+REPO_ROOT = paths.REPO_ROOT
+TESTS_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_ALLOWLIST = Path(
     "/home/taishajo/work/state/devmerge-evidence/host-only-allowlist.md"
 )

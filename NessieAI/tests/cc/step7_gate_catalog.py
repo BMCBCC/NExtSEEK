@@ -1,6 +1,6 @@
 """Step 7 live-gate exercise catalog and instance binding (Gate 3C).
 
-Loads committed JSON under acceptance_evidence/step7/ and builds per-op
+Loads committed JSON under step7_catalog/ and builds per-op
 invocation kwargs for the RUN_REALSTACK matrix. Replaces integration-invented
 ``_op_kwargs()`` and greenfield ``create_seeded_fixture()`` for live runs.
 """
@@ -15,7 +15,7 @@ from NessieAI.tests.cc.bin_inventory import discover_ops, op_suffix
 
 UPSTREAM_SHA = "a429f1372a075e5db586a1b6efc8c3b1663e211a"
 
-_CATALOG_DIR = Path(__file__).resolve().parent / "acceptance_evidence" / "step7"
+_CATALOG_DIR = Path(__file__).resolve().parent / "step7_catalog"
 CATALOG_PATH = _CATALOG_DIR / "STEP7-UPSTREAM-EXERCISE-CATALOG.json"
 INSTANCE_BINDING_PATH = _CATALOG_DIR / "instance_binding.json"
 PROVENANCE_PATH = _CATALOG_DIR / "catalog_provenance.json"

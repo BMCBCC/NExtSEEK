@@ -4,6 +4,7 @@ import os
 import stat
 from pathlib import Path
 
+from NessieAI import paths
 from NessieAI.tests.cc import bin_inventory
 
 _REPO = Path(__file__).resolve().parents[3]
@@ -38,7 +39,7 @@ def test_real_inventory_contains_new_ops_and_partitions():
     assert "nextseek-query" in q and "nextseek-recall" in q
     assert set(q) | set(b) == set(allops)
     assert set(q) & set(b) == set()
-    bin_dir = _REPO / "docker" / "cc-runtime" / "build_context" / "plugins" / "nextseek" / "bin"
+    bin_dir = paths.CC_PLUGIN_BIN
     disk = tuple(
         sorted(
             p.name
@@ -64,9 +65,9 @@ def test_no_op_name_literals_in_catalog_modules():
     """AST scan (G-8): the catalog modules may not carry 'nextseek-*' string
     constants — binding must come from discovery, not a copied list."""
     for rel in (
-        "nextseek_api/cc_assistant/step7_per_op_evidence.py",
-        "nextseek_api/cc_assistant/step7_gate_catalog.py",
-        "nextseek_api/cc_assistant/tests/validate_step7_compose_deploy.py",
+        "NessieAI/tests/cc/step7_per_op_evidence.py",
+        "NessieAI/tests/cc/step7_gate_catalog.py",
+        "NessieAI/tests/cc/validate_step7_compose_deploy.py",
     ):
         tree = ast.parse((_REPO / rel).read_text())
         literals = [

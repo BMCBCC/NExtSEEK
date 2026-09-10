@@ -335,8 +335,8 @@ def test_ns_capabilities_remaining_error_paths():
 
 
 def test_extract_catalog_error_paths():
-    from NessieAI.tests.cc.test_cc_scripts_attribution import load_cc
-    mod = load_cc("scripts/extract_step7_upstream_catalog.py")
+    from NessieAI.tests.cc.test_cc_scripts_attribution import HISTORY_CC, load_cc
+    mod = load_cc("scripts/extract_step7_upstream_catalog.py", root=HISTORY_CC, package="NessieAI.history.cc")
     with pytest.raises(ValueError, match="PAID_PROJECTIONS not found"):
         mod._extract_paid_projections("nope")
     with pytest.raises(ValueError, match="block end"):
@@ -985,8 +985,8 @@ def test_router_heuristic_and_context_dir(monkeypatch):
 
 
 def test_extract_catalog_main_and_block_end(tmp_path):
-    from NessieAI.tests.cc.test_cc_scripts_attribution import load_cc
-    mod = load_cc("scripts/extract_step7_upstream_catalog.py")
+    from NessieAI.tests.cc.test_cc_scripts_attribution import HISTORY_CC, load_cc
+    mod = load_cc("scripts/extract_step7_upstream_catalog.py", root=HISTORY_CC, package="NessieAI.history.cc")
     src = tmp_path / "run_t18_rewire_e2e.py"
     src.write_text(
         'REPORT_PROJECT = "Published Data"\n'
@@ -1175,7 +1175,7 @@ def test_gap2_production_misses(tmp_path, monkeypatch):
 
 def test_gap3_fourteen_production_units():
     from NessieAI.cc.op_registry import ns_capabilities as nsc
-    from NessieAI.tests.cc.test_cc_scripts_attribution import load_cc
+    from NessieAI.tests.cc.test_cc_scripts_attribution import HISTORY_CC, load_cc
 
     class _M:
         def group(self, _i):
@@ -1196,14 +1196,14 @@ def test_gap3_fourteen_production_units():
     )
     with pytest.raises(pe.PairedEvidenceError, match="cc.route"):
         pe._validate_manifest_pairs(SimpleNamespace(pairs=[pair_cc]), ["a"])
-    mod = load_cc("scripts/extract_step7_upstream_catalog.py")
+    mod = load_cc("scripts/extract_step7_upstream_catalog.py", root=HISTORY_CC, package="NessieAI.history.cc")
     with pytest.raises(ValueError, match="did not evaluate"):
         mod._extract_paid_projections(
             "PAID_PROJECTIONS = []\nPAID_PROJECTIONS = 1\n"
             "    for op, model, projected, args_dict in PAID_PROJECTIONS:\n"
         )
     with pytest.raises(SystemExit) as surv_ex:
-        load_cc("scripts/verify_merge_survivals.py")
+        load_cc("scripts/verify_merge_survivals.py", root=HISTORY_CC, package="NessieAI.history.cc")
     assert surv_ex.value.code == 0
     dry = load_cc("scripts/step7_validator_dry_run.py")
     assert hasattr(dry, "main")

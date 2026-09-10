@@ -41,10 +41,12 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
+
 pytestmark = pytest.mark.host_only
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-SIDECAR_DIR = REPO_ROOT / "docker" / "ns-sidecar"
+SIDECAR_DIR = paths.NS_SIDECAR_DIR
 COMPOSE_FILE = REPO_ROOT / "docker-compose.yml"
 
 # The pinned port source commit + the source path the port was taken from.
@@ -113,7 +115,7 @@ def _sha256(path: Path) -> str:
 
 def test_ns_sidecar_directory_exists():
     assert SIDECAR_DIR.is_dir(), (
-        "docker/ns-sidecar/ must exist as the canonical, NExtSEEK-owned "
+        "NessieAI/docker/ns-sidecar/ must exist as the canonical, NExtSEEK-owned "
         "NS sidecar build source (Task 12, G7-11)."
     )
 
@@ -277,12 +279,12 @@ def test_dockerfile_copy_source_matches_this_ports_build_context():
     assert "COPY sidecar/__init__.py" not in text, (
         "Dockerfile must not carry the source's repo-root-relative COPY "
         "path -- it does not resolve when building with context = "
-        "docker/ns-sidecar/."
+        "NessieAI/docker/ns-sidecar/."
     )
     assert "COPY sidecar/app/" not in text, (
         "Dockerfile must not carry the source's repo-root-relative COPY "
         "path -- it does not resolve when building with context = "
-        "docker/ns-sidecar/."
+        "NessieAI/docker/ns-sidecar/."
     )
 
 
@@ -369,7 +371,7 @@ def test_dockerfile_has_no_torch_or_chat_nextseek_or_session_db():
 
 def test_standalone_sidecar_compose_not_ported():
     assert not (SIDECAR_DIR / "docker-compose.yml").is_file(), (
-        "docker/ns-sidecar/ must not carry a standalone docker-compose.yml "
+        "NessieAI/docker/ns-sidecar/ must not carry a standalone docker-compose.yml "
         "-- the upstream fragment is reference only and root-compose wiring "
         "is a later task's job (13-15)."
     )

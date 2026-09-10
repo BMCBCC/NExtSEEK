@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
 from NessieAI.cc.op_registry.ns_capabilities import (
     NsCapabilitiesError,
     load_ns_projection,
@@ -13,7 +14,7 @@ from NessieAI.cc.op_registry.ns_capabilities import (
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 CANONICAL = (
-    REPO_ROOT / "chat_nextseek" / "src" / "chat_nextseek" / "context" / "capabilities.md"
+    paths.CHAT_NEXTSEEK_DIR / "src" / "chat_nextseek" / "context" / "capabilities.md"
 )
 
 

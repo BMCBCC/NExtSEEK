@@ -30,19 +30,22 @@ from pathlib import Path
 # --- Required Step-7 file-hash targets -------------------------------------
 # Label (as named verbatim in PLAN-7 Task 1) -> actual repo-relative path.
 # docker-compose.yml / docker/nextseek.env.example live at the NExtSEEK repo
-# root; the Step-3 docs live under nextseek_api/cc_assistant/.
+# root; DEPLOY.md lives with the CC engine under NessieAI/cc/, and the Step-3
+# SPEC/PLAN were archived to NessieAI/history/cc/archive/ (hashed if present).
 REQUIRED_FILE_HASH_TARGETS: dict[str, str] = {
     "docker-compose.yml": "docker-compose.yml",
     "docker/nextseek.env.example": "docker/nextseek.env.example",
-    "DEPLOY.md": "nextseek_api/cc_assistant/DEPLOY.md",
+    "DEPLOY.md": "NessieAI/cc/DEPLOY.md",
 }
 # "if present" per the brief's success conditions.
 OPTIONAL_FILE_HASH_TARGETS: dict[str, str] = {
-    "SPEC-3-ui-based-io.md": "nextseek_api/cc_assistant/SPEC-3-ui-based-io.md",
-    "PLAN-3-ui-based-io.md": "nextseek_api/cc_assistant/PLAN-3-ui-based-io.md",
+    "SPEC-3-ui-based-io.md": "NessieAI/history/cc/archive/SPEC-3-ui-based-io.md",
+    "PLAN-3-ui-based-io.md": "NessieAI/history/cc/archive/PLAN-3-ui-based-io.md",
 }
 
-LIVE_EVIDENCE_PATH = "nextseek_api/cc_assistant/evidence/3-ui-based-io-live/"
+# The committed live-gate evidence, frozen under NessieAI/history/ since the
+# NessieAI move. Must equal validate_step7_compose_deploy.LIVE_EVIDENCE_PATH_LITERAL.
+LIVE_EVIDENCE_PATH = "NessieAI/history/cc/evidence/3-ui-based-io-live/"
 LIVE_GATE_TRANSCRIPT_NAME = "live_gate_transcript.txt"
 LIVE_GATE_TRANSCRIPT_REL = LIVE_EVIDENCE_PATH + LIVE_GATE_TRANSCRIPT_NAME
 
@@ -307,7 +310,7 @@ def collect_preflight(
     compose_services, compose_networks = _parse_compose(repo_root / "docker-compose.yml")
     cc_env_keys = _parse_cc_env_keys(repo_root / "docker" / "nextseek.env.example")
     deploy_md_has_old_bootstrap = _deploy_md_has_old_bootstrap(
-        repo_root / "nextseek_api" / "cc_assistant" / "DEPLOY.md"
+        repo_root / REQUIRED_FILE_HASH_TARGETS["DEPLOY.md"]
     )
 
     step3_deploy_gate = {

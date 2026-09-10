@@ -1,6 +1,5 @@
 """Hermetic: pure chat_log serialize + FIFO-cap helpers. No Django, no DB."""
-from pathlib import Path
-
+from NessieAI import paths
 from NessieAI.cc.cc_turn_complete import append_capped
 
 
@@ -56,6 +55,6 @@ def test_serialize_cc_chat_log_entry_keys():
 
 def test_chat_log_entries_use_assistant_reply_key():
     """MUTATION-SENSITIVE: CC chat_log entries must use assistant_reply, not reply."""
-    src = (Path(__file__).resolve().parents[1] / "cc_turn_complete.py").read_text()
+    src = (paths.CC_DIR / "cc_turn_complete.py").read_text()
     assert '"assistant_reply": payload.assistant_reply' in src
     assert '"reply":' not in src.split("serialize_cc_chat_log_entry")[1].split("def apply_turn")[0]

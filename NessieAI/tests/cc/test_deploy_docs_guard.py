@@ -22,8 +22,10 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
+
 REPO_ROOT = Path(__file__).resolve().parents[3]
-DEPLOY_MD = REPO_ROOT / "nextseek_api" / "cc_assistant" / "DEPLOY.md"
+DEPLOY_MD = paths.CC_DIR / "DEPLOY.md"
 DEPLOYMENT_MD = REPO_ROOT / "DEPLOYMENT.md"
 
 # Patterns that must not appear ANYWHERE in the deploy docs (not just the
@@ -152,4 +154,4 @@ def test_docs_point_at_each_other():
     """DEPLOY.md defers full-stack hygiene to DEPLOYMENT.md; DEPLOYMENT.md
     routes CC specifics to DEPLOY.md — the pointer pair must survive edits."""
     assert "DEPLOYMENT.md" in _read(DEPLOY_MD)
-    assert "nextseek_api/cc_assistant/DEPLOY.md" in _read(DEPLOYMENT_MD)
+    assert "NessieAI/cc/DEPLOY.md" in _read(DEPLOYMENT_MD)

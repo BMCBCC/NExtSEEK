@@ -15,7 +15,7 @@ Related docs (each has a distinct job — don't cross-purpose them):
 | [`README.md`](README.md) | 5-minute localhost quick start |
 | [`NExtSTEPS.md`](NExtSTEPS.md) | production hardening: credential rotation, TLS, DEBUG, backups |
 | [`architecture.md`](architecture.md) | deep architecture reference (services, data flows, security model) |
-| [`nextseek_api/cc_assistant/DEPLOY.md`](nextseek_api/cc_assistant/DEPLOY.md) | Container-CC subsystem specifics + paid acceptance gates |
+| [`NessieAI/cc/DEPLOY.md`](NessieAI/cc/DEPLOY.md) | Container-CC subsystem specifics + paid acceptance gates |
 | [`startup/README.md`](startup/README.md) | `./startup.sh` subcommand reference + known failure modes |
 
 ---

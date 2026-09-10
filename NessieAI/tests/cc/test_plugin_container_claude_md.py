@@ -14,12 +14,12 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
+
 pytestmark = pytest.mark.host_only
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-CLAUDE_MD = (
-    REPO_ROOT / "docker" / "cc-runtime" / "container" / "CLAUDE.md"
-).resolve()
+CLAUDE_MD = (paths.CC_RUNTIME_DIR / "container" / "CLAUDE.md").resolve()
 
 
 def test_no_nextseek_api_references_in_container_claude_md():
@@ -61,12 +61,12 @@ def test_plugins_section_uses_canonical_paths():
     "a built image (the image strips .git/.gitignore).",
 )
 def test_container_claude_md_is_git_tracked_not_ignored():
-    """Step 7d regression lock: docker/cc-runtime/container/CLAUDE.md is a
+    """Step 7d regression lock: NessieAI/docker/cc-runtime/container/CLAUDE.md is a
     required `COPY` input of the cc-agent image, so a clean clone must
     contain it. It was silently ignored by the bare `CLAUDE.md` rule in the
     root .gitignore, which made the image unbuildable from tracked files
     only. It must be tracked, and `git check-ignore` must not match it."""
-    rel = "docker/cc-runtime/container/CLAUDE.md"
+    rel = "NessieAI/docker/cc-runtime/container/CLAUDE.md"
     check_ignore = subprocess.run(
         ["git", "check-ignore", "-q", rel],
         cwd=REPO_ROOT, capture_output=True, text=True, timeout=30,
@@ -74,7 +74,7 @@ def test_container_claude_md_is_git_tracked_not_ignored():
     assert check_ignore.returncode != 0, (
         f"{rel} is matched by a .gitignore rule; the cc-agent image cannot "
         "be built from a clean clone. Keep the "
-        f"`!{rel}` negation after the bare `CLAUDE.md` rule."
+        "`!NessieAI/**/CLAUDE.md` negation after the bare `CLAUDE.md` rule."
     )
     ls_files = subprocess.run(
         ["git", "ls-files", "--error-unmatch", rel],

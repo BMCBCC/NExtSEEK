@@ -9,13 +9,18 @@ from pathlib import Path
 
 import pytest
 
-CC_ROOT = Path(__file__).resolve().parents[1]
-REPO = Path(__file__).resolve().parents[3]
+from NessieAI import paths
+
+CC_ROOT = Path(__file__).resolve().parent
+REPO = paths.REPO_ROOT
+# verify_merge_survivals.py, extract_step7_upstream_catalog.py and the run-1c
+# live probe were archived to NessieAI/history/cc/ by the NessieAI move.
+HISTORY_CC = paths.HISTORY_DIR / "cc"
 
 
-def load_cc(rel: str):
-    dotted = "NessieAI.tests.cc." + rel.replace("/", ".").removesuffix(".py")
-    path = CC_ROOT / rel
+def load_cc(rel: str, *, root: Path = CC_ROOT, package: str = "NessieAI.tests.cc"):
+    dotted = f"{package}." + rel.replace("/", ".").removesuffix(".py")
+    path = root / rel
     spec = importlib.util.spec_from_file_location(dotted, path)
     mod = importlib.util.module_from_spec(spec)
     sys.modules[dotted] = mod
@@ -46,20 +51,20 @@ def test_verify_host_only_allowlist_pass_and_fail(tmp_path):
 def test_verify_merge_survivals_import_does_not_kill_pytest(monkeypatch):
     exits = []
     monkeypatch.setattr(sys, "exit", lambda code=0: exits.append(code))
-    mod = load_cc("scripts/verify_merge_survivals.py")
+    mod = load_cc("scripts/verify_merge_survivals.py", root=HISTORY_CC, package="NessieAI.history.cc")
     assert hasattr(mod, "check")
     assert mod.has("docker-compose.yml", "dmac-cc-net") is True
     assert mod.has("no/such.py", "x") is False
-    assert mod.python_imports("nextseek_api/cc_assistant/router.py", "posterior_selector") is True
+    assert mod.python_imports("NessieAI/router/router.py", "posterior_selector") is True
     assert mod.python_imports("nextseek_api/cc_assistant/apps.py", "does_not_exist") is False
     assert isinstance(mod.python_calls_attr(
-        "nextseek_api/cc_assistant/cc_engine.py", "logger", "info"
+        "NessieAI/cc/cc_engine.py", "logger", "info"
     ), bool)
     assert exits  # module-level sys.exit was captured
 
 
 def test_extract_step7_upstream_catalog_from_fixtures(tmp_path):
-    mod = load_cc("scripts/extract_step7_upstream_catalog.py")
+    mod = load_cc("scripts/extract_step7_upstream_catalog.py", root=HISTORY_CC, package="NessieAI.history.cc")
     t18 = tmp_path / "tools" / "e2e" / "run_t18_rewire_e2e.py"
     router = tmp_path / "tools" / "e2e" / "run_router_e2e.py"
     t18.parent.mkdir(parents=True)
@@ -427,7 +432,7 @@ def test_live_probe_missing_memory_and_runner(monkeypatch, tmp_path):
         memory_mnt = str(tmp_path / "missing-dir")
 
     monkeypatch.setenv("PROBE_MEMORY_MNT", str(tmp_path / "no-file.md"))
-    probe = load_cc("evidence/run_1c_claude_md_live_probe.py")
+    probe = load_cc("evidence/run_1c_claude_md_live_probe.py", root=HISTORY_CC, package="NessieAI.history.cc")
     monkeypatch.setattr(probe.cc_config.CCPaths, "from_env", Paths.from_env)
     monkeypatch.setattr(probe, "build_user_dirs", lambda *a, **k: Dirs())
     assert probe.main() == 2

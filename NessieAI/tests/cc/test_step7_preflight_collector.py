@@ -49,10 +49,12 @@ def test_collect_preflight_from_tmp_tree(tmp_path):
     (tmp_path / "docker" / "nextseek.env.example").write_text(
         "NEXTSEEK_CC_IMAGE=x\nDMAC_USER_ROOT_MOUNT=/dmac/users\n"
     )
-    docs = tmp_path / "nextseek_api" / "cc_assistant"
+    docs = tmp_path / "NessieAI" / "cc"
     docs.mkdir(parents=True)
     (docs / "DEPLOY.md").write_text("Phase A\ndocker network create foo\n")
-    (docs / "SPEC-3-ui-based-io.md").write_text("spec")
+    archive = tmp_path / "NessieAI" / "history" / "cc" / "archive"
+    archive.mkdir(parents=True)
+    (archive / "SPEC-3-ui-based-io.md").write_text("spec")
     plan = tmp_path / "plan.json"
     plan.write_text(json.dumps({"steps": [{"id": "3", "status": "closed"}]}))
     git = GitProbe(

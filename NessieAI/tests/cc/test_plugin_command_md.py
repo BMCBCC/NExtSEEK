@@ -11,12 +11,10 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from NessieAI import paths
+
 REPO_ROOT = Path(__file__).resolve().parents[3]
-COMMAND_PATH = (
-    REPO_ROOT
-    / "docker" / "cc-runtime" / "build_context" / "plugins" / "nextseek"
-    / "commands" / "nextseek.md"
-)
+COMMAND_PATH = paths.CC_PLUGIN_DIR / "commands" / "nextseek.md"
 
 
 def _read_command() -> str:

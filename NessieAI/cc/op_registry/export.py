@@ -7,15 +7,16 @@ import sys
 import tempfile
 from pathlib import Path
 
+from NessieAI import paths
 from NessieAI.cc.op_registry.install_oracle import discover_install
 from NessieAI.cc.op_registry.models import OpList, OpSpec
 from NessieAI.cc.op_registry.ops import OPS
 
 CANONICAL_OPS_PATH = Path(__file__).resolve().parent / "ops.json"
 BAKED_OPS_RELATIVE = Path("context") / "ops.json"
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_PLUGINS_ROOT = _REPO_ROOT / "docker" / "cc-runtime" / "build_context" / "plugins"
-DEFAULT_DOCKERFILE = _REPO_ROOT / "docker" / "cc-runtime" / "Dockerfile"
+_REPO_ROOT = paths.REPO_ROOT
+DEFAULT_PLUGINS_ROOT = paths.CC_RUNTIME_DIR / "build_context" / "plugins"
+DEFAULT_DOCKERFILE = paths.CC_RUNTIME_DIR / "Dockerfile"
 
 
 def canonical_ops_bytes(ops: list[OpSpec]) -> bytes:
@@ -149,17 +150,17 @@ def _resolve_export_paths(args: argparse.Namespace) -> tuple[Path, Path, Path]:
     canonical = (
         args.canonical_path
         if args.canonical_path is not None
-        else root / "nextseek_api" / "cc_assistant" / "op_registry" / "ops.json"
+        else paths.rebase(CANONICAL_OPS_PATH, root)
     )
     plugins_root = (
         args.plugins_root
         if args.plugins_root is not None
-        else root / "docker" / "cc-runtime" / "build_context" / "plugins"
+        else paths.rebase(DEFAULT_PLUGINS_ROOT, root)
     )
     dockerfile = (
         args.dockerfile_path
         if args.dockerfile_path is not None
-        else root / "docker" / "cc-runtime" / "Dockerfile"
+        else paths.rebase(DEFAULT_DOCKERFILE, root)
     )
     return canonical, plugins_root, dockerfile
 

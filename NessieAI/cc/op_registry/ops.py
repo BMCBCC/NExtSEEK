@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
+from NessieAI import paths
 from NessieAI.cc.op_registry.models import (
     AllowlistSpec,
     ArgSpec,
@@ -15,8 +15,7 @@ from NessieAI.cc.op_registry.models import (
     Transport,
 )
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-_READ_SAFE_PATH = _REPO_ROOT / "nextseek_api" / "assistant" / "read_safe_endpoints.json"
+_READ_SAFE_PATH = paths.READ_SAFE_ENDPOINTS
 _READ_SAFE = [
     ReadSafeEndpoint(**entry)
     for entry in json.loads(_READ_SAFE_PATH.read_text(encoding="utf-8"))

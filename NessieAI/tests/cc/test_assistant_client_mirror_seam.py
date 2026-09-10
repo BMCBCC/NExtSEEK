@@ -14,13 +14,13 @@ from __future__ import annotations
 import importlib
 import json
 import sys
-from pathlib import Path
 
 import httpx
 import pytest
 
-_BIN = Path(__file__).resolve().parents[3] / "docker" / "cc-runtime" / \
-    "build_context" / "plugins" / "nextseek" / "bin"
+from NessieAI import paths
+
+_BIN = paths.CC_PLUGIN_BIN
 
 
 @pytest.fixture(scope="module")

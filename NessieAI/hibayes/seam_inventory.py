@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
+from NessieAI import paths
+
 __all__ = [
     "SeamSite",
     "discover_seams",
@@ -16,9 +18,10 @@ __all__ = [
     "write_inventory",
 ]
 
-_REPO = Path(__file__).resolve().parents[2]
-_EVAL_ROOT = _REPO / "nextseek_api" / "eval"
-_ROUTER_PATH = _REPO / "nextseek_api" / "cc_assistant" / "router.py"
+_REPO = paths.REPO_ROOT
+# The HiBayes package is this module's own directory; the router is a sibling unit.
+_EVAL_ROOT = Path(__file__).resolve().parent
+_ROUTER_PATH = paths.ROUTER_DIR / "router.py"
 
 _ONLINE_CHAT_METHODS = frozenset(
     {"_classify_query", "_route_query", "classify_query", "route_query"}
@@ -121,8 +124,13 @@ def _scan_router(path: Path) -> list[SeamSite]:
 
 def discover_seams(*, repo_root: Path | None = None) -> list[SeamSite]:
     root = repo_root or _REPO
-    eval_root = root / "nextseek_api" / "eval"
-    router_path = root / "nextseek_api" / "cc_assistant" / "router.py"
+    eval_root = paths.rebase(_EVAL_ROOT, root)
+    router_path = paths.rebase(_ROUTER_PATH, root)
+    # A missing tree used to scan nothing and report a clean inventory.
+    if not eval_root.is_dir():
+        raise FileNotFoundError(f"HiBayes package not found at {eval_root}")
+    if not router_path.is_file():
+        raise FileNotFoundError(f"router module not found at {router_path}")
     sites: list[SeamSite] = []
     for path in sorted(eval_root.rglob("*.py")):
         if path.name.startswith("test_") or path.parts[-2] == "tests":

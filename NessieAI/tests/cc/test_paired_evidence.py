@@ -10,13 +10,14 @@ from typing import Any
 
 import pytest
 
+from NessieAI import paths
 from NessieAI.cc.op_registry import paired_evidence as pe
 from NessieAI.tests.nessie_tests import export as nexport
 from NessieAI.tests.nessie_tests import runner
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "paired_evidence"
-DEFAULT_CORPUS = REPO_ROOT / "nessie_tests" / "corpus.json"
+DEFAULT_CORPUS = paths.NESSIE_CORPUS
 PINNED_ZIP = Path(
     "/home/taishajo/work/NExtSEEK-dev/testquestions-2026-08-07/testquestions.zip"
 )

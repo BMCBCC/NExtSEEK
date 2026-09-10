@@ -11,10 +11,10 @@ Pure logic: docker-py (7.1.0) is importable in the harness, but no daemon, no
 network, no Django.
 """
 import json
-from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
 from NessieAI.cc import cc_engine
 from NessieAI.cc.cc_config import CCPaths
 
@@ -401,14 +401,17 @@ def test_path_mappings_env_uses_locked_logical_root_schema(tmp_path, monkeypatch
 # against the pre-cutover source at commit aacce0d — see task-6-report.md).
 # --------------------------------------------------------------------------
 
-_CC_DIR = Path(__file__).resolve().parents[1]           # nextseek_api/cc_assistant
-_SERVICES = _CC_DIR.parent / "services" / "cc_assistant.py"
-_REPO_ROOT = _CC_DIR.parents[1]
+_CC_DIR = paths.CC_DIR
+_SERVICES = paths.REPO_ROOT / "nextseek_api" / "services" / "cc_assistant.py"
+_REPO_ROOT = paths.REPO_ROOT
+# What was nextseek_api/cc_assistant/*.py before the NessieAI move: the CC engine,
+# the router group and the Django shell that stayed behind. The run-1c live
+# probe went to NessieAI/history/ (frozen) and is no longer runtime code.
+_RUNTIME_DIRS = (_CC_DIR, paths.ROUTER_DIR, paths.REPO_ROOT / "nextseek_api" / "cc_assistant")
 
 
 def test_grep_guard_no_host_user_root_in_any_runtime_module():
-    files = sorted(_CC_DIR.glob("*.py")) + [
-        _SERVICES, _CC_DIR / "evidence" / "run_1c_claude_md_live_probe.py"]
+    files = sorted(f for d in _RUNTIME_DIRS for f in d.glob("*.py")) + [_SERVICES]
     for f in files:
         assert "host_user_root" not in f.read_text(), f"host_user_root revived in {f}"
 

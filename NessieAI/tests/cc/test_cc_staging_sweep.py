@@ -24,14 +24,12 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
 from NessieAI.cc import cc_engine, cc_staging
 from NessieAI.cc.cc_provision import project_dirname
 
 # Ported upstream staging source (worktree copy cited by the sweep's parity).
-PORTED_STAGING = (
-    Path(__file__).resolve().parents[3]
-    / "docker" / "ns-sidecar" / "app" / "staging.py"
-)
+PORTED_STAGING = paths.NS_SIDECAR_DIR / "app" / "staging.py"
 
 
 # --------------------------------------------------------------------------
@@ -537,7 +535,7 @@ def test_missing_staging_root_is_noop(tmp_path):
 
 
 def test_user_hash_matches_ported_sidecar_contract():
-    """Parity with docker/ns-sidecar/app/staging.py::_user_hash — silent drift
+    """Parity with NessieAI/docker/ns-sidecar/app/staging.py::_user_hash: silent drift
     means staged artifacts are never found."""
     assert cc_staging._user_hash("alice@mit.edu") == hashlib.sha256(b"alice@mit.edu").hexdigest()
     text = PORTED_STAGING.read_text(encoding="utf-8")

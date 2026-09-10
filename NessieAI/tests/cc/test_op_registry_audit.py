@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
+from NessieAI import paths
 from NessieAI.cc.op_registry import (
     CONTAINER_CC_ROUTE,
     GENERIC_CC_BUILTINS,
@@ -26,18 +27,18 @@ from NessieAI.cc.op_registry.models import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-PLUGINS_ROOT = REPO_ROOT / "docker" / "cc-runtime" / "build_context" / "plugins"
-DOCKERFILE = REPO_ROOT / "docker" / "cc-runtime" / "Dockerfile"
+PLUGINS_ROOT = paths.CC_RUNTIME_DIR / "build_context" / "plugins"
+DOCKERFILE = paths.CC_RUNTIME_DIR / "Dockerfile"
 NEXTSEEK_BIN = PLUGINS_ROOT / "nextseek" / "bin"
 NEXTSEEK_RUNNER = NEXTSEEK_BIN / "_nextseek_runner.py"
 BATCH_RUNNER = NEXTSEEK_BIN / "_batch_upload_runner.py"
 WS_CONTRACT = NEXTSEEK_BIN / "_ws_contract.py"
-GRANULAR = REPO_ROOT / "nextseek_api" / "assistant" / "granular.py"
-WRITE_GATE = REPO_ROOT / "nextseek_api" / "assistant" / "write_gate.py"
-READ_SAFE_JSON = REPO_ROOT / "nextseek_api" / "assistant" / "read_safe_endpoints.json"
-ROUTE_CAPABILITIES = REPO_ROOT / "dmac_assistant" / "build_context" / "route_capabilities.json"
+GRANULAR = paths.NS_DIR / "granular.py"
+WRITE_GATE = paths.NS_DIR / "write_gate.py"
+READ_SAFE_JSON = paths.READ_SAFE_ENDPOINTS
+ROUTE_CAPABILITIES = paths.DMAC_BUILD_CONTEXT / "route_capabilities.json"
 CAPABILITIES_MD = (
-    REPO_ROOT / "chat_nextseek" / "src" / "chat_nextseek" / "context" / "capabilities.md"
+    paths.CHAT_NEXTSEEK_DIR / "src" / "chat_nextseek" / "context" / "capabilities.md"
 )
 
 QUERY_RUNNER = "_nextseek_runner.py"

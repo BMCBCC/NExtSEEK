@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
 from NessieAI.cc.op_registry import OPS, OpList, OpSpec, discover_install
 from NessieAI.cc.op_registry.export import (
     BAKED_OPS_RELATIVE,
@@ -19,8 +20,8 @@ from NessieAI.cc.op_registry.export import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_PLUGINS_ROOT = REPO_ROOT / "docker" / "cc-runtime" / "build_context" / "plugins"
-DEFAULT_DOCKERFILE = REPO_ROOT / "docker" / "cc-runtime" / "Dockerfile"
+DEFAULT_PLUGINS_ROOT = paths.CC_RUNTIME_DIR / "build_context" / "plugins"
+DEFAULT_DOCKERFILE = paths.CC_RUNTIME_DIR / "Dockerfile"
 EXPORT_MODULE = "NessieAI.cc.op_registry.export"
 
 SHIM_PREFIX = "nextseek-"
@@ -96,7 +97,7 @@ def test_export_check_cli_exits_zero():
         cwd=REPO_ROOT,
         env={
             **dict(__import__("os").environ),
-            "PYTHONPATH": f"{REPO_ROOT}:{REPO_ROOT / 'dmac_assistant' / 'src'}",
+            "PYTHONPATH": f"{REPO_ROOT}:{paths.NESSIE_ROOT / 'dmac_assistant' / 'src'}",
         },
         capture_output=True,
         text=True,
@@ -372,12 +373,10 @@ def test_export_check_does_not_write_restore_or_create_repo_temps():
     before = {
         path: (path.stat().st_mtime_ns, path.stat().st_size)
         for path in [
-            REPO_ROOT / "nextseek_api" / "cc_assistant" / "op_registry" / "ops.json",
+            paths.CC_DIR / "op_registry" / "ops.json",
             *sorted(
                 (
-                    REPO_ROOT
-                    / "docker"
-                    / "cc-runtime"
+                    paths.CC_RUNTIME_DIR
                     / "build_context"
                     / "plugins"
                 ).rglob("ops.json")
@@ -395,7 +394,7 @@ def test_export_check_does_not_write_restore_or_create_repo_temps():
     stray = list(REPO_ROOT.glob("op-registry-export-check-*"))
     assert stray == []
     pyc = list(
-        (REPO_ROOT / "nextseek_api" / "cc_assistant" / "op_registry").glob("__pycache__/*")
+        (paths.CC_DIR / "op_registry").glob("__pycache__/*")
     )
     # check mode must not rewrite targets even if a cache already exists
     for target, stamp in before.items():
@@ -406,9 +405,9 @@ def test_export_root_flag_rejects_stale_canonical(tmp_path: Path):
     from NessieAI.cc.op_registry.export import main as export_main
 
     root = tmp_path / "repo"
-    canonical = root / "nextseek_api" / "cc_assistant" / "op_registry" / "ops.json"
-    plugins = root / "docker" / "cc-runtime" / "build_context" / "plugins"
-    dockerfile = root / "docker" / "cc-runtime" / "Dockerfile"
+    canonical = root / "NessieAI" / "cc" / "op_registry" / "ops.json"
+    plugins = root / "NessieAI" / "docker" / "cc-runtime" / "build_context" / "plugins"
+    dockerfile = root / "NessieAI" / "docker" / "cc-runtime" / "Dockerfile"
     plugin_dir = _write_plugin_tree(plugins, "alpha-plugin")
     _write_dockerfile(dockerfile, copy_plugins=("alpha-plugin",))
     canonical.parent.mkdir(parents=True)

@@ -86,7 +86,7 @@ def _sha256(path: Path) -> str:
 
 def test_bedrock_proxy_directory_exists():
     assert PROXY_DIR.is_dir(), (
-        "docker/bedrock-proxy/ must exist as the canonical, NExtSEEK-owned "
+        "NessieAI/docker/bedrock-proxy/ must exist as the canonical, NExtSEEK-owned "
         "Bedrock auth-proxy build source (PLAN-7 Task 4)."
     )
 
@@ -183,12 +183,12 @@ def test_dockerfile_copy_source_matches_this_ports_build_context():
     text = _read(PROXY_DIR / "Dockerfile")
     assert re.search(r"^COPY\s+app/\s+/app/app/\s*$", text, re.MULTILINE), (
         "Dockerfile COPY line must reference app/ relative to the "
-        "docker/bedrock-proxy/ build context."
+        "NessieAI/docker/bedrock-proxy/ build context."
     )
     assert "COPY bedrock-proxy/app/" not in text, (
         "Dockerfile must not carry the source's repo-root-relative COPY "
         "path -- it does not resolve when building with context = "
-        "docker/bedrock-proxy/."
+        "NessieAI/docker/bedrock-proxy/."
     )
 
 
@@ -360,7 +360,7 @@ def test_standalone_sidecar_compose_not_ported():
     compose wiring is Task 5's job, so this port must not carry a
     docker-compose.yml of its own under docker/bedrock-proxy/."""
     assert not (PROXY_DIR / "docker-compose.yml").is_file(), (
-        "docker/bedrock-proxy/ must not carry a standalone docker-compose.yml "
+        "NessieAI/docker/bedrock-proxy/ must not carry a standalone docker-compose.yml "
         "-- root-compose wiring is Task 5's job (PLAN-7)."
     )
 

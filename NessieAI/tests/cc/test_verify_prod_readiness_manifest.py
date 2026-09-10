@@ -12,7 +12,7 @@ Run exactly as specified for this task:
 
     cd /home/taishajo/work/NExtSEEK-merge && \\
       uv run --no-project --with pytest python -m pytest -q --noconftest \\
-      nextseek_api/cc_assistant/tests/test_verify_prod_readiness_manifest.py
+      NessieAI/tests/cc/test_verify_prod_readiness_manifest.py
 
 The module under test has zero non-stdlib imports, so this file only needs
 pytest itself. It is loaded via `importlib.util.spec_from_file_location`
@@ -46,9 +46,7 @@ from types import SimpleNamespace
 
 import pytest
 
-_SCRIPT_PATH = (
-    Path(__file__).resolve().parents[1] / "scripts" / "verify_prod_readiness_manifest.py"
-)
+_SCRIPT_PATH = Path(__file__).resolve().parent / "scripts" / "verify_prod_readiness_manifest.py"
 _spec = importlib.util.spec_from_file_location(
     "NessieAI.tests.cc.scripts.verify_prod_readiness_manifest", _SCRIPT_PATH
 )
@@ -148,10 +146,10 @@ def build_valid_manifest(tmp_path: Path) -> tuple[dict, dict]:
     })
 
     lane_a_path = _write_json(ev / "lane_a.json", {
-        "collected": ["nextseek_api/cc_assistant/tests/test_x.py::test_a",
-                      "nextseek_api/cc_assistant/tests/test_x.py::test_b"],
+        "collected": ["NessieAI/tests/cc/test_x.py::test_a",
+                      "NessieAI/tests/cc/test_x.py::test_b"],
         "failures": [],
-        "skips": [{"nodeid": "nextseek_api/cc_assistant/tests/test_x.py::test_c",
+        "skips": [{"nodeid": "NessieAI/tests/cc/test_x.py::test_c",
                    "reason": "requires GPU", "expected": True}],
         "xfails": [],
         "deselected": [],
@@ -160,7 +158,7 @@ def build_valid_manifest(tmp_path: Path) -> tuple[dict, dict]:
         "db_identity": {"env": "dev", "host": "db", "port": 3306, "user": "seek_db_user"},
     })
     lane_b_path = _write_json(ev / "lane_b.json", {
-        "collected": ["nextseek_api/cc_assistant/tests/test_hygiene.py::test_gitignore"],
+        "collected": ["NessieAI/tests/cc/test_hygiene.py::test_gitignore"],
         "failures": [], "skips": [], "xfails": [], "deselected": [],
         "image_id": None, "source_sha": MERGED_SHA, "db_identity": None,
     })
@@ -345,7 +343,7 @@ def test_docker_inspect_tag_no_longer_resolves_fails(tmp_path):
 def test_failing_lane_json_reports_failures(tmp_path):
     manifest, paths = build_valid_manifest(tmp_path)
     content = json.loads(paths["lane_a"].read_text())
-    content["failures"] = ["nextseek_api/cc_assistant/tests/test_x.py::test_a"]
+    content["failures"] = ["NessieAI/tests/cc/test_x.py::test_a"]
     paths["lane_a"].write_text(json.dumps(content))
     manifest["lanes_artifacts"][0] = rewrap(paths["lane_a"], manifest["lanes_artifacts"][0])
     mpath = write_manifest(tmp_path, manifest)
@@ -369,7 +367,7 @@ def test_unexpected_skip_fails(tmp_path):
 def test_unexpected_deselect_fails(tmp_path):
     manifest, paths = build_valid_manifest(tmp_path)
     content = json.loads(paths["lane_a"].read_text())
-    content["deselected"] = [{"nodeid": "nextseek_api/cc_assistant/tests/test_x.py::test_d",
+    content["deselected"] = [{"nodeid": "NessieAI/tests/cc/test_x.py::test_d",
                               "reason": "flaky"}]  # no "expected": true
     paths["lane_a"].write_text(json.dumps(content))
     manifest["lanes_artifacts"][0] = rewrap(paths["lane_a"], manifest["lanes_artifacts"][0])
@@ -382,7 +380,7 @@ def test_unexpected_deselect_fails(tmp_path):
 def test_unexpected_xfail_fails(tmp_path):
     manifest, paths = build_valid_manifest(tmp_path)
     content = json.loads(paths["lane_a"].read_text())
-    content["xfails"] = [{"nodeid": "nextseek_api/cc_assistant/tests/test_x.py::test_e", "reason": "flaky"}]
+    content["xfails"] = [{"nodeid": "NessieAI/tests/cc/test_x.py::test_e", "reason": "flaky"}]
     paths["lane_a"].write_text(json.dumps(content))
     manifest["lanes_artifacts"][0] = rewrap(paths["lane_a"], manifest["lanes_artifacts"][0])
     mpath = write_manifest(tmp_path, manifest)

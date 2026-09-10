@@ -16,7 +16,7 @@ healthy, ``STEP7_LLM_LEDGER=1``):
     -e NEXTSEEK_CC_MAX_BUDGET_USD=10 \\
     -e STEP7_PER_OP_BUNDLE_DIR=<bundle> \\
     [-e STEP7_PER_OP_ONLY=nextseek-report]  # smoke one op \\
-    nextseek sh -lc 'cd /app && uv run python nextseek_api/cc_assistant/scripts/step7_gate3d_per_op.py'
+    nextseek sh -lc 'cd /app && uv run python NessieAI/tests/cc/scripts/step7_gate3d_per_op.py'
 """
 from __future__ import annotations
 
@@ -28,9 +28,15 @@ import time
 import uuid
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
+# Run by path, Python puts only this file's own directory on sys.path, so
+# NessieAI is not importable. Put the checkout root (the first parent holding
+# NessieAI/__init__.py) first. Under `python -m` or an import __package__ is
+# set, the root is already importable, and nothing is inserted.
+if not __package__:
+    for _parent in Path(__file__).resolve().parents:
+        if (_parent / "NessieAI" / "__init__.py").is_file():
+            sys.path.insert(0, str(_parent))
+            break
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "dmac.settings")
 import django  # noqa: E402
@@ -59,7 +65,7 @@ TOTAL_BUDGET_CAP = float(os.environ.get("STEP7_PER_OP_TOTAL_BUDGET_USD", "10"))
 TURN_TIMEOUT = 180
 
 # The 8 LOCKED per-op E2E questions (user-approved 2026-07-05), verbatim from the
-# canonical chat_nextseek/e2e/catalog.json (distinct from the SKILL.md doc
+# canonical NessieAI/tests/e2e/catalog.json (distinct from the SKILL.md doc
 # examples). No "use the nextseek plugin" preamble — the per-op SKILL.md/CLAUDE.md
 # instruct the agent; the query is the natural user request. One question per op.
 OP_QUERIES: dict[str, str] = {
@@ -198,7 +204,7 @@ def main() -> int:
     api_user = os.environ.get("SEEK_TEST_USER", "demo")
     api_pass = os.environ.get("SEEK_TEST_PASS", "demopassword")
     bundle = Path(os.environ.get("STEP7_PER_OP_BUNDLE_DIR")
-                  or (_REPO_ROOT / "nextseek_api" / "cc_assistant" / "tests"
+                  or (Path(__file__).resolve().parents[1]
                       / "acceptance_evidence" / "step7" / f"per-op-{uuid.uuid4().hex[:8]}"))
     bundle.mkdir(parents=True, exist_ok=True)
 

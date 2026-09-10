@@ -11,12 +11,10 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 
-_PLUGIN = (
-    Path(__file__).resolve().parents[3]
-    / "docker" / "cc-runtime" / "build_context" / "plugins" / "nextseek"
-)
+from NessieAI import paths
+
+_PLUGIN = paths.CC_PLUGIN_DIR
 _HOOKS_JSON = _PLUGIN / "hooks" / "hooks.json"
 _HOOK_SH = _PLUGIN / "hooks" / "entity_preamble.sh"
 _MANIFEST = _PLUGIN / "context" / "MANIFEST.md"
@@ -70,10 +68,7 @@ def test_skill_points_to_manifest_and_auto_entity_extract():
 
 
 def _entrypoint_text() -> str:
-    return (
-        Path(__file__).resolve().parents[3]
-        / "docker" / "cc-runtime" / "container" / "entrypoint.sh"
-    ).read_text(encoding="utf-8")
+    return (paths.CC_RUNTIME_DIR / "container" / "entrypoint.sh").read_text(encoding="utf-8")
 
 
 def test_entrypoint_registers_hook_in_user_settings():

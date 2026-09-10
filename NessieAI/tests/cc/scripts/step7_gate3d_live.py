@@ -15,7 +15,7 @@ Runs inside the live ``nextseek`` container after sidecar deploy and
     -e STEP7_REPO_COMMIT=<40-char-sha> \\
     -e STEP7_REPO_BRANCH=cc-step7-compose-native \\
     -e INTEGRATION_PLAN_PATH=/app/integration-plan.json \\
-    nextseek sh -lc 'cd /app && uv run python nextseek_api/cc_assistant/scripts/step7_gate3d_live.py'
+    nextseek sh -lc 'cd /app && uv run python NessieAI/tests/cc/scripts/step7_gate3d_live.py'
 """
 from __future__ import annotations
 
@@ -30,23 +30,31 @@ import time
 import uuid
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
+# Run by path, Python puts only this file's own directory on sys.path, so
+# NessieAI is not importable. Put the checkout root (the first parent holding
+# NessieAI/__init__.py) first. Under `python -m` or an import __package__ is
+# set, the root is already importable, and nothing is inserted.
+if not __package__:
+    for _parent in Path(__file__).resolve().parents:
+        if (_parent / "NessieAI" / "__init__.py").is_file():
+            sys.path.insert(0, str(_parent))
+            break
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "dmac.settings")
 import django  # noqa: E402
 
 django.setup()
 
+from NessieAI import paths  # noqa: E402
 from NessieAI.cc import cc_config, cc_engine  # noqa: E402
 from NessieAI.tests.cc.validate_step7_compose_deploy import (  # noqa: E402
     CANONICAL_FOREIGN_TOKENS,
 )
 from NessieAI.tests.cc.validate_cc_acceptance import OPUS  # noqa: E402
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-EVID_ROOT = REPO_ROOT / "nextseek_api" / "cc_assistant" / "tests" / "acceptance_evidence" / "step7"
+REPO_ROOT = paths.REPO_ROOT
+# Run-output dir for live bundles; the committed catalog is in step7_catalog/.
+EVID_ROOT = Path(__file__).resolve().parents[1] / "acceptance_evidence" / "step7"
 PROXY_CONTAINER = os.environ.get("DMAC_PROXY_CONTAINER", "dmac-bedrock-proxy")
 NET = cc_engine.DEFAULT_NETWORK
 BUDGET_CAP = float(os.environ.get("NEXTSEEK_CC_MAX_BUDGET_USD", "10"))
@@ -371,8 +379,8 @@ def main() -> int:
 
     print(f"\nGate 3D live bundle (container): {bundle}")
     print("Next: docker cp bundle to worktree, then host finalize:")
-    print("  cd <worktree> && uv run python nextseek_api/cc_assistant/scripts/step7_gate3d_host_finalize.py \\")
-    print(f"    nextseek_api/cc_assistant/tests/acceptance_evidence/step7/{run_id}")
+    print("  cd <worktree> && uv run python NessieAI/tests/cc/scripts/step7_gate3d_host_finalize.py \\")
+    print(f"    NessieAI/tests/cc/acceptance_evidence/step7/{run_id}")
     return 0
 
 

@@ -536,7 +536,7 @@ def _pass_bundle(bundle_dir: Path, tracker_path: Path, deploy_commit: str,
             "docker/nextseek.env.example": {
                 "path": "docker/nextseek.env.example", "exists": True, "sha256": "2" * 64,
             },
-            "DEPLOY.md": {"path": "nextseek_api/cc_assistant/DEPLOY.md", "exists": True, "sha256": "3" * 64},
+            "DEPLOY.md": {"path": "NessieAI/cc/DEPLOY.md", "exists": True, "sha256": "3" * 64},
         },
         "compose_services": ["nextseek", "nextseek_nginx", "db", "neo4j"],
         "compose_networks": [],

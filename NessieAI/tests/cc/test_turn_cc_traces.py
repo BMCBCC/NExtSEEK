@@ -24,6 +24,6 @@ def test_projection_passes_cc_traces_through():
     without a DB, so this is a source-text guard (same pattern as the Task 11a
     `assistant_reply` grep guard). MUTATION-SENSITIVE: deleting the passthrough line
     removes the substring and FAILS this assertion."""
-    from pathlib import Path
-    src = (Path(__file__).parents[2] / "services" / "assistant.py").read_text()
+    from NessieAI import paths
+    src = (paths.REPO_ROOT / "nextseek_api" / "services" / "assistant.py").read_text()
     assert 'cc_traces=entry.get("cc_traces")' in src   # Step 4 passthrough is wired
