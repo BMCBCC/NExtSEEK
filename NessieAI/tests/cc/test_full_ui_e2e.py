@@ -15,9 +15,9 @@ really is limited to the e2e package + mysql helper + stdlib, as required):
 That environment has NEITHER pydantic NOR playwright NOR mysql-connector
 installed (verified directly: `uv run --no-project --with pytest python -c
 "import pydantic"` -> ModuleNotFoundError). full_ui_e2e.py's top-level
-imports are `from e2e.catalog import ...`, `from e2e.criteria import
-check_pass`, `from e2e.playwright.mysql import fetch_chat_session_row`, and
-`from e2e.playwright.runner import run_variant_browser` — the real
+imports are `from NessieAI.tests.e2e.catalog import ...`, `from NessieAI.tests.e2e.criteria import
+check_pass`, `from NessieAI.tests.e2e.playwright.mysql import fetch_chat_session_row`, and
+`from NessieAI.tests.e2e.playwright.runner import run_variant_browser` — the real
 chat_nextseek/e2e/catalog.py needs pydantic and chat_nextseek/e2e/playwright/
 runner.py needs playwright, neither available here. So this file installs
 lightweight fake `e2e.*` modules into sys.modules BEFORE importing

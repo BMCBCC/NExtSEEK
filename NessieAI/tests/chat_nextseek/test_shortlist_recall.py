@@ -1,6 +1,6 @@
 """Pinned recall tests for shortlist_catalog.
 
-Cases mined from e2e/catalog.json: variants whose first turn declares
+Cases mined from NessieAI/tests/e2e/catalog.json: variants whose first turn declares
 the entity codes the LLM is expected to emit. The shortlister MUST include
 those codes in its candidate pool — otherwise the LLM cannot possibly
 emit them.
@@ -21,7 +21,7 @@ from chat_nextseek.helpers.tools.catalog_match import shortlist_catalog
 
 
 # Format: (query, must-include sampletype codes, must-include assay names)
-# Verify each pair against e2e/catalog.json before adding more.
+# Verify each pair against NessieAI/tests/e2e/catalog.json before adding more.
 RECALL_CASES = [
     ("Find me mice treated with NDMA",                  ["MUS"], []),
     ("Show me all human patients",                       ["PAT"], []),

@@ -14,7 +14,7 @@ REPO = Path(__file__).resolve().parents[3]
 
 
 def load_cc(rel: str):
-    dotted = "nextseek_api.cc_assistant." + rel.replace("/", ".").removesuffix(".py")
+    dotted = "NessieAI.tests.cc." + rel.replace("/", ".").removesuffix(".py")
     path = CC_ROOT / rel
     spec = importlib.util.spec_from_file_location(dotted, path)
     mod = importlib.util.module_from_spec(spec)

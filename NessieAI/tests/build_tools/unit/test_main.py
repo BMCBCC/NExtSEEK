@@ -252,8 +252,8 @@ def test_ingest_preserves_existing_readme_md_during_cleanup(tmp_path: Path) -> N
 
 def test_cli_module_help_mentions_force_flag() -> None:
     # Plan A · Amendment 7 v2: build_tools is a sibling project; tests run
-    # from build_tools/ as cwd. Subprocess `python -m NessieAI.build_tools.X` needs
-    # cwd at repo root so the `build_tools` package is on Python's default
+    # from NessieAI/build_tools/ as cwd. Subprocess `python -m NessieAI.build_tools.X` needs
+    # cwd at repo root so the `NessieAI` package is on Python's default
     # sys.path (containing '').
     repo_root = Path(__file__).resolve().parents[3]
     result = subprocess.run(

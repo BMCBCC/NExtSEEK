@@ -1,6 +1,6 @@
 """Corpus-owned classifier label space for Plan 018 V4-6.
 
-Single read seam for declared task families from nessie_tests corpus only.
+Single read seam for declared task families from the NessieAI.tests.nessie_tests corpus only.
 """
 from __future__ import annotations
 
