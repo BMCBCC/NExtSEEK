@@ -40,7 +40,7 @@ jobs:
       # baml_client is generated and gitignored, so a fresh checkout lacks it and
       # imports of the router fail without this step.
       - name: Generate the BAML client
-        run: uv run baml-cli generate --from ./dmac_assistant/baml_src --no-version-check
+        run: uv run baml-cli generate --from ./NessieAI/dmac_assistant/baml_src --no-version-check
 
       - name: Run the no-stack lanes
         continue-on-error: true

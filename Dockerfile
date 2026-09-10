@@ -8,7 +8,7 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# ssh/scp client for the Luria SLURM launch backend (chat_nextseek/luria/ssh.py).
+# ssh/scp client for the Luria SLURM launch backend (NessieAI/chat_nextseek/src/chat_nextseek/luria/ssh.py).
 # Required only when PIPELINE_LAUNCH_MODE=luria; harmless otherwise.
 RUN apt-get update && apt-get install -y --no-install-recommends openssh-client \
     && rm -rf /var/lib/apt/lists/*
@@ -19,9 +19,9 @@ RUN uv sync
 
 # Step 1c: generate vendored dmac_assistant BAML router client at build time
 # (baml_src is committed; baml_client is gitignored generated output).
-RUN mkdir -p /app/dmac_assistant/src/dmac_assistant/router && \
-    uv run baml-cli generate --from /app/dmac_assistant/baml_src --no-version-check && \
-    test -d /app/dmac_assistant/src/dmac_assistant/router/baml_client
+RUN mkdir -p /app/NessieAI/dmac_assistant/src/dmac_assistant/router && \
+    uv run baml-cli generate --from /app/NessieAI/dmac_assistant/baml_src --no-version-check && \
+    test -d /app/NessieAI/dmac_assistant/src/dmac_assistant/router/baml_client
 
 EXPOSE 8000
 

@@ -472,7 +472,7 @@ wheels = [
 [[package]]
 name = "chat-nextseek"
 version = "0.1.0"
-source = { editable = "chat_nextseek" }
+source = { editable = "NessieAI/chat_nextseek" }
 dependencies = [
     { name = "aiohttp" },
     { name = "aiohttp-sse" },
@@ -867,7 +867,7 @@ wheels = [
 [[package]]
 name = "dmac-assistant"
 version = "0.1.0"
-source = { editable = "dmac_assistant" }
+source = { editable = "NessieAI/dmac_assistant" }
 dependencies = [
     { name = "baml-py" },
     { name = "docker" },
@@ -1925,7 +1925,7 @@ requires-dist = [
     { name = "channels", specifier = ">=4.3.2" },
     { name = "chardet" },
     { name = "charset-normalizer" },
-    { name = "chat-nextseek", editable = "chat_nextseek" },
+    { name = "chat-nextseek", editable = "NessieAI/chat_nextseek" },
     { name = "daphne", specifier = ">=4.2.1" },
     { name = "deepmerge" },
     { name = "dj-rest-auth" },
@@ -1941,7 +1941,7 @@ requires-dist = [
     { name = "django-widget-tweaks" },
     { name = "djangorestframework" },
     { name = "djangorestframework-simplejwt" },
-    { name = "dmac-assistant", editable = "dmac_assistant" },
+    { name = "dmac-assistant", editable = "NessieAI/dmac_assistant" },
     { name = "drf-spectacular" },
     { name = "drf-spectacular-sidecar" },
     { name = "duckdb" },

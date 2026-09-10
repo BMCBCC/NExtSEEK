@@ -7,7 +7,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends git ca-certific
 RUN pip install --no-cache-dir uv
 
 WORKDIR /app
-COPY nextseek_api/eval /app/nextseek_api/eval
+COPY NessieAI/__init__.py /app/NessieAI/__init__.py
+COPY NessieAI/hibayes /app/NessieAI/hibayes
 
 RUN pip install --no-cache-dir \
     pydantic orjson numpy scipy pytest \
