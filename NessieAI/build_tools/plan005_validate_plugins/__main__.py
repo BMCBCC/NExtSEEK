@@ -5,7 +5,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from build_tools.plan005_validate_plugins.validate import (
+from NessieAI.build_tools.plan005_validate_plugins.validate import (
     IMMUTABLE_VALIDATOR_IMAGE,
     PluginValidationError,
     validate_installed_plugins,

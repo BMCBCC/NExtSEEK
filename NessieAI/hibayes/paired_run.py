@@ -5,7 +5,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from nextseek_api.eval.evidence_kinds import (
+from NessieAI.hibayes.evidence_kinds import (
     EvidenceKind,
     ForgedEvidenceDiscriminator,
     MixedEvidenceBatch,

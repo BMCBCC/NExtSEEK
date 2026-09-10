@@ -274,7 +274,7 @@ def test_write_gate_loads_the_allowlist_this_guard_watches():
     existence assertion is separate and explicit — without it, deleting the
     allowlist would leave this test green.
     """
-    from nextseek_api.assistant import write_gate
+    from NessieAI.ns import write_gate
 
     actual = Path(write_gate.default_allowlist_path()).resolve()
     assert actual == ENFORCED_ALLOWLIST.resolve(), (
@@ -315,7 +315,7 @@ def test_enforced_and_baked_allowlists_agree_on_endpoint_methods():
     whitespace-only reformat and reports exactly which (endpoint, METHOD) pairs
     the agent believes it may call but the gate would block, and vice versa.
     """
-    from nextseek_api.assistant import write_gate
+    from NessieAI.ns import write_gate
 
     enforced = write_gate.load_allowlist_from_entries(
         json.loads(ENFORCED_ALLOWLIST.read_text(encoding="utf-8"))

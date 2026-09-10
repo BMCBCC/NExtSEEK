@@ -7,5 +7,5 @@ class CcAssistantConfig(AppConfig):
     label = "cc_assistant"
 
     def ready(self) -> None:
-        from nextseek_api.cc_assistant.step7_llm_cost_ledger import maybe_install_from_env
+        from NessieAI.cc.step7_llm_cost_ledger import maybe_install_from_env
         maybe_install_from_env()

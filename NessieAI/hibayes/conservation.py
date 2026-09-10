@@ -6,7 +6,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from nextseek_api.eval.disposition import ArmBucket, OutcomeBucket, exclusion_census
+from NessieAI.hibayes.disposition import ArmBucket, OutcomeBucket, exclusion_census
 
 __all__ = [
     "ConservationReport",
@@ -170,7 +170,7 @@ def build_fit_admission(
 ) -> FitAdmission:
     """Emit fit-admission with only scored retained pairs; excluded/pending never appear."""
     if paired_batch is not None:
-        from nextseek_api.eval.fit.fit_boundary import (
+        from NessieAI.hibayes.fit.fit_boundary import (
             assert_paired_experimental_only,
             require_approved_paired_run,
         )

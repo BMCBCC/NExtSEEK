@@ -6,8 +6,8 @@ from typing import Sequence
 
 import numpy as np
 
-from nextseek_api.eval.fit.v14.fit_config import V14FitConfig, contrast_basis_B
-from nextseek_api.eval.fit.v14.pair_rows import JointQualityState, PairFitRow
+from NessieAI.hibayes.fit.v14.fit_config import V14FitConfig, contrast_basis_B
+from NessieAI.hibayes.fit.v14.pair_rows import JointQualityState, PairFitRow
 
 __all__ = [
     "DescriptiveQualityResult",

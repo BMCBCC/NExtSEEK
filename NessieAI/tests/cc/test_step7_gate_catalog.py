@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from nextseek_api.cc_assistant import step7_gate_catalog as catalog
-from nextseek_api.cc_assistant.tests import cc_matrix_gate_harness as gate
+from NessieAI.tests.cc import step7_gate_catalog as catalog
+from NessieAI.tests.cc import cc_matrix_gate_harness as gate
 
 
 @pytest.mark.xfail(reason="#9 defer: dev's step7 op-catalog does not cover dev-v3-merge's reingest/pipeline bin ops (pipeline, run-ls, build-upload-xlsx), which bin_inventory discovers from _nextseek_runner.py. Broader dev<->dev-v3-merge gating reconciliation tracked separately, out of #9 memory scope.", strict=False)

@@ -21,9 +21,9 @@ import json
 
 import pytest
 
-from nessie_tests import export
-from nessie_tests.manifest import NessieManifestEntry
-from nessie_tests.output_skill_bayesian import merge_grades
+from NessieAI.tests.nessie_tests import export
+from NessieAI.tests.nessie_tests.manifest import NessieManifestEntry
+from NessieAI.tests.nessie_tests.output_skill_bayesian import merge_grades
 
 SUCCESS_OUTCOMES = {"FullySatisfied", "AppropriateClarification", "AppropriateBoundary"}
 
@@ -362,5 +362,5 @@ def test_the_skill_script_is_a_thin_wrapper_over_the_package():
     script = (pathlib.Path(__file__).resolve().parents[1]
               / "output-skill-bayesian" / "scripts" / "merge_grades.py")
     body = script.read_text(encoding="utf-8")
-    assert "from nessie_tests.output_skill_bayesian import merge_grades" in body
+    assert "from NessieAI.tests.nessie_tests.output_skill_bayesian import merge_grades" in body
     assert "SUCCESS_OUTCOMES" not in body

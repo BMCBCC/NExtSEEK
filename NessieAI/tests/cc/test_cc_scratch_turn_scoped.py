@@ -26,9 +26,9 @@ from pathlib import Path
 
 import pytest
 
-from nextseek_api.cc_assistant import cc_engine
-from nextseek_api.cc_assistant.cc_config import CCPaths
-from nextseek_api.cc_assistant.cc_provision import build_user_dirs
+from NessieAI.cc import cc_engine
+from NessieAI.cc.cc_config import CCPaths
+from NessieAI.cc.cc_provision import build_user_dirs
 
 RUN_ID = "a1"
 USER = "alice"

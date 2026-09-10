@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from nextseek_api.cc_assistant import cc_upload_tasks as tasks
-from nextseek_api.cc_assistant.cc_upload_validate import validate_upload_filename
+from NessieAI.cc.cc_upload_validate import validate_upload_filename
 
 
 class _Self:

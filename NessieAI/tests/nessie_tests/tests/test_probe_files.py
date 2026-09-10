@@ -11,7 +11,7 @@ import pathlib
 
 import pytest
 
-from nessie_tests import corpus
+from NessieAI.tests.nessie_tests import corpus
 
 PROBES = sorted((pathlib.Path(__file__).resolve().parents[1] / "probes").glob("*.json"))
 

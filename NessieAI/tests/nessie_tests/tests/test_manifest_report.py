@@ -1,7 +1,7 @@
 from pathlib import Path
 import pytest
-from nessie_tests import manifest as M
-from nessie_tests import report
+from NessieAI.tests.nessie_tests import manifest as M
+from NessieAI.tests.nessie_tests import report
 
 
 def _sample():
@@ -44,7 +44,7 @@ def test_generate_html_escapes_reason(tmp_path):
 # --------------------------------------------------------------------------- #
 
 def _entry(*obs, status="passed"):
-    from nessie_tests.manifest import CriterionObservation, NessieManifestEntry
+    from NessieAI.tests.nessie_tests.manifest import CriterionObservation, NessieManifestEntry
     return NessieManifestEntry(
         id="sys.show_me_all_assays_i_have_acce", family="system_question", tier="full",
         status=status,
@@ -54,8 +54,8 @@ def _entry(*obs, status="passed"):
 
 
 def _html(entry, tmp_path):
-    from nessie_tests.manifest import NessieManifest
-    from nessie_tests import report
+    from NessieAI.tests.nessie_tests.manifest import NessieManifest
+    from NessieAI.tests.nessie_tests import report
     m = NessieManifest(started_at="a", ended_at="b", tier="full", scope="all", entries=[entry])
     return report.generate_html(m, tmp_path).read_text(encoding="utf-8")
 
@@ -113,7 +113,7 @@ def test_a_case_with_no_observations_renders_no_table(tmp_path):
 
 def _skip_entry(*obs, status="passed"):
     """`obs` are 7-tuples: field, op, expected, observed, passed, skipped, reason."""
-    from nessie_tests.manifest import CriterionObservation, NessieManifestEntry
+    from NessieAI.tests.nessie_tests.manifest import CriterionObservation, NessieManifestEntry
     return NessieManifestEntry(
         id="tree.then_ask_about", family="search_tree", tier="full", status=status,
         observations=[CriterionObservation(turn=t, field=f, op=o, expected=e, observed=v,
@@ -194,7 +194,7 @@ def test_the_vacuous_turn_the_docs_promise_really_is_visible(tmp_path):
     beside its two skips. The README claim under test is about the skipped ROWS, not
     about vacuity, and it still holds — the summary must count the skips separately
     and never say `all passed`."""
-    from nessie_tests import corpus, runner
+    from NessieAI.tests.nessie_tests import corpus, runner
 
     corpus_json = Path(__file__).resolve().parents[1] / "corpus.json"
     assert any(v.id == "tree.then_ask_about" for v in corpus.merged(corpus_json))
@@ -238,7 +238,7 @@ def test_the_vacuous_turn_the_docs_promise_really_is_visible(tmp_path):
 # --------------------------------------------------------------------------- #
 
 def test_the_manifest_records_what_makes_a_diff_honest(tmp_path):
-    from nessie_tests import runner
+    from NessieAI.tests.nessie_tests import runner
 
     ROUTED = {"status": "running", "progress": [
         {"event": "route_decided", "data": {"route": "container_cc", "model_class": "opus",
@@ -262,7 +262,7 @@ def test_the_manifest_records_what_makes_a_diff_honest(tmp_path):
 
 
 def test_the_fingerprint_changes_when_the_corpus_changes(tmp_path):
-    from nessie_tests import runner
+    from NessieAI.tests.nessie_tests import runner
 
     CORPUS = Path(__file__).resolve().parents[1] / "corpus.json"
     edited = tmp_path / "corpus.json"
@@ -280,7 +280,7 @@ def test_the_fingerprint_changes_when_the_corpus_changes(tmp_path):
 # --------------------------------------------------------------------------- #
 
 def test_an_outage_row_says_outage_not_error(tmp_path):
-    from nessie_tests.manifest import NessieManifest, NessieManifestEntry
+    from NessieAI.tests.nessie_tests.manifest import NessieManifest, NessieManifestEntry
 
     m = NessieManifest(
         started_at="a", ended_at="b", tier="full", scope="all",
@@ -297,7 +297,7 @@ def test_an_outage_row_says_outage_not_error(tmp_path):
 
 def test_an_outaged_known_fail_is_not_rendered_as_xfail(tmp_path):
     """`xfail` claims the expected failure was observed. An outage observed nothing."""
-    from nessie_tests.manifest import NessieManifest, NessieManifestEntry
+    from NessieAI.tests.nessie_tests.manifest import NessieManifest, NessieManifestEntry
 
     m = NessieManifest(
         started_at="a", ended_at="b", tier="full", scope="all",

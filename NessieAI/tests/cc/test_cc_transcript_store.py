@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from nextseek_api.cc_assistant import cc_transcript_store
-from nextseek_api.cc_assistant.cc_transcript_store import (
+from NessieAI.cc import cc_transcript_store
+from NessieAI.cc.cc_transcript_store import (
     compress, decompress, store_transcript, TranscriptTooLarge,
 )
 

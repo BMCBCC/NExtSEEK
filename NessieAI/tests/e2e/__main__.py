@@ -69,7 +69,7 @@ def main(argv: list[str] | None = None) -> int:
     args = p.parse_args(argv)
 
     if args.init_env:
-        from e2e.import_env import write_env  # noqa: PLC0415
+        from NessieAI.tests.e2e.import_env import write_env  # noqa: PLC0415
         try:
             path = write_env(force=args.force)
         except FileExistsError as exc:
@@ -81,7 +81,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.list:
-        from e2e.catalog import load_catalog  # noqa: PLC0415
+        from NessieAI.tests.e2e.catalog import load_catalog  # noqa: PLC0415
         cat = load_catalog(CATALOG_PATH)
         if args.family and args.family not in cat.families:
             print(f"[e2e] no family named {args.family!r}. Available: {', '.join(sorted(cat.families))}", file=sys.stderr)
@@ -100,8 +100,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.report:
-        from e2e.manifest import load_manifest  # noqa: PLC0415
-        from e2e.report import generate_html_report  # noqa: PLC0415
+        from NessieAI.tests.e2e.manifest import load_manifest  # noqa: PLC0415
+        from NessieAI.tests.e2e.report import generate_html_report  # noqa: PLC0415
         manifest = load_manifest(args.report / "manifest.json")
         path = generate_html_report(manifest, args.report)
         print(f"[e2e] regenerated {path}")
@@ -111,7 +111,7 @@ def main(argv: list[str] | None = None) -> int:
         # Playwright-only mode: equivalent to --no-cli
         args.no_cli = True
 
-    from e2e.runner import run_main  # noqa: PLC0415
+    from NessieAI.tests.e2e.runner import run_main  # noqa: PLC0415
     return run_main(
         CATALOG_PATH,
         ratio=args.ratio,

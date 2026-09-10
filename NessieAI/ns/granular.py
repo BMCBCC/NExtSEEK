@@ -12,7 +12,7 @@ rows alongside the plan (dmac returns the plan only).
 
 Error taxonomy (mirrors dmac _ws_contract.ERROR_EXIT):
 * :class:`OpValidationError` -> VALIDATION
-* :class:`~nextseek_api.assistant.write_gate.WriteBlockedError` -> WRITE_BLOCKED
+* :class:`~NessieAI.ns.write_gate.WriteBlockedError` -> WRITE_BLOCKED
 Any other exception raised by an agent maps to AGENT_FAILED at the viewset layer.
 """
 from __future__ import annotations
@@ -21,7 +21,7 @@ import json
 import os
 from typing import Any, Callable
 
-from nextseek_api.assistant.write_gate import WriteBlockedError  # noqa: F401 (re-exported)
+from NessieAI.ns.write_gate import WriteBlockedError  # noqa: F401 (re-exported)
 
 
 class OpValidationError(ValueError):
@@ -219,8 +219,8 @@ def _build_upload_xlsx(args, config, session, write_gate, neo4j_exec, outputs_di
     workbooks under ``saved_files`` plus the per-type QA reports. No NExtSEEK write —
     the user reviews the workbook(s) and uploads them via the batch-upload UI.
     """
-    from nextseek_api.assistant.reingest_qa import HARD_REJECT, qa_rows
-    from nextseek_api.assistant.upload_workbook import render_upload_workbook
+    from NessieAI.ns.reingest_qa import HARD_REJECT, qa_rows
+    from NessieAI.ns.upload_workbook import render_upload_workbook
 
     try:
         rows = json.loads(args["rows"])

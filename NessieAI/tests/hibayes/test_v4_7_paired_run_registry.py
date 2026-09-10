@@ -3,15 +3,15 @@ from __future__ import annotations
 
 import pytest
 
-from nextseek_api.eval.evidence_kinds import OnlineEvidenceRejected, UnapprovedPairedRun
-from nextseek_api.eval.fit.fit_boundary import validate_publish_provenance
-from nextseek_api.eval.generation_store import (
+from NessieAI.hibayes.evidence_kinds import OnlineEvidenceRejected, UnapprovedPairedRun
+from NessieAI.hibayes.fit.fit_boundary import validate_publish_provenance
+from NessieAI.hibayes.generation_store import (
     GenerationManifest,
     PublishError,
     create_generation,
     publish_generation,
 )
-from nextseek_api.eval.paired_run_registry import register_paired_run
+from NessieAI.hibayes.paired_run_registry import register_paired_run
 
 pytestmark = pytest.mark.django_db(transaction=True)
 

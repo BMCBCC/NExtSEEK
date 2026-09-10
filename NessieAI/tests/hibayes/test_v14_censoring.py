@@ -3,13 +3,13 @@ from __future__ import annotations
 
 import math
 
-from nextseek_api.eval.fit.v14.fit_config import V14FitConfig
-from nextseek_api.eval.fit.v14.latency_model import (
+from NessieAI.hibayes.fit.v14.fit_config import V14FitConfig
+from NessieAI.hibayes.fit.v14.latency_model import (
     DescriptiveLatencyResult,
     _extract_d_obs,
     fit_latency_model,
 )
-from nextseek_api.eval.fit.v14.pair_rows import (
+from NessieAI.hibayes.fit.v14.pair_rows import (
     JointQualityState,
     LatencyObservationKind,
     PairFitRow,

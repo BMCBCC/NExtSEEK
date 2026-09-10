@@ -7,7 +7,7 @@ Covers the missing lines in nextseek_api/schema_rag/errors.py:
 
 from django.test import SimpleTestCase
 
-from nextseek_api.schema_rag.errors import (
+from NessieAI.schema_rag.errors import (
     EMBEDDING_FAILED,
     ERROR_MESSAGES,
     NO_GOOD_MATCH,

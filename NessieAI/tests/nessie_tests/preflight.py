@@ -24,12 +24,12 @@ from __future__ import annotations
 
 import time
 
-from nessie_tests import collect, http_driver
-from nessie_tests import route_observer as ro
+from NessieAI.tests.nessie_tests import collect, http_driver
+from NessieAI.tests.nessie_tests import route_observer as ro
 
 # Imported, never restated: `collect` owns the task-row status vocabulary and a
 # second copy here is the drift the rest of this harness refuses.
-from nessie_tests.collect import _TERMINAL
+from NessieAI.tests.nessie_tests.collect import _TERMINAL
 
 PROBE_QUERY = "What is the weather in Boston tomorrow?"
 

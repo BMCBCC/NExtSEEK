@@ -1,9 +1,9 @@
-"""Unit tests for build_tools.ingest_nextseek_docs.hashing."""
+"""Unit tests for NessieAI.build_tools.ingest_nextseek_docs.hashing."""
 from __future__ import annotations
 
 from pathlib import Path
 
-from build_tools.ingest_nextseek_docs.hashing import (
+from NessieAI.build_tools.ingest_nextseek_docs.hashing import (
     compute_content_hash,
     read_stored_hash,
     write_stored_hash,

@@ -3,9 +3,9 @@ import pathlib
 
 import pytest
 
-from nessie_tests import bayes_manifest as bm
-from nessie_tests import bayesian, corpus, runner
-from nessie_tests.manifest import NessieManifest, NessieManifestEntry, write_manifest
+from NessieAI.tests.nessie_tests import bayes_manifest as bm
+from NessieAI.tests.nessie_tests import bayesian, corpus, runner
+from NessieAI.tests.nessie_tests.manifest import NessieManifest, NessieManifestEntry, write_manifest
 
 CORPUS = pathlib.Path(__file__).resolve().parents[1] / "corpus.json"
 
@@ -173,7 +173,7 @@ def test_resume_skips_completed_arms_and_reruns_nothing(tmp_path):
 
 
 def test_preflight_runs_by_default_and_aborts_the_run(tmp_path):
-    from nessie_tests import preflight
+    from NessieAI.tests.nessie_tests import preflight
 
     def post_query(_body):
         return {"task_id": "t", "session_id": "s"}
@@ -202,7 +202,7 @@ def test_the_preflight_gets_this_runs_clock_and_this_runs_deadline(tmp_path, mon
     otherwise be refused at 600s with an INCONCLUSIVE and lose a run that was
     about to succeed -- a guard that aborts a healthy run is its own defect.
     """
-    from nessie_tests import preflight
+    from NessieAI.tests.nessie_tests import preflight
 
     seen = {}
     monkeypatch.setattr(preflight, "assert_force_route_works",

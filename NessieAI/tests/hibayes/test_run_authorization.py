@@ -2,20 +2,20 @@ import pytest
 from decimal import Decimal
 
 from nextseek_api.assistant.models_db import SpendReservation
-from nextseek_api.eval.generation_store import (
+from NessieAI.hibayes.generation_store import (
     EMPTY_ACTIVE_HASH,
     ActivationError,
     GenerationManifest,
     activate_generation,
 )
-from nextseek_api.cc_assistant.tests.generation_test_factory import (
+from NessieAI.tests.hibayes.generation_test_factory import (
     _publish_generation_for_test,
 )
-from nextseek_api.eval.paired_run_registry import register_paired_run
-from nextseek_api.eval.provider_gate import AuthorizationError, guarded_provider_call
-from nextseek_api.eval.run_authorization import approve_run_manifest, manifest_hash, reserve_budget
-from nextseek_api.eval.tests.v4_8_fixtures import sample_manifest_dict, sample_run_manifest
-from nextseek_api.cc_assistant.family_labels import corpus_snapshot
+from NessieAI.hibayes.paired_run_registry import register_paired_run
+from NessieAI.hibayes.provider_gate import AuthorizationError, guarded_provider_call
+from NessieAI.hibayes.run_authorization import approve_run_manifest, manifest_hash, reserve_budget
+from NessieAI.tests.hibayes.v4_8_fixtures import sample_manifest_dict, sample_run_manifest
+from NessieAI.router.family_labels import corpus_snapshot
 
 pytestmark = pytest.mark.django_db
 

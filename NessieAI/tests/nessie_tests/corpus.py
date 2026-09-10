@@ -6,7 +6,7 @@ from pathlib import Path
 from nessie_tests.pathsetup import ensure_e2e_importable
 
 ensure_e2e_importable()
-from e2e.catalog import load_catalog, Catalog, PassCriterion, Variant  # noqa: E402
+from NessieAI.tests.e2e.catalog import load_catalog, Catalog, PassCriterion, Variant  # noqa: E402
 
 _BASE_CATALOG = Path(__file__).resolve().parents[1] / "chat_nextseek" / "e2e" / "catalog.json"
 

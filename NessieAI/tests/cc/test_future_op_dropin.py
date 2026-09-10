@@ -14,13 +14,13 @@ from pathlib import Path
 
 import pytest
 
-from nextseek_api.cc_assistant.op_registry.models import Backend, GateClass, Transport
+from NessieAI.cc.op_registry.models import Backend, GateClass, Transport
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PLUGIN_REL = Path("docker/cc-runtime/build_context/plugins/nextseek")
 SKILL_REL = Path(".claude/skills/add-cc-op/SKILL.md")
-EXPORT_MOD = "nextseek_api.cc_assistant.op_registry.export"
-GEN_MOD = "build_tools.gen_op_surfaces"
+EXPORT_MOD = "NessieAI.cc.op_registry.export"
+GEN_MOD = "NessieAI.build_tools.gen_op_surfaces"
 AUDIT_REL = Path("nextseek_api/cc_assistant/tests/test_op_registry_audit.py")
 OPS_REL = Path("nextseek_api/cc_assistant/op_registry/ops.py")
 RUNNER_REL = PLUGIN_REL / "bin" / "_nextseek_runner.py"

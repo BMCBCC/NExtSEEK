@@ -14,8 +14,8 @@ from typing import Any
 import orjson
 from pydantic import ValidationError
 
-from nessie_tests import bayes_manifest as bm
-from nessie_tests import runner
+from NessieAI.tests.nessie_tests import bayes_manifest as bm
+from NessieAI.tests.nessie_tests import runner
 
 V13A_DELIVERY = Path("/home/taishajo/work/NExtSEEK-dev/testquestions-2026-08-07")
 V13A_ZIP = V13A_DELIVERY / "testquestions.zip"

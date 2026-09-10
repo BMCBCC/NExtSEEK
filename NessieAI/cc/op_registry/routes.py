@@ -1,7 +1,7 @@
 """Stable authored route-level records for generated router context."""
 from __future__ import annotations
 
-from nextseek_api.cc_assistant.op_registry.models import RouteSpec
+from NessieAI.cc.op_registry.models import RouteSpec
 
 GENERIC_CC_BUILTINS: tuple[str, ...] = ("bash", "filesystem", "skill-runner")
 

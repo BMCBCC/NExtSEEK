@@ -12,7 +12,7 @@ import tarfile
 
 import pytest
 
-from nessie_tests import collect, sources
+from NessieAI.tests.nessie_tests import collect, sources
 
 
 # --------------------------------------------------------------------------- #
@@ -648,8 +648,8 @@ def test_one_bad_arm_does_not_abort_the_whole_collection(tmp_path):
     """The invariant `collect.collect`'s own docstring states: NOTHING here
     raises on a missing artifact. Driven over three pairs, with the middle one's
     copy blowing up in a way that is not `CopyFailed` at the source."""
-    from nessie_tests.bayes_manifest import BayesManifest, BayesPair
-    from nessie_tests.manifest import NessieManifestEntry
+    from NessieAI.tests.nessie_tests.bayes_manifest import BayesManifest, BayesPair
+    from NessieAI.tests.nessie_tests.manifest import NessieManifestEntry
 
     def entry(vid, tid):
         return NessieManifestEntry(id=vid, family="f", tier="full",
@@ -740,8 +740,8 @@ def test_it_satisfies_the_protocol_collect_documents():
 
 def test_collect_runs_end_to_end_against_it_with_only_the_runner_faked(tmp_path):
     """The whole point: `collect.collect` drives this class unchanged."""
-    from nessie_tests.bayes_manifest import BayesManifest, BayesPair
-    from nessie_tests.manifest import NessieManifestEntry
+    from NessieAI.tests.nessie_tests.bayes_manifest import BayesManifest, BayesPair
+    from NessieAI.tests.nessie_tests.manifest import NessieManifestEntry
 
     entry = NessieManifestEntry(id="a.one", family="f", tier="full",
                                 status="passed", task_ids=["t-cc"])

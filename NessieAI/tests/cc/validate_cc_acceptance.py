@@ -5,7 +5,7 @@ an evidence bundle under ``outputs/cc_acceptance/<run>/``. This module re-checks
 every acceptance criterion by reading ONLY those committed files — no Docker, no
 network, no paid call — so anyone can re-verify the proof:
 
-    python -m nextseek_api.cc_assistant.tests.validate_cc_acceptance <run_dir>
+    python -m NessieAI.tests.cc.validate_cc_acceptance <run_dir>
 
 It maps 1:1 onto the security-acceptance checklist (AUDIT.md, live items):
   11 real router    routed_route_decided.json: source=="baml", route=="container_cc"

@@ -4,8 +4,8 @@ Pure string building — no LLM, no DB, no clock. Merged into per-turn CLAUDE.md
 beside cross-session memory (see compose_turn_claude_md)."""
 from __future__ import annotations
 
-from nextseek_api.cc_assistant.cc_turn_context import CCTurnContext
-from nextseek_api.cc_assistant.ns_turn_context import NSTurnContext
+from NessieAI.cc.cc_turn_context import CCTurnContext
+from NessieAI.cc.ns_turn_context import NSTurnContext
 
 DIGEST_MAX_TURNS = 10
 DIGEST_HEADER = "## Prior NExtSEEK results in this chat"

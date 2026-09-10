@@ -24,7 +24,7 @@ to keep in step and no rebuild to undo it.
 import json
 from pathlib import Path
 
-from nessie_tests import corpus
+from NessieAI.tests.nessie_tests import corpus
 
 HERE = Path(__file__).resolve().parents[1]
 CORPUS = HERE / "corpus.json"

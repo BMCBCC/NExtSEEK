@@ -8,17 +8,17 @@ from types import SimpleNamespace
 
 import pytest
 
-from nextseek_api.cc_assistant import cc_engine, cc_staging
-from nextseek_api.cc_assistant.op_registry import export as op_export
-from nextseek_api.cc_assistant.op_registry import paired_evidence as pe
-from nextseek_api.cc_assistant.op_registry.ns_capabilities import (
+from NessieAI.cc import cc_engine, cc_staging
+from NessieAI.cc.op_registry import export as op_export
+from NessieAI.cc.op_registry import paired_evidence as pe
+from NessieAI.cc.op_registry.ns_capabilities import (
     NsCapabilitiesError,
     project_ns_capabilities,
 )
-from nextseek_api.cc_assistant.tests import cc_matrix_gate_harness as gate
-from nextseek_api.cc_assistant.tests import validate_cc_acceptance as vac
-from nextseek_api.cc_assistant.tests.test_ns_capabilities import _md
-from nextseek_api.cc_assistant.tests.validate_step7_compose_deploy import (
+from NessieAI.tests.cc import cc_matrix_gate_harness as gate
+from NessieAI.tests.cc import validate_cc_acceptance as vac
+from NessieAI.tests.cc.test_ns_capabilities import _md
+from NessieAI.tests.cc.validate_step7_compose_deploy import (
     BIN_OPS,
     CHECKS,
     Context,
@@ -335,7 +335,7 @@ def test_ns_capabilities_remaining_error_paths():
 
 
 def test_extract_catalog_error_paths():
-    from nextseek_api.cc_assistant.tests.test_cc_scripts_attribution import load_cc
+    from NessieAI.tests.cc.test_cc_scripts_attribution import load_cc
     mod = load_cc("scripts/extract_step7_upstream_catalog.py")
     with pytest.raises(ValueError, match="PAID_PROJECTIONS not found"):
         mod._extract_paid_projections("nope")
@@ -401,7 +401,7 @@ def test_op_export_main_check():
 
 
 def test_validate_step7_validate_run_cli_and_more_helpers(tmp_path, monkeypatch):
-    from nextseek_api.cc_assistant.tests import validate_step7_compose_deploy as v7
+    from NessieAI.tests.cc import validate_step7_compose_deploy as v7
 
     d = tmp_path / "run"
     d.mkdir()
@@ -472,7 +472,7 @@ def test_validate_cc_acceptance_exception_and_fail_paths(tmp_path):
 
 
 def test_harness_argv_fixture_and_nginx_prefix(monkeypatch, tmp_path):
-    from nextseek_api.cc_assistant.bin_inventory import op_suffix as _suf
+    from NessieAI.tests.cc.bin_inventory import op_suffix as _suf
     by = {_suf(op): op for op in BIN_OPS}
     if "query" in by:
         assert "query" in " ".join(gate.build_op_argv(by["query"], query="mice"))
@@ -691,7 +691,8 @@ def test_ns_capabilities_fences_budget_and_empty_labels():
 
 
 def test_bin_inventory_and_memory_io_edges(tmp_path, monkeypatch):
-    from nextseek_api.cc_assistant import bin_inventory, cc_memory_io
+    from NessieAI.tests.cc import bin_inventory
+    from NessieAI.cc import cc_memory_io
 
     missing = tmp_path / "no-bin"
     assert bin_inventory.discover_ops(bin_dir=missing) == ()
@@ -734,7 +735,7 @@ def test_bin_inventory_and_memory_io_edges(tmp_path, monkeypatch):
 
 
 def test_derive_parse_edges(tmp_path):
-    from nextseek_api.cc_assistant.op_registry import derive
+    from NessieAI.cc.op_registry import derive
 
     p = tmp_path / "a.py"
     p.write_text("X = 1\n")
@@ -751,7 +752,8 @@ def test_derive_parse_edges(tmp_path):
 
 
 def test_cc_summary_and_catalog_and_per_op(tmp_path):
-    from nextseek_api.cc_assistant import cc_summary, step7_gate_catalog as cat, step7_per_op_evidence as ev
+    from NessieAI.cc import cc_summary
+    from NessieAI.tests.cc import step7_gate_catalog as cat, step7_per_op_evidence as ev
 
     assert cc_summary._content_text(None) == ""
     assert "t" in cc_summary._content_text([{"type": "text", "text": "t"}])
@@ -821,7 +823,7 @@ def test_cc_summary_and_catalog_and_per_op(tmp_path):
 
 
 def test_install_oracle_scan_edges(tmp_path):
-    from nextseek_api.cc_assistant.op_registry import install_oracle as io
+    from NessieAI.cc.op_registry import install_oracle as io
 
     empty = tmp_path / "nope"
     assert io._scan_manifests(empty) == ()
@@ -920,7 +922,7 @@ def test_op_export_write_to_tmp(tmp_path):
 
 
 def test_vprm_remaining_secret_scan_branches(tmp_path):
-    from nextseek_api.cc_assistant.tests.test_verify_prod_readiness_manifest import vprm, MERGED_SHA, _artifact
+    from NessieAI.tests.cc.test_verify_prod_readiness_manifest import vprm, MERGED_SHA, _artifact
 
     errs = []
     cats = {c: {"hits": [{"match": "ABCD"}], "allowlist": [{"match": "AB"}]} for c in vprm._SECRET_SCAN_CATEGORIES}
@@ -945,17 +947,17 @@ def test_vprm_remaining_secret_scan_branches(tmp_path):
 
 
 def test_posterior_and_route_monitoring_edges(monkeypatch):
-    from nextseek_api.cc_assistant import posterior_selector, route_monitoring as rm
+    from NessieAI.router import posterior_selector, route_monitoring as rm
 
     assert posterior_selector.select_route("") is None
     assert posterior_selector.select_route("unrelated") is None
     monkeypatch.setattr(
-        "nextseek_api.cc_assistant.posterior_selector.get_active_snapshot",
+        "NessieAI.router.posterior_selector.get_active_snapshot",
         lambda: (_ for _ in ()).throw(RuntimeError("db")),
     )
     assert posterior_selector.select_route("search") is None
     monkeypatch.setattr(
-        "nextseek_api.cc_assistant.posterior_selector.get_active_snapshot",
+        "NessieAI.router.posterior_selector.get_active_snapshot",
         lambda: None,
     )
     assert posterior_selector.select_route("search") is None
@@ -971,7 +973,7 @@ def test_posterior_and_route_monitoring_edges(monkeypatch):
 
 
 def test_router_heuristic_and_context_dir(monkeypatch):
-    from nextseek_api.cc_assistant import router as rt
+    from NessieAI.router import router as rt
 
     monkeypatch.setattr(rt, "_build_context_dir", lambda: None)
     assert rt._resolve_model_id(None) is None
@@ -983,7 +985,7 @@ def test_router_heuristic_and_context_dir(monkeypatch):
 
 
 def test_extract_catalog_main_and_block_end(tmp_path):
-    from nextseek_api.cc_assistant.tests.test_cc_scripts_attribution import load_cc
+    from NessieAI.tests.cc.test_cc_scripts_attribution import load_cc
     mod = load_cc("scripts/extract_step7_upstream_catalog.py")
     src = tmp_path / "run_t18_rewire_e2e.py"
     src.write_text(
@@ -1002,7 +1004,7 @@ def test_extract_catalog_main_and_block_end(tmp_path):
 
 
 def test_gap2_production_misses(tmp_path, monkeypatch):
-    from nextseek_api.cc_assistant.op_registry.ns_capabilities import (
+    from NessieAI.cc.op_registry.ns_capabilities import (
         NsProjection, _unique_labels, _reject_over_budget, _negative_labels,
     )
     with pytest.raises(NsCapabilitiesError, match="empty"):
@@ -1079,14 +1081,14 @@ def test_gap2_production_misses(tmp_path, monkeypatch):
     with pytest.raises(pe.PairedEvidenceError, match="pairs count"):
         pe._validate_manifest_pairs(SimpleNamespace(pairs=[]), ["a"])
 
-    from nextseek_api.cc_assistant.tests.test_cc_scripts_attribution import load_cc
+    from NessieAI.tests.cc.test_cc_scripts_attribution import load_cc
     live = load_cc("scripts/step7_gate3d_live.py")
     assert live._cc_run_id("NOT-HEX!!!")
     assert live._cc_run_id("")
     per_op = load_cc("scripts/step7_gate3d_per_op.py")
     assert hasattr(per_op, "main")
 
-    from nextseek_api.cc_assistant.tests.test_cc_engine_turn_loop import (
+    from NessieAI.tests.cc.test_cc_engine_turn_loop import (
         _FakeContainer, _FakeSock, _install_client, _paths, _run_id,
     )
     container = _FakeContainer()
@@ -1103,7 +1105,7 @@ def test_gap2_production_misses(tmp_path, monkeypatch):
         cc_engine, "BridgeAttachSocket",
         lambda raw, stdout_stream=None: _FakeSock(lines),
     )
-    from nextseek_api.cc_assistant import cc_provision
+    from NessieAI.cc import cc_provision
     real_build = cc_provision.build_user_dirs
 
     def wrap_dirs(*a, **k):
@@ -1120,7 +1122,7 @@ def test_gap2_production_misses(tmp_path, monkeypatch):
         def model_dump(self):
             return {"cc": True}
 
-    monkeypatch.setattr("nextseek_api.cc_assistant.cc_trace.extract_trace", lambda *a, **k: _Trace())
+    monkeypatch.setattr("NessieAI.cc.cc_trace.extract_trace", lambda *a, **k: _Trace())
 
     def boom_payload(*a, **k):
         raise RuntimeError("persist boom")
@@ -1153,7 +1155,7 @@ def test_gap2_production_misses(tmp_path, monkeypatch):
         on_turn_complete=lambda *a, **k: None,
     )
 
-    from nextseek_api.cc_assistant import cc_summary
+    from NessieAI.cc import cc_summary
     parsed = cc_summary.ParsedTranscript(records=({"type": "other"},), raw_lines=(b"x",))
     prov = cc_summary.SummaryProvenance(
         chat_session_id="c", claude_session_id=None,
@@ -1172,8 +1174,8 @@ def test_gap2_production_misses(tmp_path, monkeypatch):
 
 
 def test_gap3_fourteen_production_units():
-    from nextseek_api.cc_assistant.op_registry import ns_capabilities as nsc
-    from nextseek_api.cc_assistant.tests.test_cc_scripts_attribution import load_cc
+    from NessieAI.cc.op_registry import ns_capabilities as nsc
+    from NessieAI.tests.cc.test_cc_scripts_attribution import load_cc
 
     class _M:
         def group(self, _i):

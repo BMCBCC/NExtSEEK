@@ -5,7 +5,7 @@ Pure logic; no Django/docker/dmac needed. Run standalone:
 """
 from __future__ import annotations
 
-from nextseek_api.cc_assistant.translate import CCStreamTranslator
+from NessieAI.cc.translate import CCStreamTranslator
 
 
 def _events(translator, payloads):
@@ -171,7 +171,7 @@ def test_tool_result_error_marks_not_ok():
 
 
 def test_handle_ignores_non_dict_and_unknown_type():
-    from nextseek_api.cc_assistant.translate import _format_tool_detail
+    from NessieAI.cc.translate import _format_tool_detail
     t = CCStreamTranslator()
     assert t.handle("nope") == []
     assert t.handle({"type": "other"}) == []

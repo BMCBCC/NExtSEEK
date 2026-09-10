@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
 
-from nextseek_api.eval.run_manifest import RunManifest
+from NessieAI.hibayes.run_manifest import RunManifest
 
 
 def sample_manifest_dict(**overrides: Any) -> dict[str, Any]:

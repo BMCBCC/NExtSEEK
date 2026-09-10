@@ -13,14 +13,14 @@ from nextseek_api.models import RetrieveRequest
 
 class TestRetrieveEndpointsAutoIngest:
 
-    @patch("nextseek_api.schema_rag.service.ingest_schema")
-    @patch("nextseek_api.schema_rag.service._find_session_by_schema_url", return_value=None)
-    @patch("nextseek_api.schema_rag.service.load_session_info", return_value=None)
-    @patch("nextseek_api.schema_rag.service._now", return_value=datetime.now(timezone.utc))
+    @patch("NessieAI.schema_rag.service.ingest_schema")
+    @patch("NessieAI.schema_rag.service._find_session_by_schema_url", return_value=None)
+    @patch("NessieAI.schema_rag.service.load_session_info", return_value=None)
+    @patch("NessieAI.schema_rag.service._now", return_value=datetime.now(timezone.utc))
     def test_auto_ingest_failure(self, mock_now, mock_load, mock_find, mock_ingest):
         """When auto-ingest fails, return error response (lines 752-762)."""
-        from nextseek_api.schema_rag.service import retrieve_endpoints
-        from nextseek_api.schema_rag.errors import SCHEMA_FETCH_FAILED
+        from NessieAI.schema_rag.service import retrieve_endpoints
+        from NessieAI.schema_rag.errors import SCHEMA_FETCH_FAILED
 
         mock_ingest.return_value = MagicMock(
             success=False,
@@ -38,14 +38,14 @@ class TestRetrieveEndpointsAutoIngest:
         response = retrieve_endpoints(req)
         assert response.message == "Fetch failed"
 
-    @patch("nextseek_api.schema_rag.service.embed_texts", return_value=np.array([]))
-    @patch("nextseek_api.schema_rag.service.is_session_expired", return_value=False)
-    @patch("nextseek_api.schema_rag.service.load_session_info")
-    @patch("nextseek_api.schema_rag.service._now", return_value=datetime.now(timezone.utc))
+    @patch("NessieAI.schema_rag.service.embed_texts", return_value=np.array([]))
+    @patch("NessieAI.schema_rag.service.is_session_expired", return_value=False)
+    @patch("NessieAI.schema_rag.service.load_session_info")
+    @patch("NessieAI.schema_rag.service._now", return_value=datetime.now(timezone.utc))
     def test_embedding_failed(self, mock_now, mock_load, mock_expired, mock_embed):
         """When embedding returns empty array (lines 786-787)."""
-        from nextseek_api.schema_rag.service import retrieve_endpoints
-        from nextseek_api.schema_rag.errors import EMBEDDING_FAILED
+        from NessieAI.schema_rag.service import retrieve_endpoints
+        from NessieAI.schema_rag.errors import EMBEDDING_FAILED
 
         mock_session = MagicMock()
         mock_session.session_id = "test-session"
@@ -59,22 +59,22 @@ class TestRetrieveEndpointsAutoIngest:
         response = retrieve_endpoints(req)
         assert response.debug.error_code == EMBEDDING_FAILED
 
-    @patch("nextseek_api.schema_rag.service.load_minimal_endpoints_by_ids")
-    @patch("nextseek_api.schema_rag.service._pass_1", return_value=[("op1", 0.9)])
-    @patch("nextseek_api.schema_rag.service.embed_texts")
-    @patch("nextseek_api.schema_rag.service.is_session_expired", return_value=False)
-    @patch("nextseek_api.schema_rag.service.load_session_info")
-    @patch("nextseek_api.schema_rag.service.ingest_schema")
-    @patch("nextseek_api.schema_rag.service._find_session_by_schema_url", return_value=None)
-    @patch("nextseek_api.schema_rag.service._now", return_value=datetime.now(timezone.utc))
-    @patch("nextseek_api.schema_rag.service.settings")
+    @patch("NessieAI.schema_rag.service.load_minimal_endpoints_by_ids")
+    @patch("NessieAI.schema_rag.service._pass_1", return_value=[("op1", 0.9)])
+    @patch("NessieAI.schema_rag.service.embed_texts")
+    @patch("NessieAI.schema_rag.service.is_session_expired", return_value=False)
+    @patch("NessieAI.schema_rag.service.load_session_info")
+    @patch("NessieAI.schema_rag.service.ingest_schema")
+    @patch("NessieAI.schema_rag.service._find_session_by_schema_url", return_value=None)
+    @patch("NessieAI.schema_rag.service._now", return_value=datetime.now(timezone.utc))
+    @patch("NessieAI.schema_rag.service.settings")
     def test_auto_ingest_success(
         self, mock_settings, mock_now, mock_find, mock_ingest, mock_load,
         mock_expired, mock_embed, mock_pass1, mock_load_by_ids
     ):
         """When auto-ingest succeeds, load new session (lines 746-751)."""
-        from nextseek_api.schema_rag.service import retrieve_endpoints
-        from nextseek_api.schema_rag.models import MinimalAPIEndpoint
+        from NessieAI.schema_rag.service import retrieve_endpoints
+        from NessieAI.schema_rag.models import MinimalAPIEndpoint
 
         mock_settings.SCHEMA_RAG_MAX_TOP_K = 10
         mock_settings.SCHEMA_RAG_MAX_ENDPOINTS = 250

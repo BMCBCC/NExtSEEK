@@ -5,7 +5,7 @@ import html as _html
 from collections import defaultdict
 from pathlib import Path
 
-from e2e.manifest import Manifest, ManifestEntry
+from NessieAI.tests.e2e.manifest import Manifest, ManifestEntry
 
 
 def _h(v) -> str:

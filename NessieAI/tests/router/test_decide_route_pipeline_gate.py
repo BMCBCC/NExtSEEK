@@ -1,5 +1,5 @@
 import nextseek_api.services.cc_assistant as cc_svc
-from nextseek_api.cc_assistant import router as cc_router
+from NessieAI.router import router as cc_router
 
 
 class _Req:

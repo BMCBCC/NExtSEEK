@@ -1,16 +1,16 @@
 """Recovery matrix support vs the quality-equivalence routing policy."""
 from __future__ import annotations
 
-from nextseek_api.eval.fit.v14.decision import (
+from NessieAI.hibayes.fit.v14.decision import (
     CandidateDecision,
     DecisionStatus,
     GenerationDecision,
     quality_discordance_ok,
     retained_support_ok,
 )
-from nextseek_api.eval.fit.v14.fit_config import V14FitConfig
-from nextseek_api.eval.fit.v14.recovery_acceptance import slot_winner
-from nextseek_api.eval.fit.v14.recovery_matrix import (
+from NessieAI.hibayes.fit.v14.fit_config import V14FitConfig
+from NessieAI.hibayes.fit.v14.recovery_acceptance import slot_winner
+from NessieAI.hibayes.fit.v14.recovery_matrix import (
     RecoveryScenario,
     build_scenario_rows,
     ground_truth,

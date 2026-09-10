@@ -5,7 +5,7 @@ import json
 import os
 from pathlib import Path
 
-from nextseek_api.eval.task6_replay import run_task6_replay
+from NessieAI.hibayes.task6_replay import run_task6_replay
 
 
 DELIVERY = Path("/home/taishajo/work/NExtSEEK-dev/testquestions-2026-08-07")

@@ -5,13 +5,13 @@ from decimal import Decimal
 
 import pytest
 
-import nextseek_api.eval.provider_gate as provider_gate
+import NessieAI.hibayes.provider_gate as provider_gate
 from nextseek_api.assistant.models_db import SpendReservation
-from nextseek_api.eval.fake_provider import FakeProviderTransport
-from nextseek_api.eval.judging_engine import JudgeAttemptSpec, JudgingEngine
-from nextseek_api.eval.provider_gate import AuthorizationError, guarded_provider_call
-from nextseek_api.eval.run_authorization import approve_run_manifest, reserve_budget
-from nextseek_api.eval.tests.v4_8_fixtures import sample_run_manifest
+from NessieAI.hibayes.fake_provider import FakeProviderTransport
+from NessieAI.hibayes.judging_engine import JudgeAttemptSpec, JudgingEngine
+from NessieAI.hibayes.provider_gate import AuthorizationError, guarded_provider_call
+from NessieAI.hibayes.run_authorization import approve_run_manifest, reserve_budget
+from NessieAI.tests.hibayes.v4_8_fixtures import sample_run_manifest
 
 pytestmark = pytest.mark.django_db
 

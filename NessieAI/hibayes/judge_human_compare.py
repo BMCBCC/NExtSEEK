@@ -19,9 +19,9 @@ from typing import Callable, Sequence
 
 import orjson
 
-from nextseek_api.eval.attempt_store import AttemptStore
-from nextseek_api.eval.judge import aggregate_three_evaluations
-from nextseek_api.eval.judge_models import FunctionalEvaluation, FunctionalEvaluationInput
+from NessieAI.hibayes.attempt_store import AttemptStore
+from NessieAI.hibayes.judge import aggregate_three_evaluations
+from NessieAI.hibayes.judge_models import FunctionalEvaluation, FunctionalEvaluationInput
 
 ABSOLUTE_MAX_ARMS = 6
 DEFAULT_MAX_ARMS = 4

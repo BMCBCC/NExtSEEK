@@ -2,7 +2,7 @@
 import json
 
 from nextseek_api.batch_upload.convert import parse_traditional_file
-import nextseek_api.assistant.granular as g
+import NessieAI.ns.granular as g
 
 
 class _Cfg:

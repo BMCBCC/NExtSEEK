@@ -1,9 +1,9 @@
-"""Unit tests for build_tools.ingest_nextseek_docs.constants."""
+"""Unit tests for NessieAI.build_tools.ingest_nextseek_docs.constants."""
 from __future__ import annotations
 
 from pathlib import Path
 
-from build_tools.ingest_nextseek_docs import constants as C
+from NessieAI.build_tools.ingest_nextseek_docs import constants as C
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 RAW_DEFAULT_DOCS_DIR = C.DEFAULT_DOCS_DIR

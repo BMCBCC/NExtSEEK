@@ -25,7 +25,7 @@ from pathlib import Path
 
 import pytest
 
-from nessie_tests import limits, manifest as M, runner
+from NessieAI.tests.nessie_tests import limits, manifest as M, runner
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = ROOT / "nessie_tests" / "output-skill" / "scripts"

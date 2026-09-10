@@ -52,14 +52,14 @@ class Command(BaseCommand):
         parser.add_argument("--out", default="/app/nessie_out")
 
     def handle(self, *args, **opts) -> None:
-        from nessie_tests import http_driver, runner
+        from NessieAI.tests.nessie_tests import http_driver, runner
 
         tier = opts["tier"]
         run_consistency = opts["consistency"] or tier == "full"
         bundle_reader = None
         if tier == "full":
             # Safe here: the management command runs inside a configured Django.
-            from nessie_tests.bundle import summary_for_session
+            from NessieAI.tests.nessie_tests.bundle import summary_for_session
             bundle_reader = summary_for_session
 
         manifest = runner.run_suite(

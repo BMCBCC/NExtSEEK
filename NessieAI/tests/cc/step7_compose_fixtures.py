@@ -10,9 +10,9 @@ import json
 import subprocess
 from pathlib import Path
 
-from nextseek_api.cc_assistant.tests.step7_preflight_collector import LIVE_GATE_TRANSCRIPT_REL
-from nextseek_api.cc_assistant.tests.validate_cc_acceptance import OPUS as CC_OPUS_MODEL_ID
-from nextseek_api.cc_assistant.tests.validate_step7_compose_deploy import LIVE_EVIDENCE_PATH_LITERAL
+from NessieAI.tests.cc.step7_preflight_collector import LIVE_GATE_TRANSCRIPT_REL
+from NessieAI.tests.cc.validate_cc_acceptance import OPUS as CC_OPUS_MODEL_ID
+from NessieAI.tests.cc.validate_step7_compose_deploy import LIVE_EVIDENCE_PATH_LITERAL
 
 PORT_SOURCE_COMMIT = "b" * 40
 # Byte-identical allowlist markers (PLAN-3 Task 13 Step 8 / Task 2 brief): the
@@ -81,7 +81,7 @@ def _write_meta_full(bundle_dir: Path, *, run_id: str = RUN_ID, repo_commit: str
 
 
 def _write_cost_ledger(bundle_dir: Path, *, run_id: str = RUN_ID) -> None:
-    from nextseek_api.cc_assistant.tests.validate_step7_compose_deploy import BIN_OPS
+    from NessieAI.tests.cc.validate_step7_compose_deploy import BIN_OPS
 
     entries = []
     for op in BIN_OPS:
@@ -110,7 +110,7 @@ def _write_cost_ledger(bundle_dir: Path, *, run_id: str = RUN_ID) -> None:
 
 
 def _write_cost_extraction_evidence(bundle_dir: Path, *, run_id: str = RUN_ID) -> None:
-    from nextseek_api.cc_assistant.tests.validate_step7_compose_deploy import BIN_OPS
+    from NessieAI.tests.cc.validate_step7_compose_deploy import BIN_OPS
 
     rows = []
     for op in BIN_OPS:
@@ -150,8 +150,8 @@ def _matrix_row(op: str, *, run_id: str, cc_image: str, container_id: str,
                  exit_code: int = 0, excerpt: str | None = None,
                  transport: str | None = None, wall_secs: float = 4.2,
                  published_path: str | None = None) -> dict:
-    from nextseek_api.cc_assistant.bin_inventory import is_viewset_op, op_suffix
-    from nextseek_api.cc_assistant.tests.validate_step7_compose_deploy import (
+    from NessieAI.tests.cc.bin_inventory import is_viewset_op, op_suffix
+    from NessieAI.tests.cc.validate_step7_compose_deploy import (
         OP_EXCERPT_ALLOWED_FIELDS,
     )
     if transport is None:
@@ -208,9 +208,9 @@ def _write_matrix_artifacts(bundle_dir: Path, *, run_id: str = RUN_ID,
     """Write plugin_ops_matrix.json + every Task 15 companion artifact with
     values that make a clean, fully-passing bundle. ``skip`` names artifacts
     to omit entirely (for negative "bundle missing X" tests)."""
-    from nextseek_api.cc_assistant.tests.validate_step7_compose_deploy import BIN_OPS
+    from NessieAI.tests.cc.validate_step7_compose_deploy import BIN_OPS
 
-    from nextseek_api.cc_assistant.bin_inventory import op_suffix
+    from NessieAI.tests.cc.bin_inventory import op_suffix
 
     skip = skip or set()
     matrix_executor_id = "matrixcid" + "0" * 55
@@ -271,7 +271,7 @@ def _write_matrix_artifacts(bundle_dir: Path, *, run_id: str = RUN_ID,
         }), encoding="utf-8")
 
     if "gate_access_log_window" not in skip:
-        from nextseek_api.cc_assistant.tests.validate_step7_compose_deploy import (
+        from NessieAI.tests.cc.validate_step7_compose_deploy import (
             OP_ASSISTANT_ENDPOINT,
         )
         endpoints = sorted({OP_ASSISTANT_ENDPOINT[op] for op in BIN_OPS})

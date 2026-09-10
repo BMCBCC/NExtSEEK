@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from collections import Counter
 
-from nextseek_api.eval.judge_models import FunctionalEvaluation
+from NessieAI.hibayes.judge_models import FunctionalEvaluation
 
 __all__ = [
     "STAGE_C_STATUS_COMPLETE",

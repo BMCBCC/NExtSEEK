@@ -21,7 +21,7 @@ from typing import Any, Mapping
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup  # re-exported by jinja2; explicit import for clarity
 
-from nextseek_api.eval.fit.vendor.hibayes_runtime_reliability.models import (
+from NessieAI.hibayes.fit.vendor.hibayes_runtime_reliability.models import (
     HiBayesRuntimeReport,
     ReliabilityBand,
 )

@@ -8,7 +8,7 @@ import types
 
 import pytest
 
-from nextseek_api.cc_assistant import step7_llm_cost_ledger as ledger
+from NessieAI.cc import step7_llm_cost_ledger as ledger
 
 
 def test_ledger_path_uses_django_base_dir_and_override(tmp_path, monkeypatch):

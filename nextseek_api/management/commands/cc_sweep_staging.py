@@ -2,7 +2,7 @@
 the NS sidecar staging sweep (G7-11, Task 14).
 
 This is the SAME callable trusted-code entrypoint that ``cc_engine.run_cc_turn``
-invokes in-turn (``nextseek_api.cc_assistant.cc_staging.sweep_user_staging``),
+invokes in-turn (``NessieAI.cc.cc_staging.sweep_user_staging``),
 exposed here for:
 
 * recovery of OLDER completed strays left by a crashed/timed-out earlier turn,
@@ -27,9 +27,9 @@ import json
 
 from django.core.management.base import BaseCommand, CommandError
 
-from nextseek_api.cc_assistant import cc_staging
-from nextseek_api.cc_assistant.cc_config import CCPaths
-from nextseek_api.cc_assistant.cc_provision import build_user_dirs
+from NessieAI.cc import cc_staging
+from NessieAI.cc.cc_config import CCPaths
+from NessieAI.cc.cc_provision import build_user_dirs
 
 
 class Command(BaseCommand):

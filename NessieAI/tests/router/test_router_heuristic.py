@@ -12,7 +12,7 @@ dmac_assistant IS installed (e.g. the full app container).
 """
 from __future__ import annotations
 
-from nextseek_api.cc_assistant import router as cc_router
+from NessieAI.router import router as cc_router
 
 
 def test_ndma_query_routes_to_ns():

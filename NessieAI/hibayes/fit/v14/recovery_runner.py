@@ -6,14 +6,14 @@ import json
 import time
 from pathlib import Path
 
-from nextseek_api.eval.fit.v14.combined import run_v14_generation
-from nextseek_api.eval.fit.v14.fit_config import V14FitConfig
-from nextseek_api.eval.fit.v14.recovery_acceptance import (
+from NessieAI.hibayes.fit.v14.combined import run_v14_generation
+from NessieAI.hibayes.fit.v14.fit_config import V14FitConfig
+from NessieAI.hibayes.fit.v14.recovery_acceptance import (
     FEASIBILITY_SLOT_INDICES,
     evaluate_recovery_results,
     slot_winner,
 )
-from nextseek_api.eval.fit.v14.recovery_matrix import (
+from NessieAI.hibayes.fit.v14.recovery_matrix import (
     RECOVERY_SCENARIOS,
     RecoverySlot,
     build_scenario_rows,

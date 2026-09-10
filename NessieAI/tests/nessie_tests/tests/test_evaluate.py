@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from nessie_tests import evaluate
-from nessie_tests.route_observer import RouteObservation
+from NessieAI.tests.nessie_tests import evaluate
+from NessieAI.tests.nessie_tests.route_observer import RouteObservation
 
 NS_PAYLOAD = {"status": "completed", "progress": [
     {"event": "route_decided", "data": {"route": "nextseek_query", "model_class": None, "source": "baml", "reasoning": ""}},
@@ -475,7 +475,7 @@ def test_the_detector_lives_in_exactly_one_module():
     protective rather than duplication: they are what fails loudly if the product
     ever rewords the message out from under the detector.
     """
-    from nessie_tests import consistency, outage
+    from NessieAI.tests.nessie_tests import consistency, outage
 
     assert evaluate.is_provider_outage is outage.is_provider_outage
     assert consistency.is_provider_outage is outage.is_provider_outage
@@ -788,7 +788,7 @@ _OBS_TREE_NS = RouteObservation("nextseek_query", None, "baml", "", "new_search"
 
 
 def _merged_variant(vid):
-    from nessie_tests import corpus
+    from NessieAI.tests.nessie_tests import corpus
     corpus_json = Path(__file__).resolve().parents[1] / "corpus.json"
     return next(v for v in corpus.merged(corpus_json) if v.id == vid)
 
@@ -839,7 +839,7 @@ def test_it_is_still_the_only_multi_turn_variant_in_a_floored_family():
     this variant; that case has since been RETIRED, so `tree.then_ask_about` is
     now the one. The recall branch it justifies is still correct and still needed.
     """
-    from nessie_tests import corpus
+    from NessieAI.tests.nessie_tests import corpus
     corpus_json = Path(__file__).resolve().parents[1] / "corpus.json"
     floors = (corpus.load_family_floor(corpus_json).get("floors") or {})
     multi = [v.id for v in corpus.merged(corpus_json)

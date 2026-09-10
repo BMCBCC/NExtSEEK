@@ -28,7 +28,7 @@ import pathlib
 
 import pytest
 
-from nessie_tests import corpus
+from NessieAI.tests.nessie_tests import corpus
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 UNIFIED = ROOT / "corpus.json"
@@ -153,7 +153,7 @@ def test_fingerprint_is_over_the_unified_corpus_only():
     is correct: the corpus file genuinely changed, and a diff tool must say so
     rather than silently mis-pair cases across the boundary.
     """
-    from nessie_tests import runner
+    from NessieAI.tests.nessie_tests import runner
     assert runner.corpus_fingerprint(UNIFIED) == corpus.sha256_of(UNIFIED)
 
 

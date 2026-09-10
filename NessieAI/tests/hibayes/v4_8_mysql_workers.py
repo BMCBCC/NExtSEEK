@@ -18,8 +18,8 @@ def _ensure_django() -> None:
 
 
 def _ensure_manifest(payload: dict[str, Any]) -> str:
-    from nextseek_api.eval.run_authorization import approve_run_manifest
-    from nextseek_api.eval.run_manifest import RunManifest
+    from NessieAI.hibayes.run_authorization import approve_run_manifest
+    from NessieAI.hibayes.run_manifest import RunManifest
 
     body = payload.get("manifest_body")
     if body is not None:
@@ -31,7 +31,7 @@ def _ensure_manifest(payload: dict[str, Any]) -> str:
 def mp_reserve_worker(payload: dict[str, Any]) -> str:
     """Concurrent reserve_budget from a separate process."""
     _ensure_django()
-    from nextseek_api.eval.run_authorization import AuthorizationError, reserve_budget
+    from NessieAI.hibayes.run_authorization import AuthorizationError, reserve_budget
 
     manifest_hash = _ensure_manifest(payload)
     barrier = payload["barrier"]
@@ -52,7 +52,7 @@ def mp_idempotency_replay_worker(payload: dict[str, Any]) -> dict[str, Any]:
     """Reserve under barrier and report idempotency-key row count from worker DB."""
     _ensure_django()
     from nextseek_api.assistant.models_db import SpendReservation
-    from nextseek_api.eval.run_authorization import AuthorizationError, reserve_budget
+    from NessieAI.hibayes.run_authorization import AuthorizationError, reserve_budget
 
     manifest_hash = _ensure_manifest(payload)
     barrier = payload["barrier"]
@@ -78,9 +78,9 @@ def mp_idempotency_replay_worker(payload: dict[str, Any]) -> dict[str, Any]:
 def mp_crash_worker(payload: dict[str, Any]) -> dict[str, Any]:
     """Run guarded_provider_call with a crash flag in an isolated process."""
     _ensure_django()
-    import nextseek_api.eval.provider_gate as provider_gate
+    import NessieAI.hibayes.provider_gate as provider_gate
     from nextseek_api.assistant.models_db import SpendReservation
-    from nextseek_api.eval.provider_gate import guarded_provider_call
+    from NessieAI.hibayes.provider_gate import guarded_provider_call
 
     manifest_hash = _ensure_manifest(payload)
     flag_name = payload["flag_name"]
@@ -113,7 +113,7 @@ def mp_broker_redelivery_worker(payload: dict[str, Any]) -> dict[str, Any]:
     """Simulate broker redelivery: reserve then replay same idempotency key."""
     _ensure_django()
     from nextseek_api.assistant.models_db import SpendReservation
-    from nextseek_api.eval.run_authorization import reserve_budget
+    from NessieAI.hibayes.run_authorization import reserve_budget
 
     manifest_hash = _ensure_manifest(payload)
     idempotency_key = payload["idempotency_key"]

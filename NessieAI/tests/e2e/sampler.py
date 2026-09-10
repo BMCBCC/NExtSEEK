@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 import random
 
-from e2e.catalog import Catalog, Variant
+from NessieAI.tests.e2e.catalog import Catalog, Variant
 
 
 def env_satisfied(v: Variant) -> bool:

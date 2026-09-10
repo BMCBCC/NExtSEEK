@@ -8,11 +8,11 @@ from types import SimpleNamespace
 import pytest
 from pydantic import ValidationError
 
-from nessie_tests.bayes_manifest import BayesManifest, BayesPair, completed_arms
-from nextseek_api.eval import exporter
-from nextseek_api.eval import export as ledger_export
-from nextseek_api.eval import functional_inputs as fi
-from nextseek_api.eval import router_models_proposal as router
+from NessieAI.tests.nessie_tests.bayes_manifest import BayesManifest, BayesPair, completed_arms
+from NessieAI.hibayes import exporter
+from NessieAI.hibayes import export as ledger_export
+from NessieAI.hibayes import functional_inputs as fi
+from NessieAI.hibayes import router_models_proposal as router
 
 
 def _raw_manifest(**overrides) -> exporter.RawRunManifest:

@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from e2e.catalog import PassCriterion
-from e2e.criteria import check_pass, resolve_field
+from NessieAI.tests.e2e.catalog import PassCriterion
+from NessieAI.tests.e2e.criteria import check_pass, resolve_field
 
 
 # ── Field resolution ─────────────────────────────────────────────────────

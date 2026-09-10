@@ -374,7 +374,7 @@ def render_combined_report(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="nextseek_api.eval.fit.vendor.hibayes_combined_report.render",
+        prog="NessieAI.hibayes.fit.vendor.hibayes_combined_report.render",
     )
     parser.add_argument("--runtime", type=Path, required=True)
     parser.add_argument("--artifact", type=Path, required=True)

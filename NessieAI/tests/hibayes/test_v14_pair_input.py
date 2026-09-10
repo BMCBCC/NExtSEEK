@@ -5,9 +5,9 @@ import math
 
 import pytest
 
-from nextseek_api.eval.conservation import FitAdmission
-from nextseek_api.eval.fit.v14.fit_config import V14FitConfig, config_fingerprint, contrast_basis_B
-from nextseek_api.eval.fit.v14.pair_rows import (
+from NessieAI.hibayes.conservation import FitAdmission
+from NessieAI.hibayes.fit.v14.fit_config import V14FitConfig, config_fingerprint, contrast_basis_B
+from NessieAI.hibayes.fit.v14.pair_rows import (
     JointQualityState,
     LatencyObservationKind,
     RouteFamilyAggregateRejected,
@@ -15,7 +15,7 @@ from nextseek_api.eval.fit.v14.pair_rows import (
     joint_state_from_success,
     reject_aggregate_input,
 )
-from nextseek_api.eval.router_models_proposal import RouteFamilyAggregate
+from NessieAI.hibayes.router_models_proposal import RouteFamilyAggregate
 
 
 def test_contrast_basis_orthonormal():

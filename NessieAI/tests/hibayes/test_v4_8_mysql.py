@@ -8,16 +8,16 @@ import pytest
 from django.utils import timezone
 
 from nextseek_api.assistant.models_db import SpendReservation
-from nextseek_api.eval.provider_gate import guarded_provider_call
-from nextseek_api.eval.run_authorization import (
+from NessieAI.hibayes.provider_gate import guarded_provider_call
+from NessieAI.hibayes.run_authorization import (
     AuthorizationError,
     approve_run_manifest,
     expire_stale_reservations,
     release_reservation,
     reserve_budget,
 )
-from nextseek_api.eval.tests.v4_8_fixtures import sample_run_manifest
-from nextseek_api.eval.tests.v4_8_mysql_workers import (
+from NessieAI.tests.hibayes.v4_8_fixtures import sample_run_manifest
+from NessieAI.tests.hibayes.v4_8_mysql_workers import (
     mp_broker_redelivery_worker,
     mp_crash_worker,
     mp_idempotency_replay_worker,

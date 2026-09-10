@@ -7,9 +7,9 @@ import zipfile
 import orjson
 import pytest
 
-from nessie_tests import bayes_manifest as bm
-from nessie_tests import bayesian, corpus, runner
-from nessie_tests import v4_2_verifier as v4
+from NessieAI.tests.nessie_tests import bayes_manifest as bm
+from NessieAI.tests.nessie_tests import bayesian, corpus, runner
+from NessieAI.tests.nessie_tests import v4_2_verifier as v4
 
 CORPUS = pathlib.Path(__file__).resolve().parents[1] / "corpus.json"
 

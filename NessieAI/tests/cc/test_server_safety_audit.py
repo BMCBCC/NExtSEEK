@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import pytest
 
-from nextseek_api.assistant.write_gate import WriteBlockedError, build_gate, load_allowlist
-from nextseek_api.cc_assistant.op_registry import OPS
-from nextseek_api.cc_assistant.op_registry.derive import (
+from NessieAI.ns.write_gate import WriteBlockedError, build_gate, load_allowlist
+from NessieAI.cc.op_registry import OPS
+from NessieAI.cc.op_registry.derive import (
     READ_SAFE_JSON,
     audit_read_safe_json_schema,
     derive_handler_sidecar_ops,
@@ -19,7 +19,7 @@ from nextseek_api.cc_assistant.op_registry.derive import (
     derive_ws_contract_sidecar_ops,
     find_op,
 )
-from nextseek_api.cc_assistant.op_registry.models import GateClass, Transport
+from NessieAI.cc.op_registry.models import GateClass, Transport
 
 # Transport-truth sidecar ops present in handlers/ws_contract but absent from
 # write_gate.SIDECAR_OPS (documented audit debt; do not enlarge write_gate here).
@@ -130,7 +130,7 @@ def test_write_gate_read_class_ops_pass_without_confirmation():
 
 
 def test_derive_rejects_missing_assignment_and_non_list_read_safe(tmp_path):
-    from nextseek_api.cc_assistant.op_registry.derive import (
+    from NessieAI.cc.op_registry.derive import (
         parse_frozenset_assignment,
         derive_read_safe_entries,
     )

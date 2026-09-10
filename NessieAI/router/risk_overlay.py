@@ -22,7 +22,7 @@ def _overlay_enabled() -> bool:
 
 
 def _posterior_for(route: str, task_family: str) -> FamilyPosterior | None:
-    from nextseek_api.eval.generation_store import get_active_snapshot
+    from NessieAI.hibayes.generation_store import get_active_snapshot
 
     snapshot = get_active_snapshot()
     if snapshot is None:

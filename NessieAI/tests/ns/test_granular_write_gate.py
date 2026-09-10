@@ -7,7 +7,7 @@ These are pure-logic tests (SimpleTestCase, no DB).
 """
 from django.test import SimpleTestCase
 
-from nextseek_api.assistant.write_gate import (
+from NessieAI.ns.write_gate import (
     WriteBlockedError,
     build_gate,
     load_allowlist,

@@ -10,7 +10,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from e2e.catalog import PassCriterion
+from NessieAI.tests.e2e.catalog import PassCriterion
 
 
 def _strip_html(text: Any) -> str:
@@ -267,7 +267,7 @@ def check_pass(
 
     Returns (all_passed, per_criterion_results).
     """
-    from e2e.playwright.trio import trio_match as _trio  # noqa: PLC0415
+    from NessieAI.tests.e2e.playwright.trio import trio_match as _trio  # noqa: PLC0415
 
     results = []
     for crit in criteria:

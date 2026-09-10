@@ -26,11 +26,11 @@ from typing import Any
 
 from playwright.sync_api import sync_playwright
 
-from e2e.catalog import Variant
-from e2e.criteria import check_pass
-from e2e.playwright.mysql import fetch_chat_session_row
-from e2e.playwright.pages import ChatPage
-from e2e.playwright.poll import (
+from NessieAI.tests.e2e.catalog import Variant
+from NessieAI.tests.e2e.criteria import check_pass
+from NessieAI.tests.e2e.playwright.mysql import fetch_chat_session_row
+from NessieAI.tests.e2e.playwright.pages import ChatPage
+from NessieAI.tests.e2e.playwright.poll import (
     PollCapture,
     artifact_files,
     build_debug,

@@ -1,4 +1,4 @@
-from nextseek_api.cc_assistant.cc_turn_context import build_cc_contexts, CCTurnContext
+from NessieAI.cc.cc_turn_context import build_cc_contexts, CCTurnContext
 
 
 def test_build_cc_contexts_projects_answered_cc_turns():

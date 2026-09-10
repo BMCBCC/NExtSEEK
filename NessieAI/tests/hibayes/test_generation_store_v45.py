@@ -1,8 +1,8 @@
 import pytest
 from dataclasses import replace
 
-from nextseek_api.eval.generation_validation import validate_generation_for_activation
-from nextseek_api.eval.generation_store import (
+from NessieAI.hibayes.generation_validation import validate_generation_for_activation
+from NessieAI.hibayes.generation_store import (
     EMPTY_ACTIVE_HASH,
     ActivationError,
     GenerationManifest,
@@ -12,11 +12,11 @@ from nextseek_api.eval.generation_store import (
     get_current_active_hash,
     rollback_generation,
 )
-from nextseek_api.cc_assistant.tests.generation_test_factory import (
+from NessieAI.tests.hibayes.generation_test_factory import (
     _publish_generation_for_test,
 )
-from nextseek_api.eval.paired_run_registry import register_paired_run
-from nextseek_api.cc_assistant.family_labels import corpus_snapshot
+from NessieAI.hibayes.paired_run_registry import register_paired_run
+from NessieAI.router.family_labels import corpus_snapshot
 
 pytestmark = pytest.mark.django_db
 

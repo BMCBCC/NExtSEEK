@@ -99,7 +99,7 @@ import tarfile
 import tempfile
 import uuid
 
-from nessie_tests import collect
+from NessieAI.tests.nessie_tests import collect
 
 DEFAULT_CONTAINER = "nextseek"
 DEFAULT_APP_DIR = "/app"

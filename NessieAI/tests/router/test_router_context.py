@@ -1,7 +1,7 @@
 """F §12.4: deterministic HistoryTurn builder — caps, legacy derivation, four turn kinds."""
 import pytest
 
-from nextseek_api.cc_assistant import router_context as rc
+from NessieAI.router import router_context as rc
 
 
 def _ns(tid, **kw):

@@ -9,7 +9,7 @@ _NSAPI = Path(__file__).resolve().parents[2]
 
 
 def test_newest_jsonl_respects_min_mtime(tmp_path):
-    from nextseek_api.cc_assistant.cc_engine import _newest_jsonl_under
+    from NessieAI.cc.cc_engine import _newest_jsonl_under
     old = tmp_path / "old.jsonl"; old.write_text("x"); os.utime(old, (1.0, 1.0))
     new = tmp_path / "new.jsonl"; new.write_text("y"); os.utime(new, (10.0, 10.0))
     assert _newest_jsonl_under(tmp_path, min_mtime=5.0) == new

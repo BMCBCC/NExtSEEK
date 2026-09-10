@@ -48,8 +48,8 @@ from pathlib import Path
 import pytest
 
 from nextseek_api.assistant.models_db import CCSessionTranscript, ChatSession
-from nextseek_api.cc_assistant import cc_engine, cc_transcript_store
-from nextseek_api.cc_assistant.cc_config import CCPaths
+from NessieAI.cc import cc_engine, cc_transcript_store
+from NessieAI.cc.cc_config import CCPaths
 
 pytestmark = pytest.mark.django_db
 
@@ -338,7 +338,7 @@ def test_an_exception_turn_persists_a_transcript_row(harness, caplog):
     harness.plant(b"")   # the store exists; this turn's bytes arrive at spawn
 
     with caplog.at_level(logging.WARNING,
-                         logger="nextseek_api.cc_assistant.cc_engine"):
+                         logger="NessieAI.cc.cc_engine"):
         harness.run(
             spawn_error=APIError("spawn intercepted by test"),
             on_spawn=lambda: _append(harness.session_path, body),
@@ -419,7 +419,7 @@ def test_a_turn_that_appended_nothing_persists_no_row(harness, caplog):
     harness.plant(prior)
 
     with caplog.at_level(logging.WARNING,
-                         logger="nextseek_api.cc_assistant.cc_engine"):
+                         logger="NessieAI.cc.cc_engine"):
         harness.run(
             spawn_error=APIError("spawn intercepted by test"),
             # touch, do not append: the file is inside the mtime window but the
@@ -446,7 +446,7 @@ def test_a_turn_with_no_transcript_at_all_logs_that_it_found_none(harness, caplo
     from docker.errors import APIError
 
     with caplog.at_level(logging.WARNING,
-                         logger="nextseek_api.cc_assistant.cc_engine"):
+                         logger="NessieAI.cc.cc_engine"):
         harness.run(spawn_error=APIError("spawn intercepted by test"))
 
     assert harness.rows() == []

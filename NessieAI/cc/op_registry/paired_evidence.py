@@ -33,10 +33,10 @@ def ensure_real_e2e_catalog() -> None:
 
 ensure_real_e2e_catalog()
 
-from nessie_tests import bayes_manifest as bm
-from nessie_tests import corpus
-from nessie_tests import export as nexport
-from nessie_tests import runner
+from NessieAI.tests.nessie_tests import bayes_manifest as bm
+from NessieAI.tests.nessie_tests import corpus
+from NessieAI.tests.nessie_tests import export as nexport
+from NessieAI.tests.nessie_tests import runner
 
 PINNED_ZIP_SHA256 = (
     "4e7c57a1c04015fbbe4696302d258038b72e71b1bedb17866810474ac74cb814"

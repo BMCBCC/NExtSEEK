@@ -7,26 +7,26 @@ from pathlib import Path
 
 import pytest
 
-from build_tools.gen_op_surfaces.constants import SKILL_OPS_BEGIN, SKILL_OPS_END
-from build_tools.gen_op_surfaces.emit import (
+from NessieAI.build_tools.gen_op_surfaces.constants import SKILL_OPS_BEGIN, SKILL_OPS_END
+from NessieAI.build_tools.gen_op_surfaces.emit import (
     SurfaceTarget,
     check_surfaces,
     surface_targets,
     write_surfaces,
 )
-from build_tools.gen_op_surfaces.skills import (
+from NessieAI.build_tools.gen_op_surfaces.skills import (
     SkillOpsParseError,
     emit_skill_ops_block,
     installed_skill_ops_rows,
     parse_skill_ops_block,
 )
-from nextseek_api.cc_assistant.op_registry.models import (
+from NessieAI.cc.op_registry.models import (
     GateClass,
     OpSpec,
     SkillRow,
     Transport,
 )
-from nextseek_api.cc_assistant.op_registry.ops import OPS
+from NessieAI.cc.op_registry.ops import OPS
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 

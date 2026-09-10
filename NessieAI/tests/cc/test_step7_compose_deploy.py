@@ -34,9 +34,9 @@ from pathlib import Path
 
 import pytest
 
-from nextseek_api.cc_assistant import cc_engine
-from nextseek_api.cc_assistant.tests import step7_preflight_collector as _collector_mod
-from nextseek_api.cc_assistant.tests.step7_preflight_collector import (
+from NessieAI.cc import cc_engine
+from NessieAI.tests.cc import step7_preflight_collector as _collector_mod
+from NessieAI.tests.cc.step7_preflight_collector import (
     CC_ENV_KEYS,
     DOCKER_API_SUBPATH_FLOOR,
     DOCKER_ENGINE_SUBPATH_FLOOR,
@@ -55,14 +55,14 @@ from nextseek_api.cc_assistant.tests.step7_preflight_collector import (
     resolve_integration_plan_path,
     sha256_file,
 )
-from nextseek_api.cc_assistant.tests.validate_cc_acceptance import OPUS as CC_OPUS_MODEL_ID
-from nextseek_api.cc_assistant.tests.validate_step7_compose_deploy import (
+from NessieAI.tests.cc.validate_cc_acceptance import OPUS as CC_OPUS_MODEL_ID
+from NessieAI.tests.cc.validate_step7_compose_deploy import (
     LIVE_EVIDENCE_PATH_LITERAL,
     main as validator_main,
     validate_run,
 )
 
-from nextseek_api.cc_assistant.tests.step7_compose_fixtures import (  # noqa: F401
+from NessieAI.tests.cc.step7_compose_fixtures import (  # noqa: F401
     CC_IMAGE_DEFAULT,
     FOREIGN_TOKENS,
     GATE_PROJECT,
@@ -1064,7 +1064,7 @@ def test_collect_preflight_default_integration_plan_path_is_repo_relative(tmp_pa
 # --------------------------------------------------------------------------
 
 def test_default_git_probe_reports_real_repo_state_and_blob_sizes(tmp_path):
-    from nextseek_api.cc_assistant.tests.step7_preflight_collector import default_git_probe
+    from NessieAI.tests.cc.step7_preflight_collector import default_git_probe
 
     repo, sha = _repo_with_transcript(tmp_path, content=TRANSCRIPT_CONTENT)
     probe = default_git_probe(repo)

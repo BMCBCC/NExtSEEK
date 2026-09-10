@@ -7,9 +7,9 @@ import sys
 
 import pytest
 
-from nessie_tests import collect, export, outage
-from nessie_tests.bayes_manifest import BayesManifest, BayesPair
-from nessie_tests.manifest import NessieManifestEntry
+from NessieAI.tests.nessie_tests import collect, export, outage
+from NessieAI.tests.nessie_tests.bayes_manifest import BayesManifest, BayesPair
+from NessieAI.tests.nessie_tests.manifest import NessieManifestEntry
 
 
 def _entry(vid="a.one", status="passed", cost=None, outaged=False, elapsed=1.5):
@@ -949,7 +949,7 @@ def test_a_shared_run_root_makes_the_count_unobserved_rather_than_guessed(tmp_pa
 def test_the_never_executed_vocabulary_is_manifests_and_not_a_second_copy():
     """manifest.py:150 already owns the statuses that mean the harness never
     issued a request. Two copies is the duplication the outage rule forbids."""
-    from nessie_tests import manifest
+    from NessieAI.tests.nessie_tests import manifest
     assert export._NEVER_EXECUTED is manifest._NEVER_EXECUTED
 
 
@@ -1279,7 +1279,7 @@ def test_a_timeout_reason_outranks_the_error_status(tmp_path):
 
 # --------------------------------------------------------------------------- #
 # The command SKILL.md names. This module had no `main` and no `__main__` block
-# at all, so the documented `python -m nessie_tests.export --run <dir>` exited 0,
+# at all, so the documented `python -m NessieAI.tests.nessie_tests.export --run <dir>` exited 0,
 # printed nothing and wrote nothing -- and the operator found out four steps
 # later, after grading 254 blank arms, when `merge_grades` raised
 # FileNotFoundError over the CSVs this step was supposed to write.
@@ -1289,7 +1289,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 
 def _run_dir(tmp_path, *, pairs=None, artifacts=True):
-    from nessie_tests import bayes_manifest
+    from NessieAI.tests.nessie_tests import bayes_manifest
 
     run = tmp_path / "run"
     run.mkdir()
@@ -1310,7 +1310,7 @@ def test_the_documented_export_command_actually_writes_the_csvs(tmp_path):
     still exiting 0 and doing nothing from the shell."""
     run = _run_dir(tmp_path)
 
-    proc = subprocess.run([sys.executable, "-m", "nessie_tests.export",
+    proc = subprocess.run([sys.executable, "-m", "NessieAI.tests.nessie_tests.export",
                            "--run", str(run), "--corpus", str(_corpus(tmp_path))],
                           cwd=str(ROOT), capture_output=True, text=True)
 
@@ -1362,7 +1362,7 @@ def test_the_export_cli_refuses_a_normal_runs_manifest(tmp_path):
         {"started_at": "t0", "ended_at": "t1", "tier": "full", "scope": "all",
          "entries": []}), encoding="utf-8")
 
-    proc = subprocess.run([sys.executable, "-m", "nessie_tests.export",
+    proc = subprocess.run([sys.executable, "-m", "NessieAI.tests.nessie_tests.export",
                            "--run", str(run)],
                           cwd=str(ROOT), capture_output=True, text=True)
 
@@ -1374,7 +1374,7 @@ def test_the_export_cli_refuses_a_normal_runs_manifest(tmp_path):
 def test_the_export_cli_names_the_manifest_through_the_constant():
     """A filename literal would survive a rename of the constant and reintroduce
     the collision above."""
-    from nessie_tests import bayes_manifest
+    from NessieAI.tests.nessie_tests import bayes_manifest
 
     src = (ROOT / "nessie_tests" / "export.py").read_text(encoding="utf-8")
 

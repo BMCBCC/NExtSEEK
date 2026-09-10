@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from nextseek_api.cc_assistant.op_registry.plugin_identity import (
+from NessieAI.cc.op_registry.plugin_identity import (
     PluginIdentityError,
     load_and_validate_manifest,
     validate_plugin_identity,

@@ -6,8 +6,8 @@ from typing import Sequence
 
 import numpy as np
 
-from nextseek_api.eval.fit.v14.fit_config import V14FitConfig
-from nextseek_api.eval.fit.v14.pair_rows import LatencyObservationKind, PairFitRow
+from NessieAI.hibayes.fit.v14.fit_config import V14FitConfig
+from NessieAI.hibayes.fit.v14.pair_rows import LatencyObservationKind, PairFitRow
 
 __all__ = [
     "DescriptiveLatencyResult",

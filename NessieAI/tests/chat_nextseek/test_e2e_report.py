@@ -1,8 +1,8 @@
 """Report HTML generation tests."""
 from pathlib import Path
 
-from e2e.manifest import Manifest, ManifestEntry
-from e2e.report import generate_html_report
+from NessieAI.tests.e2e.manifest import Manifest, ManifestEntry
+from NessieAI.tests.e2e.report import generate_html_report
 
 
 def test_generate_html_smoke(tmp_path: Path):

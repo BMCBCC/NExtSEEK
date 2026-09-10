@@ -4,8 +4,8 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from nextseek_api.cc_assistant import op_registry
-from nextseek_api.cc_assistant.op_registry.models import ArgSpec, OpSpec, Transport
+from NessieAI.cc import op_registry
+from NessieAI.cc.op_registry.models import ArgSpec, OpSpec, Transport
 
 
 def test_unknown_attr_is_attribute_error():

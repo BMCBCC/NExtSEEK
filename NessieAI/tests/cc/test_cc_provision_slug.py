@@ -1,7 +1,7 @@
 """Hermetic tests for the Step-2 slug helper and ProjectIdentity."""
 import pytest
 
-from nextseek_api.cc_assistant.cc_provision import ProjectIdentity, slugify_project
+from NessieAI.cc.cc_provision import ProjectIdentity, slugify_project
 
 
 @pytest.mark.parametrize(

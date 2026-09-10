@@ -6,7 +6,7 @@ documented {status, progress[], result} poll shape.
 """
 import pytest
 
-from e2e.playwright.poll import (
+from NessieAI.tests.e2e.playwright.poll import (
     PollCapture,
     artifact_files,
     build_debug,

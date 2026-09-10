@@ -7,7 +7,7 @@ so a deployment can raise it while a UI override can never exceed it.
 """
 import importlib
 
-from nextseek_api.cc_assistant import cc_engine
+from NessieAI.cc import cc_engine
 
 
 def test_default_hard_max_is_180_when_env_unset():

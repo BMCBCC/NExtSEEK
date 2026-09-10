@@ -8,7 +8,7 @@ from collections import defaultdict
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from nextseek_api.eval.exporter import FailureMode
+from NessieAI.hibayes.exporter import FailureMode
 
 from .models import RuntimeEvalRow, TaskFamilyAggregate
 

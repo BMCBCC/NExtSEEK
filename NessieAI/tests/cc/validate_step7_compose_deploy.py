@@ -20,7 +20,7 @@ is deliberate: constants here (e.g. the Docker Engine/Compose subpath floors)
 are re-declared rather than imported, so a compromised/buggy collector cannot
 silently relax what the validator enforces.
 
-    python -m nextseek_api.cc_assistant.tests.validate_step7_compose_deploy <run_dir> [repo_root]
+    python -m NessieAI.tests.cc.validate_step7_compose_deploy <run_dir> [repo_root]
 """
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
-from nextseek_api.cc_assistant.bin_inventory import (
+from NessieAI.tests.cc.bin_inventory import (
     assistant_endpoint_for_op,
     discover_ops,
     excerpt_allowed_fields_for_op,
@@ -42,7 +42,7 @@ from nextseek_api.cc_assistant.bin_inventory import (
     wire_op_name,
     write_gated_op,
 )
-from nextseek_api.cc_assistant.tests.validate_cc_acceptance import (
+from NessieAI.tests.cc.validate_cc_acceptance import (
     LEAK_MARKERS as _CC_LEAK_MARKERS,
     OPUS as _CC_OPUS_MODEL_ID,
     SHARED_CRED_KEYS as _CC_SHARED_CRED_KEYS,
@@ -914,7 +914,7 @@ def check_network_segmentation_ok(ctx: Context) -> tuple[str, bool, str]:
 
 
 def _cc_peer_res():
-    from nextseek_api.cc_assistant.tests.validate_cc_acceptance import _PEER_RE
+    from NessieAI.tests.cc.validate_cc_acceptance import _PEER_RE
     return _PEER_RE
 
 

@@ -2,13 +2,13 @@
 from __future__ import annotations
 
 from nextseek_api.assistant.models_db import TurnLedger
-from nextseek_api.eval.evidence_kinds import EvidenceKind, ONLINE_OBSERVATION_SCHEMA_VERSION
-from nextseek_api.eval.online_observation import (
+from NessieAI.hibayes.evidence_kinds import EvidenceKind, ONLINE_OBSERVATION_SCHEMA_VERSION
+from NessieAI.hibayes.online_observation import (
     DEFAULT_SELECTION_CAVEAT,
     PROPENSITY_UNAVAILABLE_REASON,
     OnlineObservationalRow,
 )
-from nextseek_api.eval.router_models_proposal import RouteSource
+from NessieAI.hibayes.router_models_proposal import RouteSource
 
 EVAL_ROW_SCHEMA_VERSION = 3
 

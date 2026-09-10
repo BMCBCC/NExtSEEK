@@ -1,7 +1,7 @@
 """Hermetic tests for the 1c memory config knobs. No Django, no Docker."""
 import importlib
 
-from nextseek_api.cc_assistant.cc_config import CCMemoryConfig
+from NessieAI.cc.cc_config import CCMemoryConfig
 
 
 def test_defaults():
@@ -35,7 +35,7 @@ def test_container_path_constants():
     # retired — the merged memory is byte-copied to {cc_state_mnt}/CLAUDE.md
     # (basename constant) so it lands at /home/user/.claude/CLAUDE.md via the
     # cc-state subpath mount, never at a nested .claude/.claude path.
-    eng = importlib.import_module("nextseek_api.cc_assistant.cc_engine")
+    eng = importlib.import_module("NessieAI.cc.cc_engine")
     assert not hasattr(eng, "_CONTAINER_USER_MEMORY")
     assert eng._CONTAINER_MEMORY_CLAUDE_MD == "CLAUDE.md"
     assert eng._CONTAINER_MEMORY_TRANSCRIPTS == "/home/user/.cc-memory/transcripts"

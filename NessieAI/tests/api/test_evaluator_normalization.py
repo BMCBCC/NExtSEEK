@@ -49,7 +49,7 @@ _test_router = _TestRouter()
 _test_router.register(r"evaluator", EvaluatorViewSet, basename="evaluator")
 urlpatterns = [re_path(r'^nextseek_api/', include(_test_router.urls))]
 
-_TEST_URLCONF = "nextseek_api.tests.test_evaluator_normalization"
+_TEST_URLCONF = "NessieAI.tests.api.test_evaluator_normalization"
 
 # ---------------------------------------------------------------------------
 # Test fixtures (representative bundle dicts)

@@ -1,5 +1,5 @@
 """classify_tool_use is the single tool classifier shared by 1c summary + trace."""
-from nextseek_api.cc_assistant.cc_summary import classify_tool_use
+from NessieAI.cc.cc_summary import classify_tool_use
 
 
 def test_classify_bash_write_edit_read_skill_other():

@@ -2,9 +2,9 @@
 import ast
 from pathlib import Path
 
-from nextseek_api.cc_assistant import ns_digest
-from nextseek_api.cc_assistant import ns_turn_context as ntc
-from nextseek_api.cc_assistant.tests.test_ns_turn_context import _bundle
+from NessieAI.cc import ns_digest
+from NessieAI.cc import ns_turn_context as ntc
+from NessieAI.tests.cc.test_ns_turn_context import _bundle
 
 
 def _ctx(**kw):
@@ -81,9 +81,9 @@ def test_service_composes_via_pure_function_ast():
     assert digest_assigns, "render_within_chat_digest / render_digest never called"
 
 
-from nextseek_api.cc_assistant.ns_digest import render_cc_digest, render_within_chat_digest
-from nextseek_api.cc_assistant.cc_turn_context import CCTurnContext
-from nextseek_api.cc_assistant.ns_turn_context import NSTurnContext, NSResultSummary
+from NessieAI.cc.ns_digest import render_cc_digest, render_within_chat_digest
+from NessieAI.cc.cc_turn_context import CCTurnContext
+from NessieAI.cc.ns_turn_context import NSTurnContext, NSResultSummary
 
 
 def _cc(turn_id, q, reply):
@@ -109,7 +109,7 @@ def test_render_cc_digest_empty_when_none():
 
 
 def test_render_cc_digest_truncates_long_reply():
-    from nextseek_api.cc_assistant import ns_digest as nd
+    from NessieAI.cc import ns_digest as nd
 
     md = render_cc_digest([_cc(1, "q", "x" * (nd._CC_REPLY_LINE_CAP + 20))])
     assert "…" in md
@@ -117,7 +117,7 @@ def test_render_cc_digest_truncates_long_reply():
 
 
 def test_render_cc_digest_caps_turns():
-    from nextseek_api.cc_assistant import ns_digest as nd
+    from NessieAI.cc import ns_digest as nd
 
     turns = [_cc(i, f"q{i}", f"r{i}") for i in range(nd.DIGEST_MAX_TURNS + 2)]
     md = render_cc_digest(turns)

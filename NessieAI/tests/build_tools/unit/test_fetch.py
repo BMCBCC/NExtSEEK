@@ -1,4 +1,4 @@
-"""Unit tests for build_tools.ingest_nextseek_docs.fetch."""
+"""Unit tests for NessieAI.build_tools.ingest_nextseek_docs.fetch."""
 from __future__ import annotations
 
 import json
@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 import httpx
 import pytest
 
-from build_tools.ingest_nextseek_docs import fetch as fetch_module
+from NessieAI.build_tools.ingest_nextseek_docs import fetch as fetch_module
 
 SITE_INDEX_URL = (
     "https://koch-institute-mit.gitbook.io/mit-data-management-analysis-core/"

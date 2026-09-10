@@ -8,7 +8,7 @@ that reconstruction against a bundle captured from a real production turn.
 
 from __future__ import annotations
 
-from nextseek_api.assistant.debug_projection import bundle_debug_entries
+from NessieAI.ns.debug_projection import bundle_debug_entries
 
 
 # A real graph_query bundle (production, trimmed to the projected fields).

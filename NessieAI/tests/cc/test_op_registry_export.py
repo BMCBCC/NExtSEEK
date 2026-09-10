@@ -10,8 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from nextseek_api.cc_assistant.op_registry import OPS, OpList, OpSpec, discover_install
-from nextseek_api.cc_assistant.op_registry.export import (
+from NessieAI.cc.op_registry import OPS, OpList, OpSpec, discover_install
+from NessieAI.cc.op_registry.export import (
     BAKED_OPS_RELATIVE,
     CANONICAL_OPS_PATH,
     check_export,
@@ -21,7 +21,7 @@ from nextseek_api.cc_assistant.op_registry.export import (
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_PLUGINS_ROOT = REPO_ROOT / "docker" / "cc-runtime" / "build_context" / "plugins"
 DEFAULT_DOCKERFILE = REPO_ROOT / "docker" / "cc-runtime" / "Dockerfile"
-EXPORT_MODULE = "nextseek_api.cc_assistant.op_registry.export"
+EXPORT_MODULE = "NessieAI.cc.op_registry.export"
 
 SHIM_PREFIX = "nextseek-"
 
@@ -268,7 +268,7 @@ def test_mutation_add_op_fails_until_regeneration(tmp_path: Path, monkeypatch: p
     synthetic = OPS[0].model_copy(update={"op_id": "synthetic-mut", "bin_name": "nextseek-synthetic-mut"})
     mutated_ops = [*OPS, synthetic]
     monkeypatch.setattr(
-        "nextseek_api.cc_assistant.op_registry.export.OPS",
+        "NessieAI.cc.op_registry.export.OPS",
         mutated_ops,
     )
     with pytest.raises(SystemExit):
@@ -306,7 +306,7 @@ def test_mutation_delete_op_fails_until_regeneration(
 
     mutated_ops = OPS[1:]
     monkeypatch.setattr(
-        "nextseek_api.cc_assistant.op_registry.export.OPS",
+        "NessieAI.cc.op_registry.export.OPS",
         mutated_ops,
     )
     with pytest.raises(SystemExit):
@@ -347,7 +347,7 @@ def test_mutation_change_op_field_fails_until_regeneration(
         *OPS[1:],
     ]
     monkeypatch.setattr(
-        "nextseek_api.cc_assistant.op_registry.export.OPS",
+        "NessieAI.cc.op_registry.export.OPS",
         mutated_ops,
     )
     with pytest.raises(SystemExit):
@@ -385,7 +385,7 @@ def test_export_check_does_not_write_restore_or_create_repo_temps():
         ]
         if path.is_file()
     }
-    from nextseek_api.cc_assistant.op_registry.export import main as export_main
+    from NessieAI.cc.op_registry.export import main as export_main
 
     assert export_main(["--check", "--root", str(REPO_ROOT)]) == 0
     after = {
@@ -403,7 +403,7 @@ def test_export_check_does_not_write_restore_or_create_repo_temps():
 
 
 def test_export_root_flag_rejects_stale_canonical(tmp_path: Path):
-    from nextseek_api.cc_assistant.op_registry.export import main as export_main
+    from NessieAI.cc.op_registry.export import main as export_main
 
     root = tmp_path / "repo"
     canonical = root / "nextseek_api" / "cc_assistant" / "op_registry" / "ops.json"

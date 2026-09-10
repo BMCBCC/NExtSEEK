@@ -26,9 +26,9 @@ def test_stable_portable_surface():
 
 
 def test_e2e_package_imports():
-    from e2e.catalog import load_catalog  # noqa: F401
-    from e2e.criteria import check_pass, resolve_field  # noqa: F401
-    from e2e.sampler import sample, env_satisfied  # noqa: F401
-    from e2e.manifest import Manifest, write_manifest, load_manifest, filter_for_rerun  # noqa: F401
-    from e2e.runner import run_variant, run_main  # noqa: F401
-    from e2e.report import generate_html_report  # noqa: F401
+    from NessieAI.tests.e2e.catalog import load_catalog  # noqa: F401
+    from NessieAI.tests.e2e.criteria import check_pass, resolve_field  # noqa: F401
+    from NessieAI.tests.e2e.sampler import sample, env_satisfied  # noqa: F401
+    from NessieAI.tests.e2e.manifest import Manifest, write_manifest, load_manifest, filter_for_rerun  # noqa: F401
+    from NessieAI.tests.e2e.runner import run_variant, run_main  # noqa: F401
+    from NessieAI.tests.e2e.report import generate_html_report  # noqa: F401

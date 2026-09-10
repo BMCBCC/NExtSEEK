@@ -4,8 +4,8 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from nextseek_api.eval.run_manifest import RunManifest, manifest_body_hash, validate_manifest_dict
-from nextseek_api.eval.tests.v4_8_fixtures import sample_manifest_dict, sample_run_manifest
+from NessieAI.hibayes.run_manifest import RunManifest, manifest_body_hash, validate_manifest_dict
+from NessieAI.tests.hibayes.v4_8_fixtures import sample_manifest_dict, sample_run_manifest
 
 
 def test_manifest_requires_all_fields():

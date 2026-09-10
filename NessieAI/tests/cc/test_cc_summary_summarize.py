@@ -1,8 +1,8 @@
 """Hermetic: summarizer wrapper + actions-only fallback (no network)."""
 import pytest
 
-from nextseek_api.cc_assistant import cc_summary
-from nextseek_api.cc_assistant.cc_config import CCMemoryConfig
+from NessieAI.cc import cc_summary
+from NessieAI.cc.cc_config import CCMemoryConfig
 
 types = pytest.importorskip("dmac_assistant.router.baml_client.types")
 

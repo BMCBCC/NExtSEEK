@@ -12,7 +12,7 @@ import threading
 from enum import StrEnum
 from typing import Any, Iterable
 
-from nextseek_api.eval.deploy_record import DeployRecord, RuntimeIdentity
+from NessieAI.hibayes.deploy_record import DeployRecord, RuntimeIdentity
 
 __all__ = [
     "ContractPhaseRefused",

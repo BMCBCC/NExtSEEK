@@ -10,7 +10,7 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from nextseek_api.eval.attempt_store import (  # noqa: E402
+from NessieAI.hibayes.attempt_store import (  # noqa: E402
     AttemptStore,
     AttemptStoreError,
     HashWithoutBytesError,

@@ -31,7 +31,7 @@ Project memory:
 """
 from __future__ import annotations
 
-from nextseek_api.eval.enums import ExpectedBehavior
+from NessieAI.hibayes.enums import ExpectedBehavior
 
 __all__ = [
     "EXPECTED_BEHAVIOR_BY_FAMILY",

@@ -5,15 +5,15 @@ import math
 
 import numpy as np
 
-from nextseek_api.eval.fit.v14 import combined
-from nextseek_api.eval.fit.v14.decision import DecisionStatus, evaluate_generation
-from nextseek_api.eval.fit.v14.fit_config import V14FitConfig
-from nextseek_api.eval.fit.v14.pair_rows import (
+from NessieAI.hibayes.fit.v14 import combined
+from NessieAI.hibayes.fit.v14.decision import DecisionStatus, evaluate_generation
+from NessieAI.hibayes.fit.v14.fit_config import V14FitConfig
+from NessieAI.hibayes.fit.v14.pair_rows import (
     JointQualityState,
     LatencyObservationKind,
     PairFitRow,
 )
-from nextseek_api.eval.fit.v14.quality_model import (
+from NessieAI.hibayes.fit.v14.quality_model import (
     DescriptiveQualityResult,
     fit_quality_models,
 )
@@ -85,7 +85,7 @@ def test_shared_model_uses_indexed_multivariate_family_offsets():
     import numpyro
     import numpyro.distributions as dist
 
-    from nextseek_api.eval.fit.v14.quality_model import _quality_model
+    from NessieAI.hibayes.fit.v14.quality_model import _quality_model
 
     cfg = V14FitConfig(quality_prior_scale=1.7)
     model = _quality_model(

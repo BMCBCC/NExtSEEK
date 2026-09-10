@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from nextseek_api.cc_assistant.op_registry import (
+from NessieAI.cc.op_registry import (
     CONTAINER_CC_ROUTE,
     GENERIC_CC_BUILTINS,
     OPS,
@@ -18,7 +18,7 @@ from nextseek_api.cc_assistant.op_registry import (
     OpSpec,
     discover_install,
 )
-from nextseek_api.cc_assistant.op_registry.models import (
+from NessieAI.cc.op_registry.models import (
     Backend,
     GateClass,
     RouteSpec,

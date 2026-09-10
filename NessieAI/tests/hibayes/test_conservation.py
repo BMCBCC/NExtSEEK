@@ -9,7 +9,7 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from nextseek_api.eval.conservation import (  # noqa: E402
+from NessieAI.hibayes.conservation import (  # noqa: E402
     SupportGateConfig,
     build_conservation_report,
     build_differential_attrition_report,
@@ -18,7 +18,7 @@ from nextseek_api.eval.conservation import (  # noqa: E402
     compute_sensitivity_bounds,
     count_discordant_pairs,
 )
-from nextseek_api.eval.disposition import ArmBucket, OutcomeBucket  # noqa: E402
+from NessieAI.hibayes.disposition import ArmBucket, OutcomeBucket  # noqa: E402
 
 
 def test_conservation_identity() -> None:
@@ -189,12 +189,12 @@ def test_fit_admission_rejects_non_scored_bucket_types() -> None:
 
 
 def test_build_fit_admission_honors_paired_batch_boundary() -> None:
-    from nextseek_api.eval.paired_run import PairedExperimentalBatch
+    from NessieAI.hibayes.paired_run import PairedExperimentalBatch
 
     batch = PairedExperimentalBatch(paired_run_id="paired-run-1", pairs=[])
     with (
-        patch("nextseek_api.eval.fit.fit_boundary.assert_paired_experimental_only") as assert_only,
-        patch("nextseek_api.eval.fit.fit_boundary.require_approved_paired_run") as require_run,
+        patch("NessieAI.hibayes.fit.fit_boundary.assert_paired_experimental_only") as assert_only,
+        patch("NessieAI.hibayes.fit.fit_boundary.require_approved_paired_run") as require_run,
     ):
         build_fit_admission([], {}, paired_batch=batch)
     assert_only.assert_called_once_with(batch)

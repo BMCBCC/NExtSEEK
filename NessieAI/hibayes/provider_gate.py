@@ -4,7 +4,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Callable, TypeVar
 
-from nextseek_api.eval.run_authorization import (
+from NessieAI.hibayes.run_authorization import (
     AuthorizationError,
     reconcile_reservation,
     release_reservation,

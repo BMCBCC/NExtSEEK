@@ -1,9 +1,9 @@
 from chat_nextseek.chat_memory import REPLY_PREVIEW_CHARS, format_for_prompt
 
-from nextseek_api.cc_assistant.ns_turn_context import build_contexts
-from nextseek_api.cc_assistant.cc_turn_context import build_cc_contexts
-from nextseek_api.cc_assistant.ns_digest import render_within_chat_digest
-from nextseek_api.cc_assistant.cc_turn_complete import serialize_cc_chat_log_entry, TurnCompletePayload
+from NessieAI.cc.ns_turn_context import build_contexts
+from NessieAI.cc.cc_turn_context import build_cc_contexts
+from NessieAI.cc.ns_digest import render_within_chat_digest
+from NessieAI.cc.cc_turn_complete import serialize_cc_chat_log_entry, TurnCompletePayload
 
 
 # Mixed conversation: turn 1 NS (has a bundle), turn 2 CC (answered).

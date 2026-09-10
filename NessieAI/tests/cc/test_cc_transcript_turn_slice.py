@@ -29,7 +29,7 @@ from pathlib import Path
 
 import pytest
 
-from nextseek_api.cc_assistant import cc_engine, cc_summary
+from NessieAI.cc import cc_engine, cc_summary
 
 PW = "hunter2-s3cr3t"
 ENV = {"NEXTSEEK_PASSWORD": PW}

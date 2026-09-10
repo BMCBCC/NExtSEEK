@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from nextseek_api.eval.exporter import (
+from NessieAI.hibayes.exporter import (
     HIBAYES_CSV_COLUMNS,
     FailureMode,
     HiBayesEvalRow,
@@ -382,7 +382,7 @@ def test_cross_check_pre_pydantic_raw_count_independent_of_row_count():
     but the manifest declares queries_total=3 and rows is also length 3 — i.e.
     #0 should fire but #1 should NOT. This pins independent #0 enforcement.
     """
-    from nextseek_api.eval.exporter import _validate_consistency, RawRunManifest
+    from NessieAI.hibayes.exporter import _validate_consistency, RawRunManifest
 
     # rows of length 3 with answered/error/timeout counts matching manifest
     summaries = [_make_summary(query_id=f"Search-Basic-{i}") for i in range(1, 4)]

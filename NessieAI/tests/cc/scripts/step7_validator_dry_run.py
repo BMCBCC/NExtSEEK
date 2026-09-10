@@ -23,7 +23,7 @@ TESTS = REPO_ROOT / "nextseek_api" / "cc_assistant" / "tests"
 
 def _run_validator(bundle: Path, repo: Path) -> tuple[int, str]:
     proc = subprocess.run(
-        [sys.executable, "-m", "nextseek_api.cc_assistant.tests.validate_step7_compose_deploy",
+        [sys.executable, "-m", "NessieAI.tests.cc.validate_step7_compose_deploy",
          str(bundle), str(repo)],
         cwd=str(REPO_ROOT),
         capture_output=True,
@@ -33,7 +33,7 @@ def _run_validator(bundle: Path, repo: Path) -> tuple[int, str]:
 
 
 def main() -> int:
-    from nextseek_api.cc_assistant.tests.step7_compose_fixtures import (
+    from NessieAI.tests.cc.step7_compose_fixtures import (
         TRANSCRIPT_CONTENT,
         _full_bundle,
         _repo_with_transcript,

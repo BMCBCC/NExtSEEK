@@ -6,12 +6,12 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from build_tools.plan005_validate_plugins.docker_runner import run_claude_plugin_validate
-from nextseek_api.cc_assistant.op_registry.install_oracle import (
+from NessieAI.build_tools.plan005_validate_plugins.docker_runner import run_claude_plugin_validate
+from NessieAI.cc.op_registry.install_oracle import (
     InstallOracleError,
     discover_install,
 )
-from nextseek_api.cc_assistant.op_registry.plugin_identity import (
+from NessieAI.cc.op_registry.plugin_identity import (
     PluginIdentityError,
     load_and_validate_manifest,
 )

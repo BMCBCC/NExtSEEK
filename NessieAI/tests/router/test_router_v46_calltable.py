@@ -5,8 +5,8 @@ from unittest import mock
 
 import pytest
 
-from nextseek_api.cc_assistant import router as cc_router
-from nextseek_api.cc_assistant import transport_trace
+from NessieAI.router import router as cc_router
+from NessieAI.router import transport_trace
 
 pytestmark = pytest.mark.django_db
 
@@ -100,7 +100,7 @@ def test_flag_on_pretransport_invalid_zero_classify(settings):
 
 def test_flag_on_posterior_decisive_skips_route_llm(settings):
     settings.NEXTSEEK_POSTERIOR_ROUTING_ENABLED = True
-    from nextseek_api.cc_assistant import posterior_selector
+    from NessieAI.router import posterior_selector
 
     sel = posterior_selector.SelectorResult(
         route="container_cc",
@@ -123,7 +123,7 @@ def test_flag_on_posterior_decisive_skips_route_llm(settings):
 
 def test_flag_on_indecisive_falls_back_to_route_llm(settings):
     settings.NEXTSEEK_POSTERIOR_ROUTING_ENABLED = True
-    from nextseek_api.cc_assistant import posterior_selector
+    from NessieAI.router import posterior_selector
 
     with mock.patch.object(cc_router, "corpus_snapshot", return_value=mock.Mock()):
         with mock.patch.object(cc_router, "type_builder", return_value={}):
@@ -157,7 +157,7 @@ def test_flag_on_posttransport_failure_one_classify_one_route(settings):
 
 
 def test_sticky_override_records_attempted_vs_actual(settings):
-    from nextseek_api.cc_assistant import router_context
+    from NessieAI.router import router_context
     from nextseek_api.services import cc_assistant as svc
 
     history = [
@@ -234,16 +234,16 @@ def test_flag_on_posterior_decisive_transport_skips_route_llm(settings, monkeypa
     """Variant coverage: decisive posterior skips RouteQuery; transport shows classify only."""
     settings.NEXTSEEK_POSTERIOR_ROUTING_ENABLED = True
     from dmac_assistant.router.baml_client.types import ClassificationDecision
-    from nextseek_api.cc_assistant.family_labels import corpus_snapshot
-    from nextseek_api.eval.generation_store import (
+    from NessieAI.router.family_labels import corpus_snapshot
+    from NessieAI.hibayes.generation_store import (
         EMPTY_ACTIVE_HASH,
         GenerationManifest,
         activate_generation,
     )
-    from nextseek_api.cc_assistant.tests.generation_test_factory import (
+    from NessieAI.tests.hibayes.generation_test_factory import (
         _publish_generation_for_test,
     )
-    from nextseek_api.eval.paired_run_registry import register_paired_run
+    from NessieAI.hibayes.paired_run_registry import register_paired_run
 
     current = corpus_snapshot()
     paired_run_id = "v46-decisive-transport"

@@ -8,7 +8,7 @@ import pytest
 from django.utils import timezone
 
 from nextseek_api.assistant.models_db import ApprovedRunManifest, SpendReservation
-from nextseek_api.eval.run_authorization import (
+from NessieAI.hibayes.run_authorization import (
     AuthorizationError,
     approve_manifest,
     approve_run_manifest,
@@ -18,9 +18,9 @@ from nextseek_api.eval.run_authorization import (
     release_reservation,
     reserve_budget,
 )
-from nextseek_api.eval.spend_conservation import compute_conservation
-from nextseek_api.eval.run_manifest import manifest_body_hash
-from nextseek_api.eval.tests.v4_8_fixtures import sample_manifest_dict, sample_run_manifest
+from NessieAI.hibayes.spend_conservation import compute_conservation
+from NessieAI.hibayes.run_manifest import manifest_body_hash
+from NessieAI.tests.hibayes.v4_8_fixtures import sample_manifest_dict, sample_run_manifest
 
 pytestmark = pytest.mark.django_db
 

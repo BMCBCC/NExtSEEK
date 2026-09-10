@@ -7,16 +7,16 @@ from pathlib import Path
 import pytest
 
 from nextseek_api.assistant.models_db import ChatSession, TurnLedger
-from nextseek_api.cc_assistant.route_monitoring import (
+from NessieAI.router.route_monitoring import (
     AlertKind,
     MONITORING_DISCLAIMER,
     build_monitoring_snapshot,
     build_route_monitoring_summary,
     detect_monitoring_alerts,
 )
-from nextseek_api.eval.export import export_observational_rows, ledger_row_to_observational
-from nextseek_api.eval.online_observation import DEFAULT_SELECTION_CAVEAT, PROPENSITY_UNAVAILABLE_REASON
-from nextseek_api.eval.router_models_proposal import RouteSource
+from NessieAI.hibayes.export import export_observational_rows, ledger_row_to_observational
+from NessieAI.hibayes.online_observation import DEFAULT_SELECTION_CAVEAT, PROPENSITY_UNAVAILABLE_REASON
+from NessieAI.hibayes.router_models_proposal import RouteSource
 
 pytestmark = pytest.mark.django_db
 
@@ -39,7 +39,7 @@ def _obs_row(
     task_family: str | None = "sample_search",
     assignment_policy: str | None = "baml",
 ):
-    from nextseek_api.eval.online_observation import OnlineObservationalRow
+    from NessieAI.hibayes.online_observation import OnlineObservationalRow
 
     return OnlineObservationalRow(
         observation_id=observation_id,

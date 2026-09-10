@@ -33,12 +33,12 @@ from pathlib import Path
 
 import pytest
 
-from nessie_tests import corpus, evaluate
+from NessieAI.tests.nessie_tests import corpus, evaluate
 from nessie_tests.pathsetup import ensure_e2e_importable
-from nessie_tests.route_observer import RouteObservation
+from NessieAI.tests.nessie_tests.route_observer import RouteObservation
 
 ensure_e2e_importable()
-from e2e.criteria import _check_one  # noqa: E402
+from NessieAI.tests.e2e.criteria import _check_one  # noqa: E402
 
 HERE = Path(__file__).resolve().parents[1]
 CORPUS = HERE / "corpus.json"

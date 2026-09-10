@@ -8,18 +8,18 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-from build_tools.gen_op_surfaces.blocks import render_marked_file
-from build_tools.gen_op_surfaces.claude_md import (
+from NessieAI.build_tools.gen_op_surfaces.blocks import render_marked_file
+from NessieAI.build_tools.gen_op_surfaces.claude_md import (
     emit_claude_ops_block,
     emit_claude_plugins_block,
     emit_claude_skills_block,
     guard_claude_md_render,
 )
-from build_tools.gen_op_surfaces.commands import (
+from NessieAI.build_tools.gen_op_surfaces.commands import (
     discover_command_surface_paths,
     emit_command_ops_block,
 )
-from build_tools.gen_op_surfaces.constants import (
+from NessieAI.build_tools.gen_op_surfaces.constants import (
     ADDITIONAL_CONTEXTS_BEGIN,
     ADDITIONAL_CONTEXTS_END,
     BAKED_CAPABILITIES_REL,
@@ -48,15 +48,15 @@ from build_tools.gen_op_surfaces.constants import (
     SKILL_OPS_BEGIN,
     SKILL_OPS_END,
 )
-from build_tools.gen_op_surfaces.docker_blocks import (
+from NessieAI.build_tools.gen_op_surfaces.docker_blocks import (
     emit_additional_contexts_block,
     emit_capabilities_copy_block,
     emit_plugin_copy_block,
     emit_plugin_path_block,
 )
-from build_tools.gen_op_surfaces.paths import resolve_under_root
-from build_tools.gen_op_surfaces.route_capabilities import emit_route_capabilities
-from build_tools.gen_op_surfaces.skills import (
+from NessieAI.build_tools.gen_op_surfaces.paths import resolve_under_root
+from NessieAI.build_tools.gen_op_surfaces.route_capabilities import emit_route_capabilities
+from NessieAI.build_tools.gen_op_surfaces.skills import (
     discover_skill_surface_paths,
     emit_skill_ops_block,
 )

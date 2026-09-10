@@ -16,10 +16,10 @@ try:
 except ImportError:
     from router_context import HistoryTurn
 
-from nextseek_api.cc_assistant import posterior_selector
-from nextseek_api.cc_assistant import transport_trace
-from nextseek_api.cc_assistant.baml_introspect import declared_family_members, validate_member
-from nextseek_api.cc_assistant.family_labels import (
+from NessieAI.router import posterior_selector
+from NessieAI.router import transport_trace
+from NessieAI.router.baml_introspect import declared_family_members, validate_member
+from NessieAI.router.family_labels import (
     corpus_snapshot,
     runtime_type_builder,
     type_builder,

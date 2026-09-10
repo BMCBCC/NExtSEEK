@@ -72,7 +72,7 @@ class TestJobIndexEdgeCases:
 class TestFullAPIEndpointEmbeddingText:
 
     def test_embedding_text_with_parameters_and_schema(self):
-        from nextseek_api.schema_rag.models import FullAPIEndpoint
+        from NessieAI.schema_rag.models import FullAPIEndpoint
         ep = FullAPIEndpoint(
             operationId="createSample",
             method="POST",
@@ -87,7 +87,7 @@ class TestFullAPIEndpointEmbeddingText:
         assert "request_schema:" in text
 
     def test_embedding_text_with_examples(self):
-        from nextseek_api.schema_rag.models import FullAPIEndpoint
+        from NessieAI.schema_rag.models import FullAPIEndpoint
         ep = FullAPIEndpoint(
             operationId="createSample",
             method="POST",
@@ -105,10 +105,10 @@ class TestFullAPIEndpointEmbeddingText:
 
 class TestSchemaRagDbEdgeCases:
 
-    @patch("nextseek_api.schema_rag.db.duckdb")
+    @patch("NessieAI.schema_rag.db.duckdb")
     def test_load_all_minimal_endpoints_empty(self, mock_duckdb):
         """Empty result returns empty list."""
-        from nextseek_api.schema_rag.db import load_all_minimal_endpoints
+        from NessieAI.schema_rag.db import load_all_minimal_endpoints
         mock_conn = MagicMock()
         mock_conn.execute.return_value.fetchall.return_value = []
         mock_duckdb.connect.return_value = mock_conn

@@ -31,7 +31,7 @@ def _canonical_sha256(value: Any) -> str:
 
 
 def _stored_evaluation(arm, call_index: int):
-    from nextseek_api.eval.judge_models import (
+    from NessieAI.hibayes.judge_models import (
         FunctionalEvaluation,
         FunctionalOutcome,
         PrimaryIssue,
@@ -59,9 +59,9 @@ def _stored_evaluation(arm, call_index: int):
 
 
 def _materialize_and_replay_judgments(prepared) -> dict[str, Any]:
-    from nextseek_api.eval.attempt_store import AttemptStore
-    from nextseek_api.eval.disposition import should_call_judge
-    from nextseek_api.eval.stage_c_runner import StageCRunner
+    from NessieAI.hibayes.attempt_store import AttemptStore
+    from NessieAI.hibayes.disposition import should_call_judge
+    from NessieAI.hibayes.stage_c_runner import StageCRunner
 
     eligible = tuple(arm for arm in prepared.arms if should_call_judge(arm.row))
     ineligible = {arm.arm_id for arm in prepared.arms} - {arm.arm_id for arm in eligible}
@@ -172,9 +172,9 @@ def run_task6_replay(delivery: str | Path) -> dict[str, Any]:
     _prepare_isolated_database()
 
     from nextseek_api.assistant.models_db import PairedRunRegistry
-    from nextseek_api.cc_assistant.posterior_selector import select_route
-    from nextseek_api.eval.generation_store import EMPTY_ACTIVE_HASH, get_current_active_hash
-    from nextseek_api.eval.human_grade_fit import (
+    from NessieAI.router.posterior_selector import select_route
+    from NessieAI.hibayes.generation_store import EMPTY_ACTIVE_HASH, get_current_active_hash
+    from NessieAI.hibayes.human_grade_fit import (
         DEFAULT_EVIDENCE_IDENTITY,
         ModelMode,
         activate_human_grade_generation,

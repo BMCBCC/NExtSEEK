@@ -1,7 +1,7 @@
 """ChatPage selector contracts — uses mocked Playwright Locators."""
 from unittest.mock import MagicMock
 
-from e2e.playwright.pages import ChatPage
+from NessieAI.tests.e2e.playwright.pages import ChatPage
 
 
 def _page_with_locators(locator_map):

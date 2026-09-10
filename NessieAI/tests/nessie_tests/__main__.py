@@ -1,4 +1,4 @@
 import sys
-from nessie_tests.cli import main
+from NessieAI.tests.nessie_tests.cli import main
 
 sys.exit(main())

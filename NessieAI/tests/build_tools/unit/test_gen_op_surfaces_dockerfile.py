@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from build_tools.gen_op_surfaces.constants import (
+from NessieAI.build_tools.gen_op_surfaces.constants import (
     ADDITIONAL_CONTEXTS_BEGIN,
     ADDITIONAL_CONTEXTS_END,
     CAPABILITIES_COPY_BEGIN,
@@ -21,7 +21,7 @@ from build_tools.gen_op_surfaces.constants import (
     PLUGIN_PATH_BEGIN,
     PLUGIN_PATH_END,
 )
-from build_tools.gen_op_surfaces.docker_blocks import (
+from NessieAI.build_tools.gen_op_surfaces.docker_blocks import (
     CanonicalCapabilitiesError,
     ComposeContextError,
     emit_additional_contexts_block,
@@ -34,13 +34,13 @@ from build_tools.gen_op_surfaces.docker_blocks import (
     validate_canonical_capabilities_final_writer,
     validate_compose_named_context,
 )
-from build_tools.gen_op_surfaces.emit import (
+from NessieAI.build_tools.gen_op_surfaces.emit import (
     SurfaceTarget,
     check_surfaces,
     surface_targets,
     write_surfaces,
 )
-from nextseek_api.cc_assistant.op_registry.install_oracle import discover_install
+from NessieAI.cc.op_registry.install_oracle import discover_install
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 COMPOSE_FILE = REPO_ROOT / "docker-compose.yml"

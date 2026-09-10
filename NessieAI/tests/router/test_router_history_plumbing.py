@@ -8,8 +8,8 @@ from pathlib import Path
 
 from dmac_assistant.router.baml_client.types import Route
 
-from nextseek_api.cc_assistant import router as cc_router
-from nextseek_api.cc_assistant import router_context as rc
+from NessieAI.router import router as cc_router
+from NessieAI.router import router_context as rc
 
 _REPO = Path(__file__).resolve().parents[3]
 

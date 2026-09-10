@@ -1,5 +1,5 @@
 """Hermetic: window + sync-target selection. No Django."""
-from nextseek_api.cc_assistant import cc_memory
+from NessieAI.cc import cc_memory
 
 
 def _m(sid, ts, changed=False, summary=None):

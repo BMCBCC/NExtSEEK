@@ -1,6 +1,6 @@
 """Hermetic tests for the G7-10 volume-subpath path-builder."""
-from nextseek_api.cc_assistant.cc_config import CCPaths
-from nextseek_api.cc_assistant.cc_provision import build_user_dirs
+from NessieAI.cc.cc_config import CCPaths
+from NessieAI.cc.cc_provision import build_user_dirs
 
 
 def _paths() -> CCPaths:

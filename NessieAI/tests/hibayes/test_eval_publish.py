@@ -2,12 +2,12 @@ import numpy as np
 import pytest
 
 from nextseek_api.assistant.models_db import FamilyPosterior, PosteriorGeneration
-from nextseek_api.eval.fit.v14.combined import CombinedFitResult
-from nextseek_api.eval.fit.v14.decision import CandidateDecision, DecisionStatus, GenerationDecision
-from nextseek_api.eval.fit.v14.latency_model import LatencyFitResult
-from nextseek_api.eval.fit.v14.quality_model import QualityFitResult
-from nextseek_api.eval.paired_run_registry import register_paired_run
-from nextseek_api.eval.publish import (
+from NessieAI.hibayes.fit.v14.combined import CombinedFitResult
+from NessieAI.hibayes.fit.v14.decision import CandidateDecision, DecisionStatus, GenerationDecision
+from NessieAI.hibayes.fit.v14.latency_model import LatencyFitResult
+from NessieAI.hibayes.fit.v14.quality_model import QualityFitResult
+from NessieAI.hibayes.paired_run_registry import register_paired_run
+from NessieAI.hibayes.publish import (
     FitGroup,
     FitResult,
     PublicationEvidence,

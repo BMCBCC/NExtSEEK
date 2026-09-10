@@ -19,7 +19,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from nextseek_api.eval.exporter import FailureMode, HiBayesEvalRow
+from NessieAI.hibayes.exporter import FailureMode, HiBayesEvalRow
 
 
 # ---------------------------------------------------------------------------

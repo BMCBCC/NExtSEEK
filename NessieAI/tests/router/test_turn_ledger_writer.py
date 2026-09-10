@@ -4,7 +4,7 @@ import pytest
 from django.contrib.auth import get_user_model
 
 from nextseek_api.assistant.models_db import ChatSession, TurnLedger
-from nextseek_api.cc_assistant.turn_ledger import LedgerCollision, record_turn
+from NessieAI.router.turn_ledger import LedgerCollision, record_turn
 
 pytestmark = pytest.mark.django_db
 

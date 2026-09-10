@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import logging
 
-from nextseek_api.cc_assistant import cc_memory
+from NessieAI.cc import cc_memory
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,8 @@ def _run_sweep():
     from pathlib import Path
     from django.contrib.auth.models import User
     from django.utils import timezone
-    from nextseek_api.cc_assistant import cc_summary, cc_config, cc_engine, router as cc_router
+    from NessieAI.cc import cc_summary, cc_config, cc_engine
+    from NessieAI.router import router as cc_router
     from nextseek_api.services.cc_assistant import _session_metas, _persist_summary_standalone
 
     paths = cc_config.CCPaths.from_env()

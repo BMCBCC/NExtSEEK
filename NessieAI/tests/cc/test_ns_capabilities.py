@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from nextseek_api.cc_assistant.op_registry.ns_capabilities import (
+from NessieAI.cc.op_registry.ns_capabilities import (
     NsCapabilitiesError,
     load_ns_projection,
     project_ns_capabilities,

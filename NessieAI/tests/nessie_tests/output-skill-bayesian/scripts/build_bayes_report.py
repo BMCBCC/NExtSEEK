@@ -3,8 +3,8 @@
 
 Inputs
 ------
-  <run>/<MANIFEST_NAME>       the paired record   (nessie_tests.bayes_manifest)
-  <run>/artifacts/<id>/<arm>/ the collected evidence      (nessie_tests.collect)
+  <run>/<MANIFEST_NAME>       the paired record   (NessieAI.tests.nessie_tests.bayes_manifest)
+  <run>/artifacts/<id>/<arm>/ the collected evidence      (NessieAI.tests.nessie_tests.collect)
   <run>/stage_c.json          the LLM verdicts, OPTIONAL  (dmac-assistant Stage C)
   nessie_tests/corpus.json    the question each variant asked
 
@@ -74,7 +74,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from nessie_tests import bayes_manifest, collect, export  # noqa: E402
+from NessieAI.tests.nessie_tests import bayes_manifest, collect, export  # noqa: E402
 
 TPL_DEFAULT = pathlib.Path(__file__).resolve().parent.parent / "templates" / "report_bayes.html.tpl"
 CORPUS_DEFAULT = pathlib.Path(__file__).resolve().parents[2] / "corpus.json"

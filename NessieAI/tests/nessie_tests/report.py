@@ -1,7 +1,7 @@
 from __future__ import annotations
 import html
 from pathlib import Path
-from nessie_tests.manifest import NessieManifest, cost_summary
+from NessieAI.tests.nessie_tests.manifest import NessieManifest, cost_summary
 
 _ROW = ("<tr class='{cls}'><td>{id}</td><td>{family}</td><td>{route}</td><td>{engine}</td>"
         "<td>{status}</td><td>{reason}</td></tr>")

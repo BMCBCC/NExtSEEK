@@ -6,10 +6,10 @@ from unittest import mock
 
 import pytest
 
-from nextseek_api.cc_assistant import posterior_selector
-from nextseek_api.cc_assistant import router as cc_router
-from nextseek_api.cc_assistant.family_labels import corpus_snapshot, runtime_type_builder
-from nextseek_api.eval.generation_store import GenerationSnapshot
+from NessieAI.router import posterior_selector
+from NessieAI.router import router as cc_router
+from NessieAI.router.family_labels import corpus_snapshot, runtime_type_builder
+from NessieAI.hibayes.generation_store import GenerationSnapshot
 
 
 _REPO = Path(__file__).resolve().parents[3]

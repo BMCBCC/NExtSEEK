@@ -4,8 +4,8 @@ import pytest
 from django.contrib.auth import get_user_model
 
 from nextseek_api.assistant.models_db import ChatSession
-from nextseek_api.cc_assistant.turn_ledger import record_turn
-from nextseek_api.eval.judge_cache import fingerprint, needs_judging, record_failure, record_judgment
+from NessieAI.router.turn_ledger import record_turn
+from NessieAI.hibayes.judge_cache import fingerprint, needs_judging, record_failure, record_judgment
 
 pytestmark = pytest.mark.django_db
 _V = dict(prompt_version="p1", model_id="m1", schema_version=2)
@@ -18,7 +18,7 @@ def eval_row(db):
     )
     s = ChatSession.objects.create(user=user)
     record_turn(str(s.session_id), 1, "container_cc", "baml", "sample_search", "baml")
-    from nextseek_api.eval.export import export_rows
+    from NessieAI.hibayes.export import export_rows
 
     return export_rows()[0]
 

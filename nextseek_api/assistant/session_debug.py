@@ -19,7 +19,7 @@ from __future__ import annotations
 import os
 from typing import Any, Iterable
 
-from nextseek_api.assistant.bundle_download import _size
+from NessieAI.ns.bundle_download import _size
 
 #: Rough MySQL thresholds worth flagging. A JSON column at or past these has
 #: already caused a live incident: a filesort over ``sort_buffer_size`` (1038)
@@ -253,7 +253,7 @@ def collect(session, *, include: Iterable[str] = ()) -> dict[str, Any]:
         }
         if _wants(include, "transcripts"):
             from django.conf import settings
-            from nextseek_api.cc_assistant.cc_transcript_store import decompress
+            from NessieAI.cc.cc_transcript_store import decompress
             cap = getattr(settings, "CC_TRANSCRIPT_MAX_BYTES", 256 * 1024 * 1024)
             try:
                 entry["jsonl"] = decompress(bytes(row.blob), max_bytes=cap).decode(

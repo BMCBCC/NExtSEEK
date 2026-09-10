@@ -1,5 +1,5 @@
 """Hermetic: deterministic markdown renderer + pointer block + fresh_session."""
-from nextseek_api.cc_assistant import cc_memory
+from NessieAI.cc import cc_memory
 
 
 def _summary(gist, items):

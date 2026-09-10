@@ -14,7 +14,7 @@ import json
 
 import pytest
 
-from nextseek_api.cc_assistant import cc_engine
+from NessieAI.cc import cc_engine
 
 
 # --- image + network defaults -------------------------------------------------
@@ -273,7 +273,7 @@ def test_run_cc_turn_threads_session_id_into_container_env(tmp_path, monkeypatch
     import docker as docker_mod
     from docker.errors import APIError
 
-    from nextseek_api.cc_assistant.cc_config import CCPaths
+    from NessieAI.cc.cc_config import CCPaths
 
     class _SpyContainers:
         def __init__(self):

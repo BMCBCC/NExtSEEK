@@ -483,7 +483,7 @@ EXIT_INPUT = 1
 EXIT_HIBAYES = 2
 
 _DEFAULT_CONFIG_RESOURCE = (
-    "nextseek_api.eval.fit.vendor.hibayes_runtime_reliability",
+    "NessieAI.hibayes.fit.vendor.hibayes_runtime_reliability",
     "config/hibayes_runtime_reliability.yaml",
 )
 

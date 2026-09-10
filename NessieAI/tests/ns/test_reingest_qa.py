@@ -1,5 +1,5 @@
 """qa_rows disposition checks for the reingest rows."""
-from nextseek_api.assistant.reingest_qa import (
+from NessieAI.ns.reingest_qa import (
     CLEAN, HARD_REJECT, SOFT_FLAG, qa_rows,
 )
 

@@ -21,20 +21,20 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable
 from urllib.parse import urlsplit
 
-from nextseek_api.cc_assistant.family_labels import corpus_snapshot
-from nextseek_api.eval.conservation import (
+from NessieAI.router.family_labels import corpus_snapshot
+from NessieAI.hibayes.conservation import (
     ConservationReport,
     FitAdmission,
     build_conservation_report,
     build_fit_admission,
 )
-from nextseek_api.eval.disposition import ArmBucket, classify_arm
-from nextseek_api.eval.fit.v14.combined import CombinedFitResult, run_v14_generation
-from nextseek_api.eval.fit.v14.fit_config import V14FitConfig
-from nextseek_api.eval.fit.v14.pair_rows import PairFitRow, build_pair_rows
-from nextseek_api.eval.paired_run import PairedExperimentalBatch, build_paired_batch
-from nextseek_api.eval.paired_run_registry import content_hash_for_batch
-from nextseek_api.eval.router_models_proposal import (
+from NessieAI.hibayes.disposition import ArmBucket, classify_arm
+from NessieAI.hibayes.fit.v14.combined import CombinedFitResult, run_v14_generation
+from NessieAI.hibayes.fit.v14.fit_config import V14FitConfig
+from NessieAI.hibayes.fit.v14.pair_rows import PairFitRow, build_pair_rows
+from NessieAI.hibayes.paired_run import PairedExperimentalBatch, build_paired_batch
+from NessieAI.hibayes.paired_run_registry import content_hash_for_batch
+from NessieAI.hibayes.router_models_proposal import (
     ArtifactStatus,
     ErrorClass,
     EvalRow,
@@ -44,7 +44,7 @@ from nextseek_api.eval.router_models_proposal import (
 )
 
 if TYPE_CHECKING:
-    from nextseek_api.eval.publish import PublicationEvidence
+    from NessieAI.hibayes.publish import PublicationEvidence
 
 __all__ = [
     "DEFAULT_EVIDENCE_IDENTITY",
@@ -559,8 +559,8 @@ def _publication_evidence_from_derived_facts(
     admission: FitAdmission,
     pair_rows: tuple[PairFitRow, ...],
 ):
-    from nextseek_api.eval.publish import PublicationEvidence
-    from nextseek_api.eval.fit.v14.latency_model import LatencyFitResult
+    from NessieAI.hibayes.publish import PublicationEvidence
+    from NessieAI.hibayes.fit.v14.latency_model import LatencyFitResult
 
     current = corpus_snapshot()
     member_hashes = source_hashes.get("member_sha256")
@@ -701,7 +701,7 @@ def build_human_grade_fit(
     training_corpus_sha256 = identity.member_sha256["corpus/corpus.json"]
 
     manifest_raw = json.loads(members["set3_final/bayes_manifest.json"])
-    from nessie_tests.bayes_manifest import BayesManifest
+    from NessieAI.tests.nessie_tests.bayes_manifest import BayesManifest
 
     BayesManifest.model_validate(manifest_raw)
     pairs_raw = manifest_raw.get("pairs") or []
@@ -896,7 +896,7 @@ def build_human_grade_fit(
 
 def manifest_for_combined(fit: CombinedFitResult, evidence: PublicationEvidence):
     """Create an inspectable manifest; publication separately enforces authority."""
-    from nextseek_api.eval.publish import manifest_for_combined as _manifest
+    from NessieAI.hibayes.publish import manifest_for_combined as _manifest
 
     return _manifest(fit, evidence, for_publication=False)
 
@@ -912,16 +912,16 @@ def publish_human_grade_fit(
     from django.utils import timezone as dj_timezone
 
     from nextseek_api.assistant.models_db import FamilyPosterior, PosteriorGeneration
-    from nextseek_api.eval.conservation import build_fit_admission as checked_admission
-    from nextseek_api.eval.disposition import classify_arm as checked_classify_arm
-    from nextseek_api.eval.fit.v14.pair_rows import build_pair_rows as checked_pair_rows
-    from nextseek_api.eval.fit.fit_boundary import (
+    from NessieAI.hibayes.conservation import build_fit_admission as checked_admission
+    from NessieAI.hibayes.disposition import classify_arm as checked_classify_arm
+    from NessieAI.hibayes.fit.v14.pair_rows import build_pair_rows as checked_pair_rows
+    from NessieAI.hibayes.fit.fit_boundary import (
         assert_paired_experimental_only,
         validate_publish_provenance,
     )
-    from nextseek_api.eval import generation_store
-    from nextseek_api.eval.paired_run_registry import register_paired_run
-    from nextseek_api.eval.publish import manifest_for_combined as _manifest
+    from NessieAI.hibayes import generation_store
+    from NessieAI.hibayes.paired_run_registry import register_paired_run
+    from NessieAI.hibayes.publish import manifest_for_combined as _manifest
 
     # Pydantic's frozen model prevents field replacement, but its nested dicts
     # remain mutable. Re-authenticate the exact content boundary before any
@@ -1100,7 +1100,7 @@ def activate_human_grade_generation(
 ):
     """Explicit CAS activation; publishing never calls this function."""
     from nextseek_api.assistant.models_db import PosteriorGeneration
-    from nextseek_api.eval.generation_store import activate_generation
+    from NessieAI.hibayes.generation_store import activate_generation
 
     generation = PosteriorGeneration.objects.get(generation_hash=generation_hash)
     return activate_generation(

@@ -86,12 +86,12 @@ from nextseek_api.assistant.models_api import (
     SubmissionRequest,
     SubmissionResponse,
 )
-from nextseek_api.assistant.granular import OpValidationError, run_op
-from nextseek_api.assistant.write_gate import WriteBlockedError, build_gate, load_allowlist
+from NessieAI.ns.granular import OpValidationError, run_op
+from NessieAI.ns.write_gate import WriteBlockedError, build_gate, load_allowlist
 from nextseek_api.permissions import may_read_any_users_data
 from nextseek_api.assistant.models_db import ChatSession, QueryTask
-from nextseek_api.assistant.debug_projection import bundle_debug_entries
-from nextseek_api.assistant.bundle_download import bundle_metadata
+from NessieAI.ns.debug_projection import bundle_debug_entries
+from NessieAI.ns.bundle_download import bundle_metadata
 from nextseek_api.assistant.excel_export import build_artifacts
 from rest_framework.authentication import (
     BasicAuthentication,

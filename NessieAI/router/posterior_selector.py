@@ -5,8 +5,8 @@ from dataclasses import dataclass
 
 from django.conf import settings
 
-from nextseek_api.cc_assistant.family_labels import corpus_snapshot
-from nextseek_api.eval.generation_store import GenerationSnapshot, get_active_snapshot
+from NessieAI.router.family_labels import corpus_snapshot
+from NessieAI.hibayes.generation_store import GenerationSnapshot, get_active_snapshot
 
 __all__ = ["SelectorResult", "posterior_routing_enabled", "select_route"]
 

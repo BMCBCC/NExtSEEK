@@ -19,14 +19,14 @@ block was written to remove, reintroduced by the policy block itself.
 """
 from pathlib import Path
 
-from nessie_tests import corpus
+from NessieAI.tests.nessie_tests import corpus
 
 HERE = Path(__file__).resolve().parents[1]
 CORPUS = HERE / "corpus.json"
 
 
 def _variant(vid, family, tags):
-    from e2e.catalog import Turn, Variant
+    from NessieAI.tests.e2e.catalog import Turn, Variant
     return Variant(family=family, id=vid, name="n", tags=tags, requires_env=[],
                    turns=[Turn(label="m", query="q", pass_criteria=[
                        {"field": "parser_plan.mode", "op": "eq", "value": "new_search"}])])

@@ -8,7 +8,7 @@ uses of `str(run_id)` are unchanged (pinned by test_cc_load_bearing_run_id.py).
 """
 from chat_nextseek.chat_memory import validate_chat_log_entry
 
-from nextseek_api.cc_assistant.cc_turn_complete import (
+from NessieAI.cc.cc_turn_complete import (
     TurnCompletePayload,
     apply_turn_to_extra_state,
     serialize_cc_chat_log_entry,

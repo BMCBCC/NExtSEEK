@@ -2,8 +2,8 @@
 import hashlib
 from pathlib import Path
 
-from nextseek_api.cc_assistant.baml_introspect import declared_family_members
-from nextseek_api.cc_assistant.family_labels import corpus_snapshot, declared_labels, type_builder
+from NessieAI.router.baml_introspect import declared_family_members
+from NessieAI.router.family_labels import corpus_snapshot, declared_labels, type_builder
 
 _REPO = Path(__file__).resolve().parents[3]
 _A = _REPO / "dmac_assistant" / "baml_src" / "router.baml"

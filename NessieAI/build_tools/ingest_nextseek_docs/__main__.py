@@ -7,21 +7,21 @@ import sys
 from pathlib import Path
 from typing import Callable
 
-from build_tools.ingest_nextseek_docs.constants import (
+from NessieAI.build_tools.ingest_nextseek_docs.constants import (
     DEFAULT_CLAUDE_MD_PATH,
     DEFAULT_DOC_URL,
     DEFAULT_DOCS_DIR,
 )
-from build_tools.ingest_nextseek_docs.fetch import (
+from NessieAI.build_tools.ingest_nextseek_docs.fetch import (
     load_gitbook_markdown_corpus,
 )
-from build_tools.ingest_nextseek_docs.hashing import (
+from NessieAI.build_tools.ingest_nextseek_docs.hashing import (
     compute_content_hash,
     read_stored_hash,
     write_stored_hash,
 )
-from build_tools.ingest_nextseek_docs.split import Section, split_by_h1
-from build_tools.ingest_nextseek_docs.toc import (
+from NessieAI.build_tools.ingest_nextseek_docs.split import Section, split_by_h1
+from NessieAI.build_tools.ingest_nextseek_docs.toc import (
     render_claude_md_block,
     render_readme,
     update_claude_md,

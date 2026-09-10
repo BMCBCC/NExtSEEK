@@ -24,8 +24,8 @@ from pathlib import Path
 
 import pytest
 
-from nextseek_api.cc_assistant import cc_engine, cc_staging
-from nextseek_api.cc_assistant.cc_provision import project_dirname
+from NessieAI.cc import cc_engine, cc_staging
+from NessieAI.cc.cc_provision import project_dirname
 
 # Ported upstream staging source (worktree copy cited by the sweep's parity).
 PORTED_STAGING = (

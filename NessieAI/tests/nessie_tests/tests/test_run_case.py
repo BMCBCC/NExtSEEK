@@ -6,8 +6,8 @@ of those moved, the refactor was not pure.
 """
 import pathlib
 
-from nessie_tests import corpus, runner
-from nessie_tests.manifest import NessieManifestEntry
+from NessieAI.tests.nessie_tests import corpus, runner
+from NessieAI.tests.nessie_tests.manifest import NessieManifestEntry
 
 CORPUS = pathlib.Path(__file__).resolve().parents[1] / "corpus.json"
 
@@ -333,8 +333,8 @@ def test_no_artifact_criterion_left_scored_on_a_cc_arm_is_guaranteed_red():
     still being SCORED to pass. Anything that cannot is a guaranteed false red,
     which is the whole defect class this fix exists to remove.
     """
-    from nessie_tests import evaluate
-    from nessie_tests.route_observer import RouteObservation
+    from NessieAI.tests.nessie_tests import evaluate
+    from NessieAI.tests.nessie_tests.route_observer import RouteObservation
 
     obs = RouteObservation("container_cc", None, "forced", "", None, "container_cc")
     by_id = {v.id: v for v in corpus.merged(CORPUS)}

@@ -1,5 +1,5 @@
 import pytest
-from nessie_tests import bundle
+from NessieAI.tests.nessie_tests import bundle
 
 RICH = {"memory_payload": {"data": {"samples": [
     {"id": 1, "uuid": "u1", "sample_type": "D.SEQ", "json_metadata": {"species": "Mus"}}]}}}

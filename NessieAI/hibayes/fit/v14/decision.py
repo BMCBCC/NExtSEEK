@@ -7,15 +7,15 @@ from typing import Sequence
 
 import numpy as np
 
-from nextseek_api.eval.conservation import FitAdmission, SupportGateConfig, check_support_gate
-from nextseek_api.eval.fit.v14.fit_config import V14FitConfig
-from nextseek_api.eval.fit.v14.latency_model import (
+from NessieAI.hibayes.conservation import FitAdmission, SupportGateConfig, check_support_gate
+from NessieAI.hibayes.fit.v14.fit_config import V14FitConfig
+from NessieAI.hibayes.fit.v14.latency_model import (
     DescriptiveLatencyResult,
     LatencyFitResult,
     latency_win_probability,
 )
-from nextseek_api.eval.fit.v14.pair_rows import JointQualityState, PairFitRow
-from nextseek_api.eval.fit.v14.quality_model import QualityFitResult
+from NessieAI.hibayes.fit.v14.pair_rows import JointQualityState, PairFitRow
+from NessieAI.hibayes.fit.v14.quality_model import QualityFitResult
 
 __all__ = [
     "CandidateDecision",

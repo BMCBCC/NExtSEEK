@@ -11,8 +11,8 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from nextseek_api.eval import judge  # noqa: E402
-from nextseek_api.eval.judge_models import (  # noqa: E402
+from NessieAI.hibayes import judge  # noqa: E402
+from NessieAI.hibayes.judge_models import (  # noqa: E402
     FunctionalEvaluation,
     FunctionalOutcome,
     PrimaryIssue,

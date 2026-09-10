@@ -36,7 +36,7 @@ from pathlib import Path
 
 import pytest
 
-from nextseek_api.cc_assistant import cc_engine
+from NessieAI.cc import cc_engine
 
 PW = "hunter2-s3cr3t"
 USER = "demo"

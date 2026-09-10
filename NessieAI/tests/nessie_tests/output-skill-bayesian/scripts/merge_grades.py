@@ -19,7 +19,7 @@ import sys
 # This script ships INSIDE nessie_tests, so the repo root is three levels up.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
 
-from nessie_tests.output_skill_bayesian import merge_grades  # noqa: E402
+from NessieAI.tests.nessie_tests.output_skill_bayesian import merge_grades  # noqa: E402
 
 if __name__ == "__main__":
     sys.exit(merge_grades.main())

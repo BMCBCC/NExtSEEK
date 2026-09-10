@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from e2e.import_env import (
+from NessieAI.tests.e2e.import_env import (
     _read_env_file, _interpolate, load_docker_env, load_prod_overrides,
     render_dotenv, write_env,
 )

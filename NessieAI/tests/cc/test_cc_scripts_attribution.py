@@ -96,7 +96,7 @@ def test_extract_step7_upstream_catalog_from_fixtures(tmp_path):
 
 def test_step7_validator_dry_run_estimate_and_unexpected(monkeypatch, tmp_path):
     mod = load_cc("scripts/step7_validator_dry_run.py")
-    from nextseek_api.cc_assistant.tests import step7_compose_fixtures as fx
+    from NessieAI.tests.cc import step7_compose_fixtures as fx
 
     def fake_run(cmd, **kw):
         b = Path(cmd[-2])
@@ -331,7 +331,7 @@ def test_gate3d_per_op_run_and_budget(monkeypatch, tmp_path):
         cc_state_mnt = str(tmp_path / "ccstate")
 
     monkeypatch.setattr(
-        "nextseek_api.cc_assistant.cc_provision.build_user_dirs",
+        "NessieAI.cc.cc_provision.build_user_dirs",
         lambda *a, **k: Dirs(),
     )
 

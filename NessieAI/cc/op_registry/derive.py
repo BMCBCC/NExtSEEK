@@ -5,7 +5,7 @@ import ast
 import json
 from pathlib import Path
 
-from nextseek_api.cc_assistant.op_registry.models import OpSpec, Transport
+from NessieAI.cc.op_registry.models import OpSpec, Transport
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 WS_CONTRACT = (

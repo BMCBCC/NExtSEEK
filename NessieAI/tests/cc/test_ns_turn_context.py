@@ -5,7 +5,7 @@ from pathlib import Path
 import orjson
 import pytest
 
-from nextseek_api.cc_assistant import ns_turn_context as ntc
+from NessieAI.cc import ns_turn_context as ntc
 
 
 def _bundle(bid=1, rows=None, total=222):

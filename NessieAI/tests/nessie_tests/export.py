@@ -18,7 +18,7 @@ would put a verdict on something the run did not observe.
 
 * `provider_outage` -- every provider in the fallback chain returned 503, so the
   turn carries an error message where an answer should be and no product code
-  ran (see `nessie_tests.outage`). Ten of the eighteen reds in the 2026-08-03
+  ran (see `NessieAI.tests.nessie_tests.outage`). Ten of the eighteen reds in the 2026-08-03
   seed-6 run were one such outage.
 * `never_executed` -- at full tier the only route to `skipped` is an unset
   `requires_env` (runner.py:128-133), which returns before `http_driver.drive`.
@@ -82,13 +82,13 @@ import os
 import pathlib
 import sys
 
-from nessie_tests import bayes_manifest, collect, corpus, outage
+from NessieAI.tests.nessie_tests import bayes_manifest, collect, corpus, outage
 
 # Imported, never restated. `collect` owns the task-row status vocabulary and
 # `manifest` owns the statuses that mean the harness never issued a request; a
 # second copy of either here is the duplication the outage rule forbids.
-from nessie_tests.collect import _TERMINAL
-from nessie_tests.manifest import _NEVER_EXECUTED
+from NessieAI.tests.nessie_tests.collect import _TERMINAL
+from NessieAI.tests.nessie_tests.manifest import _NEVER_EXECUTED
 
 HIBAYES_CSV_COLUMNS: tuple[str, ...] = (
     "query_id", "task_family", "task_subtype", "image", "answer_provided",
@@ -1171,7 +1171,7 @@ def export_stage_b(manifest, out_dir, artifacts_dir=None, corpus_path=None,
 
 
 # --- the command SKILL.md names ----------------------------------------------
-# This module was documented as `python -m nessie_tests.export --run <dir>` and had
+# This module was documented as `python -m NessieAI.tests.nessie_tests.export --run <dir>` and had
 # no entry point at all, so the documented step exited 0, printed nothing and
 # wrote nothing -- and the failure surfaced four steps later, after the grading
 # pass, as a FileNotFoundError out of `merge_grades`.
@@ -1187,7 +1187,7 @@ _DEADLINE_CONSEQUENCE = (
     "indistinguishable here from one that answered.")
 
 _COLLECTION_GAP = (
-    "Run step 1 first: `python -m nessie_tests.collect --run <run>` (see "
+    "Run step 1 first: `python -m NessieAI.tests.nessie_tests.collect --run <run>` (see "
     "nessie_tests/output-skill-bayesian/SKILL.md). Proceeding anyway is "
     "supported; reading the result as a measured run is not.")
 

@@ -7,8 +7,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from nextseek_api.eval.conservation import FitAdmission
-from nextseek_api.eval.router_models_proposal import RouteFamilyAggregate
+from NessieAI.hibayes.conservation import FitAdmission
+from NessieAI.hibayes.router_models_proposal import RouteFamilyAggregate
 
 __all__ = [
     "JointQualityState",
@@ -104,7 +104,7 @@ def build_pair_rows(
     paired_batch: "PairedExperimentalBatch | None" = None,
 ) -> list[PairFitRow]:
     if paired_batch is not None:
-        from nextseek_api.eval.fit.fit_boundary import (
+        from NessieAI.hibayes.fit.fit_boundary import (
             assert_paired_experimental_only,
             require_approved_paired_run,
         )

@@ -37,14 +37,16 @@ import django  # noqa: E402
 
 django.setup()
 
-from nextseek_api.cc_assistant import (  # noqa: E402
+from NessieAI.cc import (  # noqa: E402
     cc_config,
     cc_engine,
     cc_summary,
     cc_trace,
+)
+from NessieAI.tests.cc import (  # noqa: E402
     step7_per_op_evidence as ev,
 )
-from nextseek_api.cc_assistant.tests.validate_cc_acceptance import OPUS  # noqa: E402
+from NessieAI.tests.cc.validate_cc_acceptance import OPUS  # noqa: E402
 
 # Per-turn Bedrock budget cap — the ported/UI value (live NEXTSEEK_CC_MAX_BUDGET_USD).
 # Passed to each run_cc_turn; the engine also emits --max-budget-usd from the env.
@@ -151,7 +153,7 @@ def _run_one_op(op: str, *, bundle: Path, user_id: str, project: str,
         reply = str(data.get("reply") or "")
         cc_session_id = data.get("cc_session_id")
 
-    from nextseek_api.cc_assistant.cc_provision import build_user_dirs
+    from NessieAI.cc.cc_provision import build_user_dirs
     ud = build_user_dirs(paths, project, user_id, session_id=cc_state_key)
     steps, tx_session, raw = _read_transcript_steps(ud.cc_state_mnt, since=since)
     if not cc_session_id:

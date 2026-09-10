@@ -18,7 +18,7 @@ selection and is skip-silent by default.
 
 Run:
   RUN_SCHEMA_RAG_LIVE=1 uv run python manage.py test \
-    nextseek_api.schema_rag.tests.test_schema_rag_live \
+    NessieAI.tests.schema_rag.test_schema_rag_live \
     --settings=dmac.test_settings --noinput
 """
 

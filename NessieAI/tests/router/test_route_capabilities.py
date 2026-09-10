@@ -13,32 +13,32 @@ from typing import Any
 
 import pytest
 
-from build_tools.gen_op_surfaces.constants import (
+from NessieAI.build_tools.gen_op_surfaces.constants import (
     BAKED_CAPABILITIES_REL,
     CANONICAL_CAPABILITIES_REL,
     ROUTE_CAPABILITIES_REL,
 )
-from build_tools.gen_op_surfaces.route_capabilities import (
+from NessieAI.build_tools.gen_op_surfaces.route_capabilities import (
     build_route_capabilities_payload,
     render_route_capabilities_bytes,
 )
 from dmac_assistant.router.capabilities import load_capabilities
-from nessie_tests import corpus as nessie_corpus
-from nessie_tests import export as nexport
-from nessie_tests import runner as nessie_runner
-from nextseek_api.cc_assistant.op_registry.install_oracle import discover_install
-from nextseek_api.cc_assistant.op_registry.ns_capabilities import (
+from NessieAI.tests.nessie_tests import corpus as nessie_corpus
+from NessieAI.tests.nessie_tests import export as nexport
+from NessieAI.tests.nessie_tests import runner as nessie_runner
+from NessieAI.cc.op_registry.install_oracle import discover_install
+from NessieAI.cc.op_registry.ns_capabilities import (
     STALE_PIPELINE_PHRASE,
     NsCapabilitiesError,
     project_ns_capabilities,
 )
-from nextseek_api.cc_assistant.op_registry.ops import OPS
-from nextseek_api.cc_assistant.op_registry.paired_evidence import (
+from NessieAI.cc.op_registry.ops import OPS
+from NessieAI.cc.op_registry.paired_evidence import (
     FORCED_IMAGE_BY_ARM,
     arm_success,
     load_committed_evidence,
 )
-from nextseek_api.cc_assistant.op_registry.routes import (
+from NessieAI.cc.op_registry.routes import (
     GENERIC_CC_BUILTINS,
     NEXTSEEK_QUERY_TOOLS,
 )
@@ -521,7 +521,7 @@ def test_arm_and_grade_mutations_change_or_fail_expected_output() -> None:
     missing = copy.deepcopy(evidence)
     missing["records"] = missing["records"][1:]
     with pytest.raises(Exception):
-        from nextseek_api.cc_assistant.op_registry.paired_evidence import (
+        from NessieAI.cc.op_registry.paired_evidence import (
             validate_committed_structure,
         )
 
@@ -531,7 +531,7 @@ def test_arm_and_grade_mutations_change_or_fail_expected_output() -> None:
     duplicate = copy.deepcopy(evidence)
     duplicate["records"] = [duplicate["records"][0], duplicate["records"][0]]
     with pytest.raises(Exception):
-        from nextseek_api.cc_assistant.op_registry.paired_evidence import (
+        from NessieAI.cc.op_registry.paired_evidence import (
             validate_committed_structure,
         )
 

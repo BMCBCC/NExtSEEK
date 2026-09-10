@@ -11,7 +11,7 @@ What this test buys is that the divergence is never SILENT.
 import json
 import pathlib
 
-from nessie_tests import corpus
+from NessieAI.tests.nessie_tests import corpus
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 UNIFIED = ROOT / "corpus.json"

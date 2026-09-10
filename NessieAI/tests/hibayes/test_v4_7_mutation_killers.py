@@ -3,11 +3,11 @@ from __future__ import annotations
 
 import pytest
 
-from nextseek_api.eval.evidence_kinds import EvidenceKind, OnlineEvidenceRejected
-from nextseek_api.eval.fit.fit_boundary import assert_paired_experimental_only, validate_publish_provenance
-from nextseek_api.eval.online_observation import DEFAULT_SELECTION_CAVEAT, OnlineObservationalRow
-from nextseek_api.eval.paired_run import build_paired_batch
-from nextseek_api.eval.router_models_proposal import RouteSource
+from NessieAI.hibayes.evidence_kinds import EvidenceKind, OnlineEvidenceRejected
+from NessieAI.hibayes.fit.fit_boundary import assert_paired_experimental_only, validate_publish_provenance
+from NessieAI.hibayes.online_observation import DEFAULT_SELECTION_CAVEAT, OnlineObservationalRow
+from NessieAI.hibayes.paired_run import build_paired_batch
+from NessieAI.hibayes.router_models_proposal import RouteSource
 
 
 def test_mutation_online_kind_must_be_rejected():

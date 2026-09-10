@@ -6,7 +6,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from nextseek_api.eval.router_models_proposal import (
+from NessieAI.hibayes.router_models_proposal import (
     ArtifactStatus,
     Disposition,
     ErrorClass,

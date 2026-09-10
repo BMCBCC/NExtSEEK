@@ -10,8 +10,8 @@ from unittest.mock import patch, MagicMock
 
 from django.test import SimpleTestCase
 
-from nextseek_api.assistant.granular import OpValidationError, run_op
-from nextseek_api.assistant.write_gate import (
+from NessieAI.ns.granular import OpValidationError, run_op
+from NessieAI.ns.write_gate import (
     WriteBlockedError,
     build_gate,
     load_allowlist_from_entries,

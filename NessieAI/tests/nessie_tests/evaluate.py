@@ -7,8 +7,8 @@ from typing import Any
 from nessie_tests.pathsetup import ensure_e2e_importable
 
 ensure_e2e_importable()
-from e2e.criteria import check_pass, resolve_field  # noqa: E402
-from nessie_tests import route_observer as ro
+from NessieAI.tests.e2e.criteria import check_pass, resolve_field  # noqa: E402
+from NessieAI.tests.nessie_tests import route_observer as ro
 
 # Criteria in the base catalog address produced files as `api_artifact.<name>`.
 # e2e resolves those against a `run_root` on disk, but nessie drives the async
@@ -25,14 +25,14 @@ ARTIFACT_INDEX_KEY = "nessie_artifact_index"
 # criterion — `graph.what_mice_are_in_the_impact_st` passed every assertion in
 # the 2026-07-24 run while returning exactly 250 rows. Both the historical cap
 # and the current one are listed so an old deployment is still caught.
-# Re-exported for back-compat; the definition moved to nessie_tests.limits so
+# Re-exported for back-compat; the definition moved to NessieAI.tests.nessie_tests.limits so
 # consistency.py can use it without importing e2e.criteria and openpyxl.
-from nessie_tests.limits import GRAPH_LIMIT_SENTINELS  # noqa: E402,F401
+from NessieAI.tests.nessie_tests.limits import GRAPH_LIMIT_SENTINELS  # noqa: E402,F401
 
 # Provider-outage detection. Re-exported rather than reimplemented: consistency.py
 # needs the same verdict and cannot import this module (openpyxl, e2e.criteria), so
-# the detector itself lives in the dependency-free nessie_tests.outage.
-from nessie_tests.outage import (  # noqa: E402,F401
+# the detector itself lives in the dependency-free NessieAI.tests.nessie_tests.outage.
+from NessieAI.tests.nessie_tests.outage import (  # noqa: E402,F401
     OUTAGE_REASON, PROVIDER_OUTAGE_MARKER, is_provider_outage,
 )
 

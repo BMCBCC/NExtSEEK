@@ -1,4 +1,4 @@
-from nessie_tests import consistency as c
+from NessieAI.tests.nessie_tests import consistency as c
 
 
 def _fake_drive(mapping):
@@ -43,7 +43,7 @@ def test_get_result_count_from_debug():
     assert c.get_result_count(payload) == 42
 
 
-from nessie_tests import consistency
+from NessieAI.tests.nessie_tests import consistency
 
 # --------------------------------------------------------------------------- #
 # T3.2 / T3.3 — the group used to prove nothing.
@@ -130,7 +130,7 @@ def test_differing_counts_still_fail():
 
 
 def test_count_not_limit_catches_every_known_graph_limit():
-    from nessie_tests.limits import GRAPH_LIMIT_SENTINELS
+    from NessieAI.tests.nessie_tests.limits import GRAPH_LIMIT_SENTINELS
 
     for limit in GRAPH_LIMIT_SENTINELS:
         gr = consistency.run_group(

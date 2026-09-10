@@ -54,7 +54,7 @@ from .process import TaskFamilyFunctionalAggregate, aggregate_by_task_family
 # resolves this against the installed package, so `--help` triggers per-axis
 # YAML ModelConfig discovery via argparse default-value computation below.
 _DEFAULT_CONFIG_RESOURCE = (
-    "nextseek_api.eval.fit.vendor.hibayes_functional_usefulness",
+    "NessieAI.hibayes.fit.vendor.hibayes_functional_usefulness",
     "config/hibayes_functional_usefulness.yaml",
 )
 
@@ -358,7 +358,7 @@ def run_functional_axis(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="nextseek_api.eval.fit.vendor.hibayes_functional_usefulness.run_hibayes",
+        prog="NessieAI.hibayes.fit.vendor.hibayes_functional_usefulness.run_hibayes",
     )
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument(

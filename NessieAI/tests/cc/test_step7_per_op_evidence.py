@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from nextseek_api.cc_assistant import step7_per_op_evidence as ev
+from NessieAI.tests.cc import step7_per_op_evidence as ev
 
 
 def _bash(line, cmd, status="ok"):
@@ -182,7 +182,7 @@ def test_shared_run_id_is_a_violation():
 
 
 def test_bin_ops_match_query_inventory():
-    from nextseek_api.cc_assistant import bin_inventory
+    from NessieAI.tests.cc import bin_inventory
 
     assert tuple(ev.BIN_OPS) == bin_inventory.discover_ops("query")
     assert "nextseek-api-write" in ev.BIN_OPS

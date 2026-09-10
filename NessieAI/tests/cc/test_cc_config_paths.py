@@ -1,5 +1,5 @@
 """Hermetic tests for the G7-10 CCPaths named-volume config."""
-from nextseek_api.cc_assistant import cc_config
+from NessieAI.cc import cc_config
 
 
 def test_ccpaths_has_volume_defaults(monkeypatch):

@@ -5,10 +5,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from nessie_tests import export as paired_export
-from nextseek_api.eval.attempt_store import AttemptStore, AttemptStoreError
-from nextseek_api.eval.disposition import OutcomeBucket, classify_arm, should_call_judge
-from nextseek_api.eval.human_annotations import (
+from NessieAI.tests.nessie_tests import export as paired_export
+from NessieAI.hibayes.attempt_store import AttemptStore, AttemptStoreError
+from NessieAI.hibayes.disposition import OutcomeBucket, classify_arm, should_call_judge
+from NessieAI.hibayes.human_annotations import (
     HumanAnnotation,
     HumanAnnotationError,
     HumanAnnotationContext,
@@ -17,7 +17,7 @@ from nextseek_api.eval.human_annotations import (
     content_hash,
     map_human_label,
 )
-from nextseek_api.eval.router_models_proposal import (
+from NessieAI.hibayes.router_models_proposal import (
     ArtifactStatus,
     ErrorClass,
     EvalRow,
@@ -117,7 +117,7 @@ def test_human_annotation_default_and_tamper_paths_are_fail_closed():
 
 def test_human_annotation_rejects_corrupt_vocabulary_membership_and_corpus_identity(monkeypatch):
     """A vocabulary/config inconsistency cannot silently turn a sidecar into a score."""
-    import nextseek_api.eval.human_annotations as annotations
+    import NessieAI.hibayes.human_annotations as annotations
 
     original_vocabulary = annotations.HUMAN_VOCABULARY
     monkeypatch.setattr(annotations, "HUMAN_VOCABULARY", frozenset({"future"}))

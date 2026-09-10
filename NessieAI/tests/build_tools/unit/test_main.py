@@ -1,4 +1,4 @@
-"""Unit tests for build_tools.ingest_nextseek_docs.__main__."""
+"""Unit tests for NessieAI.build_tools.ingest_nextseek_docs.__main__."""
 from __future__ import annotations
 
 import inspect
@@ -9,8 +9,8 @@ from unittest.mock import patch
 
 import pytest
 
-from build_tools.ingest_nextseek_docs import __main__ as orchestrator
-from build_tools.ingest_nextseek_docs.constants import BEGIN_MARKER, END_MARKER
+from NessieAI.build_tools.ingest_nextseek_docs import __main__ as orchestrator
+from NessieAI.build_tools.ingest_nextseek_docs.constants import BEGIN_MARKER, END_MARKER
 
 
 def _markdown(sections: list[tuple[str, str]]) -> str:
@@ -199,7 +199,7 @@ def test_ingest_emits_info_logs_and_status_line(
 ) -> None:
     import logging
 
-    caplog.set_level(logging.INFO, logger="build_tools.ingest_nextseek_docs")
+    caplog.set_level(logging.INFO, logger="NessieAI.build_tools.ingest_nextseek_docs")
     docs_dir = tmp_path / "docs" / "nextseek"
     claude_md = tmp_path / "container" / "CLAUDE.md"
     _seed_claude_md(claude_md)
@@ -221,7 +221,7 @@ def test_ingest_emits_info_logs_and_status_line(
         record
         for record in caplog.records
         if record.levelno == logging.INFO
-        and record.name.startswith("build_tools.ingest_nextseek_docs")
+        and record.name.startswith("NessieAI.build_tools.ingest_nextseek_docs")
     ]
     assert len(info_records) >= 1
 
@@ -252,12 +252,12 @@ def test_ingest_preserves_existing_readme_md_during_cleanup(tmp_path: Path) -> N
 
 def test_cli_module_help_mentions_force_flag() -> None:
     # Plan A · Amendment 7 v2: build_tools is a sibling project; tests run
-    # from build_tools/ as cwd. Subprocess `python -m build_tools.X` needs
+    # from build_tools/ as cwd. Subprocess `python -m NessieAI.build_tools.X` needs
     # cwd at repo root so the `build_tools` package is on Python's default
     # sys.path (containing '').
     repo_root = Path(__file__).resolve().parents[3]
     result = subprocess.run(
-        [sys.executable, "-m", "build_tools.ingest_nextseek_docs", "--help"],
+        [sys.executable, "-m", "NessieAI.build_tools.ingest_nextseek_docs", "--help"],
         capture_output=True,
         text=True,
         cwd=repo_root,

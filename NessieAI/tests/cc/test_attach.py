@@ -6,7 +6,7 @@ import struct
 
 import pytest
 
-from nextseek_api.cc_assistant.attach import BridgeAttachSocket
+from NessieAI.cc.attach import BridgeAttachSocket
 
 
 class _Raw:

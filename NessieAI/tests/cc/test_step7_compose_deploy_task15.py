@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from nextseek_api.cc_assistant.tests.step7_compose_fixtures import (
+from NessieAI.tests.cc.step7_compose_fixtures import (
     GATE_PROJECT,
     GATE_USER_ID,
     RUN_ID,
@@ -28,11 +28,11 @@ from nextseek_api.cc_assistant.tests.step7_compose_fixtures import (
     _names,
     _repo_with_transcript,
 )
-from nextseek_api.cc_assistant.tests.validate_cc_acceptance import (
+from NessieAI.tests.cc.validate_cc_acceptance import (
     is_dmac_cc_net_closed_set_member,
     matrix_executor_name,
 )
-from nextseek_api.cc_assistant.tests.validate_step7_compose_deploy import (
+from NessieAI.tests.cc.validate_step7_compose_deploy import (
     BIN_OPS,
     IN_TURN_HEADROOM_SECS,
     OP_ASSISTANT_ENDPOINT,

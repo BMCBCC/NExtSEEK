@@ -1,5 +1,5 @@
 from pathlib import Path
-from nessie_tests import corpus
+from NessieAI.tests.nessie_tests import corpus
 
 CORPUS = Path(__file__).resolve().parents[1] / "corpus.json"
 
@@ -92,7 +92,7 @@ def test_select_by_family_and_variant():
 # --------------------------------------------------------------------------- #
 
 from pathlib import Path as _P
-from e2e.catalog import PassCriterion, Turn, Variant
+from NessieAI.tests.e2e.catalog import PassCriterion, Turn, Variant
 
 _CORP = _P(__file__).resolve().parents[1] / "corpus.json"
 

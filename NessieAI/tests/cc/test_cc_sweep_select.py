@@ -1,5 +1,6 @@
 """Hermetic: sweep target selection (idle + changed). No Django/Celery import."""
-from nextseek_api.cc_assistant import cc_sweep, cc_memory
+from nextseek_api.cc_assistant import cc_sweep
+from NessieAI.cc import cc_memory
 
 
 def _m(sid, updated_ts, changed):
@@ -71,8 +72,8 @@ def test_run_sweep_skips_empty_path_and_swallows_errors(monkeypatch):
         def from_env():
             return Mem()
 
-    monkeypatch.setattr("nextseek_api.cc_assistant.cc_config.CCPaths.from_env", Paths.from_env)
-    monkeypatch.setattr("nextseek_api.cc_assistant.cc_config.CCMemoryConfig.from_env", Mem.from_env)
+    monkeypatch.setattr("NessieAI.cc.cc_config.CCPaths.from_env", Paths.from_env)
+    monkeypatch.setattr("NessieAI.cc.cc_config.CCMemoryConfig.from_env", Mem.from_env)
     monkeypatch.setattr(
         "nextseek_api.services.cc_assistant._session_metas",
         lambda *a, **k: metas,
@@ -83,15 +84,15 @@ def test_run_sweep_skips_empty_path_and_swallows_errors(monkeypatch):
         lambda *a, **k: persisted.append(a),
     )
     monkeypatch.setattr(
-        "nextseek_api.cc_assistant.cc_summary.summarize_transcript",
+        "NessieAI.cc.cc_summary.summarize_transcript",
         lambda *a, **k: types.SimpleNamespace(model_dump=lambda: {"ok": True}),
     )
     monkeypatch.setattr(
-        "nextseek_api.cc_assistant.cc_summary.fingerprint",
+        "NessieAI.cc.cc_summary.fingerprint",
         lambda raw: "fp",
     )
     monkeypatch.setattr(
-        "nextseek_api.cc_assistant.router._resolve_cc_model_id",
+        "NessieAI.router.router._resolve_cc_model_id",
         lambda: "opus",
     )
     import pathlib

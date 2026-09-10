@@ -20,8 +20,8 @@ from django.conf import settings
 
 from pydantic import ValidationError as PydanticValidationError
 from nextseek_api.models import IngestRequest, RetrieveRequest
-from nextseek_api.schema_rag import service as schema_rag_service
-from nextseek_api.schema_rag.session import (
+from NessieAI.schema_rag import service as schema_rag_service
+from NessieAI.schema_rag.session import (
     create_session,
     load_session_info,
     is_session_expired,
@@ -30,16 +30,16 @@ from nextseek_api.schema_rag.session import (
     get_db_path_for_session,
     _now,
 )
-from nextseek_api.schema_rag.db import (
+from NessieAI.schema_rag.db import (
     init_session_db,
     insert_endpoints,
     load_all_minimal_endpoints,
     load_all_full_endpoints,
     load_full_endpoints_by_ids,
 )
-from nextseek_api.schema_rag.schema_processor import OpenAPISchemaProcessor
-from nextseek_api.schema_rag.models import FullAPIEndpoint, MinimalAPIEndpoint, SessionInfo
-from nextseek_api.schema_rag.errors import (
+from NessieAI.schema_rag.schema_processor import OpenAPISchemaProcessor
+from NessieAI.schema_rag.models import FullAPIEndpoint, MinimalAPIEndpoint, SessionInfo
+from NessieAI.schema_rag.errors import (
     SCHEMA_FETCH_FAILED,
     SCHEMA_TOO_LARGE,
     SESSION_MISSING_OR_EXPIRED,
@@ -242,8 +242,8 @@ class SchemaRAGTestCase(TestCase):
 class IngestionTests(SchemaRAGTestCase):
     """Unit tests for schema ingestion."""
 
-    @patch('nextseek_api.schema_rag.schema_processor.requests.get')
-    @patch('nextseek_api.schema_rag.service._get_embedder')
+    @patch('NessieAI.schema_rag.schema_processor.requests.get')
+    @patch('NessieAI.schema_rag.service._get_embedder')
     def test_ingest_valid_schema(self, mock_embedder, mock_get):
         """Test successful ingestion of a valid OpenAPI schema."""
         # Setup mocks
@@ -266,8 +266,8 @@ class IngestionTests(SchemaRAGTestCase):
         db_path = get_db_path_for_session(result.response.session_id)
         self.assertTrue(os.path.exists(db_path))
 
-    @patch('nextseek_api.schema_rag.schema_processor.requests.get')
-    @patch('nextseek_api.schema_rag.service._get_embedder')
+    @patch('NessieAI.schema_rag.schema_processor.requests.get')
+    @patch('NessieAI.schema_rag.service._get_embedder')
     def test_ingest_missing_operation_id(self, mock_embedder, mock_get):
         """Test that endpoints without operationId get synthesized IDs."""
         # Setup mocks
@@ -290,8 +290,8 @@ class IngestionTests(SchemaRAGTestCase):
         self.assertIn("GET /items", operation_ids)
         self.assertIn("POST /items", operation_ids)
 
-    @patch('nextseek_api.schema_rag.schema_processor.requests.get')
-    @patch('nextseek_api.schema_rag.service._get_embedder')
+    @patch('NessieAI.schema_rag.schema_processor.requests.get')
+    @patch('NessieAI.schema_rag.service._get_embedder')
     def test_ingest_schema_too_large(self, mock_embedder, mock_get):
         """Test that schemas exceeding MAX_ENDPOINTS return SCHEMA_TOO_LARGE error."""
         # Generate schema with more endpoints than allowed
@@ -313,8 +313,8 @@ class IngestionTests(SchemaRAGTestCase):
         self.assertIn("num_endpoints", result.error.details)
         self.assertIn("max_endpoints", result.error.details)
 
-    @patch('nextseek_api.schema_rag.schema_processor.requests.get')
-    @patch('nextseek_api.schema_rag.service._get_embedder')
+    @patch('NessieAI.schema_rag.schema_processor.requests.get')
+    @patch('NessieAI.schema_rag.service._get_embedder')
     def test_ingest_malformed_endpoints(self, mock_embedder, mock_get):
         """Test that malformed endpoints are skipped while valid ones are ingested."""
         mock_get.return_value = self._create_mock_response(OPENAPI_WITH_MALFORMED_ENDPOINTS)
@@ -335,7 +335,7 @@ class IngestionTests(SchemaRAGTestCase):
         self.assertIn("validEndpoint", operation_ids)
         self.assertIn("anotherValid", operation_ids)
 
-    @patch('nextseek_api.schema_rag.schema_processor.requests.get')
+    @patch('NessieAI.schema_rag.schema_processor.requests.get')
     def test_ingest_fetch_failure(self, mock_get):
         """Test that HTTP fetch failures return SCHEMA_FETCH_FAILED error."""
         # Setup mock to raise exception
@@ -351,8 +351,8 @@ class IngestionTests(SchemaRAGTestCase):
         self.assertIsNotNone(result.error)
         self.assertEqual(result.error.error_code, SCHEMA_FETCH_FAILED)
 
-    @patch('nextseek_api.schema_rag.schema_processor.requests.get')
-    @patch('nextseek_api.schema_rag.service._get_embedder')
+    @patch('NessieAI.schema_rag.schema_processor.requests.get')
+    @patch('NessieAI.schema_rag.service._get_embedder')
     def test_ingest_custom_ttl(self, mock_embedder, mock_get):
         """Test that custom TTL is respected in session creation."""
         mock_get.return_value = self._create_mock_response(MINIMAL_OPENAPI)
@@ -370,8 +370,8 @@ class IngestionTests(SchemaRAGTestCase):
         session = load_session_info(result.response.session_id)
         self.assertEqual(session.ttl_minutes, 60)
 
-    @patch('nextseek_api.schema_rag.schema_processor.requests.get')
-    @patch('nextseek_api.schema_rag.service._get_embedder')
+    @patch('NessieAI.schema_rag.schema_processor.requests.get')
+    @patch('NessieAI.schema_rag.service._get_embedder')
     def test_ingest_resolves_refs_end_to_end(self, mock_embedder, mock_get):
         """Test that ingestion resolves $ref and stores actual schema content."""
         mock_get.return_value = self._create_mock_response(OPENAPI_WITH_REFS)
@@ -484,7 +484,7 @@ class SessionLifecycleTests(SchemaRAGTestCase):
         # Verify file is gone
         self.assertFalse(os.path.exists(session.db_path))
 
-    @patch('nextseek_api.schema_rag.session._now')
+    @patch('NessieAI.schema_rag.session._now')
     def test_cleanup_expired_sessions(self, mock_now):
         """Test that cleanup_expired_sessions only removes expired sessions."""
         base_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
@@ -593,7 +593,7 @@ class RetrievalTests(SchemaRAGTestCase):
         embeddings = embeddings / norms
         return embeddings
 
-    @patch('nextseek_api.schema_rag.service.embed_texts')
+    @patch('NessieAI.schema_rag.service.embed_texts')
     def test_retrieve_pass_1_success(self, mock_embed):
         """Test retrieval succeeds in Pass 1 when minimal text matches well."""
         session = self._setup_test_session()
@@ -626,7 +626,7 @@ class RetrievalTests(SchemaRAGTestCase):
         self.assertFalse(response.debug.used_fallback_full)
         self.assertFalse(response.debug.used_enriched_minimal_examples)
 
-    @patch('nextseek_api.schema_rag.service.embed_texts')
+    @patch('NessieAI.schema_rag.service.embed_texts')
     def test_retrieve_pass_2_fallback(self, mock_embed):
         """Test retrieval falls back to Pass 2 when Pass 1 doesn't meet threshold."""
         session = self._setup_test_session()
@@ -662,7 +662,7 @@ class RetrievalTests(SchemaRAGTestCase):
         # Should have used Pass 2
         self.assertTrue(response.debug.used_enriched_minimal_examples)
 
-    @patch('nextseek_api.schema_rag.service.embed_texts')
+    @patch('NessieAI.schema_rag.service.embed_texts')
     def test_retrieve_pass_3_fallback(self, mock_embed):
         """Test retrieval falls back to Pass 3 when Pass 1 and 2 fail threshold."""
         session = self._setup_test_session()
@@ -698,7 +698,7 @@ class RetrievalTests(SchemaRAGTestCase):
         # Should have used Pass 3 (full fallback)
         self.assertTrue(response.debug.used_fallback_full)
 
-    @patch('nextseek_api.schema_rag.service.embed_texts')
+    @patch('NessieAI.schema_rag.service.embed_texts')
     def test_retrieve_no_good_match(self, mock_embed):
         """Test NO_GOOD_MATCH when all passes fail threshold."""
         session = self._setup_test_session()
@@ -728,7 +728,7 @@ class RetrievalTests(SchemaRAGTestCase):
         self.assertEqual(response.debug.error_code, NO_GOOD_MATCH)
         self.assertEqual(response.debug.num_candidates_final, 0)
 
-    @patch('nextseek_api.schema_rag.service.embed_texts')
+    @patch('NessieAI.schema_rag.service.embed_texts')
     def test_retrieve_resolved_terms_boost(self, mock_embed):
         """Test that resolved_terms boosting raises borderline matches above threshold."""
         session = self._setup_test_session()
@@ -774,7 +774,7 @@ class RetrievalTests(SchemaRAGTestCase):
             # With term matching, scores should be higher
             self.assertGreaterEqual(max_with_boost, max_no_boost)
 
-    @patch('nextseek_api.schema_rag.service.embed_texts')
+    @patch('NessieAI.schema_rag.service.embed_texts')
     def test_retrieve_top_k_cap(self, mock_embed):
         """Test that top_k is capped at SCHEMA_RAG_MAX_TOP_K (10)."""
         # Create session with more endpoints
@@ -825,7 +825,7 @@ class RetrievalTests(SchemaRAGTestCase):
         if response.endpoints_minimal:
             self.assertLessEqual(len(response.endpoints_minimal), max_top_k)
 
-    @patch('nextseek_api.schema_rag.service.embed_texts')
+    @patch('NessieAI.schema_rag.service.embed_texts')
     def test_retrieve_min_score_threshold(self, mock_embed):
         """Test that custom min_score threshold filters results correctly."""
         session = self._setup_test_session()
@@ -869,8 +869,8 @@ class RetrievalTests(SchemaRAGTestCase):
         self.assertIsNotNone(response.message)
         self.assertEqual(response.debug.error_code, SESSION_MISSING_OR_EXPIRED)
 
-    @patch('nextseek_api.schema_rag.session._now')
-    @patch('nextseek_api.schema_rag.service._now')
+    @patch('NessieAI.schema_rag.session._now')
+    @patch('NessieAI.schema_rag.service._now')
     def test_retrieve_session_expired(self, mock_service_now, mock_session_now):
         """Test retrieval with expired session returns SESSION_MISSING_OR_EXPIRED."""
         base_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
@@ -900,7 +900,7 @@ class RetrievalTests(SchemaRAGTestCase):
 
         self.assertEqual(response.debug.error_code, SESSION_MISSING_OR_EXPIRED)
 
-    @patch('nextseek_api.schema_rag.service.embed_texts')
+    @patch('NessieAI.schema_rag.service.embed_texts')
     def test_retrieve_mode_minimal(self, mock_embed):
         """Test that mode='minimal' returns endpoints_minimal and not endpoints_full."""
         session = self._setup_test_session()
@@ -931,7 +931,7 @@ class RetrievalTests(SchemaRAGTestCase):
             for ep in response.endpoints_minimal:
                 self.assertIsInstance(ep, MinimalAPIEndpoint)
 
-    @patch('nextseek_api.schema_rag.service.embed_texts')
+    @patch('NessieAI.schema_rag.service.embed_texts')
     def test_retrieve_mode_full(self, mock_embed):
         """Test that mode='full' returns endpoints_full and not endpoints_minimal."""
         session = self._setup_test_session()
@@ -1033,7 +1033,7 @@ class SchemaRAGFilterTests(SchemaRAGTestCase):
         insert_endpoints(session, endpoints)
         return session
 
-    @patch('nextseek_api.schema_rag.service.embed_texts')
+    @patch('NessieAI.schema_rag.service.embed_texts')
     def test_retrieve_filter_by_method(self, mock_embed):
         """Filter by METHOD=['GET'] returns only GET endpoints."""
         session = self._setup_mixed_session()
@@ -1066,7 +1066,7 @@ class SchemaRAGFilterTests(SchemaRAGTestCase):
         # There are 3 GET endpoints in the fixture
         self.assertEqual(len(response.endpoints_minimal), 3)
 
-    @patch('nextseek_api.schema_rag.service.embed_texts')
+    @patch('NessieAI.schema_rag.service.embed_texts')
     def test_retrieve_filter_by_tag(self, mock_embed):
         """Filter by TAG=['Samples'] returns only Samples-tagged endpoints."""
         session = self._setup_mixed_session()
@@ -1097,7 +1097,7 @@ class SchemaRAGFilterTests(SchemaRAGTestCase):
         # 3 endpoints tagged "Samples"
         self.assertEqual(len(response.endpoints_minimal), 3)
 
-    @patch('nextseek_api.schema_rag.service.embed_texts')
+    @patch('NessieAI.schema_rag.service.embed_texts')
     def test_retrieve_filter_by_method_multiple(self, mock_embed):
         """Filter by METHOD=['GET','POST'] returns both method types."""
         session = self._setup_mixed_session()
@@ -1128,7 +1128,7 @@ class SchemaRAGFilterTests(SchemaRAGTestCase):
         # 3 GET + 2 POST = 5
         self.assertEqual(len(response.endpoints_minimal), 5)
 
-    @patch('nextseek_api.schema_rag.service.embed_texts')
+    @patch('NessieAI.schema_rag.service.embed_texts')
     def test_retrieve_top_k_all(self, mock_embed):
         """top_k='ALL' returns more than SCHEMA_RAG_MAX_TOP_K when available."""
         # Create session with 15 endpoints (more than MAX_TOP_K=10)
@@ -1176,7 +1176,7 @@ class SchemaRAGFilterTests(SchemaRAGTestCase):
         self.assertGreater(len(response.endpoints_minimal), max_top_k)
         self.assertEqual(len(response.endpoints_minimal), 15)
 
-    @patch('nextseek_api.schema_rag.service.embed_texts')
+    @patch('NessieAI.schema_rag.service.embed_texts')
     def test_retrieve_filter_with_top_k_all(self, mock_embed):
         """Combine filtering + top_k='ALL': only filtered endpoints returned."""
         session = self._setup_mixed_session()
@@ -1286,7 +1286,7 @@ class ResponseSchemaTests(SchemaRAGTestCase):
         self.assertIsNotNone(endpoints[0].response_schema)
         self.assertIn("data", endpoints[0].response_schema)
 
-    @patch('nextseek_api.schema_rag.service.embed_texts')
+    @patch('NessieAI.schema_rag.service.embed_texts')
     def test_retrieve_full_mode_includes_response_schema(self, mock_embed):
         """Full-mode retrieve should include response_schema in endpoint output."""
         session = self._setup_session_with_response_schema()

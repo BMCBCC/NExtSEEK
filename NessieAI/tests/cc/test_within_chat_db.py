@@ -12,11 +12,11 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
 from nextseek_api.assistant.models_db import ChatSession, QueryTask
-from nextseek_api.cc_assistant import cc_engine
-from nextseek_api.cc_assistant import ns_digest
-from nextseek_api.cc_assistant import router as cc_router
-from nextseek_api.cc_assistant.cc_provision import ProjectIdentity
-from nextseek_api.cc_assistant.cc_turn_complete import TurnCompletePayload
+from NessieAI.cc import cc_engine
+from NessieAI.cc import ns_digest
+from NessieAI.router import router as cc_router
+from NessieAI.cc.cc_provision import ProjectIdentity
+from NessieAI.cc.cc_turn_complete import TurnCompletePayload
 
 pytestmark = pytest.mark.django_db(transaction=True)
 
@@ -58,7 +58,7 @@ def client(user):
 
 def _patch_cc_project(monkeypatch):
     monkeypatch.setattr(
-        "nextseek_api.cc_assistant.cc_provision.resolve_user_project",
+        "NessieAI.cc.cc_provision.resolve_user_project",
         lambda *a, **k: _FAKE_PROJECT,
     )
 

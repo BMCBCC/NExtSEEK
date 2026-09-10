@@ -5,8 +5,8 @@ import os
 from pathlib import Path
 from typing import Iterable
 
-from build_tools.ingest_nextseek_docs.constants import BEGIN_MARKER, END_MARKER
-from build_tools.ingest_nextseek_docs.split import Section
+from NessieAI.build_tools.ingest_nextseek_docs.constants import BEGIN_MARKER, END_MARKER
+from NessieAI.build_tools.ingest_nextseek_docs.split import Section
 
 
 def render_readme(

@@ -1,4 +1,4 @@
-from nessie_tests import http_driver as hd
+from NessieAI.tests.nessie_tests import http_driver as hd
 
 
 def _seq_get_progress(sequence):

@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import pytest
 
 from nextseek_api.assistant.models_api import QueryRequest
-from nextseek_api.cc_assistant import router as cc_router
+from NessieAI.router import router as cc_router
 from nextseek_api.services import cc_assistant as svc
 
 

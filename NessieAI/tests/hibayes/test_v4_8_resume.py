@@ -6,10 +6,10 @@ from decimal import Decimal
 import pytest
 
 from nextseek_api.assistant.models_db import PaidRunState
-from nextseek_api.eval.fake_provider import FakeProviderTransport
-from nextseek_api.eval.judging_engine import JudgeAttemptSpec, JudgingEngine
-from nextseek_api.eval.paid_run_schedule import ScheduleRefused, default_schedule_entrypoint
-from nextseek_api.eval.paid_run_state import (
+from NessieAI.hibayes.fake_provider import FakeProviderTransport
+from NessieAI.hibayes.judging_engine import JudgeAttemptSpec, JudgingEngine
+from NessieAI.hibayes.paid_run_schedule import ScheduleRefused, default_schedule_entrypoint
+from NessieAI.hibayes.paid_run_state import (
     ResumeError,
     acquire_overlap_lock,
     build_cache_key,
@@ -17,8 +17,8 @@ from nextseek_api.eval.paid_run_state import (
     get_attempt_state,
     mark_attempt_succeeded,
 )
-from nextseek_api.eval.run_authorization import approve_run_manifest
-from nextseek_api.eval.tests.v4_8_fixtures import sample_run_manifest
+from NessieAI.hibayes.run_authorization import approve_run_manifest
+from NessieAI.tests.hibayes.v4_8_fixtures import sample_run_manifest
 
 pytestmark = pytest.mark.django_db
 

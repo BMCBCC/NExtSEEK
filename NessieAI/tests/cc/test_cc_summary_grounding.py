@@ -1,7 +1,7 @@
 """Hermetic: evidence verification + fingerprint/change-detection."""
 import pytest
 
-from nextseek_api.cc_assistant import cc_summary
+from NessieAI.cc import cc_summary
 
 types = pytest.importorskip("dmac_assistant.router.baml_client.types")
 

@@ -68,17 +68,17 @@ def _load_granular_with_stubs():
     Returns (module, spies) where spies exposes the mocked
     fetch_reporter_metadata and report_writer_agent for assertions.
     """
-    # 1) Stub the nextseek_api.assistant.write_gate import that granular does at
+    # 1) Stub the NessieAI.ns.write_gate import that granular does at
     #    module top level (avoids pulling django).
     saved = {k: sys.modules.get(k) for k in (
-        "nextseek_api", "nextseek_api.assistant", "nextseek_api.assistant.write_gate",
+        "nextseek_api", "nextseek_api.assistant", "NessieAI.ns.write_gate",
         "chat_nextseek", "chat_nextseek.portable", "chat_nextseek.schemas",
         "chat_nextseek.schemas.chat", "chat_nextseek.helpers",
     )}
 
     pkg_ns = types.ModuleType("nextseek_api"); pkg_ns.__path__ = []
     pkg_assist = types.ModuleType("nextseek_api.assistant"); pkg_assist.__path__ = []
-    mod_wg = types.ModuleType("nextseek_api.assistant.write_gate")
+    mod_wg = types.ModuleType("NessieAI.ns.write_gate")
 
     class WriteBlockedError(Exception):
         pass
@@ -86,7 +86,7 @@ def _load_granular_with_stubs():
     mod_wg.WriteBlockedError = WriteBlockedError
     sys.modules["nextseek_api"] = pkg_ns
     sys.modules["nextseek_api.assistant"] = pkg_assist
-    sys.modules["nextseek_api.assistant.write_gate"] = mod_wg
+    sys.modules["NessieAI.ns.write_gate"] = mod_wg
 
     # 2) Stub the chat_nextseek modules that _generate_submission lazily imports.
     fetch_spy = MagicMock(return_value=_FETCHED_METADATA)

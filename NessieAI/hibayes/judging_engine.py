@@ -4,16 +4,16 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-from nextseek_api.eval.fake_provider import FakeProviderTransport, ProviderCallResult
-from nextseek_api.eval.paid_run_state import (
+from NessieAI.hibayes.fake_provider import FakeProviderTransport, ProviderCallResult
+from NessieAI.hibayes.paid_run_state import (
     build_cache_key,
     ensure_attempt_pending,
     get_attempt_state,
     mark_attempt_cached,
     mark_attempt_succeeded,
 )
-from nextseek_api.eval.provider_gate import guarded_provider_call
-from nextseek_api.eval.run_authorization import AuthorizationError
+from NessieAI.hibayes.provider_gate import guarded_provider_call
+from NessieAI.hibayes.run_authorization import AuthorizationError
 
 __all__ = ["JudgingEngine", "JudgeAttemptSpec", "JudgeAttemptResult"]
 

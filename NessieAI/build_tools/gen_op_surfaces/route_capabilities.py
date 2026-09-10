@@ -5,28 +5,28 @@ import json
 from pathlib import Path
 from typing import Any
 
-from nextseek_api.cc_assistant.op_registry.install_oracle import discover_install
-from nextseek_api.cc_assistant.op_registry.ns_capabilities import (
+from NessieAI.cc.op_registry.install_oracle import discover_install
+from NessieAI.cc.op_registry.ns_capabilities import (
     MAX_PROJECTION_UTF8_BYTES,
     STALE_PIPELINE_PHRASE,
     load_ns_projection,
 )
-from nextseek_api.cc_assistant.op_registry.ops import OPS
-from nextseek_api.cc_assistant.op_registry.paired_evidence import (
+from NessieAI.cc.op_registry.ops import OPS
+from NessieAI.cc.op_registry.paired_evidence import (
     FORCED_IMAGE_BY_ARM,
     PairedEvidenceError,
     arm_success,
     load_committed_evidence,
     validate_committed_structure,
 )
-from nextseek_api.cc_assistant.op_registry.routes import (
+from NessieAI.cc.op_registry.routes import (
     CONTAINER_CC_ROUTE,
     GENERIC_CC_BUILTINS,
     NEXTSEEK_QUERY_TOOLS,
 )
-from nessie_tests import corpus as nessie_corpus
-from nessie_tests import export as nexport
-from nessie_tests import runner as nessie_runner
+from NessieAI.tests.nessie_tests import corpus as nessie_corpus
+from NessieAI.tests.nessie_tests import export as nexport
+from NessieAI.tests.nessie_tests import runner as nessie_runner
 
 ROUTE_CAPABILITIES_REL = Path("dmac_assistant") / "build_context" / "route_capabilities.json"
 CANONICAL_CAPABILITIES_REL = Path(

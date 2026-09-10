@@ -7,9 +7,9 @@ import sys
 import tempfile
 from pathlib import Path
 
-from nextseek_api.cc_assistant.op_registry.install_oracle import discover_install
-from nextseek_api.cc_assistant.op_registry.models import OpList, OpSpec
-from nextseek_api.cc_assistant.op_registry.ops import OPS
+from NessieAI.cc.op_registry.install_oracle import discover_install
+from NessieAI.cc.op_registry.models import OpList, OpSpec
+from NessieAI.cc.op_registry.ops import OPS
 
 CANONICAL_OPS_PATH = Path(__file__).resolve().parent / "ops.json"
 BAKED_OPS_RELATIVE = Path("context") / "ops.json"

@@ -7,7 +7,7 @@ path under ``user_root_mount``) — never a host bind string (the old
 """
 from pathlib import Path
 
-from nextseek_api.cc_assistant import cc_engine
+from NessieAI.cc import cc_engine
 
 
 def test_publish_artifacts_copies_nested_scratch_changes(tmp_path):

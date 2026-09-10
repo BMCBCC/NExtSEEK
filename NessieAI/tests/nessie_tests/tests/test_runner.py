@@ -1,5 +1,5 @@
 from pathlib import Path
-from nessie_tests import runner
+from NessieAI.tests.nessie_tests import runner
 
 CORPUS = Path(__file__).resolve().parents[1] / "corpus.json"
 
@@ -29,7 +29,7 @@ def _cc_gate(vid="gate.cc"):
     cases the operator currently keeps. Building the variant inline makes the
     test measure the runner and survive any corpus decision.
     """
-    from e2e.catalog import Variant, Turn
+    from NessieAI.tests.e2e.catalog import Variant, Turn
     return Variant(
         family="nessie_route", id=vid, name="cc gate",
         tags=["nessie", "route_gate", "overlay"], requires_env=[],
@@ -59,7 +59,7 @@ def test_no_route_expectation_is_injected_into_imported_variants():
     product failure. Routing is asserted only where it was actually decided:
     the route_gate variants in corpus.json.
     """
-    from e2e.catalog import Variant, Turn
+    from NessieAI.tests.e2e.catalog import Variant, Turn
     base = Variant(family="f", id="b", name="n", tags=["base"], turns=[Turn(label="m", query="q")])
     ov = Variant(family="nessie_route", id="o", name="n", tags=["overlay"], turns=[Turn(label="m", query="q")])
     assert runner.default_route_criterion(base) is None
@@ -96,7 +96,7 @@ def test_full_tier_drives_route_gate_cc_route_only(tmp_path, monkeypatch):
 
 
 def test_unsatisfied_requires_env_is_skipped(tmp_path, monkeypatch):
-    from e2e.catalog import Variant, Turn
+    from NessieAI.tests.e2e.catalog import Variant, Turn
     v = Variant(family="nessie_route", id="needs.env", name="n",
                 tags=["nessie", "route_gate", "overlay"],
                 requires_env=["NESSIE_DEFINITELY_UNSET_ENV"],
@@ -121,7 +121,7 @@ def test_first_turn_isolates_the_case_later_turns_share_it(tmp_path, monkeypatch
     This is what keeps refine/recall honest — each case starts clean, but the
     follow-up still sees its own seed's results rather than a neighbour's.
     """
-    from e2e.catalog import Variant, Turn
+    from NessieAI.tests.e2e.catalog import Variant, Turn
     v = Variant(family="refine_and_recall", id="multi.turn", name="n", tags=["overlay"],
                 turns=[Turn(label="seed", query="q1"), Turn(label="followup", query="q2")])
     monkeypatch.setattr(runner.corpus, "select", lambda *a, **k: [v])
@@ -158,7 +158,7 @@ def test_run_suite_never_forces_the_route(tmp_path, monkeypatch):
     `run_case(strip_route_criteria=True)` is what makes forcing honest, and
     `run_suite` does not pass that either.
     """
-    from e2e.catalog import Variant, Turn
+    from NessieAI.tests.e2e.catalog import Variant, Turn
     v = Variant(family="refine_and_recall", id="multi.noforce", name="n", tags=["overlay"],
                 turns=[Turn(label="seed", query="q1"), Turn(label="followup", query="q2")])
     monkeypatch.setattr(runner.corpus, "select", lambda *a, **k: [v])
@@ -184,7 +184,7 @@ def test_run_suite_never_forces_the_route(tmp_path, monkeypatch):
 
 
 def test_known_fail_that_passes_is_reported_as_xpass(tmp_path, monkeypatch):
-    from e2e.catalog import Variant, Turn
+    from NessieAI.tests.e2e.catalog import Variant, Turn
     v = Variant(family="nessie_repro", id="repro.stale", name="n",
                 tags=["nessie", "known_fail", "overlay"],
                 turns=[Turn(label="main", query="q",
@@ -239,11 +239,11 @@ def test_apply_xpass_leaves_everything_else_alone():
 
 def test_the_consistency_branch_uses_the_shared_helper(monkeypatch, tmp_path):
     """A known_fail consistency group that passes must be xpass, not passed."""
-    from nessie_tests import consistency
+    from NessieAI.tests.nessie_tests import consistency
 
     group = {"id": "cons.fake", "tags": ["known_fail"],
              "queries": ["a", "b"], "assert": ["same_route", "same_count"]}
-    monkeypatch.setattr("nessie_tests.corpus.load_consistency_groups", lambda p: [group])
+    monkeypatch.setattr("NessieAI.tests.nessie_tests.corpus.load_consistency_groups", lambda p: [group])
     monkeypatch.setattr(
         consistency, "run_group",
         lambda g, drive: type("R", (), {"passed": True, "reasons": [], "observations": []})(),
@@ -263,7 +263,7 @@ def test_the_consistency_branch_uses_the_shared_helper(monkeypatch, tmp_path):
 
 def _manifest(*statuses):
     """statuses: (status, expected_fail) or (status, expected_fail, outage) tuples."""
-    from nessie_tests.manifest import NessieManifest, NessieManifestEntry
+    from NessieAI.tests.nessie_tests.manifest import NessieManifest, NessieManifestEntry
     return NessieManifest(
         started_at="a", ended_at="b", tier="full", scope="all",
         entries=[NessieManifestEntry(id=f"c{i}", family="f", tier="full",
@@ -320,7 +320,7 @@ NS_OUTAGE = {"status": "completed", "progress": NS_ROUTED["progress"] + [
 
 
 def _variant(vid="sys.q", *criteria, turns=1, family="system_question"):
-    from e2e.catalog import Variant, Turn
+    from NessieAI.tests.e2e.catalog import Variant, Turn
     return Variant(
         family=family, id=vid, name="n", tags=["nessie", "overlay", "full"], requires_env=[],
         turns=[Turn(label=f"t{i}", query=f"q{i}", pass_criteria=list(criteria))
@@ -424,7 +424,7 @@ def test_an_outaged_consistency_group_is_error_not_a_count_failure(monkeypatch, 
     group = {"id": "cons.nhp_sequencing_engine", "tags": ["known_fail"],
              "queries": ["a", "b"], "assert": {"same_route": True, "same_count": True}}
     monkeypatch.setattr(runner.corpus, "select", lambda *a, **k: [])
-    monkeypatch.setattr("nessie_tests.corpus.load_consistency_groups", lambda p: [group])
+    monkeypatch.setattr("NessieAI.tests.nessie_tests.corpus.load_consistency_groups", lambda p: [group])
 
     m = runner.run_suite(
         base_url="http://x", auth_header="Basic x", tier="full", scope="all",
@@ -528,7 +528,7 @@ def test_an_outage_flag_cannot_hide_a_recorded_criterion_failure():
     that carries both is either hand-built or produced by an older run — and in
     both cases the recorded red is the more trustworthy of the two signals.
     """
-    from nessie_tests.manifest import NessieManifest, NessieManifestEntry
+    from NessieAI.tests.nessie_tests.manifest import NessieManifest, NessieManifestEntry
 
     m = NessieManifest(
         started_at="a", ended_at="b", tier="full", scope="all",
@@ -615,14 +615,14 @@ def test_a_heuristic_followup_is_still_an_infrastructure_condition(tmp_path, mon
 
 
 def _entry_with(route_source=None, route_sources=None):
-    from nessie_tests.manifest import NessieManifestEntry
+    from NessieAI.tests.nessie_tests.manifest import NessieManifestEntry
     kwargs = {} if route_sources is None else {"route_sources": route_sources}
     return NessieManifestEntry(id="c0", family="f", tier="full", status="passed",
                                route_source=route_source, **kwargs)
 
 
 def _bucketed(entry) -> bool:
-    from nessie_tests.manifest import NessieManifest
+    from NessieAI.tests.nessie_tests.manifest import NessieManifest
     m = NessieManifest(started_at="a", ended_at="b", tier="full", scope="all", entries=[entry])
     return bool(runner.classify_entries(m)["heuristic_routed"])
 
@@ -824,7 +824,7 @@ def test_no_assertions_is_never_promoted_to_xpass():
 
 def test_the_gate_and_the_summary_use_the_one_predicate():
     """`_is_real_failure` is the single definition; neither reader re-derives it."""
-    from nessie_tests.manifest import NessieManifestEntry
+    from NessieAI.tests.nessie_tests.manifest import NessieManifestEntry
 
     def entry(**kw):
         return NessieManifestEntry(id="c", family="f", tier="full", **kw)
@@ -846,7 +846,7 @@ def test_the_outage_exemption_cannot_swallow_a_no_assertions_entry():
     exists precisely for manifests the runner did not write — which is the only
     place the combination can occur.
     """
-    from nessie_tests.manifest import NessieManifest, NessieManifestEntry
+    from NessieAI.tests.nessie_tests.manifest import NessieManifest, NessieManifestEntry
 
     m = NessieManifest(
         started_at="a", ended_at="b", tier="full", scope="all",
@@ -881,7 +881,7 @@ def test_a_skipped_criterion_is_machine_readable_in_the_manifest(tmp_path, monke
     assert obs.passed is True, "a skipped criterion is not a failure either"
 
     # ...and it survives a write/read round trip
-    from nessie_tests.manifest import load_manifest
+    from NessieAI.tests.nessie_tests.manifest import load_manifest
     reloaded = load_manifest(tmp_path / "manifest.json")
     assert next(o for o in reloaded.entries[0].observations
                 if o.field == "outcome_observed").skipped is True
@@ -896,7 +896,7 @@ def test_an_evaluated_criterion_is_not_marked_skipped(tmp_path, monkeypatch):
 
 
 def test_old_manifests_load_without_the_skipped_field(tmp_path):
-    from nessie_tests import manifest as M
+    from NessieAI.tests.nessie_tests import manifest as M
 
     p = tmp_path / "manifest.json"
     p.write_text(
@@ -923,7 +923,7 @@ def test_old_manifests_load_without_the_skipped_field(tmp_path):
 # --------------------------------------------------------------------------- #
 
 def _costed(*costs, status="passed"):
-    from nessie_tests.manifest import NessieManifest, NessieManifestEntry
+    from NessieAI.tests.nessie_tests.manifest import NessieManifest, NessieManifestEntry
     return NessieManifest(
         started_at="a", ended_at="b", tier="full", scope="all",
         entries=[NessieManifestEntry(id=f"c{i}", family="f", tier="full",
@@ -986,7 +986,7 @@ def test_a_case_that_never_ran_is_free_rather_than_unmeasured():
 
 
 def test_skipped_cases_do_not_dilute_the_unmeasured_count():
-    from nessie_tests.manifest import NessieManifest, NessieManifestEntry
+    from NessieAI.tests.nessie_tests.manifest import NessieManifest, NessieManifestEntry
     m = NessieManifest(
         started_at="a", ended_at="b", tier="route", scope="all",
         entries=[NessieManifestEntry(id="skip1", family="f", tier="route", status="skipped"),
@@ -1050,7 +1050,7 @@ def test_an_unrelated_gate_is_unmeasured_rather_than_free(tmp_path, monkeypatch)
     and a future reader "fixing" the code to match that claim would reintroduce
     a silent $0.
     """
-    from e2e.catalog import Variant, Turn
+    from NessieAI.tests.e2e.catalog import Variant, Turn
     gate = Variant(
         family="nessie_route", id="gate.unrelated", name="unrelated gate",
         tags=["nessie", "route_gate", "overlay"], requires_env=[],

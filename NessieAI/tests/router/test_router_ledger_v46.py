@@ -6,7 +6,7 @@ import pytest
 from django.contrib.auth import get_user_model
 
 from nextseek_api.assistant.models_db import ChatSession, TurnLedger
-from nextseek_api.cc_assistant import router as cc_router
+from NessieAI.router import router as cc_router
 from nextseek_api.services import cc_assistant as svc
 
 pytestmark = pytest.mark.django_db
@@ -53,7 +53,7 @@ def test_ledger_collision_does_not_raise():
 
 
 def test_sticky_override_persists_attempted_route_and_source():
-    from nextseek_api.cc_assistant import router_context
+    from NessieAI.router import router_context
 
     session = _session()
     history = [

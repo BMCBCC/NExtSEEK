@@ -2,7 +2,7 @@
 import pytest
 
 import chat_nextseek.luria.ssh as ssh
-import nextseek_api.assistant.granular as g
+import NessieAI.ns.granular as g
 
 
 class _Cfg:

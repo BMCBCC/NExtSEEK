@@ -4,8 +4,8 @@ from unittest.mock import patch
 
 import pytest
 
-from e2e.catalog import Catalog, Family, Variant, Turn, PassCriterion
-from e2e.runner import run_variant
+from NessieAI.tests.e2e.catalog import Catalog, Family, Variant, Turn, PassCriterion
+from NessieAI.tests.e2e.runner import run_variant
 
 
 def _stub_run_query(session, config, query: str) -> dict:
@@ -36,8 +36,8 @@ def test_run_variant_single_turn_pass(tmp_path: Path, monkeypatch):
         SESSION_DB_TYPE = "sqlite"
         SESSION_DB_PATH = str(tmp_path / "session.sqlite")
 
-    with patch("e2e.runner.run_query", side_effect=_stub_run_query), \
-         patch("e2e.runner._make_session", return_value={}):
+    with patch("NessieAI.tests.e2e.runner.run_query", side_effect=_stub_run_query), \
+         patch("NessieAI.tests.e2e.runner._make_session", return_value={}):
         result = run_variant(variant, _FakeConfig(), tmp_path, pace_seconds=0)
 
     assert result["status"] == "passed"
@@ -58,8 +58,8 @@ def test_run_variant_fail_records_failed_criteria(tmp_path: Path):
         SESSION_DB_TYPE = "sqlite"
         SESSION_DB_PATH = str(tmp_path / "session.sqlite")
 
-    with patch("e2e.runner.run_query", side_effect=_stub_run_query), \
-         patch("e2e.runner._make_session", return_value={}):
+    with patch("NessieAI.tests.e2e.runner.run_query", side_effect=_stub_run_query), \
+         patch("NessieAI.tests.e2e.runner._make_session", return_value={}):
         result = run_variant(variant, _FakeConfig(), tmp_path, pace_seconds=0)
 
     assert result["status"] == "failed"
@@ -86,8 +86,8 @@ def test_run_variant_multi_turn_shares_session(tmp_path: Path):
         SESSION_DB_TYPE = "sqlite"
         SESSION_DB_PATH = str(tmp_path / "session.sqlite")
 
-    with patch("e2e.runner.run_query", side_effect=_stub_capturing), \
-         patch("e2e.runner._make_session", return_value={}):
+    with patch("NessieAI.tests.e2e.runner.run_query", side_effect=_stub_capturing), \
+         patch("NessieAI.tests.e2e.runner._make_session", return_value={}):
         run_variant(variant, _FakeConfig(), tmp_path, pace_seconds=0)
 
     assert len(captured_sessions) == 2
@@ -106,8 +106,8 @@ def test_run_variant_writes_debug_json(tmp_path: Path):
         SESSION_DB_TYPE = "sqlite"
         SESSION_DB_PATH = str(tmp_path / "session.sqlite")
 
-    with patch("e2e.runner.run_query", side_effect=_stub_run_query), \
-         patch("e2e.runner._make_session", return_value={}):
+    with patch("NessieAI.tests.e2e.runner.run_query", side_effect=_stub_run_query), \
+         patch("NessieAI.tests.e2e.runner._make_session", return_value={}):
         run_variant(variant, _FakeConfig(), tmp_path, pace_seconds=0)
 
     debug_path = tmp_path / "adv.debug" / "turns" / "main" / "debug.json"
@@ -130,8 +130,8 @@ def test_run_variant_handles_orchestrator_exception(tmp_path: Path):
         SESSION_DB_TYPE = "sqlite"
         SESSION_DB_PATH = str(tmp_path / "session.sqlite")
 
-    with patch("e2e.runner.run_query", side_effect=_raise), \
-         patch("e2e.runner._make_session", return_value={}):
+    with patch("NessieAI.tests.e2e.runner.run_query", side_effect=_raise), \
+         patch("NessieAI.tests.e2e.runner._make_session", return_value={}):
         result = run_variant(variant, _FakeConfig(), tmp_path, pace_seconds=0)
 
     assert result["status"] == "failed"
@@ -147,6 +147,6 @@ def test_run_main_empty_catalog_clean_exit(tmp_path: Path, monkeypatch):
 
     # ChatConfig isn't called when there's nothing to run, but patch to be safe
     # in case the import line itself fails (e.g., missing .env)
-    from e2e.runner import run_main
+    from NessieAI.tests.e2e.runner import run_main
     rc = run_main(catalog_path, ratio=1.0, seed=1, out_root=tmp_path)
     assert rc == 0

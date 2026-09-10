@@ -2164,7 +2164,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from nextseek_api.schema_rag.models import MinimalAPIEndpoint, FullAPIEndpoint
+    from NessieAI.schema_rag.models import MinimalAPIEndpoint, FullAPIEndpoint
 
 
 class IngestRequest(BaseModel):
@@ -2283,7 +2283,7 @@ class RetrieveResponse(BaseModel):
 def _rebuild_schema_rag_models():
     """Call this after schema_rag.models is imported to resolve forward references."""
     try:
-        from nextseek_api.schema_rag.models import MinimalAPIEndpoint, FullAPIEndpoint
+        from NessieAI.schema_rag.models import MinimalAPIEndpoint, FullAPIEndpoint
         RetrieveResponse.model_rebuild()
     except ImportError:
         pass  # schema_rag package not yet available

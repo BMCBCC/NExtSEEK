@@ -4,7 +4,7 @@ Imports from the celery-free `cc_upload_validate` module so collection never
 touches the celery import block in `cc_upload_tasks.py`."""
 import pytest
 
-from nextseek_api.cc_assistant.cc_upload_validate import validate_upload_filename
+from NessieAI.cc.cc_upload_validate import validate_upload_filename
 
 
 @pytest.mark.parametrize("good", ["data.csv", "report 1.xlsx", "a_b-c.txt"])

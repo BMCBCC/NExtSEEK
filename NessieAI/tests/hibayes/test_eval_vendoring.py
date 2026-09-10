@@ -5,11 +5,11 @@ _REPO = Path(__file__).resolve().parents[3]
 
 
 def test_eval_package_is_importable():
-    assert importlib.import_module("nextseek_api.eval") is not None
+    assert importlib.import_module("NessieAI.hibayes") is not None
 
 
 def test_the_dangling_exporter_reference_is_now_satisfied():
-    mod = importlib.import_module("nextseek_api.eval.exporter")
+    mod = importlib.import_module("NessieAI.hibayes.exporter")
     assert hasattr(mod, "FailureMode")
 
 

@@ -21,14 +21,14 @@ from pathlib import Path
 
 import pytest
 
-from nessie_tests import corpus
+from NessieAI.tests.nessie_tests import corpus
 
 HERE = Path(__file__).resolve().parents[1]
 CORPUS = HERE / "corpus.json"
 
 
 def _variant(family, criteria):
-    from e2e.catalog import Turn, Variant
+    from NessieAI.tests.e2e.catalog import Turn, Variant
     return Variant(family=family, id=f"{family}.x", name="n", tags=[], requires_env=[],
                    turns=[Turn(label="m", query="q", pass_criteria=criteria)])
 

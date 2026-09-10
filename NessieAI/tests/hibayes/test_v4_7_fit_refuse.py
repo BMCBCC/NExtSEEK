@@ -3,21 +3,21 @@ from __future__ import annotations
 
 import pytest
 
-from nextseek_api.eval.conservation import FitAdmission
-from nextseek_api.eval.evidence_kinds import OnlineEvidenceRejected, UnapprovedPairedRun
-from nextseek_api.eval.fit.fit_boundary import (
+from NessieAI.hibayes.conservation import FitAdmission
+from NessieAI.hibayes.evidence_kinds import OnlineEvidenceRejected, UnapprovedPairedRun
+from NessieAI.hibayes.fit.fit_boundary import (
     assert_paired_experimental_only,
     assert_zero_online_ids_in_hash,
     compute_paired_input_hash,
     refuse_raw_dict_fit_input,
     validate_publish_provenance,
 )
-from nextseek_api.eval.fit.v14.combined import run_v14_generation
-from nextseek_api.eval.fit.v14.fit_config import V14FitConfig
-from nextseek_api.eval.fit.v14.pair_rows import build_pair_rows
-from nextseek_api.eval.online_observation import DEFAULT_SELECTION_CAVEAT, OnlineObservationalRow
-from nextseek_api.eval.paired_run import build_paired_batch
-from nextseek_api.eval.router_models_proposal import RouteSource
+from NessieAI.hibayes.fit.v14.combined import run_v14_generation
+from NessieAI.hibayes.fit.v14.fit_config import V14FitConfig
+from NessieAI.hibayes.fit.v14.pair_rows import build_pair_rows
+from NessieAI.hibayes.online_observation import DEFAULT_SELECTION_CAVEAT, OnlineObservationalRow
+from NessieAI.hibayes.paired_run import build_paired_batch
+from NessieAI.hibayes.router_models_proposal import RouteSource
 
 
 def _sample_batch(run_id: str = "unapproved-run"):
@@ -55,7 +55,7 @@ def test_unapproved_paired_run_refused():
 
 
 def test_approved_batch_path_requires_registry(db):
-    from nextseek_api.eval.paired_run_registry import register_paired_run
+    from NessieAI.hibayes.paired_run_registry import register_paired_run
 
     batch, arms = _sample_batch("approved-run-a")
     register_paired_run(

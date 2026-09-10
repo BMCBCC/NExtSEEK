@@ -59,27 +59,27 @@ from nextseek_api.services.assistant import (
 
 from chat_nextseek.orchestrator import run_query, run_query_plan
 
-from nextseek_api.cc_assistant import router as cc_router
-from nextseek_api.cc_assistant import router_context
-from nextseek_api.cc_assistant import cc_engine
-from nextseek_api.cc_assistant import cc_config
-from nextseek_api.cc_assistant import cc_session
-from nextseek_api.cc_assistant import cc_summary
-from nextseek_api.cc_assistant import cc_memory
-from nextseek_api.cc_assistant import cc_memory_io
-from nextseek_api.cc_assistant import ns_digest
-from nextseek_api.cc_assistant import ns_turn_context
-from nextseek_api.cc_assistant import cc_turn_context
-from nextseek_api.cc_assistant.cc_provision import ProjectResolutionError
+from NessieAI.router import router as cc_router
+from NessieAI.router import router_context
+from NessieAI.cc import cc_engine
+from NessieAI.cc import cc_config
+from NessieAI.cc import cc_session
+from NessieAI.cc import cc_summary
+from NessieAI.cc import cc_memory
+from NessieAI.cc import cc_memory_io
+from NessieAI.cc import ns_digest
+from NessieAI.cc import ns_turn_context
+from NessieAI.cc import cc_turn_context
+from NessieAI.cc.cc_provision import ProjectResolutionError
 
-from nextseek_api.cc_assistant.cc_turn_complete import (
+from NessieAI.cc.cc_turn_complete import (
     TurnCompletePayload,
     apply_turn_to_extra_state,
 )
 from chat_nextseek.pipeline import agent as pipeline_agent
-from nextseek_api.cc_assistant import cc_turn_complete
+from NessieAI.cc import cc_turn_complete
 from chat_nextseek.chat_memory import next_turn_id
-from nextseek_api.cc_assistant import cc_transcript_store
+from NessieAI.cc import cc_transcript_store
 from nextseek_api.assistant.models_db import CCSessionTranscript
 
 MAX_CC_CHAT_LOG_TURNS = 50  # match chat_nextseek/chat_memory.py MAX_TURNS
@@ -164,7 +164,7 @@ def _persist_summary_standalone(user, session_id, summary_dict, fp):
 def _session_metas(user, current_id, paths, mem_cfg, project_dirname=None):
     """Build cc_memory.SessionMeta for the user's sessions (own sessions only)."""
     from pathlib import Path
-    from nextseek_api.cc_assistant.cc_provision import build_user_dirs
+    from NessieAI.cc.cc_provision import build_user_dirs
 
     metas = []
     # #40/#82: results_history AND last_debug are both multi-MB JSON after a
@@ -345,7 +345,7 @@ def _prev_route_was_cc(history: list[router_context.HistoryTurn] | None) -> bool
 
 def _record_ledger_row(chat_session: ChatSession, decision: cc_router.RouteDecision) -> None:
     """Best-effort ledger write; must not fail the user turn."""
-    from nextseek_api.cc_assistant.turn_ledger import LedgerCollision, record_turn
+    from NessieAI.router.turn_ledger import LedgerCollision, record_turn
 
     chat_log = (chat_session.extra_state or {}).get("chat_log") or []
     turn_number = len(chat_log) + 1
@@ -627,7 +627,7 @@ class CCAssistantViewSet(viewsets.ViewSet):
                     cc_send = cc_session.make_session_sniffer(send_event, _persist_cc_session)
 
                     paths = cc_config.CCPaths.from_env()
-                    from nextseek_api.cc_assistant.cc_provision import (
+                    from NessieAI.cc.cc_provision import (
                         ProjectResolutionError,
                         build_user_dirs,
                         resolve_user_project,
@@ -886,11 +886,11 @@ class CCAssistantViewSet(viewsets.ViewSet):
         from django.conf import settings
         from rest_framework.response import Response
         from rest_framework import status as drf_status
-        from nextseek_api.cc_assistant.cc_config import CCPaths
-        from nextseek_api.cc_assistant.cc_provision import (
+        from NessieAI.cc.cc_config import CCPaths
+        from NessieAI.cc.cc_provision import (
             resolve_user_project, ProjectResolutionError, build_user_dirs)
         from nextseek_api.cc_assistant.cc_upload_tasks import run_cc_upload_task
-        from nextseek_api.cc_assistant.cc_upload_validate import validate_upload_filename
+        from NessieAI.cc.cc_upload_validate import validate_upload_filename
 
         uploaded = request.FILES.getlist("file")
         if not uploaded:
@@ -950,10 +950,10 @@ class CCAssistantViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["get"], url_path="upload/list")
     def upload_list(self, request):
-        from nextseek_api.cc_assistant.cc_config import CCPaths
-        from nextseek_api.cc_assistant.cc_provision import (
+        from NessieAI.cc.cc_config import CCPaths
+        from NessieAI.cc.cc_provision import (
             resolve_user_project, ProjectResolutionError, build_user_dirs)
-        from nextseek_api.cc_assistant.cc_upload_list import list_input_files
+        from NessieAI.cc.cc_upload_list import list_input_files
 
         api_user, api_pass = self._resolve_credentials(request)
         try:
@@ -966,9 +966,9 @@ class CCAssistantViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["get"], url_path=r"artifacts/(?P<session>[0-9a-f-]+)/download")
     def download_artifact(self, request, session=None):
         from nextseek_api.assistant.models_db import ChatSession
-        from nextseek_api.cc_assistant.cc_config import CCPaths
-        from nextseek_api.cc_assistant.cc_provision import resolve_user_project, build_user_dirs
-        from nextseek_api.cc_assistant.cc_engine import _safe_relpath
+        from NessieAI.cc.cc_config import CCPaths
+        from NessieAI.cc.cc_provision import resolve_user_project, build_user_dirs
+        from NessieAI.cc.cc_engine import _safe_relpath
 
         _sessions = ChatSession.objects.all()
         if not may_read_any_users_data(request.user):
@@ -994,7 +994,7 @@ class CCAssistantViewSet(viewsets.ViewSet):
                 raise Http404("bad turn_id")
             art_dir = art_dir / turn_id
             import tempfile
-            from nextseek_api.cc_assistant.cc_artifacts import build_artifact_zip
+            from NessieAI.cc.cc_artifacts import build_artifact_zip
             # Exclude the per-turn artifacts.zip written by Task 6 into this same
             # art_dir, else key="all" nests the prior zip inside the new one.
             files = [p for p in art_dir.rglob("*") if p.is_file() and p.name != "artifacts.zip"]
@@ -1016,7 +1016,7 @@ class CCAssistantViewSet(viewsets.ViewSet):
         from django.conf import settings
         from django.http import HttpResponse
         from nextseek_api.assistant.models_db import ChatSession, CCSessionTranscript
-        from nextseek_api.cc_assistant.cc_transcript_store import decompress
+        from NessieAI.cc.cc_transcript_store import decompress
 
         _sessions = ChatSession.objects.all()
         if not may_read_any_users_data(request.user):

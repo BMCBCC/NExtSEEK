@@ -3,14 +3,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from build_tools.gen_op_surfaces.constants import (
+from NessieAI.build_tools.gen_op_surfaces.constants import (
     SKILL_OPS_BEGIN,
     SKILL_OPS_END,
     SKILL_OPS_FIELDS,
 )
-from nextseek_api.cc_assistant.op_registry.install_oracle import discover_install
-from nextseek_api.cc_assistant.op_registry.models import GateClass, OpSpec, Transport
-from nextseek_api.cc_assistant.op_registry.ops import OPS
+from NessieAI.cc.op_registry.install_oracle import discover_install
+from NessieAI.cc.op_registry.models import GateClass, OpSpec, Transport
+from NessieAI.cc.op_registry.ops import OPS
 
 _PLUGINS_ROOT_REL = Path("docker/cc-runtime/build_context/plugins")
 _DOCKERFILE_REL = Path("docker/cc-runtime/Dockerfile")

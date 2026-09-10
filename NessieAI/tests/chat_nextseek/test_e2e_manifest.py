@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from e2e.manifest import (
+from NessieAI.tests.e2e.manifest import (
     Manifest, ManifestEntry, write_manifest, load_manifest, filter_for_rerun
 )
 

@@ -5,7 +5,7 @@ SECRET_KEY = "plan018-task6-isolated-only"
 INSTALLED_APPS = (
     "django.contrib.contenttypes",
     "django.contrib.auth",
-    "nextseek_api.assistant.task6_app.Task6AssistantConfig",
+    "NessieAI.hibayes.task6_app.Task6AssistantConfig",
 )
 DATABASES = {
     "default": {

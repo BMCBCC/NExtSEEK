@@ -27,7 +27,7 @@ def _catalog_with_one_tagged(tmp_path):
 
 
 def test_run_main_dispatches_tagged_to_browser(tmp_path):
-    from e2e import runner
+    from NessieAI.tests.e2e import runner
 
     cat_path = _catalog_with_one_tagged(tmp_path)
     out_root = tmp_path / "outputs"
@@ -40,9 +40,9 @@ def test_run_main_dispatches_tagged_to_browser(tmp_path):
         return {"id": variant.id, "family": variant.family, "status": "passed",
                 "elapsed_s": 2.0, "failed_criteria": [], "turn_results": []}
 
-    with patch("e2e.runner.run_variant", side_effect=_stub_cli) as cli, \
-         patch("e2e.runner._probe_ui_reachable", return_value=True), \
-         patch("e2e.playwright.runner.run_variant_browser", side_effect=_stub_browser) as br, \
+    with patch("NessieAI.tests.e2e.runner.run_variant", side_effect=_stub_cli) as cli, \
+         patch("NessieAI.tests.e2e.runner._probe_ui_reachable", return_value=True), \
+         patch("NessieAI.tests.e2e.playwright.runner.run_variant_browser", side_effect=_stub_browser) as br, \
          patch("chat_nextseek.config.ChatConfig"):
         rc = runner.run_main(cat_path, ratio=1.0, seed=1, out_root=out_root,
                              pace_seconds=0)
@@ -56,7 +56,7 @@ def test_run_main_dispatches_tagged_to_browser(tmp_path):
 
 
 def test_run_main_skips_browser_when_probe_fails(tmp_path):
-    from e2e import runner
+    from NessieAI.tests.e2e import runner
 
     cat_path = _catalog_with_one_tagged(tmp_path)
     out_root = tmp_path / "outputs"
@@ -65,9 +65,9 @@ def test_run_main_skips_browser_when_probe_fails(tmp_path):
         return {"id": variant.id, "family": variant.family, "status": "passed",
                 "elapsed_s": 1.0, "failed_criteria": [], "turn_results": []}
 
-    with patch("e2e.runner.run_variant", side_effect=_stub_cli), \
-         patch("e2e.runner._probe_ui_reachable", return_value=False), \
-         patch("e2e.playwright.runner.run_variant_browser") as br, \
+    with patch("NessieAI.tests.e2e.runner.run_variant", side_effect=_stub_cli), \
+         patch("NessieAI.tests.e2e.runner._probe_ui_reachable", return_value=False), \
+         patch("NessieAI.tests.e2e.playwright.runner.run_variant_browser") as br, \
          patch("chat_nextseek.config.ChatConfig"):
         rc = runner.run_main(cat_path, ratio=1.0, seed=1, out_root=out_root, pace_seconds=0)
 
@@ -82,7 +82,7 @@ def test_run_main_skips_browser_when_probe_fails(tmp_path):
 
 
 def test_run_main_skip_playwright_flag(tmp_path):
-    from e2e import runner
+    from NessieAI.tests.e2e import runner
 
     cat_path = _catalog_with_one_tagged(tmp_path)
     out_root = tmp_path / "outputs"
@@ -91,9 +91,9 @@ def test_run_main_skip_playwright_flag(tmp_path):
         return {"id": variant.id, "family": variant.family, "status": "passed",
                 "elapsed_s": 1.0, "failed_criteria": [], "turn_results": []}
 
-    with patch("e2e.runner.run_variant", side_effect=_stub_cli), \
-         patch("e2e.runner._probe_ui_reachable") as probe, \
-         patch("e2e.playwright.runner.run_variant_browser") as br, \
+    with patch("NessieAI.tests.e2e.runner.run_variant", side_effect=_stub_cli), \
+         patch("NessieAI.tests.e2e.runner._probe_ui_reachable") as probe, \
+         patch("NessieAI.tests.e2e.playwright.runner.run_variant_browser") as br, \
          patch("chat_nextseek.config.ChatConfig"):
         rc = runner.run_main(cat_path, ratio=1.0, seed=1, out_root=out_root,
                              pace_seconds=0, skip_playwright=True)
@@ -104,7 +104,7 @@ def test_run_main_skip_playwright_flag(tmp_path):
 
 
 def test_run_main_skip_cli_flag_runs_only_browser(tmp_path):
-    from e2e import runner
+    from NessieAI.tests.e2e import runner
 
     cat_path = _catalog_with_one_tagged(tmp_path)
     out_root = tmp_path / "outputs"
@@ -113,9 +113,9 @@ def test_run_main_skip_cli_flag_runs_only_browser(tmp_path):
         return {"id": variant.id, "family": variant.family, "status": "passed",
                 "elapsed_s": 2.0, "failed_criteria": [], "turn_results": []}
 
-    with patch("e2e.runner.run_variant") as cli, \
-         patch("e2e.runner._probe_ui_reachable", return_value=True), \
-         patch("e2e.playwright.runner.run_variant_browser", side_effect=_stub_browser) as br, \
+    with patch("NessieAI.tests.e2e.runner.run_variant") as cli, \
+         patch("NessieAI.tests.e2e.runner._probe_ui_reachable", return_value=True), \
+         patch("NessieAI.tests.e2e.playwright.runner.run_variant_browser", side_effect=_stub_browser) as br, \
          patch("chat_nextseek.config.ChatConfig"):
         rc = runner.run_main(cat_path, ratio=1.0, seed=1, out_root=out_root,
                              pace_seconds=0, skip_cli=True)

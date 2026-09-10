@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from build_tools.gen_op_surfaces.claude_md import (
+from NessieAI.build_tools.gen_op_surfaces.claude_md import (
     ClaudeMdDocsError,
     emit_claude_ops_block,
     emit_claude_plugins_block,
@@ -23,7 +23,7 @@ from build_tools.gen_op_surfaces.claude_md import (
     parse_claude_skills_block,
     validate_plan005_markers_outside_docs,
 )
-from build_tools.gen_op_surfaces.constants import (
+from NessieAI.build_tools.gen_op_surfaces.constants import (
     CLAUDE_MD_REL,
     CLAUDE_OPS_BEGIN,
     CLAUDE_OPS_END,
@@ -37,15 +37,15 @@ from build_tools.gen_op_surfaces.constants import (
     NEXTSEEK_DOCS_END,
     NEXTSEEK_DOCS_PIN_REF,
 )
-from build_tools.gen_op_surfaces.emit import (
+from NessieAI.build_tools.gen_op_surfaces.emit import (
     SurfaceTarget,
     check_surfaces,
     surface_targets,
     write_surfaces,
 )
-from nextseek_api.cc_assistant.op_registry.install_oracle import discover_install
-from nextseek_api.cc_assistant.op_registry.models import GateClass, OpSpec, Transport
-from nextseek_api.cc_assistant.op_registry.ops import OPS
+from NessieAI.cc.op_registry.install_oracle import discover_install
+from NessieAI.cc.op_registry.models import GateClass, OpSpec, Transport
+from NessieAI.cc.op_registry.ops import OPS
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 CLAUDE_MD = REPO_ROOT / CLAUDE_MD_REL
@@ -70,7 +70,7 @@ def _git_show(rel: str) -> bytes:
 
 
 def _fixture_op(op_id: str, bin_name: str, *, purpose: str = "") -> OpSpec:
-    from nextseek_api.cc_assistant.op_registry.models import SkillRow
+    from NessieAI.cc.op_registry.models import SkillRow
 
     return OpSpec(
         op_id=op_id,

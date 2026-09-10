@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Iterable, Mapping
 
-from nextseek_api.eval.online_observation import DEFAULT_SELECTION_CAVEAT, OnlineObservationalRow
+from NessieAI.hibayes.online_observation import DEFAULT_SELECTION_CAVEAT, OnlineObservationalRow
 
 __all__ = [
     "AlertKind",

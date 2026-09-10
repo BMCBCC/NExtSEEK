@@ -1,5 +1,5 @@
 from pathlib import Path
-from nessie_tests import corpus
+from NessieAI.tests.nessie_tests import corpus
 
 CORPUS = Path(__file__).resolve().parents[1] / "corpus.json"
 
@@ -43,7 +43,7 @@ def test_has_cc_unrelated_and_green_families():
 
 import re
 from pathlib import Path as _Path
-from nessie_tests import corpus as _corpus
+from NessieAI.tests.nessie_tests import corpus as _corpus
 
 _CORPUS = _Path(__file__).resolve().parents[1] / "corpus.json"
 
@@ -202,7 +202,7 @@ def test_the_global_count_matches_the_seeded_database():
 # variant it lands on flips from green to gate-failing the moment it ships.
 # --------------------------------------------------------------------------- #
 
-from nessie_tests import evaluate as _evaluate  # noqa: E402
+from NessieAI.tests.nessie_tests import evaluate as _evaluate  # noqa: E402
 
 # The four NS outcome fields, skipped only when the observed route is
 # container_cc. Assuming a variant routes CC is the WORST case for this analysis,

@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from nextseek_api.eval.judge_human_compare import (
+from NessieAI.hibayes.judge_human_compare import (
     ABSOLUTE_MAX_ARMS,
     ComparisonError,
     build_sample_plan,
@@ -18,7 +18,7 @@ from nextseek_api.eval.judge_human_compare import (
     load_authenticated_bundle,
     main,
 )
-from nextseek_api.eval.judge_models import (
+from NessieAI.hibayes.judge_models import (
     FunctionalEvaluation,
     FunctionalOutcome,
     PrimaryIssue,
@@ -231,7 +231,7 @@ def test_cli_execution_requires_immutable_sample_manifest_hash(
         ]
     ) == 0
     monkeypatch.setattr(
-        "nextseek_api.eval.judge_human_compare._provider_evaluator",
+        "NessieAI.hibayes.judge_human_compare._provider_evaluator",
         lambda *_args: _evaluation(True),
     )
     with pytest.raises(ComparisonError, match="sample manifest SHA-256"):

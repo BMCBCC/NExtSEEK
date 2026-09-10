@@ -7,7 +7,7 @@ from copy import deepcopy
 import pytest
 from pydantic import ValidationError
 
-from nextseek_api.eval.deploy_record import (
+from NessieAI.hibayes.deploy_record import (
     DataIdentity,
     DeployRecord,
     GenerationIdentity,
@@ -16,7 +16,7 @@ from nextseek_api.eval.deploy_record import (
     SchemaIdentity,
     deploy_record_schema,
 )
-from nextseek_api.eval.mixed_version_recovery import (
+from NessieAI.hibayes.mixed_version_recovery import (
     ContractPhaseRefused,
     DestructiveRecoveryRefused,
     IdentityRefused,

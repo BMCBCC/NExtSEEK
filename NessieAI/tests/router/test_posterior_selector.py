@@ -3,9 +3,9 @@ import pytest
 from django.utils import timezone
 
 from nextseek_api.assistant.models_db import FamilyPosterior, PosteriorGeneration
-from nextseek_api.cc_assistant import posterior_selector
-from nextseek_api.cc_assistant.family_labels import corpus_snapshot
-from nextseek_api.eval.generation_store import GenerationSnapshot
+from NessieAI.router import posterior_selector
+from NessieAI.router.family_labels import corpus_snapshot
+from NessieAI.hibayes.generation_store import GenerationSnapshot
 
 pytestmark = pytest.mark.django_db
 
@@ -16,7 +16,7 @@ def _activate_generation(**kwargs):
         decision_status=kwargs.get("decision_status", "activated_all"),
         payload={},
     )
-    from nextseek_api.eval.generation_store import ActiveGenerationPointer
+    from NessieAI.hibayes.generation_store import ActiveGenerationPointer
 
     ptr, _ = ActiveGenerationPointer.objects.get_or_create(id=1)
     ptr.active = gen
@@ -128,8 +128,8 @@ def test_poisoned_store_non_blocking_on_decide_path(settings, monkeypatch):
     async def route_ok(*args, **kwargs):
         return RouterDecision(route=Route.NextseekQuery, model_class=None, reasoning="fallback")
 
-    from nextseek_api.cc_assistant import router as cc_router
-    from nextseek_api.cc_assistant import transport_trace
+    from NessieAI.router import router as cc_router
+    from NessieAI.router import transport_trace
 
     transport_trace.reset_transport_hooks()
     monkeypatch.setattr(b, "ClassifyQuery", classify_ok)
@@ -155,7 +155,7 @@ def _posterior_row(task_family, route, mean, band):
 
 
 def _snapshot(*, generation_id=99, generation_hash="e" * 64, decision_status="activated_all", posteriors=()):
-    from nextseek_api.eval.generation_store import GenerationSnapshot
+    from NessieAI.hibayes.generation_store import GenerationSnapshot
     current = corpus_snapshot()
 
     return GenerationSnapshot(

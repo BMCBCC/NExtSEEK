@@ -48,14 +48,14 @@ import pathlib
 import sys
 from collections import Counter
 
-from nessie_tests import export
+from NessieAI.tests.nessie_tests import export
 
 # Imported, never restated. `export` owns the runtime column tuple, the arm
 # vocabulary, the Stage B key separator and the None-to-empty-cell rule; a second
 # copy of any of them here is a join that drifts silently out of agreement with
 # the file it is joining. `_fmt` and `_write` are private to `export` in the same
 # sense `_TERMINAL` is private to `collect` -- and `export` imports that.
-from nessie_tests.export import HIBAYES_CSV_COLUMNS, _fmt, _write  # noqa: F401
+from NessieAI.tests.nessie_tests.export import HIBAYES_CSV_COLUMNS, _fmt, _write  # noqa: F401
 
 # The DISCRIMINATOR, inverted. `export.ARM_IMAGE` maps arm -> image on the way
 # out; this is the only way back, and deriving it means the two cannot disagree.

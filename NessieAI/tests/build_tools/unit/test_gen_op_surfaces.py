@@ -1,4 +1,4 @@
-"""Unit tests for build_tools.gen_op_surfaces (Plan 005 Task 6)."""
+"""Unit tests for NessieAI.build_tools.gen_op_surfaces (Plan 005 Task 6)."""
 from __future__ import annotations
 
 import errno
@@ -10,8 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from build_tools.gen_op_surfaces.blocks import MarkerError, render_marked_file
-from build_tools.gen_op_surfaces.constants import (
+from NessieAI.build_tools.gen_op_surfaces.blocks import MarkerError, render_marked_file
+from NessieAI.build_tools.gen_op_surfaces.constants import (
     BAKED_CAPABILITIES_REL,
     CANONICAL_CAPABILITIES_REL,
     EXIT_CHANGES_WRITTEN,
@@ -29,18 +29,18 @@ def _capabilities_only_targets() -> tuple[SurfaceTarget, ...]:
             emit=capabilities_bytes,
         ),
     )
-from build_tools.gen_op_surfaces.emit import (
+from NessieAI.build_tools.gen_op_surfaces.emit import (
     SurfaceTarget,
     capabilities_bytes,
     check_surfaces,
     surface_targets,
     write_surfaces,
 )
-from build_tools.gen_op_surfaces.paths import PathEscapeError, resolve_under_root
+from NessieAI.build_tools.gen_op_surfaces.paths import PathEscapeError, resolve_under_root
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-EXPORT_MODULE = "nextseek_api.cc_assistant.op_registry.export"
-GEN_MODULE = "build_tools.gen_op_surfaces"
+EXPORT_MODULE = "NessieAI.cc.op_registry.export"
+GEN_MODULE = "NessieAI.build_tools.gen_op_surfaces"
 PYTHONPATH = f"{REPO_ROOT}:{REPO_ROOT / 'dmac_assistant' / 'src'}:{REPO_ROOT / 'chat_nextseek' / 'src'}"
 DMAC_PYTHON = Path("/home/taishajo/work/dmac-assistant/.venv/bin/python3")
 IMAGE_PYTHON = Path("/app/.venv/bin/python")

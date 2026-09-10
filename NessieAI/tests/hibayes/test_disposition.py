@@ -10,14 +10,14 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from nextseek_api.eval.disposition import (  # noqa: E402
+from NessieAI.hibayes.disposition import (  # noqa: E402
     OutcomeBucket,
     classify_arm,
     classify_unknown_value,
     combined_success,
     should_call_judge,
 )
-from nextseek_api.eval.router_models_proposal import (  # noqa: E402
+from NessieAI.hibayes.router_models_proposal import (  # noqa: E402
     ArtifactStatus,
     ErrorClass,
     EvalRow,
@@ -88,7 +88,7 @@ def test_missing_arm_pending() -> None:
 
 
 def test_exclusion_census_counts_reasons() -> None:
-    from nextseek_api.eval.disposition import ArmBucket, exclusion_census, ExclusionReason
+    from NessieAI.hibayes.disposition import ArmBucket, exclusion_census, ExclusionReason
 
     buckets = [
         ArmBucket(

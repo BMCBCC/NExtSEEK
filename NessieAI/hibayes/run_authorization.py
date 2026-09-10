@@ -12,7 +12,7 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from nextseek_api.assistant.models_db import ApprovedRunManifest, SpendReservation
-from nextseek_api.eval.run_manifest import RunManifest, manifest_body_hash, validate_manifest_dict
+from NessieAI.hibayes.run_manifest import RunManifest, manifest_body_hash, validate_manifest_dict
 
 __all__ = [
     "AuthorizationError",

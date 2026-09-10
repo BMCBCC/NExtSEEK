@@ -1,13 +1,13 @@
-"""Unit tests for build_tools.ingest_nextseek_docs.toc."""
+"""Unit tests for NessieAI.build_tools.ingest_nextseek_docs.toc."""
 from __future__ import annotations
 
 from pathlib import Path
 
 import pytest
 
-from build_tools.ingest_nextseek_docs import toc
-from build_tools.ingest_nextseek_docs.constants import BEGIN_MARKER, END_MARKER
-from build_tools.ingest_nextseek_docs.split import Section
+from NessieAI.build_tools.ingest_nextseek_docs import toc
+from NessieAI.build_tools.ingest_nextseek_docs.constants import BEGIN_MARKER, END_MARKER
+from NessieAI.build_tools.ingest_nextseek_docs.split import Section
 
 
 def _make_section(ordinal: int, title: str, slug: str, description: str) -> Section:

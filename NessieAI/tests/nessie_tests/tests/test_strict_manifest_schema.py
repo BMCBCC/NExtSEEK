@@ -5,8 +5,8 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from nessie_tests import bayes_manifest as bm
-from nessie_tests.manifest import NessieManifestEntry
+from NessieAI.tests.nessie_tests import bayes_manifest as bm
+from NessieAI.tests.nessie_tests.manifest import NessieManifestEntry
 
 
 def _entry(vid="x.y"):

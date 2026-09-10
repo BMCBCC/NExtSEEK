@@ -34,7 +34,7 @@ from django.test.utils import CaptureQueriesContext
 
 import nextseek_api.services.cc_assistant as cc_svc
 from nextseek_api.assistant.models_db import ChatSession
-from nextseek_api.cc_assistant import cc_config
+from NessieAI.cc import cc_config
 
 pytestmark = pytest.mark.django_db
 

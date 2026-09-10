@@ -20,7 +20,7 @@ GATED: only runs when ``RUN_REALSTACK=1``. Needs the deployed stack
 
   docker exec -e RUN_REALSTACK=1 -e SEEK_TEST_USER=.. -e SEEK_TEST_PASS=.. nextseek \\
     sh -lc 'cd /app && uv run python manage.py test \\
-    nextseek_api.cc_assistant.tests.test_cc_realstack \\
+    NessieAI.tests.cc.test_cc_realstack \\
     --settings=dmac.test_settings_realstack --noinput'
 """
 import json
@@ -38,16 +38,16 @@ from django.conf import settings
 from django.test import TestCase, TransactionTestCase
 
 from nextseek_api.assistant.models_db import ChatSession
-from nextseek_api.cc_assistant import cc_config, cc_engine
-from nextseek_api.cc_assistant import router as cc_router
-from nextseek_api.cc_assistant import step7_gate_catalog as catalog
-from nextseek_api.cc_assistant import step7_llm_cost_ledger as cost_ledger
-from nextseek_api.cc_assistant.tests import cc_matrix_gate_harness as gate
-from nextseek_api.cc_assistant.tests.validate_cc_acceptance import (
+from NessieAI.cc import cc_config, cc_engine
+from NessieAI.router import router as cc_router
+from NessieAI.tests.cc import step7_gate_catalog as catalog
+from NessieAI.cc import step7_llm_cost_ledger as cost_ledger
+from NessieAI.tests.cc import cc_matrix_gate_harness as gate
+from NessieAI.tests.cc.validate_cc_acceptance import (
     format_report,
     validate_run,
 )
-from nextseek_api.cc_assistant.tests.validate_step7_compose_deploy import (
+from NessieAI.tests.cc.validate_step7_compose_deploy import (
     format_report as step7_format_report,
     validate_run as step7_validate_run,
 )

@@ -24,7 +24,7 @@ import base64
 from pathlib import Path
 
 import nextseek_api.services.cc_assistant as cc_svc
-from nextseek_api.cc_assistant import cc_engine, cc_summary
+from NessieAI.cc import cc_engine, cc_summary
 
 PW = "hunter2-s3cr3t"
 USER = "demo"

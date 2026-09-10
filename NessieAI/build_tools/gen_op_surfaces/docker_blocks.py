@@ -4,12 +4,12 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from build_tools.gen_op_surfaces.constants import (
+from NessieAI.build_tools.gen_op_surfaces.constants import (
     CANONICAL_CAPABILITIES_IN_CONTEXT,
     IMAGE_CAPABILITIES_PATH,
     NAMED_CAPABILITIES_CONTEXT,
 )
-from nextseek_api.cc_assistant.op_registry.install_oracle import (
+from NessieAI.cc.op_registry.install_oracle import (
     PLUGIN_COPY_RE,
     PLUGIN_PATH_RE,
     discover_install,

@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from nextseek_api.cc_assistant.tests.validate_step7_compose_deploy import (
+from NessieAI.tests.cc.validate_step7_compose_deploy import (
     Context,
     MBP_SNAPSHOT_BASENAME,
     _resolve_tracker_source,
@@ -113,7 +113,7 @@ def test_tracker_status_and_resolve_paths(tmp_path):
 
 
 def test_validate_run_and_main_on_empty_bundle(tmp_path, capsys):
-    from nextseek_api.cc_assistant.tests.validate_step7_compose_deploy import validate_run
+    from NessieAI.tests.cc.validate_step7_compose_deploy import validate_run
 
     empty = tmp_path / "empty"
     empty.mkdir()

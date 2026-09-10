@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-from nextseek_api.eval.generation_store import GenerationManifest
+from NessieAI.hibayes.generation_store import GenerationManifest
 
 __all__ = [
     "FitGroup",
@@ -141,8 +141,8 @@ def manifest_for_combined(
     for_publication: bool = False,
     allow_initial_release_override: bool = False,
 ) -> GenerationManifest:
-    from nextseek_api.eval.fit.v14.combined import CombinedFitResult
-    from nextseek_api.eval.fit.v14.decision import decision_status_to_band
+    from NessieAI.hibayes.fit.v14.combined import CombinedFitResult
+    from NessieAI.hibayes.fit.v14.decision import decision_status_to_band
 
     if not isinstance(fit_result, CombinedFitResult):
         raise TypeError(f"unsupported fit result type: {type(fit_result)!r}")

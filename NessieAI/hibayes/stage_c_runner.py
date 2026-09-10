@@ -6,14 +6,14 @@ from typing import Callable, Protocol
 
 import orjson
 
-from nextseek_api.eval.attempt_store import AttemptStore
-from nextseek_api.eval.judge import (
+from NessieAI.hibayes.attempt_store import AttemptStore
+from NessieAI.hibayes.judge import (
     STAGE_C_STATUS_COMPLETE,
     STAGE_C_STATUS_FAILED,
     STAGE_C_STATUS_PARTIAL,
     aggregate_three_evaluations,
 )
-from nextseek_api.eval.judge_models import FunctionalEvaluation
+from NessieAI.hibayes.judge_models import FunctionalEvaluation
 
 __all__ = [
     "StageCResult",

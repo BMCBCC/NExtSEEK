@@ -4,7 +4,7 @@ No Django, no Docker, no spend — pure logic + tmp filesystem.
 """
 from pathlib import Path
 
-from nextseek_api.cc_assistant import cc_session
+from NessieAI.cc import cc_session
 
 
 # --- resume_id_from_state -----------------------------------------------------

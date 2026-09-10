@@ -10,10 +10,10 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from nextseek_api.eval.attempt_store import AttemptStore  # noqa: E402
-from nextseek_api.eval.judge import STAGE_C_STATUS_COMPLETE, aggregate_outcome  # noqa: E402
-from nextseek_api.eval.judge_models import FunctionalEvaluation, FunctionalOutcome, PrimaryIssue, ReviewPriority  # noqa: E402
-from nextseek_api.eval.stage_c_runner import StageCRunner, StageCRunnerError  # noqa: E402
+from NessieAI.hibayes.attempt_store import AttemptStore  # noqa: E402
+from NessieAI.hibayes.judge import STAGE_C_STATUS_COMPLETE, aggregate_outcome  # noqa: E402
+from NessieAI.hibayes.judge_models import FunctionalEvaluation, FunctionalOutcome, PrimaryIssue, ReviewPriority  # noqa: E402
+from NessieAI.hibayes.stage_c_runner import StageCRunner, StageCRunnerError  # noqa: E402
 
 
 def _ev(outcome: str = "FullySatisfied") -> FunctionalEvaluation:

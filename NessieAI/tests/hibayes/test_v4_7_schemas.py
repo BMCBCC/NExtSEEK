@@ -3,20 +3,20 @@ from __future__ import annotations
 
 import pytest
 
-from nextseek_api.eval.evidence_kinds import (
+from NessieAI.hibayes.evidence_kinds import (
     EvidenceKind,
     ForgedEvidenceDiscriminator,
     MixedEvidenceBatch,
     OnlineEvidenceRejected,
     PAIRED_RUN_SCHEMA_VERSION,
 )
-from nextseek_api.eval.online_observation import (
+from NessieAI.hibayes.online_observation import (
     BANNED_COUNTERFACTUAL_PHRASES,
     DEFAULT_SELECTION_CAVEAT,
     OnlineObservationalRow,
 )
-from nextseek_api.eval.paired_run import PairedExperimentalBatch, build_paired_batch
-from nextseek_api.eval.router_models_proposal import RouteSource
+from NessieAI.hibayes.paired_run import PairedExperimentalBatch, build_paired_batch
+from NessieAI.hibayes.router_models_proposal import RouteSource
 
 
 def test_paired_batch_requires_paired_kind():

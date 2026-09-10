@@ -2,7 +2,7 @@
 through the real batch-upload parser (the correctness oracle)."""
 import json
 
-from nextseek_api.assistant.upload_workbook import render_upload_workbook
+from NessieAI.ns.upload_workbook import render_upload_workbook
 from nextseek_api.batch_upload.convert import detect_format, parse_traditional_file
 
 

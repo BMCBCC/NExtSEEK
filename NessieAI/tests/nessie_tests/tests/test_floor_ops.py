@@ -25,8 +25,8 @@ import re
 
 import pytest
 
-from nessie_tests import evaluate
-from nessie_tests.route_observer import RouteObservation
+from NessieAI.tests.nessie_tests import evaluate
+from NessieAI.tests.nessie_tests.route_observer import RouteObservation
 
 OBS = RouteObservation("nextseek_query", None, "baml", "", "graph_query", "graph_query")
 
@@ -267,7 +267,7 @@ def test_the_engine_specific_booleans_are_still_available_to_assert_by_hand():
 
 # ── the floor spec must actually USE them, measured on the real corpus ────────
 
-from nessie_tests import corpus  # noqa: E402
+from NessieAI.tests.nessie_tests import corpus  # noqa: E402
 
 CORPUS = pathlib.Path(__file__).resolve().parents[1] / "corpus.json"
 

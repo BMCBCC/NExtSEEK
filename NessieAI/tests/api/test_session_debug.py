@@ -126,7 +126,7 @@ class SessionDebugProjectionTests(TestCase):
         self.assertIn("completed_task_but_session_never_saved", codes)
 
     def test_transcripts_listed_by_size_not_content_by_default(self):
-        from nextseek_api.cc_assistant.cc_transcript_store import compress
+        from NessieAI.cc.cc_transcript_store import compress
         raw = b'{"role":"assistant","text":"SECRETMARKER"}\n'
         CCSessionTranscript.objects.create(
             chat_session=self.session, cc_session_id="cc-1", turn_id="t1",
@@ -138,7 +138,7 @@ class SessionDebugProjectionTests(TestCase):
         self.assertNotIn("SECRETMARKER", json.dumps(out))
 
     def test_include_transcripts_returns_content(self):
-        from nextseek_api.cc_assistant.cc_transcript_store import compress
+        from NessieAI.cc.cc_transcript_store import compress
         raw = b'{"role":"assistant","text":"SECRETMARKER"}\n'
         CCSessionTranscript.objects.create(
             chat_session=self.session, cc_session_id="cc-1", turn_id="t1",

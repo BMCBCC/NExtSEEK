@@ -3,8 +3,8 @@ import random
 
 import pytest
 
-from e2e.catalog import Catalog, Family, Variant, Turn
-from e2e.sampler import env_satisfied, sample
+from NessieAI.tests.e2e.catalog import Catalog, Family, Variant, Turn
+from NessieAI.tests.e2e.sampler import env_satisfied, sample
 
 
 def _make_variant(family: str, id_: str, requires_env: list[str] | None = None) -> Variant:

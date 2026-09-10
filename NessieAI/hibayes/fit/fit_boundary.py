@@ -5,15 +5,15 @@ import hashlib
 import json
 from typing import Any
 
-from nextseek_api.eval.evidence_kinds import (
+from NessieAI.hibayes.evidence_kinds import (
     EvidenceKind,
     ForgedEvidenceDiscriminator,
     MixedEvidenceBatch,
     OnlineEvidenceRejected,
     UnapprovedPairedRun,
 )
-from nextseek_api.eval.online_observation import OnlineObservationalRow
-from nextseek_api.eval.paired_run import PairedExperimentalBatch
+from NessieAI.hibayes.online_observation import OnlineObservationalRow
+from NessieAI.hibayes.paired_run import PairedExperimentalBatch
 
 __all__ = [
     "assert_paired_experimental_only",
@@ -53,7 +53,7 @@ def require_approved_paired_run(
     *,
     expected_content_hash: str | None = None,
 ) -> None:
-    from nextseek_api.eval.paired_run_registry import is_paired_run_approved
+    from NessieAI.hibayes.paired_run_registry import is_paired_run_approved
 
     if not is_paired_run_approved(paired_run_id):
         raise UnapprovedPairedRun(f"paired_run_id {paired_run_id!r} is not approved")

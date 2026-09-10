@@ -2,8 +2,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable
 
-from nessie_tests.limits import GRAPH_LIMIT_SENTINELS
-from nessie_tests.outage import OUTAGE_REASON, is_provider_outage
+from NessieAI.tests.nessie_tests.limits import GRAPH_LIMIT_SENTINELS
+from NessieAI.tests.nessie_tests.outage import OUTAGE_REASON, is_provider_outage
 
 
 @dataclass

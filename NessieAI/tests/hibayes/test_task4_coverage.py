@@ -19,7 +19,7 @@ from nextseek_api.assistant.models_db import (
     PaidRunState,
     SpendReservation,
 )
-from nextseek_api.cc_assistant import (
+from NessieAI.router import (
     baml_introspect,
     family_labels,
     posterior_selector,
@@ -27,33 +27,33 @@ from nextseek_api.cc_assistant import (
     router,
     transport_trace,
 )
-from nextseek_api.eval import judging_engine, run_authorization
-from nextseek_api.eval.evidence_kinds import (
+from NessieAI.hibayes import judging_engine, run_authorization
+from NessieAI.hibayes.evidence_kinds import (
     EvidenceKind,
     ForgedEvidenceDiscriminator,
     ONLINE_OBSERVATION_SCHEMA_VERSION,
     OnlineEvidenceRejected,
     PAIRED_RUN_SCHEMA_VERSION,
 )
-from nextseek_api.eval.fake_provider import ProviderCallResult
-from nextseek_api.eval.generation_store import GenerationSnapshot
-from nextseek_api.eval.judging_engine import JudgeAttemptSpec, JudgingEngine
-from nextseek_api.eval.online_observation import OnlineObservationalRow
-from nextseek_api.eval.paid_run_state import (
+from NessieAI.hibayes.fake_provider import ProviderCallResult
+from NessieAI.hibayes.generation_store import GenerationSnapshot
+from NessieAI.hibayes.judging_engine import JudgeAttemptSpec, JudgingEngine
+from NessieAI.hibayes.online_observation import OnlineObservationalRow
+from NessieAI.hibayes.paid_run_state import (
     ResumeError,
     ensure_attempt_pending,
     mark_attempt_failed,
     mark_attempt_succeeded,
 )
-from nextseek_api.eval.paired_run import PairedExperimentalBatch
-from nextseek_api.eval.router_models_proposal import RouteSource
-from nextseek_api.eval.run_authorization import AuthorizationError
-from nextseek_api.eval.run_manifest import manifest_body_hash
-from nextseek_api.eval.spend_conservation import (
+from NessieAI.hibayes.paired_run import PairedExperimentalBatch
+from NessieAI.hibayes.router_models_proposal import RouteSource
+from NessieAI.hibayes.run_authorization import AuthorizationError
+from NessieAI.hibayes.run_manifest import manifest_body_hash
+from NessieAI.hibayes.spend_conservation import (
     ConservationSnapshot,
     compute_conservation,
 )
-from nextseek_api.eval.tests.v4_8_fixtures import (
+from NessieAI.tests.hibayes.v4_8_fixtures import (
     sample_manifest_dict,
     sample_run_manifest,
 )

@@ -144,7 +144,7 @@ class SchemaRAGIntegrationTests(APITestCase):
         # Serve the vendored schema instead of hitting fairdomhub.org — the
         # ONLY patch in this module (embeddings run the real model).
         patcher = patch(
-            'nextseek_api.schema_rag.schema_processor.requests.get',
+            'NessieAI.schema_rag.schema_processor.requests.get',
             return_value=_mock_get_response(_load_fixture_text()),
         )
         patcher.start()
@@ -398,7 +398,7 @@ class SchemaRAGFullModeIntegrationTests(APITestCase):
         # Serve the vendored schema instead of hitting fairdomhub.org — the
         # ONLY patch in this module (embeddings run the real model).
         patcher = patch(
-            'nextseek_api.schema_rag.schema_processor.requests.get',
+            'NessieAI.schema_rag.schema_processor.requests.get',
             return_value=_mock_get_response(_load_fixture_text()),
         )
         patcher.start()

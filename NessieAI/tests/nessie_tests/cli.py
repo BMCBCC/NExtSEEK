@@ -2,7 +2,7 @@ from __future__ import annotations
 import argparse
 import urllib.error
 from pathlib import Path
-from nessie_tests import runner, http_driver
+from NessieAI.tests.nessie_tests import runner, http_driver
 
 _CORPUS = Path(__file__).resolve().parent / "corpus.json"
 
@@ -146,7 +146,7 @@ def _run_bayesian(a, auth, supplied) -> int:
             f"--bayesian selects on the corpus's is_bayesian flag and cannot be "
             f"combined with {', '.join(conflicting)}.")
 
-    from nessie_tests import bayes_manifest, bayesian, preflight
+    from NessieAI.tests.nessie_tests import bayes_manifest, bayesian, preflight
     try:
         m = bayesian.run_paired(
             base_url=a.base_url, auth_header=auth, out_dir=a.out,
@@ -247,7 +247,7 @@ def main(argv=None) -> int:
 
     bundle_reader = None
     if a.tier == "full":
-        from nessie_tests.bundle import summary_for_session
+        from NessieAI.tests.nessie_tests.bundle import summary_for_session
         bundle_reader = summary_for_session
     run_consistency = a.consistency or (a.tier == "full")
     manifest = runner.run_suite(

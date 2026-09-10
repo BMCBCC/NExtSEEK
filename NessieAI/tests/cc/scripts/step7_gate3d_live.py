@@ -39,11 +39,11 @@ import django  # noqa: E402
 
 django.setup()
 
-from nextseek_api.cc_assistant import cc_config, cc_engine  # noqa: E402
-from nextseek_api.cc_assistant.tests.validate_step7_compose_deploy import (  # noqa: E402
+from NessieAI.cc import cc_config, cc_engine  # noqa: E402
+from NessieAI.tests.cc.validate_step7_compose_deploy import (  # noqa: E402
     CANONICAL_FOREIGN_TOKENS,
 )
-from nextseek_api.cc_assistant.tests.validate_cc_acceptance import OPUS  # noqa: E402
+from NessieAI.tests.cc.validate_cc_acceptance import OPUS  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 EVID_ROOT = REPO_ROOT / "nextseek_api" / "cc_assistant" / "tests" / "acceptance_evidence" / "step7"
@@ -294,7 +294,7 @@ def _run_matrix(bundle: Path, *, run_id: str) -> None:
     proc = subprocess.run(
         [
             "uv", "run", "python", "manage.py", "test",
-            "nextseek_api.cc_assistant.tests.test_cc_realstack.CCCapabilityGateMatrix"
+            "NessieAI.tests.cc.test_cc_realstack.CCCapabilityGateMatrix"
             ".test_01_instance_binding_matrix_sweep_and_companions",
             "--settings=dmac.test_settings_realstack",
             "--noinput",

@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from build_tools.ingest_nextseek_docs import __main__ as orchestrator
-from build_tools.ingest_nextseek_docs.constants import BEGIN_MARKER, END_MARKER
+from NessieAI.build_tools.ingest_nextseek_docs import __main__ as orchestrator
+from NessieAI.build_tools.ingest_nextseek_docs.constants import BEGIN_MARKER, END_MARKER
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 

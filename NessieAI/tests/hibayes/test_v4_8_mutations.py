@@ -5,9 +5,9 @@ from decimal import Decimal
 
 import pytest
 
-from nextseek_api.eval.paid_run_schedule import ScheduleRefused, default_schedule_entrypoint
-from nextseek_api.eval.run_authorization import AuthorizationError, approve_manifest, reserve_budget
-from nextseek_api.eval.tests.v4_8_fixtures import sample_manifest_dict
+from NessieAI.hibayes.paid_run_schedule import ScheduleRefused, default_schedule_entrypoint
+from NessieAI.hibayes.run_authorization import AuthorizationError, approve_manifest, reserve_budget
+from NessieAI.tests.hibayes.v4_8_fixtures import sample_manifest_dict
 
 pytestmark = pytest.mark.django_db
 
@@ -19,7 +19,7 @@ def approved():
 
 def test_mutation_skip_reserve_still_requires_gate(approved, monkeypatch):
     """Direct transport without reserve must fail at require_reservation."""
-    from nextseek_api.eval import provider_gate
+    from NessieAI.hibayes import provider_gate
 
     def _skip_reserve(*args, **kwargs):
         raise AssertionError("reserve must not be skipped in production path")
@@ -62,7 +62,7 @@ def test_mutation_changed_manifest_gets_distinct_approval():
 def test_mutation_forged_collision_refused():
     body = sample_manifest_dict()
     from nextseek_api.assistant.models_db import ApprovedRunManifest
-    from nextseek_api.eval.run_manifest import manifest_body_hash
+    from NessieAI.hibayes.run_manifest import manifest_body_hash
     from datetime import timedelta
     from django.utils import timezone
 

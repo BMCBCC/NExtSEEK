@@ -1,7 +1,7 @@
 """Hermetic tests for resolve_user_project with a stubbed SeekDB."""
 import pytest
 
-from nextseek_api.cc_assistant.cc_provision import (
+from NessieAI.cc.cc_provision import (
     ProjectIdentity,
     ProjectResolutionError,
     resolve_user_project,

@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from nextseek_api.cc_assistant.op_registry.models import (
+from NessieAI.cc.op_registry.models import (
     AllowlistSpec,
     ArgSpec,
     Backend,

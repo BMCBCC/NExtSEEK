@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from nextseek_api.eval import artifact_validity_proposal as av
+from NessieAI.hibayes import artifact_validity_proposal as av
 
 
 def _zip(path, *names: str) -> None:

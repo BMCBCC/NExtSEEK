@@ -12,8 +12,8 @@ if str(REPO) not in sys.path:
 
 from pydantic import ValidationError
 
-from nextseek_api.eval.disposition import OutcomeBucket  # noqa: E402
-from nextseek_api.eval.human_annotations import (  # noqa: E402
+from NessieAI.hibayes.disposition import OutcomeBucket  # noqa: E402
+from NessieAI.hibayes.human_annotations import (  # noqa: E402
     HumanAnnotation,
     HumanAnnotationContext,
     HumanAnnotationError,

@@ -15,13 +15,13 @@ import json
 import pytest
 from unittest.mock import patch, MagicMock
 
-from nextseek_api.schema_rag.schema_processor import OpenAPISchemaProcessor
-from nextseek_api.schema_rag.errors import SchemaFetchError
+from NessieAI.schema_rag.schema_processor import OpenAPISchemaProcessor
+from NessieAI.schema_rag.errors import SchemaFetchError
 
 
 class TestFetchSchema:
 
-    @patch("nextseek_api.schema_rag.schema_processor.requests.get")
+    @patch("NessieAI.schema_rag.schema_processor.requests.get")
     def test_http_error(self, mock_get):
         import requests
         mock_get.side_effect = requests.RequestException("timeout")
@@ -29,14 +29,14 @@ class TestFetchSchema:
         with pytest.raises(SchemaFetchError, match="HTTP request failed"):
             processor.fetch_schema("http://example.com/schema.yaml")
 
-    @patch("nextseek_api.schema_rag.schema_processor.requests.get")
+    @patch("NessieAI.schema_rag.schema_processor.requests.get")
     def test_generic_exception(self, mock_get):
         mock_get.side_effect = RuntimeError("unexpected")
         processor = OpenAPISchemaProcessor()
         with pytest.raises(SchemaFetchError, match="HTTP request failed"):
             processor.fetch_schema("http://example.com/schema.yaml")
 
-    @patch("nextseek_api.schema_rag.schema_processor.requests.get")
+    @patch("NessieAI.schema_rag.schema_processor.requests.get")
     def test_json_parse_error(self, mock_get):
         mock_response = MagicMock()
         mock_response.headers = {"Content-Type": "application/json"}
@@ -47,8 +47,8 @@ class TestFetchSchema:
         with pytest.raises(SchemaFetchError, match="parsing failed"):
             processor.fetch_schema("http://example.com/schema.json")
 
-    @patch("nextseek_api.schema_rag.schema_processor.jsonref.replace_refs")
-    @patch("nextseek_api.schema_rag.schema_processor.requests.get")
+    @patch("NessieAI.schema_rag.schema_processor.jsonref.replace_refs")
+    @patch("NessieAI.schema_rag.schema_processor.requests.get")
     def test_ref_resolution_error(self, mock_get, mock_replace):
         import jsonref
         mock_response = MagicMock()

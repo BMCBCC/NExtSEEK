@@ -7,8 +7,8 @@ from unittest.mock import patch
 import pytest
 
 from nextseek_api.assistant.models_api import QueryRequest
-from nextseek_api.cc_assistant import router as cc_router
-from nextseek_api.cc_assistant import router_context
+from NessieAI.router import router as cc_router
+from NessieAI.router import router_context
 from nextseek_api.services import cc_assistant as svc
 
 ADMIN = SimpleNamespace(is_staff=True, is_superuser=False)
@@ -85,7 +85,7 @@ def test_mutation_force_route_beats_sticky_not_relabled_baml():
 
 
 def _arm(route, task_ids, arm_id="a1"):
-    from nessie_tests.manifest import NessieManifestEntry
+    from NessieAI.tests.nessie_tests.manifest import NessieManifestEntry
 
     return NessieManifestEntry(
         id=arm_id,
@@ -101,8 +101,8 @@ def _arm(route, task_ids, arm_id="a1"):
 
 def test_mutation_same_session_task_ids_must_differ_across_arms():
     """Copied-arms killer: verifier rejects overlapping task_ids on paired arms."""
-    from nessie_tests import bayes_manifest as bm
-    from nessie_tests import v4_2_verifier as v4
+    from NessieAI.tests.nessie_tests import bayes_manifest as bm
+    from NessieAI.tests.nessie_tests import v4_2_verifier as v4
 
     pair = bm.BayesPair(
         id="p1",
@@ -118,8 +118,8 @@ def test_mutation_same_session_task_ids_must_differ_across_arms():
 
 def test_mutation_swapped_routes_on_forced_arms():
     """Swapped routes killer: verifier rejects ns/cc route swap on forced arms."""
-    from nessie_tests import bayes_manifest as bm
-    from nessie_tests import v4_2_verifier as v4
+    from NessieAI.tests.nessie_tests import bayes_manifest as bm
+    from NessieAI.tests.nessie_tests import v4_2_verifier as v4
 
     pair = bm.BayesPair(
         id="p1",

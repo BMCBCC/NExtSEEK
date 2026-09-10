@@ -7,8 +7,8 @@ from django.db import transaction
 from django.utils import timezone as dj_timezone
 
 from nextseek_api.assistant.models_db import FamilyPosterior, PosteriorGeneration
-from nextseek_api.eval import generation_store
-from nextseek_api.eval.generation_store import GenerationManifest, PublishError
+from NessieAI.hibayes import generation_store
+from NessieAI.hibayes.generation_store import GenerationManifest, PublishError
 
 
 def _publish_generation_for_test(

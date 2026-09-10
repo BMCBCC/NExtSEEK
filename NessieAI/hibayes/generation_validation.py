@@ -53,7 +53,7 @@ def validate_generation_for_activation(
     *,
     require_current_compatibility: bool = True,
 ) -> ValidationResult:
-    from nextseek_api.eval.generation_store import generation_content_hash, manifest_from_generation
+    from NessieAI.hibayes.generation_store import generation_content_hash, manifest_from_generation
 
     reasons: list[str] = []
 
@@ -122,7 +122,7 @@ def validate_generation_for_activation(
         reasons.append(f"compatibility: missing keys {sorted(missing_compat)}")
     elif require_current_compatibility:
         try:
-            from nextseek_api.cc_assistant.family_labels import corpus_snapshot
+            from NessieAI.router.family_labels import corpus_snapshot
 
             current = corpus_snapshot()
             if str(compat.get("taxonomy_version")) != current.taxonomy_version:

@@ -29,7 +29,7 @@ import re
 
 import pytest
 
-from nessie_tests import corpus, evaluate, route_observer
+from NessieAI.tests.nessie_tests import corpus, evaluate, route_observer
 
 CORPUS = pathlib.Path(__file__).resolve().parents[1] / "corpus.json"
 

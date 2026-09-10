@@ -24,8 +24,8 @@ from nextseek_api.models import (
     RetrieveRequest,
     RetrieveResponse,
 )
-from nextseek_api.schema_rag import service as schema_rag_service
-from nextseek_api.schema_rag.errors import (
+from NessieAI.schema_rag import service as schema_rag_service
+from NessieAI.schema_rag.errors import (
     SCHEMA_FETCH_FAILED,
     SCHEMA_TOO_LARGE,
     SESSION_MISSING_OR_EXPIRED,

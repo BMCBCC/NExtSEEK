@@ -4,8 +4,8 @@ Post-G7-10 there is no ``input_src`` host path — the CC sibling mounts the
 ``input_subpath`` tail of the dmac-cc-users volume; Django (uploads, list)
 resolves paths via ``input_mnt`` only.
 """
-from nextseek_api.cc_assistant.cc_config import CCPaths
-from nextseek_api.cc_assistant.cc_provision import build_user_dirs
+from NessieAI.cc.cc_config import CCPaths
+from NessieAI.cc.cc_provision import build_user_dirs
 
 
 def _paths() -> CCPaths:

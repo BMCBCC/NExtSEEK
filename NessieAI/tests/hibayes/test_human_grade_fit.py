@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from nextseek_api.cc_assistant.family_labels import corpus_snapshot
-from nextseek_api.eval.disposition import OutcomeBucket
-from nextseek_api.eval.human_grade_fit import (
+from NessieAI.router.family_labels import corpus_snapshot
+from NessieAI.hibayes.disposition import OutcomeBucket
+from NessieAI.hibayes.human_grade_fit import (
     DEFAULT_EVIDENCE_IDENTITY,
     EvidenceIntegrityError,
     ModelMode,
@@ -19,8 +19,8 @@ from nextseek_api.eval.human_grade_fit import (
     manifest_for_combined,
     publish_human_grade_fit,
 )
-from nextseek_api.eval.publish import FitResult, PublicationEvidenceRequired, publish
-from nextseek_api.eval.publish import manifest_for_combined as publication_manifest
+from NessieAI.hibayes.publish import FitResult, PublicationEvidenceRequired, publish
+from NessieAI.hibayes.publish import manifest_for_combined as publication_manifest
 
 
 DELIVERY = Path("/home/taishajo/work/NExtSEEK-dev/testquestions-2026-08-07")
@@ -94,7 +94,7 @@ def test_hash_tampering_refused_before_archive_members_are_parsed():
 
 
 def _patch_authenticated_bayes_manifest(monkeypatch, mutate):
-    import nextseek_api.eval.human_grade_fit as human_grade_fit
+    import NessieAI.hibayes.human_grade_fit as human_grade_fit
 
     original = human_grade_fit._verified_source_bytes
 
@@ -114,7 +114,7 @@ def _patch_authenticated_bayes_manifest(monkeypatch, mutate):
 
 
 def _patch_current_corpus(monkeypatch, tmp_path, mutate):
-    import nextseek_api.eval.human_grade_fit as human_grade_fit
+    import NessieAI.hibayes.human_grade_fit as human_grade_fit
 
     payload = json.loads(Path(corpus_snapshot().corpus_path).read_text())
     mutate(payload)
@@ -466,7 +466,7 @@ def test_forged_authority_and_stack_provenance_refuse_before_write(initial_relea
 @pytest.mark.django_db
 def test_coordinated_source_hash_and_evidence_forgery_is_reauthenticated(initial_release):
     from nextseek_api.assistant.models_db import PairedRunRegistry, PosteriorGeneration
-    from nextseek_api.eval import human_grade_fit
+    from NessieAI.hibayes import human_grade_fit
 
     forged_sources = deepcopy(initial_release.source_hashes)
     forged_sources["archive_sha256"] = "0" * 64
@@ -495,8 +495,8 @@ def test_coordinated_source_hash_and_evidence_forgery_is_reauthenticated(initial
 @pytest.mark.django_db
 def test_wrong_registered_content_hash_refuses_generation_publication(initial_release):
     from nextseek_api.assistant.models_db import PairedRunRegistry, PosteriorGeneration
-    from nextseek_api.eval.evidence_kinds import UnapprovedPairedRun
-    from nextseek_api.eval.paired_run_registry import register_paired_run
+    from NessieAI.hibayes.evidence_kinds import UnapprovedPairedRun
+    from NessieAI.hibayes.paired_run_registry import register_paired_run
 
     register_paired_run(
         paired_run_id=initial_release.paired_batch.paired_run_id,
@@ -515,7 +515,7 @@ def test_wrong_registered_content_hash_refuses_generation_publication(initial_re
 @pytest.mark.django_db
 def test_post_registration_publish_failure_rolls_back_registry(initial_release):
     from nextseek_api.assistant.models_db import PairedRunRegistry, PosteriorGeneration
-    from nextseek_api.eval import generation_store
+    from NessieAI.hibayes import generation_store
 
     generation_store.set_test_abort_publish_after_generation(True)
     try:
@@ -577,7 +577,7 @@ def test_legacy_stack_cannot_claim_authoritative_publication(prepared):
 
 @pytest.mark.django_db
 def test_initial_release_publish_is_immutable_and_activation_is_separate_cas(initial_release):
-    from nextseek_api.eval.generation_store import EMPTY_ACTIVE_HASH, get_current_active_hash
+    from NessieAI.hibayes.generation_store import EMPTY_ACTIVE_HASH, get_current_active_hash
 
     generation = publish_human_grade_fit(
         initial_release,

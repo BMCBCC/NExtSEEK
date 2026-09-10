@@ -137,10 +137,10 @@ from urllib.parse import urlparse
 #   [2]=nextseek_api [3]=<repo root> ; <repo root>/chat_nextseek is the package parent.
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "chat_nextseek"))
 
-from e2e.catalog import PassCriterion, Turn, Variant  # noqa: E402  (dev e2e package, path-pinned above)
-from e2e.criteria import check_pass  # noqa: E402
-from e2e.playwright.mysql import fetch_chat_session_row  # noqa: E402  (the mysql helper, per Step 1)
-from e2e.playwright.runner import run_variant_browser  # noqa: E402
+from NessieAI.tests.e2e.catalog import PassCriterion, Turn, Variant  # noqa: E402  (dev e2e package, path-pinned above)
+from NessieAI.tests.e2e.criteria import check_pass  # noqa: E402
+from NessieAI.tests.e2e.playwright.mysql import fetch_chat_session_row  # noqa: E402  (the mysql helper, per Step 1)
+from NessieAI.tests.e2e.playwright.runner import run_variant_browser  # noqa: E402
 
 
 # ── Explicit config binding (no ambient ChatConfig — see module docstring) ──

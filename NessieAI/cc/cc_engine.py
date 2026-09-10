@@ -40,7 +40,7 @@ from .attach import BridgeAttachSocket
 from .translate import CCStreamTranslator
 from .cc_config import CCPaths
 from . import cc_transcript_store
-from nextseek_api.cc_assistant import cc_session
+from NessieAI.cc import cc_session
 
 logger = logging.getLogger(__name__)
 
@@ -1885,7 +1885,7 @@ def _publish_artifacts(
 
     artifacts: list[dict] = []
     if len(art_files) > 1:
-        from nextseek_api.cc_assistant.cc_artifacts import build_artifact_zip
+        from NessieAI.cc.cc_artifacts import build_artifact_zip
         zip_path = art_dir / "artifacts.zip"
         build_artifact_zip(art_files, zip_path, arc_prefix=art_dir)
         artifacts.append({

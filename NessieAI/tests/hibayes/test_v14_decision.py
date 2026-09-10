@@ -5,7 +5,7 @@ import math
 
 import numpy as np
 
-from nextseek_api.eval.fit.v14.decision import (
+from NessieAI.hibayes.fit.v14.decision import (
     CandidateDecision,
     DecisionStatus,
     apply_complete_set_fdr,
@@ -15,13 +15,13 @@ from nextseek_api.eval.fit.v14.decision import (
     retained_support_ok,
     unrelated_spend_gate_path,
 )
-from nextseek_api.eval.fit.v14.fit_config import V14FitConfig
-from nextseek_api.eval.fit.v14.latency_model import (
+from NessieAI.hibayes.fit.v14.fit_config import V14FitConfig
+from NessieAI.hibayes.fit.v14.latency_model import (
     DescriptiveLatencyResult,
     LatencyFitResult,
 )
-from nextseek_api.eval.fit.v14.pair_rows import JointQualityState, LatencyObservationKind, PairFitRow
-from nextseek_api.eval.fit.v14.quality_model import QualityFitResult
+from NessieAI.hibayes.fit.v14.pair_rows import JointQualityState, LatencyObservationKind, PairFitRow
+from NessieAI.hibayes.fit.v14.quality_model import QualityFitResult
 
 
 def _rows(n: int = 8, state: JointQualityState = JointQualityState.nextseek_only_succeeds) -> list[PairFitRow]:

@@ -4,8 +4,8 @@ import pytest
 from django.contrib.auth import get_user_model
 
 from nextseek_api.assistant.models_db import ChatSession
-from nextseek_api.cc_assistant.turn_ledger import record_turn
-from nextseek_api.eval.export import EVAL_ROW_SCHEMA_VERSION, export_rows
+from NessieAI.router.turn_ledger import record_turn
+from NessieAI.hibayes.export import EVAL_ROW_SCHEMA_VERSION, export_rows
 
 pytestmark = pytest.mark.django_db
 

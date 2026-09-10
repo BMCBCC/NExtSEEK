@@ -1,7 +1,7 @@
 """Hermetic: pure chat_log serialize + FIFO-cap helpers. No Django, no DB."""
 from pathlib import Path
 
-from nextseek_api.cc_assistant.cc_turn_complete import append_capped
+from NessieAI.cc.cc_turn_complete import append_capped
 
 
 def test_append_capped_keeps_newest_in_order():
@@ -22,7 +22,7 @@ def test_append_capped_under_cap_keeps_all_in_order():
 def test_apply_turn_writes_chat_log_and_cc_traces_mirror():
     """Locked SPEC-3 E5 / §6.5: the per-turn trace is written to BOTH chat_log[]
     (reload source of truth) AND the es["cc_traces"] mirror in ONE RMW transform."""
-    from nextseek_api.cc_assistant.cc_turn_complete import (
+    from NessieAI.cc.cc_turn_complete import (
         TurnCompletePayload, apply_turn_to_extra_state)
     trace = {"cc_session_id": "s", "ts": "t", "steps": []}
     payload = TurnCompletePayload(
@@ -35,7 +35,7 @@ def test_apply_turn_writes_chat_log_and_cc_traces_mirror():
 
 
 def test_serialize_cc_chat_log_entry_keys():
-    from nextseek_api.cc_assistant.cc_turn_complete import (
+    from NessieAI.cc.cc_turn_complete import (
         TurnCompletePayload, serialize_cc_chat_log_entry)
     payload = TurnCompletePayload(
         chat_session=None, user_query="q", assistant_reply="a", ts="t",

@@ -1,7 +1,7 @@
 """Hermetic: atomic memory-file write + copy-on-change transcript staging."""
 from pathlib import Path
 
-from nextseek_api.cc_assistant import cc_memory, cc_memory_io
+from NessieAI.cc import cc_memory, cc_memory_io
 
 
 def _meta(sid, host_path):

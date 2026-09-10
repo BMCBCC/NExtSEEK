@@ -7,7 +7,7 @@ import asyncio
 from dmac_assistant.router import agent as agent_mod
 from dmac_assistant.router.baml_client.types import Route, RouterDecision
 
-from nextseek_api.cc_assistant import router_context as rc
+from NessieAI.router import router_context as rc
 
 
 def _hist():

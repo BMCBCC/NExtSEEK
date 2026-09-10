@@ -2,7 +2,7 @@
 
 Ported from dmac-assistant tests/unit/test_container_claude_md_plugin_section.py.
 The ingest-pipeline regression test (test_ingest_pipeline_produces_non_empty_block)
-is NOT ported — its build_tools.ingest_nextseek_docs orchestrator was not ported
+is NOT ported — its NessieAI.build_tools.ingest_nextseek_docs orchestrator was not ported
 to NExtSEEK. The remaining assertions (no legacy nextseek-api references, canonical
 plugin paths, auto-gen sentinel integrity) are content-only. No chat_nextseek import.
 """

@@ -22,8 +22,9 @@ from pathlib import Path
 
 import pytest
 
-from nextseek_api.cc_assistant import cc_engine, cc_memory, cc_summary, cc_sweep
-from nextseek_api.cc_assistant import router as cc_router
+from NessieAI.cc import cc_engine, cc_memory, cc_summary
+from nextseek_api.cc_assistant import cc_sweep
+from NessieAI.router import router as cc_router
 
 PW = "hunter2-s3cr3t"
 ENV = {"NEXTSEEK_USERNAME": "demo", "NEXTSEEK_PASSWORD": PW, "API_PASS": PW}

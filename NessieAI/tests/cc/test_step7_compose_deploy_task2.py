@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from nextseek_api.cc_assistant.tests.step7_compose_fixtures import (
+from NessieAI.tests.cc.step7_compose_fixtures import (
     FOREIGN_TOKENS,
     LIVE_SENTINEL,
     OWN_MARKER,
@@ -35,7 +35,7 @@ from nextseek_api.cc_assistant.tests.step7_compose_fixtures import (
     _write_meta_full,
     _write_tracker,
 )
-from nextseek_api.cc_assistant.tests.validate_step7_compose_deploy import (
+from NessieAI.tests.cc.validate_step7_compose_deploy import (
     EXPECTED_VOLUME_BASE_NAMES,
     validate_run,
 )

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from e2e.playwright.trio import normalize, trio_match
+from NessieAI.tests.e2e.playwright.trio import normalize, trio_match
 
 
 FIXTURES = Path(__file__).parent / "e2e" / "playwright" / "fixtures" / "normalize_cases.json"

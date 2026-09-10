@@ -57,7 +57,7 @@ class TestSchemaRAGViewSet:
     @patch("nextseek_api.services.schema_rag.resolve_seek_auth", return_value=(("user", "pass"), {}))
     def test_ingest_failure_maps_error_code(self, mock_auth, mock_ingest):
         """Failed ingestion returns mapped HTTP status."""
-        from nextseek_api.schema_rag.errors import SCHEMA_FETCH_FAILED
+        from NessieAI.schema_rag.errors import SCHEMA_FETCH_FAILED
         mock_ingest.return_value = MagicMock(
             success=False,
             error=MagicMock(

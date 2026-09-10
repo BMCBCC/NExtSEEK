@@ -262,7 +262,7 @@ def _snapshot_for_generation(generation: PosteriorGeneration) -> GenerationSnaps
     )
     manifest = manifest_from_generation(generation, list(posteriors))
     compatibility = manifest.compatibility_keys
-    from nextseek_api.eval.generation_validation import validate_generation_for_activation
+    from NessieAI.hibayes.generation_validation import validate_generation_for_activation
 
     validation = validate_generation_for_activation(generation, require_current_compatibility=False)
     return GenerationSnapshot(
@@ -298,8 +298,8 @@ def activate_generation(
     expected_hash: str,
     activated_by: str = "local",
 ) -> ActiveGenerationPointer:
-    from nextseek_api.eval.generation_validation import require_valid_for_activation
-    from nextseek_api.eval.fit.fit_boundary import validate_publish_provenance
+    from NessieAI.hibayes.generation_validation import require_valid_for_activation
+    from NessieAI.hibayes.fit.fit_boundary import validate_publish_provenance
 
     require_activate_permission(activated_by)
     with transaction.atomic():

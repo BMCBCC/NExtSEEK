@@ -14,8 +14,8 @@ from unittest.mock import Mock, patch
 
 from django.test import TestCase
 
-from nextseek_api.schema_rag.errors import SchemaFetchError
-from nextseek_api.schema_rag.schema_processor import OpenAPISchemaProcessor
+from NessieAI.schema_rag.errors import SchemaFetchError
+from NessieAI.schema_rag.schema_processor import OpenAPISchemaProcessor
 
 
 # ---------------------------------------------------------------------------
@@ -215,7 +215,7 @@ class TestOpenAPISchemaProcessor(TestCase):
     # Fetch Tests (with mocking)
     # -------------------------------------------------------------------------
 
-    @patch('nextseek_api.schema_rag.schema_processor.requests.get')
+    @patch('NessieAI.schema_rag.schema_processor.requests.get')
     def test_fetch_resolves_refs(self, mock_get):
         """Test that $ref pointers are resolved after fetching."""
         mock_response = Mock()
@@ -233,7 +233,7 @@ class TestOpenAPISchemaProcessor(TestCase):
         self.assertIn("title", request_schema["properties"])
         self.assertNotIn("$ref", request_schema)
 
-    @patch('nextseek_api.schema_rag.schema_processor.requests.get')
+    @patch('NessieAI.schema_rag.schema_processor.requests.get')
     def test_fetch_handles_yaml(self, mock_get):
         """Test that YAML content is parsed correctly."""
         yaml_content = "openapi: '3.0.0'\ninfo:\n  title: Test\n  version: '1.0'"
@@ -247,7 +247,7 @@ class TestOpenAPISchemaProcessor(TestCase):
         result = self.processor.fetch_schema("https://example.com/api.yaml")
         self.assertEqual(result["openapi"], "3.0.0")
 
-    @patch('nextseek_api.schema_rag.schema_processor.requests.get')
+    @patch('NessieAI.schema_rag.schema_processor.requests.get')
     def test_fetch_handles_json(self, mock_get):
         """Test that JSON content is parsed correctly."""
         json_content = '{"openapi": "3.0.0", "info": {"title": "Test", "version": "1.0"}}'
@@ -261,7 +261,7 @@ class TestOpenAPISchemaProcessor(TestCase):
         result = self.processor.fetch_schema("https://example.com/api.json")
         self.assertEqual(result["openapi"], "3.0.0")
 
-    @patch('nextseek_api.schema_rag.schema_processor.requests.get')
+    @patch('NessieAI.schema_rag.schema_processor.requests.get')
     def test_fetch_error_handling(self, mock_get):
         """Test that SchemaFetchError is raised on HTTP errors."""
         mock_get.side_effect = Exception("Connection refused")
@@ -269,7 +269,7 @@ class TestOpenAPISchemaProcessor(TestCase):
         with self.assertRaises(SchemaFetchError):
             self.processor.fetch_schema("https://example.com/api.json")
 
-    @patch('nextseek_api.schema_rag.schema_processor.requests.get')
+    @patch('NessieAI.schema_rag.schema_processor.requests.get')
     def test_fetch_resolves_allof_refs(self, mock_get):
         """Test that allOf with $ref pointers are all resolved."""
         mock_response = Mock()
@@ -423,7 +423,7 @@ class TestOpenAPISchemaProcessor(TestCase):
     # Integration-style tests (combining fetch + simplify)
     # -------------------------------------------------------------------------
 
-    @patch('nextseek_api.schema_rag.schema_processor.requests.get')
+    @patch('NessieAI.schema_rag.schema_processor.requests.get')
     def test_full_pipeline_ref_resolution_and_simplification(self, mock_get):
         """Test the full pipeline: fetch with $ref resolution, then extract and simplify."""
         mock_response = Mock()
@@ -454,7 +454,7 @@ class TestOpenAPISchemaProcessor(TestCase):
         self.assertIn("enum", result["status"])
         self.assertEqual(result["status"]["enum"], ["draft", "active", "archived"])
 
-    @patch('nextseek_api.schema_rag.schema_processor.requests.get')
+    @patch('NessieAI.schema_rag.schema_processor.requests.get')
     def test_full_pipeline_allof_merge(self, mock_get):
         """Test the full pipeline with allOf merging."""
         mock_response = Mock()
@@ -501,7 +501,7 @@ def _resolve():
     """Imported lazily so this module still collects against a tree without the
     helper (the pre-fix state), letting the behavioural tests below report the
     real failure instead of a collection error."""
-    from nextseek_api.schema_rag.schema_processor import resolve_transport_url
+    from NessieAI.schema_rag.schema_processor import resolve_transport_url
 
     return resolve_transport_url
 
@@ -587,10 +587,10 @@ class TestFetchSchemaUsesInternalUrl(TestCase):
     """fetch_schema must GET the rewritten URL."""
 
     @patch(
-        'nextseek_api.schema_rag.schema_processor._generate_own_schema',
+        'NessieAI.schema_rag.schema_processor._generate_own_schema',
         return_value=None,
     )
-    @patch('nextseek_api.schema_rag.schema_processor.requests.get')
+    @patch('NessieAI.schema_rag.schema_processor.requests.get')
     def test_fetch_schema_gets_the_internal_url(self, mock_get, _mock_generate):
         """The URL used here is now also OUR OWN schema route, which #94 made
         fetch_schema serve in-process. The internal-URL rewrite still has to
@@ -611,7 +611,7 @@ class TestFetchSchemaUsesInternalUrl(TestCase):
         called_url = mock_get.call_args[0][0]
         self.assertEqual(called_url, f"{INTERNAL}/nextseek_api/schema/")
 
-    @patch('nextseek_api.schema_rag.schema_processor.requests.get')
+    @patch('NessieAI.schema_rag.schema_processor.requests.get')
     def test_fetch_schema_leaves_external_urls_alone(self, mock_get):
         mock_response = Mock()
         mock_response.status_code = 200

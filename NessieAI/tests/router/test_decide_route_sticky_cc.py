@@ -13,8 +13,8 @@ designed, measured and rejected as over-complex; do not reintroduce it.
 import pytest
 
 import nextseek_api.services.cc_assistant as cc_svc
-from nextseek_api.cc_assistant import router as cc_router
-from nextseek_api.cc_assistant import router_context
+from NessieAI.router import router as cc_router
+from NessieAI.router import router_context
 
 
 class _Req:

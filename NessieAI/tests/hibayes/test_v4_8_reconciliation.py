@@ -5,9 +5,9 @@ from decimal import Decimal
 
 import pytest
 
-from nextseek_api.eval.reconciliation import build_reconciliation, write_reconciliation_artifact
-from nextseek_api.eval.run_authorization import approve_run_manifest, reconcile_reservation, reserve_budget
-from nextseek_api.eval.tests.v4_8_fixtures import sample_run_manifest
+from NessieAI.hibayes.reconciliation import build_reconciliation, write_reconciliation_artifact
+from NessieAI.hibayes.run_authorization import approve_run_manifest, reconcile_reservation, reserve_budget
+from NessieAI.tests.hibayes.v4_8_fixtures import sample_run_manifest
 
 pytestmark = pytest.mark.django_db
 

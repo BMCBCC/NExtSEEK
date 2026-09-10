@@ -13,17 +13,17 @@ from typing import Any
 from chat_nextseek.orchestrator import run_query
 from chat_nextseek.session import SQLiteSessionState
 
-from e2e.catalog import Catalog, Variant, load_catalog
-from e2e.criteria import check_pass
-from e2e.manifest import (
+from NessieAI.tests.e2e.catalog import Catalog, Variant, load_catalog
+from NessieAI.tests.e2e.criteria import check_pass
+from NessieAI.tests.e2e.manifest import (
     Manifest,
     ManifestEntry,
     filter_for_rerun,
     load_manifest,
     write_manifest,
 )
-from e2e.report import generate_html_report
-from e2e.sampler import sample
+from NessieAI.tests.e2e.report import generate_html_report
+from NessieAI.tests.e2e.sampler import sample
 
 
 def _probe_ui_reachable(ui_url: str, *, api_user: str, api_pass: str, timeout_s: float = 5.0) -> bool:
@@ -243,7 +243,7 @@ def run_main(
 
     # ── Phase 2: Playwright dispatch on tagged variants ──────────────────
     if not skip_playwright:
-        from e2e.playwright.runner import run_variant_browser  # noqa: PLC0415
+        from NessieAI.tests.e2e.playwright.runner import run_variant_browser  # noqa: PLC0415
         pw_plan = [v for v in plan if "playwright" in v.tags]
         if pw_plan:
             ui_url = getattr(config, "NEXTSEEK_UI_URL", None) or "http://localhost:8000"

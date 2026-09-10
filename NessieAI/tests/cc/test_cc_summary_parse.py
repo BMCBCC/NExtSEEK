@@ -1,7 +1,7 @@
 """Hermetic: transcript parsing + actions view. No Django/Docker/network."""
 import orjson
 
-from nextseek_api.cc_assistant import cc_summary
+from NessieAI.cc import cc_summary
 
 
 def _line(obj) -> bytes:

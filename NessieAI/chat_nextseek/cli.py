@@ -341,7 +341,7 @@ def cmd_smart_test(args: argparse.Namespace) -> int:
       -ft               -> e2e --ratio full (all variants)
     """
     from pathlib import Path
-    from e2e.runner import run_main
+    from NessieAI.tests.e2e.runner import run_main
 
     catalog_path = Path(__file__).parent / "e2e" / "catalog.json"
     ratio = 1.0 if getattr(args, "full_test", False) else 0.33

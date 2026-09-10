@@ -3,8 +3,8 @@ import threading
 import pytest
 from django.db import connection
 
-from nextseek_api.eval.generation_validation import ValidationError
-from nextseek_api.eval.generation_store import (
+from NessieAI.hibayes.generation_validation import ValidationError
+from NessieAI.hibayes.generation_store import (
     EMPTY_ACTIVE_HASH,
     ActivationAbort,
     ActivationError,
@@ -18,11 +18,11 @@ from nextseek_api.eval.generation_store import (
     set_test_abort_activate_after_pointer_mutate,
     set_test_abort_publish_after_generation,
 )
-from nextseek_api.cc_assistant.tests.generation_test_factory import (
+from NessieAI.tests.hibayes.generation_test_factory import (
     _publish_generation_for_test,
 )
 from nextseek_api.assistant.models_db import FamilyPosterior, PosteriorGeneration
-from nextseek_api.cc_assistant.family_labels import corpus_snapshot
+from NessieAI.router.family_labels import corpus_snapshot
 
 pytestmark = pytest.mark.django_db(transaction=True)
 
@@ -58,7 +58,7 @@ def _manifest(suffix: str, **overrides):
         },
     }
     base.update(overrides)
-    from nextseek_api.eval.paired_run_registry import register_paired_run
+    from NessieAI.hibayes.paired_run_registry import register_paired_run
 
     register_paired_run(
         paired_run_id=run_id,

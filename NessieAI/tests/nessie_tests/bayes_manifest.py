@@ -12,7 +12,7 @@ import pathlib
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from nessie_tests.manifest import NessieManifestEntry
+from NessieAI.tests.nessie_tests.manifest import NessieManifestEntry
 
 # NOT "manifest.json" — that is what `runner.run_suite` already writes for a
 # normal run (runner.py:412), and a paired manifest is a DIFFERENT SCHEMA that

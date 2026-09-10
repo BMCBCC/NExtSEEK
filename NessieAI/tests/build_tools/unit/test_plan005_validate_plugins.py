@@ -1,4 +1,4 @@
-"""Unit tests for build_tools.plan005_validate_plugins (Plan 005 Task 7)."""
+"""Unit tests for NessieAI.build_tools.plan005_validate_plugins (Plan 005 Task 7)."""
 from __future__ import annotations
 
 import json
@@ -12,16 +12,16 @@ from unittest import mock
 
 import pytest
 
-from build_tools.plan005_validate_plugins.validate import (
+from NessieAI.build_tools.plan005_validate_plugins.validate import (
     IMMUTABLE_VALIDATOR_IMAGE,
     PluginValidationError,
     hash_plugin_tree,
     validate_installed_plugins,
 )
-from nextseek_api.cc_assistant.op_registry.install_oracle import discover_install
+from NessieAI.cc.op_registry.install_oracle import discover_install
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-VALIDATE_MODULE = "build_tools.plan005_validate_plugins"
+VALIDATE_MODULE = "NessieAI.build_tools.plan005_validate_plugins"
 PYTHONPATH = f"{REPO_ROOT}:{REPO_ROOT / 'dmac_assistant' / 'src'}"
 
 
@@ -103,7 +103,7 @@ def test_validate_rejects_mutable_validator_image(tmp_path: Path):
 def test_validate_skips_installed_plugin_is_red(tmp_path: Path):
     repo = _fixture_repo(tmp_path, plugins=("alpha-plugin", "beta-plugin"))
     with mock.patch(
-        "build_tools.plan005_validate_plugins.validate.discover_install",
+        "NessieAI.build_tools.plan005_validate_plugins.validate.discover_install",
         wraps=discover_install,
     ) as wrapped:
         real = wrapped(
@@ -152,7 +152,7 @@ def test_validate_invalid_manifest_is_red(tmp_path: Path):
 def test_validate_second_plugin_without_code_change(tmp_path: Path):
     repo = _fixture_repo(tmp_path, plugins=("alpha-plugin", "beta-plugin"))
     with mock.patch(
-        "build_tools.plan005_validate_plugins.validate.run_claude_plugin_validate",
+        "NessieAI.build_tools.plan005_validate_plugins.validate.run_claude_plugin_validate",
         return_value=mock.Mock(returncode=0, stdout=b"", stderr=b""),
     ) as docker:
         outcome = validate_installed_plugins(repo_root=repo, skip_docker=False)
@@ -177,7 +177,7 @@ def test_validate_duplicate_plugin_validation_is_red(tmp_path: Path):
         shims=discovery.shims,
     )
     with mock.patch(
-        "build_tools.plan005_validate_plugins.validate.discover_install",
+        "NessieAI.build_tools.plan005_validate_plugins.validate.discover_install",
         return_value=dup_discovery,
     ):
         with pytest.raises(PluginValidationError, match="duplicate"):
@@ -193,7 +193,7 @@ def test_validate_plugin_tree_change_after_docker_is_red(tmp_path: Path):
         return mock.Mock(returncode=0, stdout=b"", stderr=b"")
 
     with mock.patch(
-        "build_tools.plan005_validate_plugins.validate.run_claude_plugin_validate",
+        "NessieAI.build_tools.plan005_validate_plugins.validate.run_claude_plugin_validate",
         side_effect=_mutate_after_validate,
     ):
         with pytest.raises(PluginValidationError, match="tree changed"):
@@ -207,7 +207,7 @@ def test_outcome_plugins_and_hashes_match_oracle(tmp_path: Path):
         dockerfile_path=repo / "docker/cc-runtime/Dockerfile",
     )
     with mock.patch(
-        "build_tools.plan005_validate_plugins.validate.run_claude_plugin_validate",
+        "NessieAI.build_tools.plan005_validate_plugins.validate.run_claude_plugin_validate",
         return_value=mock.Mock(returncode=0, stdout=b"", stderr=b""),
     ):
         outcome = validate_installed_plugins(repo_root=repo, skip_docker=False)
@@ -218,12 +218,12 @@ def test_outcome_plugins_and_hashes_match_oracle(tmp_path: Path):
 
 
 def test_docker_timeout_is_mapped_to_nonzero_result():
-    from build_tools.plan005_validate_plugins.docker_runner import (
+    from NessieAI.build_tools.plan005_validate_plugins.docker_runner import (
         run_claude_plugin_validate,
     )
 
     with mock.patch(
-        "build_tools.plan005_validate_plugins.docker_runner.subprocess.run",
+        "NessieAI.build_tools.plan005_validate_plugins.docker_runner.subprocess.run",
         side_effect=subprocess.TimeoutExpired(cmd="docker", timeout=1),
     ):
         result = run_claude_plugin_validate(

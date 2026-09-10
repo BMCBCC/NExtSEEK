@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from nextseek_api.cc_assistant.bin_inventory import discover_ops, op_suffix
+from NessieAI.tests.cc.bin_inventory import discover_ops, op_suffix
 
 UPSTREAM_SHA = "a429f1372a075e5db586a1b6efc8c3b1663e211a"
 

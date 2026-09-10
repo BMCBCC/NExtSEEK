@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from nextseek_api.cc_assistant.cc_engine import _safe_relpath
+from NessieAI.cc.cc_engine import _safe_relpath
 
 
 def resolve_artifact_path(artifacts_root: str, key: str) -> Path:

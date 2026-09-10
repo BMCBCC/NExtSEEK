@@ -14,15 +14,15 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from nextseek_api.eval.evidence_kinds import (
+from NessieAI.hibayes.evidence_kinds import (
     EvidenceKind,
     ForgedEvidenceDiscriminator,
     OnlineEvidenceRejected,
     UnapprovedPairedRun,
 )
-from nextseek_api.eval.fit import fit_boundary
-from nextseek_api.eval.fit.v14 import combined, latency_model, quality_model
-from nextseek_api.eval.fit.v14.decision import (
+from NessieAI.hibayes.fit import fit_boundary
+from NessieAI.hibayes.fit.v14 import combined, latency_model, quality_model
+from NessieAI.hibayes.fit.v14.decision import (
     CandidateDecision,
     DecisionStatus,
     GenerationDecision,
@@ -31,8 +31,8 @@ from nextseek_api.eval.fit.v14.decision import (
     decide_family,
     evaluate_generation,
 )
-from nextseek_api.eval.fit.v14.fit_config import V14FitConfig
-from nextseek_api.eval.fit.v14.pair_rows import (
+from NessieAI.hibayes.fit.v14.fit_config import V14FitConfig
+from NessieAI.hibayes.fit.v14.pair_rows import (
     JointQualityState,
     LatencyObservationKind,
     PairFitRow,
@@ -40,25 +40,25 @@ from nextseek_api.eval.fit.v14.pair_rows import (
     _latency_fields,
     joint_state_from_success,
 )
-from nextseek_api.eval.fit.v14.recovery_acceptance import (
+from NessieAI.hibayes.fit.v14.recovery_acceptance import (
     evaluate_recovery_results,
     scenario_from_value,
     slot_winner,
     winner_matches_gt,
 )
-from nextseek_api.eval.fit.v14.recovery_matrix import (
+from NessieAI.hibayes.fit.v14.recovery_matrix import (
     RECOVERY_SCENARIOS,
     RecoveryScenario,
     build_scenario_rows,
     ground_truth,
 )
-from nextseek_api.eval.fit.v14 import recovery_runner
-from nextseek_api.eval.online_observation import (
+from NessieAI.hibayes.fit.v14 import recovery_runner
+from NessieAI.hibayes.online_observation import (
     DEFAULT_SELECTION_CAVEAT,
     OnlineObservationalRow,
 )
-from nextseek_api.eval.paired_run import PairedExperimentalBatch
-from nextseek_api.eval.router_models_proposal import RouteSource
+from NessieAI.hibayes.paired_run import PairedExperimentalBatch
+from NessieAI.hibayes.router_models_proposal import RouteSource
 
 
 def _row(
@@ -178,7 +178,7 @@ def test_fit_boundary_approved_run_hash_mismatch(monkeypatch):
         )
     )
     monkeypatch.setattr(
-        "nextseek_api.eval.paired_run_registry.is_paired_run_approved",
+        "NessieAI.hibayes.paired_run_registry.is_paired_run_approved",
         lambda run_id: run_id == "approved",
     )
     with pytest.raises(UnapprovedPairedRun, match="not approved"):
@@ -223,7 +223,7 @@ def test_evaluate_generation_sorts_families(monkeypatch):
         seen.append(family)
         return CandidateDecision(family, DecisionStatus.indecisive, 1.0)
 
-    monkeypatch.setattr("nextseek_api.eval.fit.v14.decision.decide_family", fake_decide)
+    monkeypatch.setattr("NessieAI.hibayes.fit.v14.decision.decide_family", fake_decide)
     result = evaluate_generation(
         rows,
         {"a": object(), "z": object()},

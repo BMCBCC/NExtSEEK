@@ -8,7 +8,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from nextseek_api.eval.disposition import ExclusionReason, OutcomeBucket
+from NessieAI.hibayes.disposition import ExclusionReason, OutcomeBucket
 
 __all__ = [
     "HUMAN_VOCABULARY",

@@ -2,7 +2,7 @@ from __future__ import annotations
 import base64, json, time, urllib.request
 from dataclasses import dataclass
 from typing import Callable
-from nessie_tests import route_observer as ro
+from NessieAI.tests.nessie_tests import route_observer as ro
 
 BASE_PATH = "/nextseek_api/cc-assistant"
 

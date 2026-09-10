@@ -13,13 +13,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from nextseek_api.cc_assistant import cc_engine
-from nextseek_api.cc_assistant.tests import cc_matrix_gate_harness as gate
-from nextseek_api.cc_assistant.tests.validate_cc_acceptance import (
+from NessieAI.cc import cc_engine
+from NessieAI.tests.cc import cc_matrix_gate_harness as gate
+from NessieAI.tests.cc.validate_cc_acceptance import (
     SHARED_CRED_KEYS,
     matrix_executor_name,
 )
-from nextseek_api.cc_assistant.tests.validate_step7_compose_deploy import BIN_OPS
+from NessieAI.tests.cc.validate_step7_compose_deploy import BIN_OPS
 
 
 # ==========================================================================
@@ -202,7 +202,7 @@ def test_make_matrix_row_carries_published_path_when_given():
 
 
 def test_transport_for_op_matches_wire_topology():
-    from nextseek_api.cc_assistant.bin_inventory import is_viewset_op
+    from NessieAI.tests.cc.bin_inventory import is_viewset_op
 
     for op in BIN_OPS:
         expected = "viewset" if is_viewset_op(op) else "sidecar"
@@ -415,8 +415,8 @@ def test_seeded_fixture_project_create_without_id_raises():
 
 def test_binding_fixture_record_passes_validator_check(tmp_path):
     """Writer output must satisfy ``check_gate_instance_binding_present``."""
-    from nextseek_api.cc_assistant import step7_gate_catalog as catalog
-    from nextseek_api.cc_assistant.tests.validate_step7_compose_deploy import (
+    from NessieAI.tests.cc import step7_gate_catalog as catalog
+    from NessieAI.tests.cc.validate_step7_compose_deploy import (
         Context,
         check_gate_instance_binding_present,
     )

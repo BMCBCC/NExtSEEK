@@ -8,8 +8,8 @@ byte-copied into the cc-state subpath before spawn (covered in
 ``test_cc_volume_subpath.py``). This file keeps the transcripts-mount and
 no-file-bind contracts at the ``_build_volumes`` level.
 """
-from nextseek_api.cc_assistant import cc_engine
-from nextseek_api.cc_assistant.cc_config import CCPaths
+from NessieAI.cc import cc_engine
+from NessieAI.cc.cc_config import CCPaths
 
 
 def _paths() -> CCPaths:

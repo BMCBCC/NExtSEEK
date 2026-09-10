@@ -20,7 +20,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-from nextseek_api.cc_assistant.bin_inventory import discover_ops, op_suffix, write_gated_op
+from NessieAI.tests.cc.bin_inventory import discover_ops, op_suffix, write_gated_op
 
 # Inventory-derived query-family ops (BIN-2): includes re-enabled query/recall.
 BIN_OPS: tuple[str, ...] = discover_ops("query")

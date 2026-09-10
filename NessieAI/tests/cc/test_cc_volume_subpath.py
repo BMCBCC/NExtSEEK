@@ -15,8 +15,8 @@ from pathlib import Path
 
 import pytest
 
-from nextseek_api.cc_assistant import cc_engine
-from nextseek_api.cc_assistant.cc_config import CCPaths
+from NessieAI.cc import cc_engine
+from NessieAI.cc.cc_config import CCPaths
 
 
 def _paths() -> CCPaths:

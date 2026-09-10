@@ -36,7 +36,7 @@ import pathlib
 
 import pytest
 
-from nessie_tests import corpus
+from NessieAI.tests.nessie_tests import corpus
 
 CORPUS = pathlib.Path(__file__).resolve().parents[1] / "corpus.json"
 

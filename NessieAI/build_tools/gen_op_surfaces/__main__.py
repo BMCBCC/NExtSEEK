@@ -5,8 +5,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from build_tools.gen_op_surfaces.constants import EXIT_ERROR, EXIT_NO_CHANGE
-from build_tools.gen_op_surfaces.emit import check_surfaces, write_surfaces
+from NessieAI.build_tools.gen_op_surfaces.constants import EXIT_ERROR, EXIT_NO_CHANGE
+from NessieAI.build_tools.gen_op_surfaces.emit import check_surfaces, write_surfaces
 
 _DEFAULT_REPO_ROOT = Path(__file__).resolve().parents[2]
 

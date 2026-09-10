@@ -54,7 +54,7 @@ from .process import TaskFamilyArtifactAggregate, aggregate_by_task_family
 # resolves this against the installed package, so `--help` triggers per-axis
 # YAML ModelConfig discovery via argparse default-value computation below.
 _DEFAULT_CONFIG_RESOURCE = (
-    "nextseek_api.eval.fit.vendor.hibayes_artifact_validity",
+    "NessieAI.hibayes.fit.vendor.hibayes_artifact_validity",
     "config/hibayes_artifact_validity.yaml",
 )
 
@@ -373,7 +373,7 @@ def run_artifact_axis(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="nextseek_api.eval.fit.vendor.hibayes_artifact_validity.run_hibayes",
+        prog="NessieAI.hibayes.fit.vendor.hibayes_artifact_validity.run_hibayes",
     )
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument(

@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from build_tools.ingest_nextseek_docs import fetch as fetch_module
+from NessieAI.build_tools.ingest_nextseek_docs import fetch as fetch_module
 
 SITE_INDEX_URL = (
     "https://koch-institute-mit.gitbook.io/mit-data-management-analysis-core/"

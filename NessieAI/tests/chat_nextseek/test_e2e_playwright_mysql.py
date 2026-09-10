@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from e2e.playwright.mysql import fetch_chat_session_row
+from NessieAI.tests.e2e.playwright.mysql import fetch_chat_session_row
 
 
 def _fake_config_with_cursor(rows):

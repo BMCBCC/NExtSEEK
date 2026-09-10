@@ -44,10 +44,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from nextseek_api.cc_assistant import cc_engine
-from nextseek_api.cc_assistant.bin_inventory import discover_ops, op_suffix, transport_for_op
-from nextseek_api.cc_assistant.tests.validate_cc_acceptance import matrix_executor_name
-from nextseek_api.cc_assistant.tests.validate_step7_compose_deploy import (
+from NessieAI.cc import cc_engine
+from NessieAI.tests.cc.bin_inventory import discover_ops, op_suffix, transport_for_op
+from NessieAI.tests.cc.validate_cc_acceptance import matrix_executor_name
+from NessieAI.tests.cc.validate_step7_compose_deploy import (
     BIN_OPS,
     IMAGES_JSON_CC_IMAGE_KEY,
     OP_ASSISTANT_ENDPOINT,
@@ -575,7 +575,7 @@ def create_seeded_fixture(
             "create_seeded_fixture disabled under Gate 3C instance binding mode "
             "(set instance_binding.json + catalog instead)"
         )
-    from nextseek_api.cc_assistant.cc_provision import project_dirname, slugify_project
+    from NessieAI.cc.cc_provision import project_dirname, slugify_project
 
     call = http if http is not None else default_fixture_http(
         assistant_base_url, (api_user, api_pass), timeout,

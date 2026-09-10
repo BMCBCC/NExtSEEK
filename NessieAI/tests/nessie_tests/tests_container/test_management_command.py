@@ -2,8 +2,8 @@
 import pytest
 from django.core.management import call_command
 
-from nessie_tests import runner
-from nessie_tests.manifest import NessieManifest, NessieManifestEntry
+from NessieAI.tests.nessie_tests import runner
+from NessieAI.tests.nessie_tests.manifest import NessieManifest, NessieManifestEntry
 
 
 def test_nessie_command_wires_run_suite(monkeypatch):

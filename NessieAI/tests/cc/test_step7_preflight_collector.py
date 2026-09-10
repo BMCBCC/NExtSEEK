@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 
-from nextseek_api.cc_assistant.tests.step7_preflight_collector import (
+from NessieAI.tests.cc.step7_preflight_collector import (
     DockerProbe,
     GitProbe,
     collect_preflight,
@@ -115,7 +115,7 @@ def test_default_probes_with_fake_subprocess(monkeypatch, tmp_path):
         return _Proc("")
 
     monkeypatch.setattr(
-        "nextseek_api.cc_assistant.tests.step7_preflight_collector.subprocess.run",
+        "NessieAI.tests.cc.step7_preflight_collector.subprocess.run",
         fake_run,
     )
     gp = default_git_probe(tmp_path)
@@ -131,7 +131,7 @@ def test_default_probes_with_fake_subprocess(monkeypatch, tmp_path):
         raise OSError("no docker")
 
     monkeypatch.setattr(
-        "nextseek_api.cc_assistant.tests.step7_preflight_collector.subprocess.run",
+        "NessieAI.tests.cc.step7_preflight_collector.subprocess.run",
         boom,
     )
     dp2 = default_docker_probe()

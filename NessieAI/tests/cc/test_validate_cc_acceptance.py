@@ -4,7 +4,7 @@ the one paid live turn is ever run. No Docker, no spend.
 """
 import json
 
-from nextseek_api.cc_assistant.tests.validate_cc_acceptance import validate_run
+from NessieAI.tests.cc.validate_cc_acceptance import validate_run
 
 OPUS = "us.anthropic.claude-opus-4-8"
 

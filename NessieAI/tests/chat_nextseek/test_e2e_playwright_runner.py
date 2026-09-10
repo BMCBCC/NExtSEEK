@@ -8,7 +8,7 @@ here so no browser and no network are needed.
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from e2e.catalog import PassCriterion, Turn, Variant
+from NessieAI.tests.e2e.catalog import PassCriterion, Turn, Variant
 
 
 def _variant_basic_ndma():
@@ -91,9 +91,9 @@ def _run(page, payload_or_exc, variant, config, tmp_path):
         poll_inst.poll_until_complete.side_effect = payload_or_exc
     else:
         poll_inst.poll_until_complete.return_value = payload_or_exc
-    from e2e.playwright import runner as runner_mod
-    with patch("e2e.playwright.runner.sync_playwright", return_value=sp), \
-         patch("e2e.playwright.runner.PollCapture", return_value=poll_inst):
+    from NessieAI.tests.e2e.playwright import runner as runner_mod
+    with patch("NessieAI.tests.e2e.playwright.runner.sync_playwright", return_value=sp), \
+         patch("NessieAI.tests.e2e.playwright.runner.PollCapture", return_value=poll_inst):
         return runner_mod.run_variant_browser(variant, config, tmp_path, pace_seconds=0)
 
 

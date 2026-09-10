@@ -5,7 +5,7 @@ from unittest import mock
 
 import pytest
 
-from nextseek_api.cc_assistant import router as cc_router
+from NessieAI.router import router as cc_router
 
 _REPO = Path(__file__).resolve().parents[3]
 
@@ -40,7 +40,7 @@ def test_mutation_swallowed_classification_failure_still_has_no_family(settings)
 
 def test_mutation_sticky_without_attempted_fields_is_detectable():
     """Unrecorded override: sticky must carry attempted_route/source."""
-    from nextseek_api.cc_assistant import router_context
+    from NessieAI.router import router_context
     from nextseek_api.services import cc_assistant as svc
 
     history = [

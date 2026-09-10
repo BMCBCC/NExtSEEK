@@ -3,8 +3,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from e2e.catalog import PassCriterion
-from e2e.criteria import check_pass, resolve_field
+from NessieAI.tests.e2e.catalog import PassCriterion
+from NessieAI.tests.e2e.criteria import check_pass, resolve_field
 
 
 def _browser_ctx(latest_reply="hello", bubble_count=2, stepper_status=None, artifact_present=False):

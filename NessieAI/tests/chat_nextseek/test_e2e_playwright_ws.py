@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from e2e.playwright.ws import WSCapture, wait_for_query_complete
+from NessieAI.tests.e2e.playwright.ws import WSCapture, wait_for_query_complete
 
 
 class _FakeWS:

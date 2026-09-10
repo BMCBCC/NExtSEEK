@@ -14,7 +14,7 @@ built before it. See the second half of this file.
 """
 import pytest
 
-from nessie_tests import preflight
+from NessieAI.tests.nessie_tests import preflight
 
 RUN_ROOT_EVENT = {"event": "ns_run_root", "data": {"run_root": "/app/outputs/x"}}
 
@@ -295,7 +295,7 @@ def test_the_route_tier_probe_still_observes_the_routing_decision():
     it: a route-tier break that returned an empty observation would send every
     probe down the new inconclusive path and no other test would notice.
     """
-    from nessie_tests import http_driver
+    from NessieAI.tests.nessie_tests import http_driver
     post_query, get_progress = _fakes("nextseek_query")
     res = http_driver.drive("q", tier="route", post_query=post_query,
                             get_progress=get_progress, force_new=True, force_route="ns")

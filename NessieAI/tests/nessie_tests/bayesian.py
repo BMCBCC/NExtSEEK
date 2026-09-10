@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import time
 
-from nessie_tests import corpus, http_driver, preflight, runner
-from nessie_tests.bayes_manifest import (
+from NessieAI.tests.nessie_tests import corpus, http_driver, preflight, runner
+from NessieAI.tests.nessie_tests.bayes_manifest import (
     MANIFEST_NAME, BayesManifest, BayesPair, completed_arms, read_bayes_manifest,
     write_bayes_manifest,
 )

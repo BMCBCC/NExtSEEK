@@ -4,27 +4,27 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Sequence, cast
 
-from nextseek_api.eval.fit.v14.decision import (
+from NessieAI.hibayes.fit.v14.decision import (
     GenerationDecision,
     evaluate_generation,
     legacy_fallback,
     retained_support_ok,
 )
-from nextseek_api.eval.fit.v14.fit_config import V14FitConfig, config_fingerprint
-from nextseek_api.eval.fit.v14.latency_model import (
+from NessieAI.hibayes.fit.v14.fit_config import V14FitConfig, config_fingerprint
+from NessieAI.hibayes.fit.v14.latency_model import (
     DescriptiveLatencyResult,
     LatencyFitResult,
     fit_latency_model,
 )
-from nextseek_api.eval.fit.v14.pair_rows import PairFitRow
-from nextseek_api.eval.fit.v14.quality_model import (
+from NessieAI.hibayes.fit.v14.pair_rows import PairFitRow
+from NessieAI.hibayes.fit.v14.quality_model import (
     DescriptiveQualityResult,
     QualityFitResult,
     fit_quality_models,
 )
 
 if TYPE_CHECKING:
-    from nextseek_api.eval.paired_run import PairedExperimentalBatch
+    from NessieAI.hibayes.paired_run import PairedExperimentalBatch
 
 __all__ = ["CombinedFitResult", "run_v14_generation"]
 
@@ -50,7 +50,7 @@ def run_v14_generation(
     paired_batch: "PairedExperimentalBatch | None" = None,
 ) -> CombinedFitResult:
     if paired_batch is not None:
-        from nextseek_api.eval.fit.fit_boundary import (
+        from NessieAI.hibayes.fit.fit_boundary import (
             assert_paired_experimental_only,
             require_approved_paired_run,
         )

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from nextseek_api.cc_assistant.cc_upload_list import list_input_files
+from NessieAI.cc.cc_upload_list import list_input_files
 
 
 def test_list_input_files_sorted_basenames(tmp_path: Path):

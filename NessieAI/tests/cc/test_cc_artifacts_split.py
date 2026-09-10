@@ -2,7 +2,7 @@
 import zipfile
 from pathlib import Path
 
-from nextseek_api.cc_assistant.cc_artifacts import (
+from NessieAI.cc.cc_artifacts import (
     partition_changed, build_artifact_zip, RAW_PREFIX,
 )
 

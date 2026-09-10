@@ -24,8 +24,8 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from nextseek_api.cc_assistant.tests import step7_preflight_collector as preflight_mod  # noqa: E402
-from nextseek_api.cc_assistant.tests.validate_step7_compose_deploy import (  # noqa: E402
+from NessieAI.tests.cc import step7_preflight_collector as preflight_mod  # noqa: E402
+from NessieAI.tests.cc.validate_step7_compose_deploy import (  # noqa: E402
     format_report,
     validate_run,
 )

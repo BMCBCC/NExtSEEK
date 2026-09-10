@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from nextseek_api.eval.enums import ArtifactStatus
-from nextseek_api.eval.functional_inputs import (
+from NessieAI.hibayes.enums import ArtifactStatus
+from NessieAI.hibayes.functional_inputs import (
     CSV_HEADER_12,
     WORST_STATUS_ORDER,
     aggregate_artifact_status,
@@ -335,7 +335,7 @@ def test_main_invokes_run_stage_b(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     Mocks `run_stage_b` so the test exercises only the argparse + delegation
     surface in `main()`. Required for the 95% coverage gate to be reachable.
     """
-    from nextseek_api.eval import functional_inputs as fi
+    from NessieAI.hibayes import functional_inputs as fi
 
     captured: dict[str, Path] = {}
 
@@ -378,7 +378,7 @@ def test_main_returns_run_stage_b_exit_code(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, expected_rc: int
 ) -> None:
     """`main()` returns whatever exit code `run_stage_b` returns (no remapping)."""
-    from nextseek_api.eval import functional_inputs as fi
+    from NessieAI.hibayes import functional_inputs as fi
 
     monkeypatch.setattr(fi, "run_stage_b", lambda **_: expected_rc)
     rc = fi.main(

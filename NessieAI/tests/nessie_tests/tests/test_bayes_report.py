@@ -12,7 +12,7 @@ import re
 import subprocess
 import sys
 
-from nessie_tests import bayes_manifest, collect, export
+from NessieAI.tests.nessie_tests import bayes_manifest, collect, export
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 SKILL_DIR = pathlib.Path(__file__).resolve().parents[1] / "output-skill-bayesian"
@@ -525,7 +525,7 @@ def _skill_text():
 
 
 def test_every_module_command_in_the_runbook_has_an_entry_point():
-    """`python -m nessie_tests.X` needs BOTH a `main` and a `__main__` block. A
+    """`python -m NessieAI.tests.nessie_tests.X` needs BOTH a `main` and a `__main__` block. A
     module carrying `main` alone still exits 0 and does nothing from a shell,
     which is the exact shape of the defect."""
     named = set(re.findall(r"python -m (nessie_tests\.[A-Za-z_.]+)", _skill_text()))
@@ -556,7 +556,7 @@ def test_the_runbook_presents_collection_as_the_real_command_it_now_is():
     is the property the old refusal was standing in for."""
     text = _skill_text()
 
-    assert "python -m nessie_tests.collect --run" in text
+    assert "python -m NessieAI.tests.nessie_tests.collect --run" in text
     assert "not runnable" not in text.lower()
     # It still names the contract, so a reader knows what the step reads.
     for name in ("Sources", "task_rows", "cc_transcript", "copy_tree"):

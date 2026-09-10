@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
-from nextseek_api.eval.fit.v14.pair_rows import JointQualityState, LatencyObservationKind, PairFitRow
+from NessieAI.hibayes.fit.v14.pair_rows import JointQualityState, LatencyObservationKind, PairFitRow
 
 __all__ = [
     "RECOVERY_SCENARIOS",

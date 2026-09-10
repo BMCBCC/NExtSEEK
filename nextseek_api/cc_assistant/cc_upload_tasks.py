@@ -11,7 +11,7 @@ import os
 import shutil
 from pathlib import Path
 
-from nextseek_api.cc_assistant.cc_upload_validate import validate_upload_filename
+from NessieAI.cc.cc_upload_validate import validate_upload_filename
 
 
 try:

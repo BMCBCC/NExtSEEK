@@ -13,19 +13,19 @@ from nextseek_api.assistant.models_db import (
     FamilyPosterior,
     PosteriorGeneration,
 )
-from nextseek_api.cc_assistant.family_labels import corpus_snapshot
-from nextseek_api.cc_assistant.tests.generation_test_factory import (
+from NessieAI.router.family_labels import corpus_snapshot
+from NessieAI.tests.hibayes.generation_test_factory import (
     _publish_generation_for_test,
 )
-from nextseek_api.eval.fit.v14.combined import CombinedFitResult
-from nextseek_api.eval.fit.v14.decision import (
+from NessieAI.hibayes.fit.v14.combined import CombinedFitResult
+from NessieAI.hibayes.fit.v14.decision import (
     CandidateDecision,
     DecisionStatus,
     GenerationDecision,
 )
-from nextseek_api.eval.fit.v14.latency_model import DescriptiveLatencyResult
-from nextseek_api.eval.fit.v14.quality_model import DescriptiveQualityResult
-from nextseek_api.eval.generation_store import (
+from NessieAI.hibayes.fit.v14.latency_model import DescriptiveLatencyResult
+from NessieAI.hibayes.fit.v14.quality_model import DescriptiveQualityResult
+from NessieAI.hibayes.generation_store import (
     EMPTY_ACTIVE_HASH,
     ActivationAbort,
     ActivationError,
@@ -47,13 +47,13 @@ from nextseek_api.eval.generation_store import (
     set_test_abort_activate_after_pointer_mutate,
     set_test_abort_publish_after_generation,
 )
-from nextseek_api.eval import generation_store
-from nextseek_api.eval.generation_validation import (
+from NessieAI.hibayes import generation_store
+from NessieAI.hibayes.generation_validation import (
     require_valid_for_activation,
     validate_generation_for_activation,
 )
-from nextseek_api.eval.paired_run_registry import register_paired_run
-from nextseek_api.eval.publish import (
+from NessieAI.hibayes.paired_run_registry import register_paired_run
+from NessieAI.hibayes.publish import (
     FitGroup,
     FitResult,
     PublicationEvidence,
@@ -372,7 +372,7 @@ def test_validation_missing_rows_canonical_and_current_corpus_failure(monkeypatc
 
     generation = _publish_generation_for_test(_store_manifest("corpus-error"))
     monkeypatch.setattr(
-        "nextseek_api.cc_assistant.family_labels.corpus_snapshot",
+        "NessieAI.router.family_labels.corpus_snapshot",
         lambda: (_ for _ in ()).throw(RuntimeError("offline")),
     )
     result = validate_generation_for_activation(generation)

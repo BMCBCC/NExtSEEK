@@ -10,9 +10,9 @@ from typing import Any
 
 import pytest
 
-from nextseek_api.cc_assistant.op_registry import paired_evidence as pe
-from nessie_tests import export as nexport
-from nessie_tests import runner
+from NessieAI.cc.op_registry import paired_evidence as pe
+from NessieAI.tests.nessie_tests import export as nexport
+from NessieAI.tests.nessie_tests import runner
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "paired_evidence"
@@ -743,7 +743,7 @@ def test_ensure_real_e2e_catalog_reloads_poisoned_namespace(monkeypatch):
     stub = types.ModuleType("e2e.catalog")
     monkeypatch.setitem(sys.modules, "e2e.catalog", stub)
     pe.ensure_real_e2e_catalog()
-    from e2e.catalog import load_catalog
+    from NessieAI.tests.e2e.catalog import load_catalog
     assert callable(load_catalog)
 
 

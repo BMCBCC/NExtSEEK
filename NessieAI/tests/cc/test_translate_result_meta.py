@@ -1,5 +1,5 @@
 """_handle_result surfaces num_turns/duration_ms on query_complete. Hermetic."""
-from nextseek_api.cc_assistant.translate import CCStreamTranslator
+from NessieAI.cc.translate import CCStreamTranslator
 
 
 def _translator():

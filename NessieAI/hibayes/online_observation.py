@@ -3,13 +3,13 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from nextseek_api.eval.evidence_kinds import (
+from NessieAI.hibayes.evidence_kinds import (
     EvidenceKind,
     ForgedEvidenceDiscriminator,
     ONLINE_OBSERVATION_SCHEMA_VERSION,
     OnlineEvidenceRejected,
 )
-from nextseek_api.eval.router_models_proposal import RouteSource
+from NessieAI.hibayes.router_models_proposal import RouteSource
 
 __all__ = [
     "DEFAULT_SELECTION_CAVEAT",

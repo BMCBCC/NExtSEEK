@@ -24,7 +24,7 @@ from django.test import TestCase
 from unittest.mock import patch
 from rest_framework.test import APIClient
 
-from nextseek_api.assistant.bundle_download import bundle_metadata
+from NessieAI.ns.bundle_download import bundle_metadata
 from nextseek_api.assistant.models_db import ChatSession
 
 

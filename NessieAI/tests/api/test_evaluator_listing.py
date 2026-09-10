@@ -36,7 +36,7 @@ from nextseek_api.assistant.models_db import ChatSession, QueryTask
 _test_router = _TestRouter()
 _test_router.register(r"evaluator", _EvalVS, basename="evaluator")
 urlpatterns = [re_path(r'^nextseek_api/', include(_test_router.urls))]
-_TEST_URLCONF = "nextseek_api.tests.test_evaluator_listing"
+_TEST_URLCONF = "NessieAI.tests.api.test_evaluator_listing"
 
 RUNS_URL = "/nextseek_api/evaluator/runs/"
 

@@ -8,9 +8,9 @@ import types
 
 import pytest
 
-from nessie_tests import collect
-from nessie_tests.bayes_manifest import BayesManifest, BayesPair
-from nessie_tests.manifest import NessieManifestEntry
+from NessieAI.tests.nessie_tests import collect
+from NessieAI.tests.nessie_tests.bayes_manifest import BayesManifest, BayesPair
+from NessieAI.tests.nessie_tests.manifest import NessieManifestEntry
 
 
 class FakeSources:
@@ -607,7 +607,7 @@ def test_run_case_records_every_turns_task_id():
     Driven through a REAL multi-turn corpus variant, so the turn count comes from
     the corpus rather than from a hand-built double that could agree with a broken
     accumulator."""
-    from nessie_tests import corpus, runner
+    from NessieAI.tests.nessie_tests import corpus, runner
 
     corpus_path = pathlib.Path(__file__).resolve().parents[1] / "corpus.json"
     v = next(x for x in corpus.merged(corpus_path) if x.id == "refrec.refine_to_cd8")
@@ -652,7 +652,7 @@ def test_the_collector_is_a_real_command_now(tmp_path, monkeypatch, capsys):
     `sources.DockerSources` is one, so the documented step must actually collect
     -- SKILL.md printing a command that does nothing is the whole defect this
     family of tests exists about."""
-    from nessie_tests import sources as sources_mod
+    from NessieAI.tests.nessie_tests import sources as sources_mod
     run = _run_dir(tmp_path)
     monkeypatch.setattr(sources_mod, "DockerSources",
                         lambda **kw: _PingableSources())
@@ -683,7 +683,7 @@ def test_the_command_refuses_a_run_directory_with_no_paired_manifest(tmp_path, c
 
 def test_the_command_refuses_a_manifest_with_no_pairs(tmp_path, capsys):
     run = tmp_path / "run"
-    from nessie_tests.bayes_manifest import BayesManifest, write_bayes_manifest
+    from NessieAI.tests.nessie_tests.bayes_manifest import BayesManifest, write_bayes_manifest
     write_bayes_manifest(BayesManifest(), run)
 
     assert collect.main(["--run", str(run)]) == 2
@@ -696,7 +696,7 @@ def test_the_command_refuses_when_the_container_cannot_answer(tmp_path, monkeypa
     finishes, and finishes LOOKING complete: `collection.json` records every
     artifact missing, which is indistinguishable on the page from a product that
     produced nothing -- discovered, if at all, after grading 254 blank arms."""
-    from nessie_tests import sources as sources_mod
+    from NessieAI.tests.nessie_tests import sources as sources_mod
     run = _run_dir(tmp_path)
 
     class Dead:
@@ -719,7 +719,7 @@ def test_a_run_that_joined_nothing_at_all_says_so(tmp_path, monkeypatch, capsys)
     """Every arm missing is recorded rather than raised -- that is the module's
     design -- but a summary that printed only totals would let a total join
     failure read as a run in which nothing happened."""
-    from nessie_tests import sources as sources_mod
+    from NessieAI.tests.nessie_tests import sources as sources_mod
     run = _run_dir(tmp_path)
     monkeypatch.setattr(sources_mod, "DockerSources",
                         lambda **kw: _PingableSources(rows={}))
@@ -735,7 +735,7 @@ def test_a_host_without_zstandard_is_warned_before_it_pays_for_the_collection(
     127 CC arms recorded `unreadable`, buried among the honest misses -- and that
     is a fact about the COLLECTOR, not about the run."""
     import builtins
-    from nessie_tests import sources as sources_mod
+    from NessieAI.tests.nessie_tests import sources as sources_mod
     run = _run_dir(tmp_path)
     monkeypatch.setattr(sources_mod, "DockerSources",
                         lambda **kw: _PingableSources())
@@ -962,7 +962,7 @@ class _PingableSources(FakeSources):
 
 
 def _run_dir(tmp_path):
-    from nessie_tests.bayes_manifest import write_bayes_manifest
+    from NessieAI.tests.nessie_tests.bayes_manifest import write_bayes_manifest
     run = tmp_path / "run"
     write_bayes_manifest(_manifest(), run)
     return run

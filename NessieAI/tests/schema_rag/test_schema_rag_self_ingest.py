@@ -52,7 +52,7 @@ def _sp():
     Keeps this file collectable against the pre-fix tree, so the behavioural
     tests below report the real failure instead of a collection error.
     """
-    from nextseek_api.schema_rag import schema_processor
+    from NessieAI.schema_rag import schema_processor
 
     return schema_processor
 
@@ -222,7 +222,7 @@ class TestFetchSchemaServesSelfInProcess(TestCase):
         """The #94 defect itself: this GET used to 401."""
         with _env(NEXTSEEK_INTERNAL_BASE_URL=INTERNAL):
             with patch(
-                "nextseek_api.schema_rag.schema_processor.requests.get",
+                "NessieAI.schema_rag.schema_processor.requests.get",
                 side_effect=AssertionError("fetch_schema must NOT go over HTTP for our own schema route"),
             ):
                 doc = _sp().OpenAPISchemaProcessor().fetch_schema(
@@ -241,7 +241,7 @@ class TestFetchSchemaServesSelfInProcess(TestCase):
         with _env(NEXTSEEK_INTERNAL_BASE_URL=INTERNAL):
             with patch("drf_spectacular.generators.SchemaGenerator", boom):
                 with patch(
-                    "nextseek_api.schema_rag.schema_processor.requests.get",
+                    "NessieAI.schema_rag.schema_processor.requests.get",
                     return_value=_http_response(),
                 ) as mock_get:
                     doc = _sp().OpenAPISchemaProcessor().fetch_schema(
@@ -257,7 +257,7 @@ class TestFetchSchemaServesSelfInProcess(TestCase):
         with _env(NEXTSEEK_INTERNAL_BASE_URL=INTERNAL):
             with patch("drf_spectacular.generators.SchemaGenerator", gen):
                 with patch(
-                    "nextseek_api.schema_rag.schema_processor.requests.get",
+                    "NessieAI.schema_rag.schema_processor.requests.get",
                     return_value=_http_response(),
                 ) as mock_get:
                     doc = _sp().OpenAPISchemaProcessor().fetch_schema(
@@ -273,7 +273,7 @@ class TestFetchSchemaServesSelfInProcess(TestCase):
         with _env(NEXTSEEK_INTERNAL_BASE_URL=INTERNAL):
             with patch("drf_spectacular.generators.SchemaGenerator", gen):
                 with patch(
-                    "nextseek_api.schema_rag.schema_processor.requests.get",
+                    "NessieAI.schema_rag.schema_processor.requests.get",
                     return_value=_http_response(),
                 ) as mock_get:
                     _sp().OpenAPISchemaProcessor().fetch_schema(url)
@@ -287,7 +287,7 @@ class TestFetchSchemaServesSelfInProcess(TestCase):
         with _env(NEXTSEEK_INTERNAL_BASE_URL=INTERNAL):
             with patch("drf_spectacular.generators.SchemaGenerator", gen):
                 with patch(
-                    "nextseek_api.schema_rag.schema_processor.requests.get",
+                    "NessieAI.schema_rag.schema_processor.requests.get",
                     return_value=_http_response(),
                 ) as mock_get:
                     _sp().OpenAPISchemaProcessor().fetch_schema(url)
@@ -307,13 +307,13 @@ class TestIngestSchemaSelfIngest(TestCase):
 
     def test_ingesting_our_own_schema_route_succeeds(self):
         from nextseek_api.models import IngestRequest
-        from nextseek_api.schema_rag.service import ingest_schema
+        from NessieAI.schema_rag.service import ingest_schema
 
         with tempfile.TemporaryDirectory() as duckdb_dir:
             with override_settings(SCHEMA_RAG_DUCKDB_DIR=duckdb_dir):
                 with _env(NEXTSEEK_INTERNAL_BASE_URL=INTERNAL):
                     with patch(
-                        "nextseek_api.schema_rag.schema_processor.requests.get",
+                        "NessieAI.schema_rag.schema_processor.requests.get",
                         side_effect=AssertionError("self-ingest must not go over HTTP"),
                     ):
                         result = ingest_schema(

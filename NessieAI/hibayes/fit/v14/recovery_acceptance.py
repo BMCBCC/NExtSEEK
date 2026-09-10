@@ -4,8 +4,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Sequence
 
-from nextseek_api.eval.fit.v14.decision import DecisionStatus, GenerationDecision
-from nextseek_api.eval.fit.v14.recovery_matrix import RecoveryScenario
+from NessieAI.hibayes.fit.v14.decision import DecisionStatus, GenerationDecision
+from NessieAI.hibayes.fit.v14.recovery_matrix import RecoveryScenario
 
 __all__ = [
     "FEASIBILITY_SLOT_INDICES",

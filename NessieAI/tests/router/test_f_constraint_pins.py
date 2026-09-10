@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from nextseek_api.cc_assistant import router as cc_router
+from NessieAI.router import router as cc_router
 
 _REPO = Path(__file__).resolve().parents[3]
 

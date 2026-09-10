@@ -1,4 +1,4 @@
-from nessie_tests import route_observer as ro
+from NessieAI.tests.nessie_tests import route_observer as ro
 
 NS_PAYLOAD = {"status": "completed", "progress": [
     {"event": "route_decided", "data": {"route": "nextseek_query", "model_class": None, "source": "baml", "reasoning": "r"}},

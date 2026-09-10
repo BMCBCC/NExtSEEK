@@ -1,7 +1,7 @@
-"""Unit tests for build_tools.ingest_nextseek_docs.split."""
+"""Unit tests for NessieAI.build_tools.ingest_nextseek_docs.split."""
 from __future__ import annotations
 
-from build_tools.ingest_nextseek_docs.split import Section, split_by_h1
+from NessieAI.build_tools.ingest_nextseek_docs.split import Section, split_by_h1
 
 
 def test_split_empty_returns_empty_list() -> None:

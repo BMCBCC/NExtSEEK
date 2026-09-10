@@ -4,7 +4,7 @@ import os
 import stat
 from pathlib import Path
 
-from nextseek_api.cc_assistant import bin_inventory
+from NessieAI.tests.cc import bin_inventory
 
 _REPO = Path(__file__).resolve().parents[3]
 
@@ -50,9 +50,9 @@ def test_real_inventory_contains_new_ops_and_partitions():
 
 
 def test_catalogs_bind_to_inventory():
-    from nextseek_api.cc_assistant import step7_gate_catalog as cat
-    from nextseek_api.cc_assistant import step7_per_op_evidence as ev
-    from nextseek_api.cc_assistant.tests import validate_step7_compose_deploy as val
+    from NessieAI.tests.cc import step7_gate_catalog as cat
+    from NessieAI.tests.cc import step7_per_op_evidence as ev
+    from NessieAI.tests.cc import validate_step7_compose_deploy as val
 
     q = bin_inventory.discover_ops("query")
     assert tuple(ev.BIN_OPS) == q

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from e2e.catalog import Catalog, Family, Variant, Turn, PassCriterion, load_catalog
+from NessieAI.tests.e2e.catalog import Catalog, Family, Variant, Turn, PassCriterion, load_catalog
 
 
 def test_pass_criterion_minimal():

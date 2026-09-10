@@ -8,8 +8,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from nextseek_api.eval.attempt_store import AttemptStore
-from nextseek_api.eval.conservation import (
+from NessieAI.hibayes.attempt_store import AttemptStore
+from NessieAI.hibayes.conservation import (
     SupportGateConfig,
     build_conservation_report,
     build_differential_attrition_report,
@@ -18,15 +18,15 @@ from nextseek_api.eval.conservation import (
     compute_sensitivity_bounds,
     count_discordant_pairs,
 )
-from nextseek_api.eval.disposition import ArmBucket, OutcomeBucket, classify_arm
-from nextseek_api.eval.judge import aggregate_outcome, aggregate_three_evaluations
-from nextseek_api.eval.judge_models import (
+from NessieAI.hibayes.disposition import ArmBucket, OutcomeBucket, classify_arm
+from NessieAI.hibayes.judge import aggregate_outcome, aggregate_three_evaluations
+from NessieAI.hibayes.judge_models import (
     FunctionalEvaluation,
     FunctionalOutcome,
     PrimaryIssue,
     ReviewPriority,
 )
-from nextseek_api.eval.router_models_proposal import (
+from NessieAI.hibayes.router_models_proposal import (
     ArtifactStatus,
     ErrorClass,
     EvalRow,
@@ -34,7 +34,7 @@ from nextseek_api.eval.router_models_proposal import (
     FamilySource,
     RouteSource,
 )
-from nextseek_api.eval.stage_c_runner import StageCRunner
+from NessieAI.hibayes.stage_c_runner import StageCRunner
 
 V13A_DIR = Path("/home/taishajo/work/NExtSEEK-dev/testquestions-2026-08-07")
 V13A_ZIP = V13A_DIR / "testquestions.zip"

@@ -157,7 +157,7 @@ class Sources:
         `CopyFailed` is caught below, so any other exception aborts the whole
         collection over one arm; see `_copy_into`.
 
-    The one concrete implementation is `nessie_tests.sources.DockerSources`,
+    The one concrete implementation is `NessieAI.tests.nessie_tests.sources.DockerSources`,
     which reads all three through the running `nextseek` container.
     """
 
@@ -609,7 +609,7 @@ def collect(manifest, out_dir, sources, outputs_root=None, *,
 
 # --- the command SKILL.md names ----------------------------------------------
 # This used to be a refusal, because `collect` needs a CONCRETE `Sources` and
-# nothing built one. `nessie_tests.sources.DockerSources` now does, so the
+# nothing built one. `NessieAI.tests.nessie_tests.sources.DockerSources` now does, so the
 # documented step really collects.
 #
 # What the refusal was protecting is NOT dropped, only narrowed. An argparse that
@@ -633,7 +633,7 @@ transcript (the blob is fetched fine) but because this process cannot unpack it.
 The rest of the collection is unaffected and is still worth having.
 
 Install it, or re-run this step as:
-  uv run --no-project --with zstandard python -m nessie_tests.collect --run <run>
+  uv run --no-project --with zstandard python -m NessieAI.tests.nessie_tests.collect --run <run>
 """
 
 
@@ -685,7 +685,7 @@ def _summarise(payload: dict) -> list[str]:
             lines.append("     `zstandard` is not importable here; that is why. "
                          "Re-run this step as:")
             lines.append("       uv run --no-project --with zstandard python -m "
-                         "nessie_tests.collect --run <run>")
+                         "NessieAI.tests.nessie_tests.collect --run <run>")
         else:
             lines.append("     `zstandard` IS importable here, so this is not the "
                          "usual cause: read the reasons in collection.json.")
@@ -705,7 +705,7 @@ def main(argv=None) -> int:
     # imports zstandard late: the unit suite imports this module constantly and
     # must not drag in the source implementation, and `sources` imports this
     # module back for `CopyFailed`.
-    from nessie_tests import bayes_manifest, sources as sources_mod
+    from NessieAI.tests.nessie_tests import bayes_manifest, sources as sources_mod
 
     ap = argparse.ArgumentParser(
         description="Collect a paired (--bayesian) run's artifacts out of the "

@@ -10,7 +10,7 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from nextseek_api.eval.judge import (  # noqa: E402
+from NessieAI.hibayes.judge import (  # noqa: E402
     aggregate_needs_human_review,
     aggregate_outcome,
     aggregate_primary_issue,
@@ -20,7 +20,7 @@ from nextseek_api.eval.judge import (  # noqa: E402
     aggregate_usefulness_score_median,
     functional_success_from_outcome,
 )
-from nextseek_api.eval.judge_models import (  # noqa: E402
+from NessieAI.hibayes.judge_models import (  # noqa: E402
     FunctionalEvaluation,
     FunctionalOutcome,
     PrimaryIssue,
@@ -121,7 +121,7 @@ def test_unknown_primary_issue_fail_closed() -> None:
 
 
 def test_no_confidence_field_in_judge_module() -> None:
-    import nextseek_api.eval.judge as judge_mod
+    import NessieAI.hibayes.judge as judge_mod
 
     assert "confidence" not in judge_mod.__all__
     src = Path(judge_mod.__file__).read_text()

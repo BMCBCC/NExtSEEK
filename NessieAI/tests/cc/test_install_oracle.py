@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from nextseek_api.cc_assistant.op_registry import (
+from NessieAI.cc.op_registry import (
     InstallDiscovery,
     InstallOracleError,
     discover_install,

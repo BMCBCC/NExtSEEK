@@ -22,8 +22,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from nextseek_api.eval.enums import ArtifactStatus
-from nextseek_api.eval.expected_behavior import expected_behavior_rule
+from NessieAI.hibayes.enums import ArtifactStatus
+from NessieAI.hibayes.expected_behavior import expected_behavior_rule
 
 
 __all__ = [

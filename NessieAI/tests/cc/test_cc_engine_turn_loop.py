@@ -9,8 +9,8 @@ from types import SimpleNamespace
 import docker as docker_mod
 from docker.errors import APIError, NotFound
 
-from nextseek_api.cc_assistant import cc_engine
-from nextseek_api.cc_assistant.cc_config import CCPaths
+from NessieAI.cc import cc_engine
+from NessieAI.cc.cc_config import CCPaths
 
 
 def _paths(tmp_path: Path) -> CCPaths:
@@ -120,11 +120,11 @@ def test_run_cc_turn_streams_result_and_persists(tmp_path, monkeypatch):
         raise RuntimeError("sweep boom")
 
     monkeypatch.setattr(
-        "nextseek_api.cc_assistant.cc_staging.sweep_user_staging", boom_sweep,
+        "NessieAI.cc.cc_staging.sweep_user_staging", boom_sweep,
     )
 
     real_build = None
-    from nextseek_api.cc_assistant import cc_provision
+    from NessieAI.cc import cc_provision
 
     real_build = cc_provision.build_user_dirs
 
@@ -153,7 +153,7 @@ def test_run_cc_turn_streams_result_and_persists(tmp_path, monkeypatch):
             return {"cc": True}
 
     monkeypatch.setattr(
-        "nextseek_api.cc_assistant.cc_trace.extract_trace",
+        "NessieAI.cc.cc_trace.extract_trace",
         lambda *a, **k: _Trace(),
     )
 

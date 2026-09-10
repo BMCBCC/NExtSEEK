@@ -3,9 +3,9 @@ import os
 import subprocess
 import time
 from pathlib import Path
-from nessie_tests import corpus, evaluate, http_driver, report
-from nessie_tests import route_observer as ro
-from nessie_tests.manifest import (
+from NessieAI.tests.nessie_tests import corpus, evaluate, http_driver, report
+from NessieAI.tests.nessie_tests import route_observer as ro
+from NessieAI.tests.nessie_tests.manifest import (
     CriterionObservation, NessieManifest, NessieManifestEntry, cost_summary,
     write_manifest,
 )
@@ -397,7 +397,7 @@ def run_suite(*, base_url, auth_header, tier, scope="specific", family=None, var
             v, tier=tier, post_query=post_query, get_progress=get_progress,
             bundle_reader=bundle_reader, pace_s=pace_s, sleep=sleep, clock=clock))
     if run_consistency:
-        from nessie_tests import consistency
+        from NessieAI.tests.nessie_tests import consistency
         for g in corpus.load_consistency_groups(corpus_path):
             def _drive(q):
                 # force_new: without it the API falls back to the caller's most

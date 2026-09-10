@@ -91,7 +91,7 @@ class NessieManifestEntry(BaseModel):
     reason: str = ""
     expected_fail: bool = False
     # True when this entry's `error` is a PROVIDER OUTAGE (the reply carried
-    # nessie_tests.outage.PROVIDER_OUTAGE_MARKER) rather than an infrastructure
+    # NessieAI.tests.nessie_tests.outage.PROVIDER_OUTAGE_MARKER) rather than an infrastructure
     # fault of the harness's own. Both are `error`, but only an outage is exempt
     # from the gate: a TimeoutError against a dead endpoint still has to fail.
     # A separate flag rather than a sixth status, so `status == "error"` keeps

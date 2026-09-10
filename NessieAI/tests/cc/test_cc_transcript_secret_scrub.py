@@ -23,7 +23,7 @@ import ast
 import base64
 from pathlib import Path
 
-from nextseek_api.cc_assistant import cc_engine, cc_memory_io
+from NessieAI.cc import cc_engine, cc_memory_io
 
 PW = "hunter2-s3cr3t"
 USER = "demo"
@@ -259,7 +259,7 @@ def test_unreadable_transcript_is_logged_and_counted(tmp_path, monkeypatch, capl
                 PermissionError(13, "Permission denied"))
 
     with caplog.at_level(logging.WARNING,
-                         logger="nextseek_api.cc_assistant.cc_engine"):
+                         logger="NessieAI.cc.cc_engine"):
         report = cc_engine.scrub_transcript_store(tmp_path, ENV)
 
     monkeypatch.undo()          # read the files back for real
@@ -282,7 +282,7 @@ def test_a_failed_rewrite_counts_as_skipped(tmp_path, monkeypatch, caplog):
                 OSError(28, "No space left on device"))
 
     with caplog.at_level(logging.WARNING,
-                         logger="nextseek_api.cc_assistant.cc_engine"):
+                         logger="NessieAI.cc.cc_engine"):
         report = cc_engine.scrub_transcript_store(tmp_path, ENV)
 
     assert report.rewritten == 0

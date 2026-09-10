@@ -1,8 +1,8 @@
 """Hermetic trace extraction from a fixture jsonl. orjson + TypeAdapter."""
 from pathlib import Path
 
-from nextseek_api.cc_assistant import cc_summary
-from nextseek_api.cc_assistant.cc_trace import extract_trace, CCTrace
+from NessieAI.cc import cc_summary
+from NessieAI.cc.cc_trace import extract_trace, CCTrace
 
 FIX = Path(__file__).parent / "fixtures" / "cc_transcript_sample.jsonl"
 MULTI = Path(__file__).parent / "fixtures" / "cc_transcript_multitool.jsonl"
