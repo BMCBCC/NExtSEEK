@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import os
 import re
+import socket
 import sys
 import time
 from pathlib import Path
@@ -328,6 +329,31 @@ def wait_out_floor(floor: int, *, say, sleep=time.sleep, step: int = 30) -> None
 # readiness gate
 # --------------------------------------------------------------------------- #
 
+def front_door_refusal(base: str) -> str | None:
+    """Why nothing can be reached at `base`, or None when something is listening.
+
+    Checked once, before the floor. The floor exists for an app that is still
+    starting behind a live nginx, which answers 502 until it is up; a refused
+    connection is a different condition that no amount of waiting fixes. On
+    2026-09-10 a stopped nginx cost the whole 300 s floor before the first probe
+    said so.
+    """
+    parts = urlsplit(base)
+    host = parts.hostname or "127.0.0.1"
+    port = parts.port or (443 if parts.scheme == "https" else 80)
+    try:
+        with socket.create_connection((host, port), timeout=5):
+            return None
+    except ConnectionRefusedError:
+        return (f"nothing is listening at {host}:{port} (connection refused). "
+                "The suite enters through the nginx front door; on a compose "
+                "stack check `docker compose ps nextseek_nginx`")
+    except OSError:
+        # A timeout or an unroutable host is not proof the port is dead; leave
+        # it to the probes, which report what they see.
+        return None
+
+
 def _probe_once(base: str, creds: tuple[str, str]) -> tuple[bool, str]:
     """One readiness probe. Returns (ok, a description of what was seen).
 
@@ -409,6 +435,10 @@ def stack_ready(pytestconfig, base_url, request, record_testsuite_property):
 
     def say(msg):
         report_to_terminal(request.config, f"[readiness] {msg}")
+
+    refused = front_door_refusal(base_url)
+    if refused:
+        pytest.exit(f"stack not reachable: {refused}", returncode=1)
 
     say(f"floor {floor}s, then polling every {poll}s for {need} consecutive "
         f"successes, ceiling {ceiling}s")

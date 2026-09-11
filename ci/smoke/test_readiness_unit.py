@@ -1,4 +1,5 @@
-"""Unit tests for the readiness gate's credential decision. No stack, no network.
+"""Unit tests for the readiness gate's credential decision and its front-door
+check. No stack; the front-door tests open loopback sockets and nothing else.
 
     PYTHONDONTWRITEBYTECODE=1 uv run --no-project --with pytest --with requests \
       --with playwright pytest ci/smoke/test_readiness_unit.py -q -p no:cacheprovider
@@ -9,6 +10,7 @@ box with no credentials: every test would skip, pytest would exit 0, and a deplo
 nothing had verified would be reported as verified. That refusal is asserted here
 rather than discovered on the box.
 """
+import socket
 import sys
 from pathlib import Path
 
@@ -16,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import pytest
 
-from ci.smoke.conftest import resolve_readiness_credentials
+from ci.smoke.conftest import front_door_refusal, resolve_readiness_credentials
 
 # pytest.exit raises this. Bound once so the tests read as what they assert.
 Exit = pytest.exit.Exception
@@ -74,6 +76,34 @@ def test_gate_with_file_credentials_returns_them(monkeypatch, tmp_path):
     monkeypatch.setenv("NEXTSEEK_CI_ENV", str(cred))
     assert resolve_readiness_credentials(FakeConfig(wait_ready=True)) == (
         "fromfile", "filepw")
+
+
+def _closed_port():
+    """A loopback port that was free a moment ago and has nothing bound now."""
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
+def test_a_refused_front_door_is_reported_before_the_floor():
+    """The bug this prevents: on 2026-09-10 nginx was stopped, and the gate sat
+    out its whole 300 s floor before its first probe said "Connection refused",
+    then would have kept probing to the 600 s ceiling."""
+    port = _closed_port()
+    msg = front_door_refusal(f"http://127.0.0.1:{port}")
+    assert msg is not None
+    assert f"127.0.0.1:{port}" in msg
+    assert "nextseek_nginx" in msg
+
+
+def test_a_listening_front_door_is_not_refused():
+    """Listening is all this checks. A 502 from an nginx whose app is still
+    starting is the floor's business, not this check's."""
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        s.listen()
+        port = s.getsockname()[1]
+        assert front_door_refusal(f"http://127.0.0.1:{port}") is None
 
 
 def test_half_a_credential_is_no_credential(monkeypatch):
