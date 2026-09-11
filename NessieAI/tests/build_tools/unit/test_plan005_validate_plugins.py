@@ -12,6 +12,7 @@ from unittest import mock
 
 import pytest
 
+from NessieAI import paths
 from NessieAI.build_tools.plan005_validate_plugins.validate import (
     IMMUTABLE_VALIDATOR_IMAGE,
     PluginValidationError,
@@ -20,9 +21,9 @@ from NessieAI.build_tools.plan005_validate_plugins.validate import (
 )
 from NessieAI.cc.op_registry.install_oracle import discover_install
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = paths.REPO_ROOT
 VALIDATE_MODULE = "NessieAI.build_tools.plan005_validate_plugins"
-PYTHONPATH = f"{REPO_ROOT}:{REPO_ROOT / 'dmac_assistant' / 'src'}"
+PYTHONPATH = f"{REPO_ROOT}:{paths.DMAC_ASSISTANT_DIR / 'src'}"
 
 
 def _write_manifest(plugin_dir: Path, *, payload: dict[str, object] | None = None) -> None:
@@ -227,8 +228,7 @@ def test_docker_timeout_is_mapped_to_nonzero_result():
         side_effect=subprocess.TimeoutExpired(cmd="docker", timeout=1),
     ):
         result = run_claude_plugin_validate(
-            plugin_dir=REPO_ROOT
-            / "docker/cc-runtime/build_context/plugins/nextseek",
+            plugin_dir=paths.CC_PLUGIN_DIR,
             validator_image=IMMUTABLE_VALIDATOR_IMAGE,
             timeout_seconds=1,
         )

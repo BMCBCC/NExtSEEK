@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
+from NessieAI import paths
 from NessieAI.build_tools.ingest_nextseek_docs import __main__ as orchestrator
 from NessieAI.build_tools.ingest_nextseek_docs.constants import BEGIN_MARKER, END_MARKER
 
@@ -255,7 +256,7 @@ def test_cli_module_help_mentions_force_flag() -> None:
     # from NessieAI/build_tools/ as cwd. Subprocess `python -m NessieAI.build_tools.X` needs
     # cwd at repo root so the `NessieAI` package is on Python's default
     # sys.path (containing '').
-    repo_root = Path(__file__).resolve().parents[3]
+    repo_root = paths.REPO_ROOT
     result = subprocess.run(
         [sys.executable, "-m", "NessieAI.build_tools.ingest_nextseek_docs", "--help"],
         capture_output=True,

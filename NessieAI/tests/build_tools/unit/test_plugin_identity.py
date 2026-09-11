@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
 from NessieAI.cc.op_registry.plugin_identity import (
     PluginIdentityError,
     load_and_validate_manifest,
@@ -63,11 +64,7 @@ def test_load_and_validate_manifest_requires_directory_name_match(tmp_path: Path
 
 
 def test_current_plugin_manifest_passes_local_validation():
-    repo_root = Path(__file__).resolve().parents[3]
-    manifest = (
-        repo_root
-        / "docker/cc-runtime/build_context/plugins/nextseek/.claude-plugin/plugin.json"
-    )
+    manifest = paths.CC_PLUGIN_DIR / ".claude-plugin" / "plugin.json"
     identity = load_and_validate_manifest(manifest)
     assert identity.name == "nextseek"
     assert "nextseek-query" not in identity.description.lower()

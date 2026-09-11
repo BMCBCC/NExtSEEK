@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
 from NessieAI.build_tools.gen_op_surfaces.blocks import MarkerError, render_marked_file
 from NessieAI.build_tools.gen_op_surfaces.constants import (
     BAKED_CAPABILITIES_REL,
@@ -38,10 +39,10 @@ from NessieAI.build_tools.gen_op_surfaces.emit import (
 )
 from NessieAI.build_tools.gen_op_surfaces.paths import PathEscapeError, resolve_under_root
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = paths.REPO_ROOT
 EXPORT_MODULE = "NessieAI.cc.op_registry.export"
 GEN_MODULE = "NessieAI.build_tools.gen_op_surfaces"
-PYTHONPATH = f"{REPO_ROOT}:{REPO_ROOT / 'dmac_assistant' / 'src'}:{REPO_ROOT / 'chat_nextseek' / 'src'}"
+PYTHONPATH = f"{REPO_ROOT}:{paths.DMAC_ASSISTANT_DIR / 'src'}:{paths.CHAT_NEXTSEEK_DIR / 'src'}"
 DMAC_PYTHON = Path("/home/taishajo/work/dmac-assistant/.venv/bin/python3")
 IMAGE_PYTHON = Path("/app/.venv/bin/python")
 
@@ -157,7 +158,7 @@ def test_check_surfaces_passes_on_current_tree() -> None:
 
 
 def test_check_surfaces_does_not_rewrite_targets_or_create_repo_pyc() -> None:
-    target = REPO_ROOT / "dmac_assistant" / "build_context" / "route_capabilities.json"
+    target = paths.DMAC_BUILD_CONTEXT / "route_capabilities.json"
     before = (target.stat().st_mtime_ns, target.stat().st_size)
     check_surfaces(repo_root=REPO_ROOT)
     after = (target.stat().st_mtime_ns, target.stat().st_size)
@@ -272,13 +273,15 @@ def test_export_check_cli_exits_zero() -> None:
 def test_readonly_repo_mount_no_write_oracle_for_export_and_gen_surfaces() -> None:
     """Load-bearing oracle: real CLIs on read-only targets cannot write the tree."""
     target_paths = [
-        REPO_ROOT / CANONICAL_CAPABILITIES_REL,
-        REPO_ROOT / BAKED_CAPABILITIES_REL,
-        REPO_ROOT / "nextseek_api/cc_assistant/op_registry/ops.json",
-        REPO_ROOT
-        / "docker/cc-runtime/build_context/plugins/nextseek/context/ops.json",
+        paths.CHAT_NEXTSEEK_DIR / "src" / "chat_nextseek" / "context" / "capabilities.md",
+        paths.CC_PLUGIN_DIR / "context" / "capabilities.md",
+        paths.CC_DIR / "op_registry" / "ops.json",
+        paths.CC_PLUGIN_DIR / "context" / "ops.json",
     ]
-    existing = [path for path in target_paths if path.is_file()]
+    # Every target must exist: a move must not shrink the oracle silently.
+    missing = [path for path in target_paths if not path.is_file()]
+    assert not missing, f"no-write oracle targets are missing: {missing}"
+    existing = target_paths
     before = {path: path.read_bytes() for path in existing}
     original_modes = {path: path.stat().st_mode for path in existing}
     chmod_applied = False

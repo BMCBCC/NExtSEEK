@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
 from NessieAI.build_tools.gen_op_surfaces.commands import (
     emit_command_ops_block,
     parse_command_ops_block,
@@ -20,7 +21,7 @@ from NessieAI.build_tools.gen_op_surfaces.emit import (
 from NessieAI.cc.op_registry.models import GateClass, OpSpec, Transport
 from NessieAI.cc.op_registry.ops import OPS
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = paths.REPO_ROOT
 
 
 def _fixture_op(op_id: str, bin_name: str) -> OpSpec:
@@ -139,13 +140,10 @@ def test_gen_op_surfaces_check_passes_with_generated_command_block():
 
 
 def test_ops_and_export_do_not_load_plugin_json_for_discovery():
-    repo_root = REPO_ROOT
-    ops_source = (repo_root / "nextseek_api/cc_assistant/op_registry/ops.py").read_text(
+    ops_source = (paths.CC_DIR / "op_registry" / "ops.py").read_text(encoding="utf-8")
+    export_source = (paths.CC_DIR / "op_registry" / "export.py").read_text(
         encoding="utf-8"
     )
-    export_source = (
-        repo_root / "nextseek_api/cc_assistant/op_registry/export.py"
-    ).read_text(encoding="utf-8")
     assert "plugin.json" not in ops_source
     assert "plugin.json" not in export_source
 

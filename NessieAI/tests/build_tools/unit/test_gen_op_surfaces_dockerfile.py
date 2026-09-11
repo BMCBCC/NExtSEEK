@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
 from NessieAI.build_tools.gen_op_surfaces.constants import (
     ADDITIONAL_CONTEXTS_BEGIN,
     ADDITIONAL_CONTEXTS_END,
@@ -42,9 +43,10 @@ from NessieAI.build_tools.gen_op_surfaces.emit import (
 )
 from NessieAI.cc.op_registry.install_oracle import discover_install
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = paths.REPO_ROOT
 COMPOSE_FILE = REPO_ROOT / "docker-compose.yml"
-DOCKERFILE = REPO_ROOT / "docker/cc-runtime/Dockerfile"
+DOCKERFILE = paths.CC_RUNTIME_DIR / "Dockerfile"
+PLUGINS_ROOT = paths.CC_PLUGIN_DIR.parent
 NAMED_CONTEXT = "chat_nextseek"
 CANONICAL_SRC = "src/chat_nextseek/context/capabilities.md"
 IMAGE_CAPABILITIES = "/app/plugins/nextseek/context/capabilities.md"
@@ -295,7 +297,7 @@ def test_compose_named_context_must_be_vendored_tree(tmp_path: Path) -> None:
 
 
 def test_current_tree_four_sets_agree() -> None:
-    plugins_root = REPO_ROOT / "docker/cc-runtime/build_context/plugins"
+    plugins_root = PLUGINS_ROOT
     dirs, copies, installed, paths = four_install_sets(
         plugins_root=plugins_root,
         dockerfile_path=DOCKERFILE,

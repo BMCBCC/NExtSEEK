@@ -6,10 +6,15 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
 from NessieAI.build_tools.ingest_nextseek_docs import __main__ as orchestrator
 from NessieAI.build_tools.ingest_nextseek_docs.constants import BEGIN_MARKER, END_MARKER
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = paths.REPO_ROOT
+# The committed ingest outputs; the no-write guard below must watch
+# these real paths, so a later move cannot make it pass vacuously.
+REPO_DOCS_DIR = paths.CC_RUNTIME_DIR / "docs" / "nextseek"
+REPO_CLAUDE_MD = paths.CC_RUNTIME_DIR / "container" / "CLAUDE.md"
 
 SECTIONS_A = [
     ("Welcome", "Introductory paragraph for the welcome page."),
@@ -49,14 +54,16 @@ def _make_loader(markdown: str):
 
 
 def _git_status_for_repo_paths() -> str:
+    assert REPO_DOCS_DIR.is_dir(), REPO_DOCS_DIR
+    assert REPO_CLAUDE_MD.is_file(), REPO_CLAUDE_MD
     try:
         result = subprocess.run(
             [
                 "git",
                 "status",
                 "--porcelain",
-                "docker/cc-runtime/docs/nextseek/",
-                "docker/cc-runtime/container/CLAUDE.md",
+                str(REPO_DOCS_DIR),
+                str(REPO_CLAUDE_MD),
             ],
             cwd=REPO_ROOT,
             capture_output=True,

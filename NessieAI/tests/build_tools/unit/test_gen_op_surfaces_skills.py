@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
 from NessieAI.build_tools.gen_op_surfaces.constants import SKILL_OPS_BEGIN, SKILL_OPS_END
 from NessieAI.build_tools.gen_op_surfaces.emit import (
     SurfaceTarget,
@@ -28,7 +29,7 @@ from NessieAI.cc.op_registry.models import (
 )
 from NessieAI.cc.op_registry.ops import OPS
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = paths.REPO_ROOT
 
 
 def _fixture_op(
@@ -282,14 +283,8 @@ def test_skill_surfaces_are_registered_from_install_oracle():
 
 
 def test_committed_skill_matrices_match_ops_projection():
-    nextseek_path = (
-        REPO_ROOT
-        / "docker/cc-runtime/build_context/plugins/nextseek/skills/nextseek/SKILL.md"
-    )
-    batch_path = (
-        REPO_ROOT
-        / "docker/cc-runtime/build_context/plugins/nextseek/skills/nextseek-batch-upload/SKILL.md"
-    )
+    nextseek_path = paths.CC_PLUGIN_DIR / "skills" / "nextseek" / "SKILL.md"
+    batch_path = paths.CC_PLUGIN_DIR / "skills" / "nextseek-batch-upload" / "SKILL.md"
     nextseek_parsed = parse_skill_ops_block(nextseek_path.read_text(encoding="utf-8"))
     batch_parsed = parse_skill_ops_block(batch_path.read_text(encoding="utf-8"))
     assert nextseek_parsed == installed_skill_ops_rows(OPS, skill_name="nextseek")

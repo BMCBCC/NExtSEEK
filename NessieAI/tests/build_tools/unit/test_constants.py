@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from NessieAI import paths
 from NessieAI.build_tools.ingest_nextseek_docs import constants as C
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
 RAW_DEFAULT_DOCS_DIR = C.DEFAULT_DOCS_DIR
 RAW_DEFAULT_CLAUDE_MD_PATH = C.DEFAULT_CLAUDE_MD_PATH
 
@@ -37,6 +37,6 @@ def test_default_claude_md_path_is_container_file() -> None:
 
 def test_markers_match_container_claude_md_file() -> None:
     """Constants must match the strings baked into container/CLAUDE.md exactly."""
-    md = (REPO_ROOT / "docker" / "cc-runtime" / "container" / "CLAUDE.md").read_text()
+    md = (paths.CC_RUNTIME_DIR / "container" / "CLAUDE.md").read_text()
     assert C.BEGIN_MARKER in md
     assert C.END_MARKER in md

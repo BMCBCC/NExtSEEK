@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from NessieAI import paths
 from NessieAI.build_tools.gen_op_surfaces.claude_md import (
     ClaudeMdDocsError,
     emit_claude_ops_block,
@@ -47,7 +48,7 @@ from NessieAI.cc.op_registry.install_oracle import discover_install
 from NessieAI.cc.op_registry.models import GateClass, OpSpec, Transport
 from NessieAI.cc.op_registry.ops import OPS
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = paths.REPO_ROOT
 CLAUDE_MD = REPO_ROOT / CLAUDE_MD_REL
 CONTENT_HASH = REPO_ROOT / CONTENT_HASH_REL
 
@@ -488,7 +489,7 @@ def test_committed_inventories_match_independent_oracle() -> None:
     text = CLAUDE_MD.read_text(encoding="utf-8")
     validate_plan005_markers_outside_docs(text)
     discovery = discover_install(
-        plugins_root=REPO_ROOT / "docker/cc-runtime/build_context/plugins",
+        plugins_root=paths.CC_PLUGIN_DIR.parent,
         dockerfile_path=REPO_ROOT / DOCKERFILE_REL,
     )
     expected_plugins, expected_skills, expected_ops = _independent_expected(
