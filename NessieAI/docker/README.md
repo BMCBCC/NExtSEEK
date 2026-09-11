@@ -12,7 +12,7 @@ None of this is a Python package: the Python in each context runs only inside it
 | `cc-runtime/` | compose service `cc-agent` (build target only, never runs) | `dmac-assistant:poc`, the per-turn Container-CC agent image |
 | `bedrock-proxy/` | compose service `bedrock-proxy` | `nextseek-bedrock-proxy:latest` |
 | `ns-sidecar/` | compose service `nextseek-sidecar` | `nextseek-ns-sidecar:latest` |
-| `eval/` | an explicit `docker build -f NessieAI/docker/eval/Dockerfile .` from the repo root | the JAX/NumPyro HiBayes fit image (`COPY NessieAI/__init__.py` and `NessieAI/hibayes`) |
+| `eval/` | an explicit `docker build -f NessieAI/docker/eval/Dockerfile .` from the repo root | the JAX/NumPyro HiBayes fit image (`NessieAI/hibayes`, plus the router and harness files `human_grade_fit.py` needs from outside it) |
 
 Rebuild verbs: `./startup.sh rebuild --component cc-agent | bedrock-proxy | nextseek-sidecar` (`DEPLOYMENT.md` §3.2).
 

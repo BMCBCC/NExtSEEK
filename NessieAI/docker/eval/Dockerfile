@@ -7,8 +7,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends git ca-certific
 RUN pip install --no-cache-dir uv
 
 WORKDIR /app
-COPY NessieAI/__init__.py /app/NessieAI/__init__.py
+COPY NessieAI/__init__.py NessieAI/paths.py /app/NessieAI/
 COPY NessieAI/hibayes /app/NessieAI/hibayes
+# What NessieAI/hibayes/human_grade_fit.py needs from outside the package: the corpus
+# taxonomy (family_labels, which reads the corpus through paths.py) at import, and on
+# the fit path the set3 manifest model and corpus.json. Never NessieAI/history/.
+COPY NessieAI/router/__init__.py NessieAI/router/family_labels.py /app/NessieAI/router/
+COPY NessieAI/tests/__init__.py /app/NessieAI/tests/
+COPY NessieAI/tests/nessie_tests/__init__.py NessieAI/tests/nessie_tests/manifest.py \
+     NessieAI/tests/nessie_tests/bayes_manifest.py NessieAI/tests/nessie_tests/corpus.json \
+     /app/NessieAI/tests/nessie_tests/
 
 RUN pip install --no-cache-dir \
     pydantic orjson numpy scipy pytest \

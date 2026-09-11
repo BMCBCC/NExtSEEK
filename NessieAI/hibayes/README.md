@@ -43,7 +43,7 @@ together: `NessieAI/dmac_assistant/baml_src/functional_evaluator.baml`, its mirr
 | Paired harness | `NessieAI/tests/nessie_tests/` (`bayesian.py`, `bayes_manifest.py`, `v4_2_verifier.py`, the shared `export.py`, `collect.py` and `corpus.json`), `NessieAI/tests/nessie_tests/output-skill-bayesian/`, `NessieAI/tests/nessie_tests/output_skill_bayesian/` | the paired run is a harness mode; `export.py` is also imported by `NessieAI/build_tools/gen_op_surfaces/route_capabilities.py` |
 | Judge contracts | `NessieAI/dmac_assistant/baml_src/`: `functional_evaluator.baml` (`EvaluateFunctionalUsefulness`), `judge_router.baml` (`JudgeRouterAnswer`), `judge_ui.baml` (`JudgeUITranscript`); `classifier.baml` is shared with the router | they must compile in the one tree that holds `clients.baml` |
 | BAML mirror | `NessieAI/docker/cc-runtime/baml_src/` (byte-identical) and `NessieAI/docker/cc-runtime/tools/e2e/judge_runner.py` | the agent image build context; the Phase C dedupe removes the mirror |
-| Fit image | `NessieAI/docker/eval/` | JAX, NumPyro and ArviZ; copies only this package |
+| Fit image | `NessieAI/docker/eval/` | JAX, NumPyro and ArviZ; copies this package plus what `human_grade_fit.py` imports from outside it |
 | Task 6 image, verifier scripts, plan and SDD ledgers | `NessieAI/history/plan018/docker/eval-task6/`, `NessieAI/history/plan018/scripts/`, `NessieAI/history/plan018/2026-07-31-hibayes-eval-routing.md`, `NessieAI/history/plan018/sdd/` | closed plan, frozen |
 | Design | `NessieAI/docs/2026-07-31-hibayes-eval-routing-design.md` | the live design of the loop |
 | Kill switch | `NEXTSEEK_POSTERIOR_ROUTING_ENABLED` in `dmac/settings.py`, `docker/nextseek.env.example` and `startup/templates/nextseek.env.template` | off by default; no path coupling |
@@ -181,9 +181,12 @@ telling apart:
 - `NessieAI/tests/hibayes/test_v14_quality_hierarchical.py` wants the sampler stack
   that only a different image carries.
 
-The Bayesian fit needs an image the app image is not. `NessieAI/docker/eval/Dockerfile:13-15`
-installs the JAX, NumPyro and ArviZ stack and copies only this package in
-(`NessieAI/docker/eval/Dockerfile:10-11`); the archived
+The Bayesian fit needs an image the app image is not. `NessieAI/docker/eval/Dockerfile:21-23`
+installs the JAX, NumPyro and ArviZ stack, and `NessieAI/docker/eval/Dockerfile:10-19` copies
+this package in, plus the router and harness files `human_grade_fit.py` needs from outside
+it (`NessieAI/router/family_labels.py`, `NessieAI/paths.py`, the set3 manifest models and
+`corpus.json`). Django is not in it, and `human_grade_fit.main()` sets Django up first, so
+neither that CLI nor the publish step runs there. The archived
 `NessieAI/history/plan018/docker/eval-task6/Dockerfile:11-14` grafted the app image's
 Django into it for the replay harness. Neither image is named in `docker-compose.yml`,
 which is why both are built by hand.
@@ -230,7 +233,7 @@ Depends on, outside this directory:
 - JAX, NumPyro and ArviZ, imported lazily inside the fit functions
   (`NessieAI/hibayes/fit/v14/quality_model.py:82-84`,
   `NessieAI/hibayes/fit/v14/latency_model.py:75-78`) and supplied only by
-  `NessieAI/docker/eval/Dockerfile:13-15`.
+  `NessieAI/docker/eval/Dockerfile:21-23`.
 - An authenticated delivery directory that is not in this repo, pinned by SHA-256 for
   three container files and six archive members
   (`NessieAI/hibayes/human_grade_fit.py:107-119`).
