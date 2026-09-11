@@ -38,7 +38,7 @@ from this file.
   `nextseek_api/permissions.py:9-14` records that ruling and
   `nextseek_api/permissions.py:21-27` implements the predicate that does work.
 - **`nextseek_api/views.py` imports every routed ViewSet unguarded**, in one block at
-  `nextseek_api/views.py:43-66`, and a grep for `ImportError` over the 15 modules sitting
+  `nextseek_api/views.py:43-66`, and a grep for `ImportError` over the modules sitting
   directly in this directory finds only the schema-RAG forward-reference rebuild,
   `_rebuild_schema_rag_models` (`nextseek_api/models.py:2295-2299`), which re-raises. No
   route import is defensive, so a failure inside any single service module takes down the

@@ -4,7 +4,7 @@
 
 ```python
 from rest_framework.authentication import BasicAuthentication
-from nextseek_api.services.assistant import CsrfExemptSessionAuthentication
+from nextseek_api.authentication import CsrfExemptSessionAuthentication
 from nextseek_api.helpers import SeekAPIClient, resolve_seek_auth
 
 class MyProxyViewSet(viewsets.ViewSet):

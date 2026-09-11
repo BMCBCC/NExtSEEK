@@ -95,8 +95,14 @@ from NessieAI.ns.bundle_download import bundle_metadata
 from nextseek_api.assistant.excel_export import build_artifacts
 from rest_framework.authentication import (
     BasicAuthentication,
-    SessionAuthentication,
     TokenAuthentication,
+)
+
+# Re-exported: these two moved to nextseek_api/authentication.py (NessieAI Phase B, B1).
+# Other nextseek_api modules still import them from here, so keep both names importable.
+from nextseek_api.authentication import (  # noqa: F401
+    CsrfExemptSessionAuthentication,
+    _error_response,
 )
 
 from nextseek_api.helpers import resolve_seek_auth, SeekAPIClient
@@ -138,30 +144,6 @@ class UserInParticipatingProject(BasePermission):
 
     def has_object_permission(self, request, view):
         return self.has_permissions(request, view)
-
-class CsrfExemptSessionAuthentication(SessionAuthentication):
-    """SessionAuthentication without CSRF enforcement.
-
-    DRF's SessionAuthentication.enforce_csrf() runs Django's CSRFCheck
-    independently of the global CsrfViewMiddleware (which is disabled in
-    this project).  Since no middleware sets the ``csrftoken`` cookie,
-    browser-based session users always fail CSRF validation -> 403.
-
-    This subclass skips that check.  The ViewSet is still protected by
-    ``IsAuthenticated`` and the custom ``_check_auth`` method.
-    """
-
-    def enforce_csrf(self, request):
-        return  # CSRF cookie is never set; skip the check
-
-
-def _error_response(title: str, detail: str, http_status: int) -> Response:
-    """Return a NExtSEEK-convention error response."""
-    return Response(
-        {"errors": [{"title": title, "detail": detail}]},
-        status=http_status,
-    )
-
 
 def _most_recent_session(user) -> "ChatSession | None":
     """The user's most recently updated ChatSession, or None.

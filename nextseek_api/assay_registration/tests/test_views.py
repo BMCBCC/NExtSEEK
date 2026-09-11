@@ -929,7 +929,7 @@ class TestAuthenticationClassesAreGuarded:
         from rest_framework.authentication import BasicAuthentication
 
         from nextseek_api.assay_registration.views import AssayRegistrationViewSet
-        from nextseek_api.services.assistant import CsrfExemptSessionAuthentication
+        from nextseek_api.authentication import CsrfExemptSessionAuthentication
 
         assert AssayRegistrationViewSet.authentication_classes == [
             CsrfExemptSessionAuthentication, BasicAuthentication]

@@ -207,7 +207,7 @@ Depends on, outside this directory:
   per-user job index (`nextseek_api/batch_upload/job_index.py:12-14`), resume checkpoints
   (`nextseek_api/batch_upload/tasks.py:45-49`) and the summary CSVs
   (`nextseek_api/batch_upload/orchestrator.py:579-584`).
-- `nextseek_api/services/assistant.py:140`, for the CSRF-exempt session authenticator the
+- `nextseek_api/authentication.py:15`, for the CSRF-exempt session authenticator the
   ViewSet installs.
 - `nextseek_api/endpoint_descriptions.py:917`, for the OpenAPI prose the actions render.
 - `seek/models/seek_mirror.py:20` and `seek/seekdb.py:148`, plus

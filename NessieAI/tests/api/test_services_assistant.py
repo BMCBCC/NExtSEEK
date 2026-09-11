@@ -44,7 +44,7 @@ class ErrorResponseHelperTests(TestCase):
     """Test the _error_response standalone helper."""
 
     def test_error_response_structure(self):
-        from nextseek_api.services.assistant import _error_response
+        from nextseek_api.authentication import _error_response
         resp = _error_response("Bad Request", "Something went wrong", 400)
         self.assertEqual(resp.status_code, 400)
         self.assertIn("errors", resp.data)
@@ -53,7 +53,7 @@ class ErrorResponseHelperTests(TestCase):
         self.assertEqual(resp.data["errors"][0]["detail"], "Something went wrong")
 
     def test_error_response_various_status_codes(self):
-        from nextseek_api.services.assistant import _error_response
+        from nextseek_api.authentication import _error_response
         for code in (401, 403, 404, 422, 500):
             resp = _error_response("Title", "Detail", code)
             self.assertEqual(resp.status_code, code)
@@ -67,11 +67,23 @@ class CsrfExemptSessionAuthTests(TestCase):
     """Test CsrfExemptSessionAuthentication.enforce_csrf returns None."""
 
     def test_enforce_csrf_returns_none(self):
-        from nextseek_api.services.assistant import CsrfExemptSessionAuthentication
+        from nextseek_api.authentication import CsrfExemptSessionAuthentication
         auth = CsrfExemptSessionAuthentication()
         request = MagicMock()
         result = auth.enforce_csrf(request)
         self.assertIsNone(result)
+
+
+class AuthenticationReExportTests(TestCase):
+    """Both names moved to nextseek_api.authentication; services.assistant re-exports
+    them for its existing importers, and must hand back the very same objects."""
+
+    def test_services_assistant_re_exports_the_same_objects(self):
+        import nextseek_api.authentication as auth_mod
+        import nextseek_api.services.assistant as svc
+
+        self.assertIs(svc.CsrfExemptSessionAuthentication, auth_mod.CsrfExemptSessionAuthentication)
+        self.assertIs(svc._error_response, auth_mod._error_response)
 
 
 # ============================================================================
@@ -1036,10 +1048,8 @@ class ViewSetConfigTests(TestCase):
     """Verify ViewSet class-level configuration."""
 
     def test_authentication_classes(self):
-        from nextseek_api.services.assistant import (
-            AssistantViewSet,
-            CsrfExemptSessionAuthentication,
-        )
+        from nextseek_api.authentication import CsrfExemptSessionAuthentication
+        from nextseek_api.services.assistant import AssistantViewSet
         from rest_framework.authentication import TokenAuthentication, BasicAuthentication
 
         auth_classes = AssistantViewSet.authentication_classes

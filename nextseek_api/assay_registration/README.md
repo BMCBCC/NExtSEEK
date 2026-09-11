@@ -58,7 +58,7 @@ Both job routes are `detail=False` actions carrying their own `url_path` regex, 
 
 **The authentication stack, which is unusual and deliberately so.** Session authentication
 comes first, in the CSRF-exempt subclass defined at
-`nextseek_api/services/assistant.py:140`, and Basic authentication second
+`nextseek_api/authentication.py:15`, and Basic authentication second
 (`nextseek_api/assay_registration/views.py:122`). DRF asks only the first authenticator for a
 challenge header and session auth returns none, which would collapse an anonymous 401 into
 the same 403 an authenticated non-superuser gets; the override at

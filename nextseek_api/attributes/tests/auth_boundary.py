@@ -213,7 +213,7 @@ class SeekAuthBoundary:
         # DRF SessionAuthentication substitution that would 403 on the POST case.
         from rest_framework.authentication import BasicAuthentication, TokenAuthentication
         from rest_framework.permissions import IsAuthenticated
-        from nextseek_api.services.assistant import CsrfExemptSessionAuthentication
+        from nextseek_api.authentication import CsrfExemptSessionAuthentication
         credential = self.credential("session", "valid-admin")
 
         class NeighborProbe(APIView):
