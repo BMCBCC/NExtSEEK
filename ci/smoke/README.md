@@ -33,16 +33,18 @@ Useful flags:
 against the instance's own port, and derives the profile from `ci_profile` in
 `startup/.instance.json`, so nobody has to remember which box they are on.
 
-Six files need no stack, no credentials and no browser, because they test the
+Seven files need no stack, no credentials and no browser, because they test the
 registry, the guard and the fixtures' own logic rather than a deployment:
 `test_registry_unit.py`, `test_registry_contents.py`, `test_guard_unit.py`,
-`test_profile_unit.py`, `test_assertions_unit.py`, `test_readiness_unit.py`.
+`test_profile_unit.py`, `test_assertions_unit.py`, `test_readiness_unit.py`,
+`test_terminal_unit.py`.
 
 ```bash
 CI_BOX_PROFILE=local uv run --no-project --with pytest --with requests \
   pytest ci/smoke/test_registry_unit.py ci/smoke/test_registry_contents.py \
          ci/smoke/test_guard_unit.py ci/smoke/test_profile_unit.py \
-         ci/smoke/test_assertions_unit.py ci/smoke/test_readiness_unit.py
+         ci/smoke/test_assertions_unit.py ci/smoke/test_readiness_unit.py \
+         ci/smoke/test_terminal_unit.py
 ```
 
 ## Tiers
@@ -54,7 +56,7 @@ silent bounce to the login page, and it grows by itself as the registry does.
 Everything else is hand-written because it is what a table row cannot express --
 the API root's exact viewset list, the OpenAPI document generating at all, an
 enrichment step that fails silently behind a 200, the five `/seek/` pages that
-must bounce a visitor with no credentials, and the four browser flows. Per-route
+must bounce a visitor with no credentials, and the six browser flows. Per-route
 body assertions are T1's job and are not in this increment.
 
 ## Profiles

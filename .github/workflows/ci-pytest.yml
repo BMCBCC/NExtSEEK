@@ -94,15 +94,16 @@ jobs:
             --baseline ci/pytest-baseline.txt \
             --summary "$GITHUB_STEP_SUMMARY"
 
-      # The one blocking check in this otherwise informational job. Deterministic
-      # and new, so it carries none of the "red on run one" risk that made the
-      # rest of the job informational. It runs last so that a failing gate never
-      # suppresses the informational summary above it. Once the setup steps are
-      # through, only two results can fail the job: this gate, and the lanes step
-      # when pytest did not run at all. Failing tests never fail it. The if: keeps
-      # the gate running after a lanes-step failure, and skips it only when setup
-      # failed before the lanes step was reached.
-      - name: Route registry completeness gate
+      # The one blocking step in this otherwise informational job. ci/gate holds
+      # two deterministic checks: the route registry completeness gate and the
+      # docs map (ci/docs_map.py). Neither carries the "red on run one" risk that
+      # made the rest of the job informational. It runs last so that a failing
+      # gate never suppresses the informational summary above it. Once the setup
+      # steps are through, only two results can fail the job: this step, and the
+      # lanes step when pytest did not run at all. Failing tests never fail it.
+      # The if: keeps this step running after a lanes-step failure, and skips it
+      # only when setup failed before the lanes step was reached.
+      - name: Blocking gates (route registry, docs map)
         if: ${{ !cancelled() && steps.lanes.outcome != 'skipped' }}
         env:
           DJANGO_SETTINGS_MODULE: dmac.test_settings

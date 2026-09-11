@@ -74,46 +74,31 @@
   so every Linux install builds from the sdist at `uv.lock:1753`. Measured
   2026-09-03 on this host: `Exception: Can not find valid pkg-config name.` That
   is why the gate lane is a container recipe and not a host `pytest` invocation.
-- Do not trust `.github/workflows/ci-pytest.yml:34-36`, which claims every
+- Do not trust `.github/workflows/ci-pytest.yml:37-39`, which claims every
   dependency resolves as a wheel, mysqlclient included. `uv.lock:1754-1757`
   contradicts it: that job succeeds because the GitHub runner image already
   carries the client headers, not because a wheel exists. Move that job to a
   slimmer container on the strength of that comment and `uv sync` fails at step
   one.
-- `ci/smoke/README.md:36-39` names six files as the no-stack lane and its
-  copy-paste command at `ci/smoke/README.md:41-46` lists the same six. There is a
-  seventh: `ci/smoke/test_terminal_unit.py:1` declares itself stack-free and, run
-  alone on 2026-09-03 with no stack and no credentials, gave 7 passed in 0.01s.
-  Paste the documented command and you silently skip those 7.
 - Nothing under `ci/` or `ci/gate/` configures pytest. A find for `conftest.py`
   or `pytest.ini` anywhere beneath `ci/` returns only `ci/smoke/conftest.py` and
   `ci/smoke/pytest.ini`, so `pytest ci/gate` takes its configuration from the
   repo-root `pyproject.toml:146-148`, which names the real `dmac.settings`. Both
   callers therefore pass the test settings module in the environment
-  (`.github/workflows/ci-pytest.yml:82`). Measured 2026-09-03 with that variable
+  (the gate step's `env:` in `.github/workflows/ci-pytest.yml`). Measured 2026-09-03 with that variable
   removed: 2 failed, 3 passed, both gate tests dying on
   `AttributeError: 'Settings' object has no attribute 'NEO4J_DATABASE'`, a value
   that normally arrives from the gitignored `dmac/local_settings.py`.
 - `ci/diff_baseline.py` always exits 0, by decision (`ci/diff_baseline.py:8-9`,
   `ci/diff_baseline.py:131-132`). A wrapper that treats its exit code as a
   verdict will call every run a pass, including one that reports 57 new failures.
-  Only the gate step decides that job's outcome
-  (`.github/workflows/ci-pytest.yml:74-79`).
-- `OWNED_ROUTE_COUNT = 157` at `ci/smoke/test_registry_contents.py:37` is a
+  Only the gate step, and a lanes step whose pytest did not run at all, can fail
+  that job (the comment above the gate step in `.github/workflows/ci-pytest.yml`).
+- `OWNED_ROUTE_COUNT` in `ci/smoke/test_registry_contents.py` is a
   second, hand-maintained declaration of the route count, and its own comment
-  names the completeness gate as the authority
-  (`ci/smoke/test_registry_contents.py:28-36`). Add a route and this constant
+  names the completeness gate as the authority. Add a route and this constant
   goes red in a lane that cannot tell you whether the number is right, because
   that lane has no resolver to ask.
-- One entry in the baseline can never be cleared anywhere. Its own comment
-  records that `nextseek_api/attributes/tests` is an evidence lane which cannot
-  run off its author's machine, and names that machine's home directory
-  (`ci/pytest-baseline.txt:22-24`). It is the only match for a developer's home
-  path anywhere under `ci/`, found by grepping the whole boundary for `/home/`
-  followed by a lower-case letter, and it costs this boundary's own lanes
-  nothing: both ran clean here on 2026-09-03. What it costs is the baseline,
-  which keeps a collection-level entry that no run on any other machine can
-  shrink away.
 - `EXCLUDE_DEAD` and `EXCLUDE_ADMIN` are declared at `ci/routes.py:24-30` but no
   entry uses either: counting the `exclude` values across `REGISTRY` on
   2026-09-03 gives `EXCLUDE_UNSAFE_METHOD` 13, `EXCLUDE_COST` 12 and
@@ -127,7 +112,7 @@ needs nothing at all; both are in `ci/README.md` with their commands and their
 2026-09-03 numbers. The lane whose result is the headline is the baseline lane,
 which was reproduced on 2026-09-03 inside the application image over a writable
 copy of this worktree, after generating the BAML client the way
-`.github/workflows/ci-pytest.yml:42-43` does:
+`.github/workflows/ci-pytest.yml:45-46` does:
 
 ```bash
 docker run --rm -i -e DJANGO_SETTINGS_MODULE=dmac.test_settings \
@@ -143,7 +128,7 @@ docker run --rm -i -e DJANGO_SETTINGS_MODULE=dmac.test_settings \
 194.94s**, which `ci/diff_baseline.py` scored as 57 new and 12 fixed against
 `ci/pytest-baseline.txt`. Mount a writable COPY rather than the worktree: the
 run has to generate the gitignored BAML client into the tree first
-(`.github/workflows/ci-pytest.yml:42-43`), and a fresh checkout has none — a
+(`.github/workflows/ci-pytest.yml:45-46`), and a fresh checkout has none: a
 `ls -d` for `NessieAI/dmac_assistant/src/dmac_assistant/router/baml_client` and
 `NessieAI/dmac_assistant/tools/e2e/baml_client`, the two directories that generator
 writes, finds neither in this worktree.

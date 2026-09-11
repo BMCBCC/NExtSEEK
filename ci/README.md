@@ -1,4 +1,4 @@
-# ci/ — the CI lane
+# ci/: the CI lane
 
 ## What this is
 
@@ -26,11 +26,11 @@ This boundary is not a library with public entry points that the application
 calls. Its surface has three different shapes, and the edges below were derived
 mechanically rather than recalled:
 
-- **an importable module** — `ci/routes.py` and `ci/gate/live_routes.py`, whose
+- **an importable module**: `ci/routes.py` and `ci/gate/live_routes.py`, whose
   surface is their public names;
-- **two pytest suites invoked by path** — `ci/gate/` and `ci/smoke/`, whose
+- **two pytest suites invoked by path**: `ci/gate/` and `ci/smoke/`, whose
   surface is the command that runs them and the environment it needs;
-- **two committed data artifacts** — `ci/pytest-baseline.txt` and the `REGISTRY`
+- **two committed data artifacts**: `ci/pytest-baseline.txt` and the `REGISTRY`
   list itself, whose surface is the format and the command that regenerates them.
 
 | file | what it holds |
@@ -39,6 +39,8 @@ mechanically rather than recalled:
 | `ci/gate/live_routes.py` | `live_patterns()`, `suggest_path()` |
 | `ci/gate/test_route_registry.py` | the two blocking completeness tests |
 | `ci/gate/test_live_routes_unit.py` | pure-string tests for `suggest_path` |
+| `ci/docs_map.py` | the docs map check: `run()`, `main()`, rules R1 to R10 |
+| `ci/gate/test_docs_map.py` | runs the docs map check in the blocking gate step |
 | `ci/diff_baseline.py` | `extract()`, `load_baseline()`, `main()`, and `--emit-baseline` |
 | `ci/pytest-baseline.txt` | known-failing test ids, plus the command that produced them |
 | `ci/smoke/` | the post-deploy suite. See `ci/smoke/README.md`, which documents it in full |
@@ -65,9 +67,9 @@ Measured 2026-09-03 by importing the module and counting every entry of the
 placeholder vocabulary those paths draw on holds 13 names
 (`ci/routes.py:162-180`).
 
-`match()` resolves a URL to the most specific declaration — the pattern that
-pins the whole path first, then the one spelling out the most literal characters
-— which reproduces the ordering Django's own resolver uses when a viewset's
+`match()` resolves a URL to the most specific declaration (the pattern that
+pins the whole path first, then the one spelling out the most literal characters),
+which reproduces the ordering Django's own resolver uses when a viewset's
 detail route would otherwise swallow its list-level action
 (`ci/routes.py:907-921`). `_check_unique_patterns` runs against `REGISTRY` at
 import, so a duplicated pattern is an `ImportError` rather than a silently
@@ -85,6 +87,17 @@ declared, because `Route.matcher` is a plain regex and would never match it
 (`ci/gate/live_routes.py:122-130`). The two tests then diff that set against the
 registry in both directions and fail with a paste-ready skeleton
 (`ci/gate/test_route_registry.py:29-49`).
+
+### The docs map
+
+`ci/docs_map.py` checks the documentation against the tree with nothing but
+python3 and git: every folder and skill has its row in the maps, every index
+lists its folder, every relative link and backticked repo path resolves, every
+`FILE` §N names a real heading, no README or CLAUDE.md is orphaned, the root
+`CLAUDE.md` stays under its line cap, the literals guard tests pin are present,
+no fenced command uses a retired form, and no doc carries an email or a
+personal home path. Each failure prints the row or fix to apply. Its module
+docstring lists the rules and what each skips.
 
 ### The baseline differ
 
@@ -104,17 +117,16 @@ Four callers invoke these lanes and they do not overlap, so "CI passed" means a
 different thing depending on which one ran.
 
 **`.github/workflows/ci-pytest.yml`** runs on every push to `dev` or `main` and
-on every pull request (`.github/workflows/ci-pytest.yml:10-14`). It runs the
-*application's* pytest suite over six named directories, scores that output
+on every pull request (`.github/workflows/ci-pytest.yml:13-17`). It runs the
+*application's* pytest suite over the lane paths the workflow names, scores that output
 against the committed baseline, and finishes with `uv run pytest ci/gate -q`
-(`.github/workflows/ci-pytest.yml:62-64`,
-`.github/workflows/ci-pytest.yml:68-72`,
-`.github/workflows/ci-pytest.yml:80-86`). It never runs `ci/smoke/`. Its own
+(its "Run the no-stack lanes", "Diff against the baseline" and "Blocking gates"
+steps). It never runs `ci/smoke/`. Its own
 name is the summary: `pytest (informational)`
 (`.github/workflows/ci-pytest.yml:1`).
 
-**`.github/workflows/ci-smoke.yml`** runs by hand only — `workflow_dispatch` is
-its single trigger (`.github/workflows/ci-smoke.yml:11-12`) — on a self-hosted
+**`.github/workflows/ci-smoke.yml`** runs by hand only (`workflow_dispatch` is
+its single trigger, `.github/workflows/ci-smoke.yml:11-12`) on a self-hosted
 runner labelled `fairdata-dev` (`.github/workflows/ci-smoke.yml:44`). It reads
 the box's profile out of `startup/.instance.json` rather than naming one
 (`.github/workflows/ci-smoke.yml:55-68`), refuses the write lane outright on a
@@ -142,12 +154,15 @@ because the running containers would still carry the previous image
 
 ### What can fail a job, and what is only a report
 
-In `ci-pytest.yml` the pytest step is `continue-on-error: true`
-(`.github/workflows/ci-pytest.yml:46`) and the differ always exits 0 by decision
-(`ci/diff_baseline.py:8-9`), so `uv run pytest ci/gate -q` is the only step whose
-exit code can fail that job, which the comment above it says in as many words
-(`.github/workflows/ci-pytest.yml:74-79`). A red pytest lane there is a report
-about known-failing tests; an undeclared route is a stop.
+In `ci-pytest.yml` failing tests never fail the job. The lanes step fails only
+when pytest did not run at all (an exit code above 1, such as 4 for a lane path
+that no longer exists), and the differ always exits 0 by decision
+(`ci/diff_baseline.py:8-9`). So two steps can fail that job, as the comment above
+the gate step says: the lanes step when the lanes did not run, and
+`uv run pytest ci/gate -q`. The gate step holds two checks: the route registry
+completeness gate and the docs map. A red pytest lane is a report about
+known-failing tests; lanes that did not run, an undeclared route or a docs-map
+failure is a stop.
 
 The two smoke callers are the other way round. Every test in `ci/smoke/` counts,
 and a non-zero run makes `./startup.sh rebuild` exit with the suite's own code
@@ -174,9 +189,8 @@ names something that is declared but not yet built, it says so.
 
 ## Running and testing
 
-Four lanes touch this boundary. Three were run on 2026-09-03 from this worktree
-and are reported below with their real output; the fourth is named with the
-infrastructure it needs.
+Five lanes touch this boundary: the gate, the docs map, the no-stack part of the
+smoke suite, the rest of the smoke suite, and the baseline lane.
 
 **The gate.** Run it in a throwaway container over a read-only mount of the
 worktree, as its own docstring prescribes at `ci/gate/live_routes.py:11-25`:
@@ -189,12 +203,20 @@ docker run --rm -i --network none -e LOG_DIR=/tmp/nextseek-logs \
   /app/.venv/bin/python -m pytest ci/gate -q -p no:cacheprovider
 ```
 
-2026-09-03: **5 passed, 3 warnings in 7.88s** (13.6s wall including container
-start). The `mkdir` on the first line is load-bearing; see `ci/CLAUDE.md` for
-what happens without it. The `-e LOG_DIR` is belt-and-braces under this settings
+The `mkdir` on the first line is load-bearing; see `ci/CLAUDE.md` for what
+happens without it. The `-e LOG_DIR` is belt-and-braces under this settings
 module, which already points `LOG_DIR` at a writable temporary directory before
-importing the real settings (`dmac/test_settings.py:12-16`); omitting it still
-gave 5 passed in 7.74s.
+importing the real settings (`dmac/test_settings.py:12-16`).
+
+**The docs map.** On the host, from the repo root, with only python3 and git:
+
+```bash
+python3 ci/docs_map.py
+```
+
+The gate step runs the same check through `ci/gate/test_docs_map.py`, which
+skips locally when git cannot read the checkout and never skips under GitHub
+Actions.
 
 **The no-stack part of the smoke suite.** Needs neither a container nor a
 deployed stack, because `ci/routes.py` is importable anywhere:
@@ -207,15 +229,13 @@ CI_BOX_PROFILE=local uv run --no-project --with pytest --with requests pytest \
   ci/smoke/test_terminal_unit.py -q
 ```
 
-2026-09-03, on the host with no Django installed: **114 passed in 0.07s**.
+It runs on a host with no Django installed.
 
-**The rest of the smoke suite** — `test_reachability.py`, `test_health.py`,
-`test_flows.py`, `test_write_lane.py` — was `(not run)`. It needs a deployed
-stack reachable through its nginx front door, and both CI accounts named in
-`~/.config/nextseek/ci.env` having logged in through `/login/` on that box at
-least once. On 2026-09-03 this host published no nginx port, so there was no
-front door to point `--base-url` at. `./startup.sh ci` is the operator entry
-point for it (`startup/README.md:38`).
+**The rest of the smoke suite** (`test_reachability.py`, `test_health.py`,
+`test_flows.py`, `test_write_lane.py`) needs a deployed stack reachable through
+its nginx front door, and both CI accounts named in `~/.config/nextseek/ci.env`
+having logged in through `/login/` on that box at least once. `./startup.sh ci`
+is the operator entry point for it (`startup/README.md:38`).
 
 **The baseline lane.** See `ci/CLAUDE.md` for the state it is in; the run that
 established that is recorded there with its numbers.
@@ -227,7 +247,7 @@ Django's URL resolver, one container image, and two files read by path, so that
 list was derived by reading every import and every path constant in this
 boundary's own modules. Outbound is one import plus a command string, derived by
 grepping every `.py` file in the tree for `ci.routes`, `ci.gate`, `ci.smoke`,
-`from ci import`, `ci/routes`, `ci/gate`, `ci/smoke`, `ci/diff_baseline` and
+`from ci import`, the same four names written with slashes, and
 `pytest-baseline`, then removing this boundary's own 24 files.
 
 **Depends on:**
@@ -262,9 +282,9 @@ grepping every `.py` file in the tree for `ci.routes`, `ci.gate`, `ci.smoke`,
   (`startup/ci/runner.py:1-6`).
 - `startup/cli.py:630-644`, the rebuild hook that runs the suite after a
   successful rebuild unless `--no-ci` is passed.
-- `.github/workflows/ci-pytest.yml:68-72` runs the differ, and
-  `.github/workflows/ci-pytest.yml:80-86` runs the gate as the one step whose
-  exit code can fail that job.
+- The "Diff against the baseline" step of `.github/workflows/ci-pytest.yml` runs
+  the differ, and its "Blocking gates (route registry, docs map)" step runs the
+  gate, one of the two steps whose exit code can fail that job.
 - `.github/workflows/ci-smoke.yml:101-103` runs the smoke suite on a self-hosted
   runner in a deliberately isolated environment.
 - Not a consumer: `startup/cli.py:40-44` restates `("local", "dev", "prod")` as
@@ -274,6 +294,6 @@ grepping every `.py` file in the tree for `ci.routes`, `ci.gate`, `ci.smoke`,
   `CLAUDE.md` and `CITATIONS.txt` in a sibling boundary that cites a path here.
   The registry names its two consuming environments and the application is
   neither of them (`ci/routes.py:5-6`); no module under `dmac/`, `seek/`,
-  `nextseek_api/`, `chat_nextseek/` or `api_app/` appears at all, because the
+  `nextseek_api/`, `NessieAI/` or `api_app/` appears at all, because the
   grep above returns six `.py` files outside `ci/` and all six are
   `scripts/dump_routes.py` or under `startup/`.
