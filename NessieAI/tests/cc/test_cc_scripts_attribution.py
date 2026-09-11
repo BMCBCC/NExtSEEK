@@ -13,19 +13,86 @@ from NessieAI import paths
 
 CC_ROOT = Path(__file__).resolve().parent
 REPO = paths.REPO_ROOT
-# verify_merge_survivals.py, extract_step7_upstream_catalog.py and the run-1c
-# live probe were archived to NessieAI/history/cc/ by the NessieAI move.
+# The NessieAI move archived verify_merge_survivals.py, extract_step7_upstream_catalog.py
+# and the run-1c live probe to NessieAI/history/cc/, which is frozen. A test that loads
+# one asserts on archived source, so it is host_only; and the app image excludes
+# NessieAI/history/ (.dockerignore), so it also skips wherever that tree is absent.
 HISTORY_CC = paths.HISTORY_DIR / "cc"
+needs_history = pytest.mark.skipif(
+    not HISTORY_CC.is_dir(),
+    reason="NessieAI/history/ is absent here (the app image excludes it)",
+)
+
+# The archived scripts still expect the tree they were written against. These maps
+# answer their pre-move names with the live locations (the full move map is in
+# scripts/nessieai_codemod.py), so their logic runs, unedited, against live code.
+PRE_MOVE_MODULES = {
+    "nextseek_api.cc_assistant.cc_config": "NessieAI.cc.cc_config",
+    "nextseek_api.cc_assistant.cc_engine": "NessieAI.cc.cc_engine",
+    "nextseek_api.cc_assistant.cc_provision": "NessieAI.cc.cc_provision",
+    "nextseek_api.cc_assistant.router": "NessieAI.router.router",
+}
+PRE_MOVE_DIRS = {"chat_nextseek": "NessieAI/chat_nextseek"}
 
 
-def load_cc(rel: str, *, root: Path = CC_ROOT, package: str = "NessieAI.tests.cc"):
+def load_cc(
+    rel: str,
+    *,
+    root: Path = CC_ROOT,
+    package: str = "NessieAI.tests.cc",
+    as_file: Path | None = None,
+):
     dotted = f"{package}." + rel.replace("/", ".").removesuffix(".py")
     path = root / rel
     spec = importlib.util.spec_from_file_location(dotted, path)
     mod = importlib.util.module_from_spec(spec)
+    if as_file is not None:
+        # Same source; only the path it derives its checkout root from changes.
+        mod.__file__ = str(as_file)
     sys.modules[dotted] = mod
     spec.loader.exec_module(mod)
     return mod
+
+
+def alias_pre_move_modules(monkeypatch) -> None:
+    """Answer an archived script's pre-move imports with the modules the move relocated."""
+    for old, new in PRE_MOVE_MODULES.items():
+        monkeypatch.setitem(sys.modules, old, importlib.import_module(new))
+
+
+def _link_tree(dst: Path, src: Path, real: tuple[str, ...]) -> None:
+    """Mirror src into dst with one symlink per child, except the child named real[0],
+    which becomes a real directory mirrored the same way for real[1:]."""
+    dst.mkdir(parents=True)
+    for child in (sorted(src.iterdir()) if src.is_dir() else ()):
+        if not real or child.name != real[0]:
+            (dst / child.name).symlink_to(child)
+    if real:
+        _link_tree(dst / real[0], src / real[0], real[1:])
+
+
+def load_survivals(tmp_path: Path):
+    """Load the archived verify_merge_survivals.py as it ran before the move.
+
+    It takes its checkout root as parents[3] of its own path, which from its pre-move
+    home, nextseek_api/cc_assistant/scripts/, was the repo root, and it reads
+    chat_nextseek/ at that root. So it runs over a view of this checkout: every entry
+    linked in place, each PRE_MOVE_DIRS entry linked to its new home, and real
+    directories down the old home so that resolve() cannot climb out of the view.
+    Every check it makes still reads a live file. The script ends in a module-level
+    sys.exit, which the caller handles.
+    """
+    view = tmp_path / "pre-move-view"
+    old_home = ("nextseek_api", "cc_assistant", "scripts")
+    _link_tree(view, REPO, old_home)
+    for old, new in PRE_MOVE_DIRS.items():
+        (view / old).symlink_to(REPO / new)
+    return load_cc(
+        "scripts/verify_merge_survivals.py",
+        root=HISTORY_CC,
+        package="NessieAI.history.cc",
+        as_file=view.joinpath(*old_home, "verify_merge_survivals.py"),
+    )
 
 
 def test_verify_host_only_allowlist_pass_and_fail(tmp_path):
@@ -48,10 +115,12 @@ def test_verify_host_only_allowlist_pass_and_fail(tmp_path):
     assert mod._module_level_host_only(tree3) is False
 
 
-def test_verify_merge_survivals_import_does_not_kill_pytest(monkeypatch):
+@pytest.mark.host_only
+@needs_history
+def test_verify_merge_survivals_import_does_not_kill_pytest(monkeypatch, tmp_path):
     exits = []
     monkeypatch.setattr(sys, "exit", lambda code=0: exits.append(code))
-    mod = load_cc("scripts/verify_merge_survivals.py", root=HISTORY_CC, package="NessieAI.history.cc")
+    mod = load_survivals(tmp_path)
     assert hasattr(mod, "check")
     assert mod.has("docker-compose.yml", "dmac-cc-net") is True
     assert mod.has("no/such.py", "x") is False
@@ -63,6 +132,8 @@ def test_verify_merge_survivals_import_does_not_kill_pytest(monkeypatch):
     assert exits  # module-level sys.exit was captured
 
 
+@pytest.mark.host_only
+@needs_history
 def test_extract_step7_upstream_catalog_from_fixtures(tmp_path):
     mod = load_cc("scripts/extract_step7_upstream_catalog.py", root=HISTORY_CC, package="NessieAI.history.cc")
     t18 = tmp_path / "tools" / "e2e" / "run_t18_rewire_e2e.py"
@@ -420,6 +491,8 @@ def test_gate3d_per_op_run_and_budget(monkeypatch, tmp_path):
     assert per_op.main() == 1
 
 
+@pytest.mark.host_only
+@needs_history
 def test_live_probe_missing_memory_and_runner(monkeypatch, tmp_path):
     events = []
 
@@ -432,6 +505,7 @@ def test_live_probe_missing_memory_and_runner(monkeypatch, tmp_path):
         memory_mnt = str(tmp_path / "missing-dir")
 
     monkeypatch.setenv("PROBE_MEMORY_MNT", str(tmp_path / "no-file.md"))
+    alias_pre_move_modules(monkeypatch)
     probe = load_cc("evidence/run_1c_claude_md_live_probe.py", root=HISTORY_CC, package="NessieAI.history.cc")
     monkeypatch.setattr(probe.cc_config.CCPaths, "from_env", Paths.from_env)
     monkeypatch.setattr(probe, "build_user_dirs", lambda *a, **k: Dirs())

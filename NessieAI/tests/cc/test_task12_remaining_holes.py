@@ -17,6 +17,7 @@ from NessieAI.cc.op_registry.ns_capabilities import (
 )
 from NessieAI.tests.cc import cc_matrix_gate_harness as gate
 from NessieAI.tests.cc import validate_cc_acceptance as vac
+from NessieAI.tests.cc.test_cc_scripts_attribution import needs_history
 from NessieAI.tests.cc.test_ns_capabilities import _md
 from NessieAI.tests.cc.validate_step7_compose_deploy import (
     BIN_OPS,
@@ -334,6 +335,8 @@ def test_ns_capabilities_remaining_error_paths():
         project_ns_capabilities(_md(negatives=("- **Live** no.\n  - **nested** x\n",)))
 
 
+@pytest.mark.host_only
+@needs_history
 def test_extract_catalog_error_paths():
     from NessieAI.tests.cc.test_cc_scripts_attribution import HISTORY_CC, load_cc
     mod = load_cc("scripts/extract_step7_upstream_catalog.py", root=HISTORY_CC, package="NessieAI.history.cc")
@@ -984,6 +987,8 @@ def test_router_heuristic_and_context_dir(monkeypatch):
     assert dec.route in (rt.ROUTE_CC, rt.ROUTE_NS, rt.ROUTE_UNRELATED)
 
 
+@pytest.mark.host_only
+@needs_history
 def test_extract_catalog_main_and_block_end(tmp_path):
     from NessieAI.tests.cc.test_cc_scripts_attribution import HISTORY_CC, load_cc
     mod = load_cc("scripts/extract_step7_upstream_catalog.py", root=HISTORY_CC, package="NessieAI.history.cc")
@@ -1175,7 +1180,7 @@ def test_gap2_production_misses(tmp_path, monkeypatch):
 
 def test_gap3_fourteen_production_units():
     from NessieAI.cc.op_registry import ns_capabilities as nsc
-    from NessieAI.tests.cc.test_cc_scripts_attribution import HISTORY_CC, load_cc
+    from NessieAI.tests.cc.test_cc_scripts_attribution import load_cc
 
     class _M:
         def group(self, _i):
@@ -1196,6 +1201,18 @@ def test_gap3_fourteen_production_units():
     )
     with pytest.raises(pe.PairedEvidenceError, match="cc.route"):
         pe._validate_manifest_pairs(SimpleNamespace(pairs=[pair_cc]), ["a"])
+    dry = load_cc("scripts/step7_validator_dry_run.py")
+    assert hasattr(dry, "main")
+    hostf = load_cc("scripts/step7_gate3d_host_finalize.py")
+    assert hasattr(hostf, "main")
+
+
+@pytest.mark.host_only
+@needs_history
+def test_gap3_archived_units(tmp_path):
+    """The two gap3 units the NessieAI move archived to NessieAI/history/cc/."""
+    from NessieAI.tests.cc.test_cc_scripts_attribution import HISTORY_CC, load_cc, load_survivals
+
     mod = load_cc("scripts/extract_step7_upstream_catalog.py", root=HISTORY_CC, package="NessieAI.history.cc")
     with pytest.raises(ValueError, match="did not evaluate"):
         mod._extract_paid_projections(
@@ -1203,12 +1220,8 @@ def test_gap3_fourteen_production_units():
             "    for op, model, projected, args_dict in PAID_PROJECTIONS:\n"
         )
     with pytest.raises(SystemExit) as surv_ex:
-        load_cc("scripts/verify_merge_survivals.py", root=HISTORY_CC, package="NessieAI.history.cc")
+        load_survivals(tmp_path)
     assert surv_ex.value.code == 0
-    dry = load_cc("scripts/step7_validator_dry_run.py")
-    assert hasattr(dry, "main")
-    hostf = load_cc("scripts/step7_gate3d_host_finalize.py")
-    assert hasattr(hostf, "main")
 
 
 

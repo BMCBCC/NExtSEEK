@@ -28,7 +28,8 @@
 # PYTHONPATH=/src:/src/NessieAI/chat_nextseek/src:/src/NessieAI/dmac_assistant/src
 #   8713 collected; 288 failed / 8271 passed / 83 skipped / 8 xfailed /
 #   73 errors in 6m17s
-# 361 unique IDs. The 7 without "::" are collection-level and each hides an
+# 361 unique IDs in that run (358 since the update below). The 7 without "::"
+# are collection-level and each hides an
 # unknown number of tests. nextseek_api/attributes/tests is an evidence lane
 # that cannot run off its author's machine.
 #
@@ -48,12 +49,17 @@
 #     previous CI baseline (uv:debian, 2026-09-01) disagreed on 126 new and
 #     17 fixed IDs, partly environment and partly tree drift.
 #
-# Caused by the move, not by the lane (a regression to fix, not accepted debt):
-# 3 tests load one-shot scripts that the move archived to NessieAI/history/cc,
-# which is frozen, and those scripts no longer run from there:
-#   NessieAI/tests/cc/test_cc_scripts_attribution.py::test_live_probe_missing_memory_and_runner
-#   NessieAI/tests/cc/test_cc_scripts_attribution.py::test_verify_merge_survivals_import_does_not_kill_pytest
-#   NessieAI/tests/cc/test_task12_remaining_holes.py::test_gap3_fourteen_production_units
+# Updated 2026-09-11: the move had broken 3 tests that load one-shot scripts it
+# archived to NessieAI/history/cc (test_live_probe_missing_memory_and_runner and
+# test_verify_merge_survivals_import_does_not_kill_pytest in
+# test_cc_scripts_attribution.py, test_gap3_fourteen_production_units in
+# test_task12_remaining_holes.py). They now run the scripts through pre-move
+# shims, and every test that loads a history script is host_only and skips
+# where that tree is absent. A rerun of the same lane on the same image at
+# bb3e4226 plus that change reported those 3 fixed and nothing new, so their
+# IDs are removed:
+#   8753 collected; 285 failed / 8304 passed / 83 skipped / 8 xfailed /
+#   73 errors in 6m48s
 #
 # After this lands, regenerate from the CI runner's own artifact, never with an
 # ad-hoc grep:
@@ -100,8 +106,6 @@ NessieAI/tests/build_tools/unit/test_gen_op_surfaces_dockerfile.py::test_gen_op_
 NessieAI/tests/build_tools/unit/test_gen_op_surfaces_skills.py::test_gen_op_surfaces_check_covers_skill_matrices
 NessieAI/tests/cc/test_cc_context_drift_guard.py::test_shared_context_file_is_identical_to_source[capabilities.md]
 NessieAI/tests/cc/test_cc_context_drift_guard.py::test_shared_context_file_is_identical_to_source[min_graph_schema.json]
-NessieAI/tests/cc/test_cc_scripts_attribution.py::test_live_probe_missing_memory_and_runner
-NessieAI/tests/cc/test_cc_scripts_attribution.py::test_verify_merge_survivals_import_does_not_kill_pytest
 NessieAI/tests/cc/test_cc_sweep_select.py::test_run_sweep_skips_empty_path_and_swallows_errors
 NessieAI/tests/cc/test_future_op_dropin.py::test_future_op_dropin_real_clis_change_generated_targets[local_subcommand]
 NessieAI/tests/cc/test_future_op_dropin.py::test_future_op_dropin_real_clis_change_generated_targets[sidecar]
@@ -146,7 +150,6 @@ NessieAI/tests/cc/test_step7_compose_deploy.py::test_compose_config_sidecar_heal
 NessieAI/tests/cc/test_step7_compose_deploy.py::test_compose_config_sidecar_mounts_staging_subpath_of_dmac_cc_users
 NessieAI/tests/cc/test_task12_remaining_holes.py::test_cc_summary_and_catalog_and_per_op
 NessieAI/tests/cc/test_task12_remaining_holes.py::test_gap2_production_misses
-NessieAI/tests/cc/test_task12_remaining_holes.py::test_gap3_fourteen_production_units
 NessieAI/tests/cc/test_task12_remaining_holes.py::test_router_heuristic_and_context_dir
 NessieAI/tests/cc/test_within_chat_db.py::test_within_chat_db_cc_writer_survives_midturn_op_append
 NessieAI/tests/cc/test_within_chat_db.py::test_within_chat_db_digest_composed_fresh_and_not

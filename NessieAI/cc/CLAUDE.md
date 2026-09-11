@@ -25,7 +25,7 @@ correctness regression, not a refactor.
 
 - **The step 7 gate catalog is read at import time, not at test time.** `NessieAI/tests/cc/step7_gate_catalog.py` binds `step7_catalog/` and scans the plugin `bin/` directory at module scope. Moving or emptying either turns a passing suite into import errors.
 - **`op_registry/ops.py` reads `NessieAI/ns/read_safe_endpoints.json` at import.** If the file moves without `NessieAI/paths.py` following it, the whole registry stops importing.
-- **Some tests load archived scripts from `NessieAI/history/cc/` by path** (`NessieAI/tests/cc/test_cc_scripts_attribution.py`). The history tree is frozen, so a change those tests need is a live copy, never an edit there; and the app image excludes `NessieAI/history/` (`.dockerignore`), so run them over a checkout.
+- **Some tests load archived scripts from `NessieAI/history/cc/` by path** (`NessieAI/tests/cc/test_cc_scripts_attribution.py`, `NessieAI/tests/cc/test_task12_remaining_holes.py`). They are `host_only`, and they skip where `NessieAI/history/` is absent, as it is in the app image (`.dockerignore`). The scripts predate the move, so the tests answer their old module names and repo-root layout through `PRE_MOVE_MODULES` and `PRE_MOVE_DIRS` in the attribution test. A change those tests need goes there or into a live copy, never into the frozen history tree.
 - **A hand-rolled op catalog passes its own tests and then fails the generated-surface check.** Follow `.claude/skills/add-cc-op/SKILL.md`.
 - **`NessieAI/tests/cc/test_cc_realstack.py` spends real money** when `RUN_REALSTACK=1` is set. Never set it without the owner's approval for that run.
 
