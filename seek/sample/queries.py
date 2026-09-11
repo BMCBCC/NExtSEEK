@@ -196,6 +196,17 @@ class SampleQueriesMixin:
         # #93: designSearchAdvanced returns (fragment, params) on all four of its
         # return paths instead of splicing request values in as quoted literals.
         sqlquery_filter, params = spi.designSearchAdvanced(filtersdic, SAMPLE_FILTER_MAPPING)
+        # The caller's sample types, which _parseSearchFilters sets for API callers
+        # only. Added before the two project wrappers below, each of which wraps
+        # whatever WHERE exists by then, so the text and type predicates stay grouped.
+        sampletype_ids = filtersdic.get('sampletype_ids')
+        if sampletype_ids:
+            clause = "A.sample_type_id IN (%s)" % ', '.join(['%s'] * len(sampletype_ids))
+            if 'WHERE ' in sqlquery_filter:
+                sqlquery_filter = sqlquery_filter.replace('WHERE ', 'WHERE (', 1) + ") AND " + clause
+            else:
+                sqlquery_filter = sqlquery_filter + " WHERE " + clause
+            params = params + list(sampletype_ids)
         if 'project_id' in filtersdic:
             project_id = filtersdic['project_id']
             if int(project_id)>0:
