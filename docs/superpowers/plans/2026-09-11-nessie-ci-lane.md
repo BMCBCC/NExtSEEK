@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Work in the worktree `/home/cdemurjian/code/dmac/docker/wt-nessie-ci`, branch `feat/nessie-ci-lane`, based on `origin/dev` at `f1ef0f3c`. Never push.
+- Work in the worktree `<worktree>`, branch `feat/nessie-ci-lane`, based on `origin/dev` at `f1ef0f3c`. Never push.
 - `ci/routes.py` imports the standard library only.
 - The smoke lane runs under `uv run --no-project --with pytest --with requests --with playwright`: `ci/smoke/` may import pytest, requests, playwright, the standard library and `ci/` modules, nothing else.
 - `startup/` never imports `ci/`. It passes information to the suite through command-line flags and environment variables, and reads results back from files.
@@ -48,14 +48,14 @@ cd startup && uv run --project . --group test python -m pytest tests/ -q \
 mkdir -p schema_rag/duckdb schema_rag/embedding_models
 docker run --rm -i --network none -e LOG_DIR=/tmp/l \
   -e DJANGO_SETTINGS_MODULE=dmac.test_settings -e PYTHONDONTWRITEBYTECODE=1 \
-  -v "$PWD":/src:ro -w /src nextseek-nextseek:pre-20260910T204639-68fd1c2f \
+  -v "$PWD":/src:ro -w /src "<the pre-move app image>" \
   /app/.venv/bin/python -m pytest ci/gate -q -p no:cacheprovider
 
 # Frontend
 cd chat_frontend && npm ci && npm test && npx playwright test --project mock; cd ..
 
 # Stage 1 live (free), against the operator's running local stack
-PORT=$(python3 -c "import json;print(json.load(open('/home/cdemurjian/code/dmac/docker/dev/startup/.instance.json'))['ports']['nextseek'])")
+PORT=$(python3 -c "import json;print(json.load(open('<main checkout>/startup/.instance.json'))['ports']['nextseek'])")
 CI_BOX_PROFILE=local uv run --no-project --with pytest --with requests --with playwright \
   pytest ci/smoke/test_nessie.py --base-url "http://127.0.0.1:$PORT" --nessie-no-turns -q
 ```
@@ -1519,9 +1519,9 @@ def _nessie_prerequisites_or_exit(state, *, after_rebuild: bool) -> None:
 
 ### Task 9: Whole-branch verification and handoff
 
-- [ ] **Step 1:** Run every lane from "Commands used throughout": the no-stack smoke lane, the startup lane, the gate lane, the frontend (vitest and the mock Playwright project), `pytest ci/smoke/test_nessie.py --collect-only -q`, and stage 1 live with `--nessie-no-turns`. Save each output under `/home/cdemurjian/code/dmac/docker/.claude/work/2026-09-11-nessie-ci/`.
+- [ ] **Step 1:** Run every lane from "Commands used throughout": the no-stack smoke lane, the startup lane, the gate lane, the frontend (vitest and the mock Playwright project), `pytest ci/smoke/test_nessie.py --collect-only -q`, and stage 1 live with `--nessie-no-turns`. Save each output under `<scratch dir>/`.
 - [ ] **Step 2:** `git log --oneline origin/dev..HEAD`; `git diff --stat origin/dev..HEAD`; confirm nothing unexpected is staged or untracked, no secret-like file, no `node_modules`, no file over 2 MB.
-- [ ] **Step 3:** Write `/home/cdemurjian/code/dmac/docker/.claude/work/2026-09-11-nessie-ci/HANDOFF.md`: the commits; each lane's result; every deviation from this plan; which stage 1 live checks failed only because the running bundle predates Task 4; and the operator's live paid run, which happens after this branch is merged (via `dev`) into the NessieAI refactor branch and a rebuild: `./startup.sh rebuild` then read the CI record's Nessie section; or `./startup.sh ci`. Include the merge notes from the spec's section 8. No em-dashes.
+- [ ] **Step 3:** Write `<scratch dir>/HANDOFF.md`: the commits; each lane's result; every deviation from this plan; which stage 1 live checks failed only because the running bundle predates Task 4; and the operator's live paid run, which happens after this branch is merged (via `dev`) into the NessieAI refactor branch and a rebuild: `./startup.sh rebuild` then read the CI record's Nessie section; or `./startup.sh ci`. Include the merge notes from the spec's section 8. No em-dashes.
 
 ---
 
