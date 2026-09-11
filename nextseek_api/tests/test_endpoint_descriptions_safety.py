@@ -14,6 +14,7 @@ import re
 import pytest
 
 from NessieAI import paths
+from NessieAI.tests.cc.image_context import image_context_source
 from nextseek_api.assay_registration.schemas import (
     RegistrationAcceptedResponse,
     RegistrationRequest,
@@ -24,13 +25,14 @@ from nextseek_api.assay_registration.views import AssayRegistrationViewSet
 from nextseek_api.endpoint_descriptions import ASSAY_UPDATE_DESC
 from nextseek_api.permissions import IsSuperUser
 
-#: BOTH copies. `test_shared_context_file_is_identical_to_source` in
-#: NessieAI/tests/cc/test_cc_context_drift_guard.py requires the
-#: baked CC copy to equal the source byte for byte, so they change together.
-#: The baked one is the copy the CC agent actually reads.
+#: The source file and the file the CC agent reads. Since NessieAI Phase C the
+#: cc-agent image COPYs the source file itself from the chat_nextseek named
+#: context, so "baked" resolves (through the Dockerfile's COPY lines) to the same
+#: file; `test_shared_context_file_is_identical_to_source` in
+#: NessieAI/tests/cc/test_cc_context_drift_guard.py would catch a second copy.
 CATALOGS = (
     paths.CHAT_NEXTSEEK_DIR / "src" / "chat_nextseek" / "context" / "min_api_endpoints.json",
-    paths.CC_PLUGIN_DIR / "context" / "min_api_endpoints.json",
+    image_context_source("min_api_endpoints.json"),
 )
 
 # Phrasings that instruct a caller to treat a complete-list PATCH as additive.
@@ -93,8 +95,8 @@ REGISTRATION_ROW = ("POST", "/nextseek_api/assay-registrations/")
 def test_agent_catalog_advertises_the_additive_registration_endpoint(catalog):
     """The PATCH warning routes agents here, so the row has to exist.
 
-    Both copies: the baked one is what the CC agent reads, and
-    test_shared_context_file_is_identical_to_source keeps them equal.
+    Both parameters: the baked one is the file the CC agent reads (the source
+    file itself, since the image COPYs it from the chat_nextseek named context).
     """
     if not catalog.exists():
         pytest.skip(f"{catalog} not present in this checkout")

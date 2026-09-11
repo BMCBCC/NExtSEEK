@@ -22,8 +22,6 @@ from NessieAI.build_tools.gen_op_surfaces.commands import (
 from NessieAI.build_tools.gen_op_surfaces.constants import (
     ADDITIONAL_CONTEXTS_BEGIN,
     ADDITIONAL_CONTEXTS_END,
-    BAKED_CAPABILITIES_REL,
-    CANONICAL_CAPABILITIES_REL,
     CAPABILITIES_COPY_BEGIN,
     CAPABILITIES_COPY_END,
     CLAUDE_MD_REL,
@@ -76,16 +74,6 @@ class SurfaceTarget:
                 raise ValueError(
                     f"marked_block target {self.rel_path} requires begin/end markers"
                 )
-
-
-def capabilities_bytes(repo_root: Path) -> bytes:
-    """Return canonical capabilities.md bytes without parsing or rewriting."""
-    canonical = resolve_under_root(repo_root, CANONICAL_CAPABILITIES_REL)
-    if not canonical.is_file():
-        raise SystemExit(
-            f"gen_op_surfaces failed: missing canonical capabilities at {canonical}"
-        )
-    return canonical.read_bytes()
 
 
 def _command_surface_targets(repo_root: Path) -> tuple[SurfaceTarget, ...]:
@@ -217,11 +205,6 @@ def _claude_md_surface_targets(repo_root: Path) -> tuple[SurfaceTarget, ...]:
 def surface_targets(repo_root: Path) -> tuple[SurfaceTarget, ...]:
     """Return declared generated targets in stable sorted order."""
     targets = (
-        SurfaceTarget(
-            rel_path=BAKED_CAPABILITIES_REL,
-            kind="whole_file",
-            emit=capabilities_bytes,
-        ),
         SurfaceTarget(
             rel_path=ROUTE_CAPABILITIES_REL,
             kind="whole_file",

@@ -17,18 +17,36 @@ EXIT_CHANGES_WRITTEN = 2
 # context lives in the checkout.
 NAMED_CAPABILITIES_CONTEXT = "chat_nextseek"
 NAMED_CAPABILITIES_CONTEXT_PATH = paths.repo_relative(paths.CHAT_NEXTSEEK_DIR)
-CANONICAL_CAPABILITIES_IN_CONTEXT = (
-    "src/chat_nextseek/context/capabilities.md"
+
+# The chat_nextseek context files the agent image bakes into its plugin context.
+# There is one copy of each: the canonical file in the chat_nextseek context tree,
+# which the generated capabilities-copy block COPYs from the named context to the
+# same in-image path the plugin tree's own copy used to occupy. The plugin tree
+# keeps only the files that have no canonical twin (MANIFEST.md, ops.json,
+# read_safe_endpoints.json) and the two graph snapshots that have drifted from
+# theirs (min_graph_schema.json, neo4j_schema.json).
+CANONICAL_CONTEXT_DIR_IN_CONTEXT = "src/chat_nextseek/context"
+IMAGE_CONTEXT_DIR = "/app/plugins/nextseek/context"
+CANONICAL_CONTEXT_FILES = (
+    "capabilities.md",
+    "min_api_endpoints.json",
+    "min_api_endpoints_enriched.json",
+    "min_assays_db.json",
+    "min_sampletypes_db.json",
+    "projects_db.json",
 )
-IMAGE_CAPABILITIES_PATH = "/app/plugins/nextseek/context/capabilities.md"
+CANONICAL_CAPABILITIES_IN_CONTEXT = (
+    f"{CANONICAL_CONTEXT_DIR_IN_CONTEXT}/capabilities.md"
+)
+IMAGE_CAPABILITIES_PATH = f"{IMAGE_CONTEXT_DIR}/capabilities.md"
 
 # The canonical file is the named context's file, so the two cannot disagree.
 CANONICAL_CAPABILITIES_REL = (
     f"{NAMED_CAPABILITIES_CONTEXT_PATH}/{CANONICAL_CAPABILITIES_IN_CONTEXT}"
 )
-BAKED_CAPABILITIES_REL = paths.repo_relative(
-    paths.CC_PLUGIN_DIR / "context" / "capabilities.md"
-)
+# The plugin tree's context directory. It must hold no copy of a
+# CANONICAL_CONTEXT_FILES entry; the capabilities-copy emitter refuses one.
+PLUGIN_CONTEXT_REL = paths.repo_relative(paths.CC_PLUGIN_DIR / "context")
 ROUTE_CAPABILITIES_REL = paths.repo_relative(
     paths.DMAC_BUILD_CONTEXT / "route_capabilities.json"
 )

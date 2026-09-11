@@ -3,7 +3,8 @@
 # Container-CC (CC) agent image -- canonical, NExtSEEK-tracked build target.
 # Step 7 (compose-native deploy) Task 3: ported, same relative layout, from the
 # dmac-assistant working clone's root Dockerfile at commit a429f1372a075e5db586a1b6efc8c3b1663e211a.
-# One COPY has changed since: the BAML sources now come from a named context.
+# Two COPYs have changed since: the BAML sources, and the plugin context files that
+# have a canonical chat_nextseek twin, now come from named contexts.
 # See docker/cc-runtime/PORT-EVIDENCE.json for the full port record.
 #
 # This is the full production-capable agent image (node + uv + baked
@@ -50,8 +51,15 @@ RUN useradd -m -u 1001 -s /bin/sh user
 # BEGIN PLAN005-GEN:plugin-copy
 COPY build_context/plugins/nextseek/ /app/plugins/nextseek/
 # END PLAN005-GEN:plugin-copy
+# The plugin context files that have a canonical twin in chat_nextseek come from
+# the Compose named context chat_nextseek, the one copy, to the same in-image paths.
 # BEGIN PLAN005-GEN:capabilities-copy
 COPY --from=chat_nextseek src/chat_nextseek/context/capabilities.md /app/plugins/nextseek/context/capabilities.md
+COPY --from=chat_nextseek src/chat_nextseek/context/min_api_endpoints.json /app/plugins/nextseek/context/min_api_endpoints.json
+COPY --from=chat_nextseek src/chat_nextseek/context/min_api_endpoints_enriched.json /app/plugins/nextseek/context/min_api_endpoints_enriched.json
+COPY --from=chat_nextseek src/chat_nextseek/context/min_assays_db.json /app/plugins/nextseek/context/min_assays_db.json
+COPY --from=chat_nextseek src/chat_nextseek/context/min_sampletypes_db.json /app/plugins/nextseek/context/min_sampletypes_db.json
+COPY --from=chat_nextseek src/chat_nextseek/context/projects_db.json /app/plugins/nextseek/context/projects_db.json
 # END PLAN005-GEN:capabilities-copy
 
 # Fail the build if catalog files weren't snapshotted before `docker build`.

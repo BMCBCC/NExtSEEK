@@ -30,6 +30,11 @@ from pathlib import Path
 import pytest
 
 from NessieAI import paths
+from NessieAI.tests.cc.image_context import (
+    canonical_context_copies,
+    image_context_source,
+    image_context_sources,
+)
 
 pytestmark = pytest.mark.host_only
 
@@ -180,6 +185,11 @@ def test_cc_runtime_plugin_scripts_setup_present():
 # ==========================================================================
 
 
+# Since NessieAI Phase C the image's context/ is fed from two trees: the plugin
+# tree's own context/ (files with no chat_nextseek twin, and the two drifted graph
+# snapshots) and, through the chat_nextseek named context, the canonical
+# chat_nextseek context files. image_context_source() replays the Dockerfile's
+# COPY lines to name the checkout file each in-image catalog comes from.
 @pytest.mark.parametrize("catalog", [
     "capabilities.md",
     "min_api_endpoints.json",
@@ -192,15 +202,34 @@ def test_cc_runtime_plugin_scripts_setup_present():
     "read_safe_endpoints.json",
 ])
 def test_cc_runtime_context_catalog_files_present(catalog):
-    path = CC_RUNTIME / "build_context" / "plugins" / "nextseek" / "context" / catalog
+    path = image_context_source(catalog)
     assert path.is_file(), f"missing context/catalog file: {path}"
     assert path.stat().st_size > 0
 
 
 def test_cc_runtime_context_min_json_files_are_valid_json():
-    context_dir = CC_RUNTIME / "build_context" / "plugins" / "nextseek" / "context"
-    for name in context_dir.glob("min_*.json"):
-        json.loads(name.read_text(encoding="utf-8"))  # raises on malformed JSON
+    sources = image_context_sources()
+    min_json = [
+        path for name, path in sorted(sources.items())
+        if name.startswith("min_") and name.endswith(".json")
+    ]
+    assert len(min_json) >= 5, f"expected the image's min_*.json catalogs, got {min_json}"
+    for path in min_json:
+        json.loads(path.read_text(encoding="utf-8"))  # raises on malformed JSON
+
+
+def test_cc_runtime_named_context_catalog_copies_exist_in_chat_nextseek():
+    """The catalogs the image takes from the chat_nextseek named context exist
+    there (a missing one fails the build), and none is also kept in the plugin
+    tree, where it would be overwritten in the image and could only drift."""
+    plugin_context = CC_RUNTIME / "build_context" / "plugins" / "nextseek" / "context"
+    canonical = canonical_context_copies()
+    assert canonical, "expected named-context COPYs of the canonical context files"
+    for name in sorted(canonical):
+        source = image_context_source(name)
+        assert source.is_file(), f"named-context COPY source missing: {source}"
+        assert source.is_relative_to(paths.CHAT_NEXTSEEK_DIR), source
+        assert not (plugin_context / name).exists(), f"plugin-tree copy is back: {name}"
 
 
 def test_cc_runtime_docs_nextseek_present():

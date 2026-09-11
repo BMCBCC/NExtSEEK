@@ -6,8 +6,8 @@ Each is enforced from outside this folder. Breaking one is a security regression
 
 - **Five `bedrock-proxy/` files are digest-pinned** (its Python modules and the secret-env example) inside `NessieAI/tests/cc/test_step7_proxy_port.py`. An in-place edit fails; updating the port manifest does not silence it.
 - **Every `.py` under `ns-sidecar/` is digest-pinned** the same way, in `NessieAI/tests/cc/test_step7_sidecar_port.py`. Port, never rewrite.
-- **`cc-runtime/PORT-EVIDENCE.json` is an enforced integrity manifest.** It records a size and digest per file and `NessieAI/tests/cc/test_step7_cc_runtime_port.py` asserts both. Change a catalog, an ingested doc or the baked capabilities, and update the manifest in the same commit.
-- **The canonical capabilities `COPY` stays the last writer of its in-image path.** That block of `cc-runtime/Dockerfile` is generated, and `NessieAI/build_tools/gen_op_surfaces/docker_blocks.py` refuses a later writer.
+- **`cc-runtime/PORT-EVIDENCE.json` is an enforced integrity manifest.** It records a size and digest per file and `NessieAI/tests/cc/test_step7_cc_runtime_port.py` asserts both. Change a plugin-tree catalog or an ingested doc, and update the manifest in the same commit.
+- **The plugin context has one copy of each chat_nextseek context file.** `capabilities.md`, `projects_db.json` and four `min_*.json` catalogs are not in `cc-runtime/build_context/plugins/nextseek/context/`: the generated capabilities-copy block of `cc-runtime/Dockerfile` COPYs each from the Compose named context `chat_nextseek` to the same in-image path. Those COPYs stay the last writers of their paths (`validate_canonical_context_final_writers` in `NessieAI/build_tools/gen_op_surfaces/docker_blocks.py`), and the generator refuses a copy put back in the plugin tree. Edit the files in `NessieAI/chat_nextseek/src/chat_nextseek/context/`.
 - **The sidecar's staging hash and the Django sweep's are one function.** `ns-sidecar/app/staging.py` is the definition and `NessieAI/cc/cc_staging.py` re-implements it. Change one alone and staged artifacts land where the sweep never looks.
 - **The proxy never publishes a host port.** It authenticates no caller and attaches the institutional token to every request it relays.
 - **A client `Authorization` header is dropped, never forwarded** (the hop-by-hop drop set in `bedrock-proxy/app/proxy.py`).
@@ -17,10 +17,10 @@ Each is enforced from outside this folder. Breaking one is a security regression
 
 ## Landmines
 
-- **The baked `capabilities.md` is not what the agent reads.** The named-context `COPY` overwrites it with the canonical bytes. Its drift from the canonical file is documented once, in `NessieAI/chat_nextseek/CLAUDE.md`; the fix touches `PORT-EVIDENCE.json` here.
-- **Two other baked catalogs, `min_graph_schema.json` and `neo4j_schema.json`, differ from canonical and DO reach the agent.** Nothing overwrites them. The catalog snapshot generator lives in an external clone, so they are hand-maintained here, together with their digests.
+- **Two baked catalogs, `min_graph_schema.json` and `neo4j_schema.json`, differ from canonical and DO reach the agent.** They are the only plugin-tree files with a chat_nextseek twin, and nothing overwrites them. The catalog snapshot generator lives in an external clone, so they are hand-maintained here, together with their digests.
 - **A bare `pytest` inside `cc-runtime/` exits 1 even when every test passes**: the declared coverage targets name trees this port lacks. Pass `-o addopts=""`.
 - **`docker build` on `cc-runtime/` alone fails.** The named contexts `chat_nextseek` and `dmac_assistant_baml` exist only through compose; a manual build must pass both as `--build-context`, exactly as the generated `additional_contexts` block in `docker-compose.yml` declares them.
+- **A cc-agent build bakes the chat_nextseek context files as they are on disk.** The config rewrites three of them in place when it runs against a checkout (`NessieAI/chat_nextseek/CLAUDE.md`); check `git status` there before a cc-agent rebuild.
 - **The plugin `hooks/hooks.json` is inert in the image.** The container entrypoint re-registers the hook; edit that block.
 - **`cc-runtime/container/runner_ns.py` ships but nothing calls it.** Do not read it as how a turn runs.
 - **`cc-runtime/build_context/docs/nextseek-api/` ships empty on purpose**: a placeholder keeps its `COPY` working.

@@ -78,12 +78,15 @@ whose variants carry a tag for the Playwright browser tier.
 ### 3. Data other build steps read
 
 `NessieAI/chat_nextseek/src/chat_nextseek/context/capabilities.md` is named as the
-canonical capabilities document by `NessieAI/build_tools/gen_op_surfaces/constants.py:26-28`,
-and the agent image copies it in from a named build context declared at
-`docker-compose.yml:124-125` and consumed at `NessieAI/docker/cc-runtime/Dockerfile:54`.
-That COPY deliberately lands after the broad plugin copy at
-`NessieAI/docker/cc-runtime/Dockerfile:51`, and a generator check enforces that ordering
-(`NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:164-169`).
+canonical capabilities document by `NessieAI/build_tools/gen_op_surfaces/constants.py:38-46`.
+It and five catalogs beside it (`projects_db.json` and four `min_*.json`, the
+`CANONICAL_CONTEXT_FILES` list at `NessieAI/build_tools/gen_op_surfaces/constants.py:30-37`)
+are the only copies the agent image bakes: it takes them from the named build context
+`chat_nextseek`, declared at `docker-compose.yml:159-161` and consumed at
+`NessieAI/docker/cc-runtime/Dockerfile:57-62`. Those COPYs deliberately land after the
+plugin copy at `NessieAI/docker/cc-runtime/Dockerfile:52`, and a generator check enforces
+that ordering (`validate_canonical_context_final_writers` in
+`NessieAI/build_tools/gen_op_surfaces/docker_blocks.py`).
 
 ## Running and testing
 
@@ -155,7 +158,7 @@ package. Its mentions of `chat_nextseek` are comments, README prose, and the pat
 at `NessieAI/dmac_assistant/src/dmac_assistant/config.py:32-34`, which points at a
 `vendor/chat_nextseek/` directory that does not exist in this repo. The
 sandboxed agent image does not carry the package either, stated at
-`NessieAI/docker/cc-runtime/Dockerfile:102-104`; its plugin reaches these agents over the
+`NessieAI/docker/cc-runtime/Dockerfile:110-112`; its plugin reaches these agents over the
 network through Django.
 
 See `NessieAI/chat_nextseek/CLAUDE.md` for the invariants and the traps.

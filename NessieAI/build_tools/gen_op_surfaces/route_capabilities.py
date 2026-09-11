@@ -33,7 +33,6 @@ from NessieAI.tests.nessie_tests import runner as nessie_runner
 # Repo-relative, joined onto the --root checkout; one source in constants.py.
 ROUTE_CAPABILITIES_REL = Path(constants.ROUTE_CAPABILITIES_REL)
 CANONICAL_CAPABILITIES_REL = Path(constants.CANONICAL_CAPABILITIES_REL)
-BAKED_CAPABILITIES_REL = Path(constants.BAKED_CAPABILITIES_REL)
 EVIDENCE_REL = Path(
     paths.repo_relative(paths.CC_DIR / "op_registry" / "route_example_evidence.json")
 )
@@ -227,11 +226,6 @@ def build_route_capabilities_payload(
 ) -> dict[str, Any]:
     corpus = corpus_path or (repo_root / CORPUS_REL)
     md_path = markdown_path or (repo_root / CANONICAL_CAPABILITIES_REL)
-    baked = repo_root / BAKED_CAPABILITIES_REL
-    canonical_bytes = md_path.read_bytes()
-    if baked.is_file() and baked.read_bytes() != canonical_bytes:
-        raise RouteCapabilitiesError("baked capabilities.md is not byte-identical to canonical")
-
     projection = load_ns_projection(md_path)
     payload = evidence
     if payload is None:

@@ -583,7 +583,7 @@ replies. `run_group` checks for an outage before composing that summary.
 - The Container-CC paired-evidence ingester imports four modules of it (`NessieAI/cc/op_registry/paired_evidence.py:37-40`), so removing one breaks the op registry. A frozen engine-to-harness edge.
 - `manage.py nessie` imports the driver and runner at call time (`nextseek_api/management/commands/nessie.py:55`), which is how a run happens inside the trusted Django process.
 - Task-family labels are read straight out of the corpus file, resolved through `NessieAI/paths.py` (`NessieAI/router/family_labels.py:29`), so moving `corpus.json` without `paths.py` empties that catalog, and the router logs the missing file rather than failing.
-- The `route_capabilities` generator imports three modules and resolves the corpus through `NessieAI/paths.py` (`NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:29-31`, `NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:40`). A frozen edge.
+- The `route_capabilities` generator imports three modules and resolves the corpus through `NessieAI/paths.py` (`NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:29-31`, `NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:39`). A frozen edge.
 - Human-grade fitting imports the paired manifest model, lazily (`NessieAI/hibayes/human_grade_fit.py:704`). A frozen edge.
 
 The plan018 verifier script and the owned-surface and mutation tooling that once keyed
@@ -610,6 +610,6 @@ the `_CONTAINER_PY` string opened at `NessieAI/tests/nessie_tests/sources.py:245
 probe source injected into a container, not an import this file performs. Test
 modules that import the package from elsewhere in the tree are omitted from the
 inbound list on the grounds that they are tests of it rather than consumers of
-it; they are in `NessieAI/tests/router/test_route_capabilities.py:27-29`,
+it; they are in `NessieAI/tests/router/test_route_capabilities.py:31-33`,
 `NessieAI/tests/cc/test_paired_evidence.py:15-16` and
 `NessieAI/tests/hibayes/test_task2_coverage_edges.py:11`.

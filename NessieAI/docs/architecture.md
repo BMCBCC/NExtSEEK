@@ -141,7 +141,7 @@ Key mechanics:
 
 ### 4. CC path: one sandboxed container per turn
 
-On `ROUTE_CC`, the same worker thread hands off to `NessieAI/cc/cc_engine.py`; `run_cc_turn` is the driver. One ephemeral container is spawned per turn, runs the `claude` CLI directly, and is always removed afterwards. The image's own `CMD` (`NessieAI/docker/cc-runtime/Dockerfile:139`) is overridden by the bridge's full command at spawn time.
+On `ROUTE_CC`, the same worker thread hands off to `NessieAI/cc/cc_engine.py`; `run_cc_turn` is the driver. One ephemeral container is spawned per turn, runs the `claude` CLI directly, and is always removed afterwards. The image's own `CMD` (`NessieAI/docker/cc-runtime/Dockerfile:147`) is overridden by the bridge's full command at spawn time.
 
 ```mermaid
 sequenceDiagram
@@ -292,7 +292,7 @@ Thirteen model classes live in this module across four `assistant_*` tables and 
 
 ### Agent image (`NessieAI/docker/cc-runtime/Dockerfile`)
 
-Pins `@anthropic-ai/claude-code@2.1.163` (≥ 2.1.158 required for auto mode on Bedrock, `NessieAI/docker/cc-runtime/Dockerfile:30-31`), runs as a non-root uid-1001 user (`NessieAI/docker/cc-runtime/Dockerfile:46`, `NessieAI/docker/cc-runtime/Dockerfile:132`), bakes a `CLAUDE.md` at `/app/CLAUDE.md` (`NessieAI/docker/cc-runtime/Dockerfile:64`) symlinked into the agent home (`NessieAI/docker/cc-runtime/Dockerfile:80-81`), and sets `WORKDIR /home/user` (`NessieAI/docker/cc-runtime/Dockerfile:133`) so Claude Code discovers it. `chat_nextseek` is deliberately absent: the image installs only its own dependency manifest (`NessieAI/docker/cc-runtime/pyproject.toml:7-24`) via `uv sync --locked` (`NessieAI/docker/cc-runtime/Dockerfile:97-99`).
+Pins `@anthropic-ai/claude-code@2.1.163` (≥ 2.1.158 required for auto mode on Bedrock, `NessieAI/docker/cc-runtime/Dockerfile:31-32`), runs as a non-root uid-1001 user (`NessieAI/docker/cc-runtime/Dockerfile:47`, `NessieAI/docker/cc-runtime/Dockerfile:140`), bakes a `CLAUDE.md` at `/app/CLAUDE.md` (`NessieAI/docker/cc-runtime/Dockerfile:72`) symlinked into the agent home (`NessieAI/docker/cc-runtime/Dockerfile:88-89`), and sets `WORKDIR /home/user` (`NessieAI/docker/cc-runtime/Dockerfile:141`) so Claude Code discovers it. `chat_nextseek` is deliberately absent: the image installs only its own dependency manifest (`NessieAI/docker/cc-runtime/pyproject.toml:7-24`) via `uv sync --locked` (`NessieAI/docker/cc-runtime/Dockerfile:105-107`).
 
 ---
 

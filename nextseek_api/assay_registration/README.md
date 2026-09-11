@@ -219,15 +219,16 @@ which constrains the prose constants that live in the parent rather than anythin
   `ci/smoke/test_write_lane.py:81-104` posts a real `dry_run` and asserts the write-side
   identifiers are absent from the reply.
 - Convention and drift gates. `scripts/validate_viewset_conventions.py:34` names this
-  ViewSet module, and `NessieAI/tests/cc/test_cc_context_drift_guard.py:403`
+  ViewSet module, and `NessieAI/tests/cc/test_cc_context_drift_guard.py:463`
   classifies the POST route as a write rather than a read-shaped POST.
 - Deployment. `docker/scripts/entrypoint.sh` starts the drain loop inside the `nextseek`
   container, so `./startup.sh rebuild` restarts it with the app
   (`BASE_APP_RUNTIME_SERVICES` in `startup/lib/rebuild_policy.py`), and `DEPLOYMENT.md` §0
   is the operator-facing row.
-- The Container-CC agent, as data. `NessieAI/docker/cc-runtime/build_context/plugins/nextseek/context/min_api_endpoints.json:8-10`
-  publishes the POST route to the agent, and the sibling entry at
-  `NessieAI/docker/cc-runtime/build_context/plugins/nextseek/context/min_api_endpoints.json:30`
+- The Container-CC agent, as data. `NessieAI/chat_nextseek/src/chat_nextseek/context/min_api_endpoints.json:8-10`,
+  which the cc-agent image bakes into its plugin context, publishes the POST route to the
+  agent, and the sibling entry at
+  `NessieAI/chat_nextseek/src/chat_nextseek/context/min_api_endpoints.json:30`
   redirects "add samples to an assay" here away from a PATCH that would replace the whole
   list.
 

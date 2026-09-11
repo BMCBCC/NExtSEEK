@@ -52,29 +52,28 @@ without an error at the point of the change.
   working path together, and `NessieAI/chat_nextseek/src/chat_nextseek/pipeline/agent_tools.py:220-221`
   keys tool exposure off that; a partially configured box silently hands the
   model a build it cannot submit.
-- **This directory owns the canonical capabilities document**,
-  `NessieAI/chat_nextseek/src/chat_nextseek/context/capabilities.md`. Surface
-  generation refuses to run when the baked copy differs by a single byte
-  (`NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:232-233`), so editing it
-  here without bringing the baked copy along blocks that whole tool chain.
+- **This directory owns the context files the CC agent image bakes.** `capabilities.md`,
+  `projects_db.json` and the four `min_*.json` catalogs named by `CANONICAL_CONTEXT_FILES`
+  in `NessieAI/build_tools/gen_op_surfaces/constants.py` exist only under
+  `NessieAI/chat_nextseek/src/chat_nextseek/context/`. The cc-agent Dockerfile COPYs each
+  from the Compose named context `chat_nextseek` to `/app/plugins/nextseek/context/`, and
+  the plugin tree keeps no copy. An edit here therefore reaches the CC agent only after a
+  cc-agent rebuild, and a new file here reaches it only once it is added to that list;
+  `NessieAI/tests/cc/test_cc_context_drift_guard.py` fails until the file is baked or
+  declared source-only.
 
 ## Landmines
 
-- **The baked capabilities copy differs from the canonical one right now.** This is the
-  one home of that landmine; other docs point here. The canonical file (named at
-  `NessieAI/build_tools/gen_op_surfaces/constants.py:26-28`) and the baked copy
-  `NessieAI/docker/cc-runtime/build_context/plugins/nextseek/context/capabilities.md`
-  (named at `NessieAI/build_tools/gen_op_surfaces/constants.py:29-31`) first differ at
-  byte 1958 (check with `cmp`): the baked copy lacks a five-line Publication entry
-  documenting `DOI` and `PMID` on the Study node. The built image is unaffected, because
-  the canonical COPY at `NessieAI/docker/cc-runtime/Dockerfile:54` lands after the plugin
-  tree and wins. But every caller of the surface generator raises until the two are
-  reconciled (`NessieAI/build_tools/CLAUDE.md`), `NessieAI/tests/router/test_route_capabilities.py`
-  fails on it, and the byte-identity tests are carried as known failures in
-  `ci/pytest-baseline.txt`, so this is a standing condition, not something you just
-  caused. Fixing it means making the baked copy byte-identical to the canonical and
-  updating `NessieAI/docker/cc-runtime/PORT-EVIDENCE.json` in the same commit
-  (`NessieAI/docker/CLAUDE.md`).
+- **A cc-agent build bakes this tree as it is on disk, committed or not.** The config
+  refreshes `min_sampletypes_db.json`, `min_assays_db.json` and `projects_db.json` in its
+  context directory from the database once a day (`_ensure_context_files` in
+  `NessieAI/chat_nextseek/src/chat_nextseek/config.py`). Run it against a checkout and
+  those tracked files change in place; the next cc-agent build then ships the refreshed
+  bytes, exactly as the app image build does. Check `git status` on this directory before
+  a cc-agent rebuild.
+- **Two graph snapshots are not baked from here.** The plugin tree keeps its own
+  `min_graph_schema.json` and `neo4j_schema.json`, which differ from the ones here and do
+  reach the agent (`NessieAI/docker/CLAUDE.md`).
 - **This directory's own `.gitignore` still governs it inside the monorepo.**
   `NessieAI/chat_nextseek/.gitignore:25` ignores any `docs/` directory and
   `NessieAI/chat_nextseek/.gitignore:33` ignores `.claude`, so a design note or a skill

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import stat
 import subprocess
 from pathlib import Path
@@ -13,6 +14,7 @@ from NessieAI import paths
 from NessieAI.build_tools.gen_op_surfaces.constants import (
     ADDITIONAL_CONTEXTS_BEGIN,
     ADDITIONAL_CONTEXTS_END,
+    CANONICAL_CONTEXT_FILES,
     CAPABILITIES_COPY_BEGIN,
     CAPABILITIES_COPY_END,
     COMPOSE_REL,
@@ -44,6 +46,7 @@ from NessieAI.build_tools.gen_op_surfaces.docker_blocks import (
     parse_plugin_path_names,
     validate_baml_context_copy,
     validate_canonical_capabilities_final_writer,
+    validate_canonical_context_final_writers,
     validate_compose_named_context,
     validate_compose_named_contexts,
 )
@@ -64,6 +67,21 @@ NAMED_CONTEXT = "chat_nextseek"
 NAMED_CONTEXT_PATH = paths.repo_relative(paths.CHAT_NEXTSEEK_DIR)
 CANONICAL_SRC = "src/chat_nextseek/context/capabilities.md"
 IMAGE_CAPABILITIES = "/app/plugins/nextseek/context/capabilities.md"
+# Every chat_nextseek context file the image bakes comes from the same named
+# context (Phase C); the plugin tree keeps no copy of any of them.
+CANONICAL_CONTEXT_NAMES = (
+    "capabilities.md",
+    "min_api_endpoints.json",
+    "min_api_endpoints_enriched.json",
+    "min_assays_db.json",
+    "min_sampletypes_db.json",
+    "projects_db.json",
+)
+CANONICAL_CONTEXT_COPY_BLOCK = "".join(
+    f"COPY --from={NAMED_CONTEXT} src/chat_nextseek/context/{name} "
+    f"/app/plugins/nextseek/context/{name}\n"
+    for name in CANONICAL_CONTEXT_NAMES
+)
 # The BAML sources reach the image through a second named context, which is the
 # canonical BAML tree itself (Phase C); the cc-runtime mirror it replaced is gone.
 BAML_CONTEXT = "dmac_assistant_baml"
@@ -290,6 +308,29 @@ def test_later_overwrite_of_capabilities_fails() -> None:
         validate_canonical_capabilities_final_writer(text)
 
 
+def test_every_canonical_context_file_needs_a_final_named_context_writer() -> None:
+    """The plugin COPY lays the tree down first; each canonical file's named-context
+    COPY must follow it. One missing, or one overwritten afterwards, is refused."""
+    plugin_copy = "COPY build_context/plugins/nextseek/ /app/plugins/nextseek/\n"
+    validate_canonical_context_final_writers(plugin_copy + CANONICAL_CONTEXT_COPY_BLOCK)
+    for name in CANONICAL_CONTEXT_NAMES:
+        without = "".join(
+            line + "\n"
+            for line in CANONICAL_CONTEXT_COPY_BLOCK.splitlines()
+            if not line.endswith(f"/{name}")
+        )
+        with pytest.raises(CanonicalCapabilitiesError, match=f"canonical {re.escape(name)}"):
+            validate_canonical_context_final_writers(plugin_copy + without)
+    with pytest.raises(CanonicalCapabilitiesError, match="overwrite"):
+        validate_canonical_context_final_writers(CANONICAL_CONTEXT_COPY_BLOCK + plugin_copy)
+    with pytest.raises(CanonicalCapabilitiesError, match="overwrite"):
+        validate_canonical_context_final_writers(
+            CANONICAL_CONTEXT_COPY_BLOCK
+            + "COPY build_context/plugins/nextseek/context/min_assays_db.json "
+            "/app/plugins/nextseek/context/min_assays_db.json\n"
+        )
+
+
 def test_compose_named_context_must_be_vendored_tree(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     vendored = repo / NAMED_CONTEXT_PATH
@@ -335,10 +376,15 @@ def test_named_context_name_is_kept_and_its_path_is_the_moved_tree() -> None:
         f"        {NAMED_CONTEXT}: ./{NAMED_CONTEXT_PATH}\n"
         f"        {BAML_CONTEXT}: ./{BAML_CONTEXT_PATH}\n"
     )
-    assert emit_capabilities_copy_block(REPO_ROOT) == (
+    assert CANONICAL_CONTEXT_FILES == CANONICAL_CONTEXT_NAMES
+    emitted = emit_capabilities_copy_block(REPO_ROOT)
+    assert emitted == CANONICAL_CONTEXT_COPY_BLOCK
+    assert emitted.startswith(
         f"COPY --from={NAMED_CONTEXT} {CANONICAL_SRC} {IMAGE_CAPABILITIES}\n"
     )
     assert (REPO_ROOT / NAMED_CONTEXT_PATH / CANONICAL_SRC).is_file()
+    for name in CANONICAL_CONTEXT_NAMES:
+        assert (REPO_ROOT / NAMED_CONTEXT_PATH / "src/chat_nextseek/context" / name).is_file()
 
 
 def test_current_tree_four_sets_agree() -> None:
@@ -351,6 +397,7 @@ def test_current_tree_four_sets_agree() -> None:
     assert dirs
     text = DOCKERFILE.read_text(encoding="utf-8")
     validate_canonical_capabilities_final_writer(text)
+    validate_canonical_context_final_writers(text)
     assert "COPY build_context/plugins/ /app/plugins/" not in text
 
 
@@ -528,9 +575,8 @@ def test_committed_compose_block_maps_every_context_onto_its_tree() -> None:
 def test_committed_docker_surfaces_are_current() -> None:
     """The Dockerfile and compose blocks are exactly what the generator emits.
 
-    The full ``--check`` is red on the capabilities drift (see
-    NessieAI/chat_nextseek/CLAUDE.md); this checks the docker targets alone, so a
-    hand edit of the named-context block is caught regardless.
+    This checks the docker targets alone, so a hand edit of a named-context block
+    is caught even when another target of the full ``--check`` is red.
     """
     docker_targets = [
         target

@@ -14,7 +14,7 @@ suite. The import name is `NessieAI.build_tools`; there is no build system of it
 root project's environment.
 
 Two groups are live generators. `gen_op_surfaces` renders the generated targets of the
-Container-CC operation registry (`NessieAI/build_tools/gen_op_surfaces/emit.py:217-235`),
+Container-CC operation registry (`NessieAI/build_tools/gen_op_surfaces/emit.py:205-218`),
 and `ingest_nextseek_docs` refreshes the NExtSEEK user-docs snapshot baked into the agent
 image from GitBook (`NessieAI/build_tools/ingest_nextseek_docs/constants.py:11-14`). The
 third, `plan005_validate_plugins`, validates the installed plugin trees.
@@ -28,7 +28,7 @@ record pins source commit `a429f137`
 (`NessieAI/docker/cc-runtime/PORT-EVIDENCE.json:2-4`) and names the
 module `build_tools.ingest_nextseek_docs` as the upstream entry point it invoked
 from that clone (`NessieAI/docker/cc-runtime/PORT-EVIDENCE.json:20-22`); the same commit pins
-the image port (`NessieAI/docker/cc-runtime/Dockerfile:4-7`). The copy here carries
+the image port (`NessieAI/docker/cc-runtime/Dockerfile:4-8`). The copy here carries
 NExtSEEK-specific default output paths
 (`NessieAI/build_tools/ingest_nextseek_docs/constants.py:18-21`) and two helpers for GitBook's
 2026-07 export format, one for a leading llms.txt banner
@@ -50,20 +50,19 @@ inputs and the outputs named.
 to the repo root and `--tmpdir` steers check-mode
 rendering (`NessieAI/build_tools/gen_op_surfaces/__main__.py:15-42`). `--check` renders every
 target into a temporary directory and byte-compares the committed file
-(`NessieAI/build_tools/gen_op_surfaces/emit.py:261-295`); `--write` writes only the targets
-whose bytes differ (`NessieAI/build_tools/gen_op_surfaces/emit.py:298-314`). Exit codes are 0
+(`NessieAI/build_tools/gen_op_surfaces/emit.py:244-278`); `--write` writes only the targets
+whose bytes differ (`NessieAI/build_tools/gen_op_surfaces/emit.py:281-297`). Exit codes are 0
 for no change, 1 for error, 2 for changes written
 (`NessieAI/build_tools/gen_op_surfaces/constants.py:11-13`).
 
-The target registry (`NessieAI/build_tools/gen_op_surfaces/emit.py:217-235`) holds two
-whole-file targets and a set of marked blocks:
+The target registry (`NessieAI/build_tools/gen_op_surfaces/emit.py:205-218`) holds one
+whole-file target and a set of marked blocks:
 
 | Generated target | Kind | Emitter |
 |---|---|---|
-| `NessieAI/dmac_assistant/build_context/route_capabilities.json` | whole file | `NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:327-328` |
-| `NessieAI/docker/cc-runtime/build_context/plugins/nextseek/context/capabilities.md` | whole file | `NessieAI/build_tools/gen_op_surfaces/emit.py:81-88` |
-| `NessieAI/docker/cc-runtime/Dockerfile` plugin `COPY`, plugin `PATH`, capabilities `COPY` | 3 blocks | `NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:48-73` |
-| `docker-compose.yml` additional build contexts (`chat_nextseek`, `dmac_assistant_baml`) | 1 block | `NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:76-80` |
+| `NessieAI/dmac_assistant/build_context/route_capabilities.json` | whole file | `NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:321-322` |
+| `NessieAI/docker/cc-runtime/Dockerfile` plugin `COPY`, plugin `PATH`, canonical context `COPY`s | 3 blocks | `NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:50-92` |
+| `docker-compose.yml` additional build contexts (`chat_nextseek`, `dmac_assistant_baml`) | 1 block | `NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:95-99` |
 | `NessieAI/docker/cc-runtime/container/CLAUDE.md` plugin, skill and operation inventories | 3 blocks | `NessieAI/build_tools/gen_op_surfaces/claude_md.py:146-190` |
 | each plugin `commands/*.md` carrying the command-ops markers | 1 block each | `NessieAI/build_tools/gen_op_surfaces/commands.py:39-69` |
 | each installed `SKILL.md` | 1 block each | `NessieAI/build_tools/gen_op_surfaces/skills.py:107-146` |
@@ -73,19 +72,18 @@ scanning each plugin's `commands/*.md` for the marker pair
 (`NessieAI/build_tools/gen_op_surfaces/commands.py:72-93`), skills from the install oracle's
 own discovery (`NessieAI/build_tools/gen_op_surfaces/skills.py:149-169`), and the Dockerfile,
 Compose and container-`CLAUDE.md` blocks only when both markers are already present
-in the file (`NessieAI/build_tools/gen_op_surfaces/emit.py:127-214`).
+in the file (`NessieAI/build_tools/gen_op_surfaces/emit.py:115-202`).
 
-Two path constants define the capabilities contract: the canonical document under
-`NessieAI/chat_nextseek/` and the baked copy under the plugin tree
-(`NessieAI/build_tools/gen_op_surfaces/constants.py:26-31`). The emitter for the baked copy is
-a straight byte read of the canonical, with no parsing or rewriting
-(`NessieAI/build_tools/gen_op_surfaces/emit.py:81-88`). The image, however, does not consume
-the baked copy: the Dockerfile first copies the whole plugin directory and then
-overwrites that one file from a named `chat_nextseek` build context
-(`NessieAI/docker/cc-runtime/Dockerfile:50-55`), which the generator both emits
-(`NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:67-73`) and validates as the final
-writer of that in-image path
-(`NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:143-169`).
+The chat_nextseek context files the agent image bakes (`capabilities.md`, `projects_db.json`
+and four `min_*.json` catalogs) have one copy each, under `NessieAI/chat_nextseek/`
+(`CANONICAL_CONTEXT_FILES` at `NessieAI/build_tools/gen_op_surfaces/constants.py:21-37`). The
+Dockerfile first copies the plugin directory, whose `context/` holds no copy of them, and then
+COPYs each from the named `chat_nextseek` build context to its in-image path
+(`NessieAI/docker/cc-runtime/Dockerfile:51-63`). The generator emits those lines, refusing a
+plugin-tree copy of any of the files
+(`NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:69-92`), and validates each as the
+final writer of its in-image path
+(`NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:146-201`).
 
 The second named context, `dmac_assistant_baml`, is the canonical BAML tree
 `NessieAI/dmac_assistant/baml_src/` itself (`NAMED_BUILD_CONTEXTS` in
@@ -95,13 +93,10 @@ in `NessieAI/build_tools/gen_op_surfaces/docker_blocks.py` holds it to being the
 of `/app/baml_src/`. `validate_compose_named_contexts` checks every declared context against
 its own tree, and `parse_additional_contexts_block` reads the committed block back for the tests.
 
-Because targets are rendered in sorted order by path
-(`NessieAI/build_tools/gen_op_surfaces/emit.py:235`), `NessieAI/dmac_assistant/...` sorts ahead of
-`NessieAI/docker/...`, so `route_capabilities.json` is rendered first and its own
-byte-identity precondition on the capabilities pair
-(`NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:230-233`) is what a stale baked
-copy trips, before the whole-file comparison at
-`NessieAI/build_tools/gen_op_surfaces/emit.py:288-295` is ever reached.
+Targets are rendered in sorted order by path
+(`NessieAI/build_tools/gen_op_surfaces/emit.py:218`), so `route_capabilities.json`, read from
+the canonical `capabilities.md` (`NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:228`),
+is rendered before any `NessieAI/docker/...` target.
 
 Every marked block is rewritten in place between its markers only, after a check
 that exactly one well-ordered, non-nested marker pair exists
@@ -142,8 +137,8 @@ Tests are in `NessieAI/tests/build_tools/` (`unit/`, `integration/` and the dire
 root); the command is the Django lane in `NessieAI/tests/README.md`. It runs over a
 read-only mount of the checkout, which is also how the project's own no-write oracle
 exercises the generators
-(`NessieAI/tests/build_tools/unit/test_gen_op_surfaces.py:273`, asserting at
-`NessieAI/tests/build_tools/unit/test_gen_op_surfaces.py:311-318`). A host
+(`NessieAI/tests/build_tools/unit/test_gen_op_surfaces.py:321`, asserting at
+`NessieAI/tests/build_tools/unit/test_gen_op_surfaces.py:361-368`). A host
 `uv run pytest` is not an option: `uv sync` fails building `mysqlclient` on a host
 without MySQL client headers.
 
@@ -151,11 +146,12 @@ The `integration` name is not a network lane: its source-contract test monkeypat
 fetcher (`NessieAI/tests/build_tools/integration/test_markdown_source_contract.py:44`), as
 does every other test that touches GitBook (`NessieAI/tests/build_tools/unit/test_fetch.py:36`).
 
-The failures this lane shows are recorded in `ci/pytest-baseline.txt` and have two
-causes: the stale baked capabilities copy (`NessieAI/build_tools/CLAUDE.md`), and three
-tests that shell out to `git show` against a pinned revision
+The failures this lane shows have two causes: three tests that shell out to `git show`
+against a pinned revision
 (`NessieAI/tests/build_tools/unit/test_gen_op_surfaces_claude_md.py:70-71`), which a
-container mount of a worktree cannot reach.
+container mount of a worktree cannot reach, and the two tests that run the generator CLI
+in a subprocess with `NessieAI/dmac_assistant/src` first on its path, which hides the
+image's generated BAML client in a checkout that never ran `baml-cli generate`.
 
 CI runs this directory in the no-stack lanes step of `.github/workflows/ci-pytest.yml`;
 failing tests there are scored by the diff against `ci/pytest-baseline.txt`, not by
@@ -171,7 +167,7 @@ tools read by path:
   `NessieAI/build_tools/gen_op_surfaces/commands.py:12-14`,
   `NessieAI/build_tools/gen_op_surfaces/skills.py:13-15`,
   `NessieAI/build_tools/gen_op_surfaces/claude_md.py:18-23`,
-  `NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:19-24` and
+  `NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:21-26` and
   `NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:10-28`.
 - `NessieAI/build_tools/plan005_validate_plugins/validate.py:11-18` is the sixth importer of
   that registry, taking the install oracle and the plugin-identity loader.
@@ -180,10 +176,10 @@ tools read by path:
   (`NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:29-31`): one of the three
   frozen engine-to-harness edges (`NessieAI/CLAUDE.md` "Boundary"). The corpus file itself
   is resolved through `NessieAI/paths.py`
-  (`NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:40`).
+  (`NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:39`).
 - `dmac_assistant.router.capabilities` is imported lazily inside a function, so the
   generator round-trips its own output through the real consumer loader before
-  returning it (`NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:307-324`).
+  returning it (`NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:301-318`).
 - `httpx` is imported at module scope by the fetcher
   (`NessieAI/build_tools/ingest_nextseek_docs/fetch.py:10`) but is declared nowhere in the
   repo-root `pyproject.toml`; the only declaration in the tree is the router package's
@@ -204,7 +200,7 @@ tools read by path:
 **Depended on by:**
 
 - Python imports: tests only. `NessieAI/tests/router/test_route_capabilities.py:17` and
-  `NessieAI/tests/router/test_route_capabilities.py:22` import the constants
+  `NessieAI/tests/router/test_route_capabilities.py:26` import the constants
   and the route-capabilities generator directly; two `NessieAI/tests/cc/` modules import
   the generators too.
 - Documented workflow: step 7 of `.claude/skills/add-cc-op/SKILL.md` runs

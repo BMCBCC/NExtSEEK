@@ -1,19 +1,26 @@
 """The CC agent's baked context must not drift from its source of truth.
 
-Two copies of the NExtSEEK context pack exist:
+Two directories feed the NExtSEEK context pack the agent reads at
+``/app/plugins/nextseek/context/`` in the ``dmac-assistant:poc`` image:
 
 * ``NessieAI/chat_nextseek/src/chat_nextseek/context/``: the source of truth, edited by
   humans and consumed in-process by the ``nextseek_query`` engine.
-* ``NessieAI/docker/cc-runtime/build_context/plugins/nextseek/context/``: a hand-copied
-  duplicate baked into the ``dmac-assistant:poc`` image and mounted into every
-  ephemeral Container-CC agent as its ground truth for endpoints/vocabulary.
+* ``NessieAI/docker/cc-runtime/build_context/plugins/nextseek/context/``: the plugin
+  tree's own context directory, which the image's plugin COPY lays down.
 
-Nothing in the build syncs them, so an edit to one silently leaves the other
-behind. That is not merely cosmetic: commit ``03840f0`` ("stop advertising
+They used to hold two hand-kept copies of the same files, and nothing synced them.
+That was not merely cosmetic: commit ``03840f0`` ("stop advertising
 sample mutation endpoints to the API agent") removed ``POST /samples/``,
 ``PATCH /samples/{uid}/`` and ``DELETE /samples/{uid}/`` from the source copy,
 but the baked copy kept advertising all three to the CC agent for months — a
 live privilege regression (#65a).
+
+Since NessieAI Phase C there is one copy of each shared file: the Dockerfile COPYs
+it from the Compose named context ``chat_nextseek`` to its in-image path, and the
+plugin tree keeps only the files without a source twin plus two graph snapshots
+that have drifted (below). ``image_context.py`` beside this module replays the
+Dockerfile's COPY lines, so every check here reads the file the image really
+bakes, whichever directory that is.
 
 A third axis is guarded further down: ``read_safe_endpoints.json`` has no
 counterpart in the source pack, but it does have one outside both directories —
@@ -31,6 +38,11 @@ from pathlib import Path
 import pytest
 
 from NessieAI import paths
+from NessieAI.tests.cc.image_context import (
+    canonical_context_copies,
+    image_context_files,
+    image_context_source,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SOURCE_DIR = paths.CHAT_NEXTSEEK_DIR / "src" / "chat_nextseek" / "context"
@@ -50,18 +62,20 @@ BAKED_DIR = paths.CC_PLUGIN_DIR / "context"
 #       believes is read-safe.
 #
 # The equality set below cannot reach the enforced copy: _shared_names() is an
-# INTERSECTION of SOURCE_DIR and BAKED_DIR, and neither is NessieAI/ns/.
+# INTERSECTION of SOURCE_DIR and the image's context files, and NessieAI/ns/
+# feeds neither.
 # So this pair gets its own explicit comparison. If the advertised copy and the
 # enforced copy disagree, the agent's belief about what it may call and the gate
 # that constrains it are out of step, and nothing else in the tree notices.
 ENFORCED_ALLOWLIST = paths.READ_SAFE_ENDPOINTS
 BAKED_ALLOWLIST = BAKED_DIR / "read_safe_endpoints.json"
 
-# The baked pack is small and hand-maintained, so it is pinned exactly. Pinning
-# it is what makes the equality check below meaningful in BOTH directions: the
-# "shared" set is an intersection, so without this, deleting a file from the
-# baked dir would shrink the intersection and let the guard pass vacuously.
-# Adding a genuinely new file here is a deliberate, reviewed act.
+# The baked pack is small and hand-maintained, so it is pinned exactly: the
+# files the image's plugin context holds, whichever directory each comes from.
+# Pinning it is what makes the equality check below meaningful in BOTH
+# directions: the "shared" set is an intersection, so without this, dropping a
+# file from the image would shrink the intersection and let the guard pass
+# vacuously. Adding a genuinely new file here is a deliberate, reviewed act.
 EXPECTED_BAKED_FILES = frozenset({
     "MANIFEST.md",
     "capabilities.md",
@@ -75,6 +89,22 @@ EXPECTED_BAKED_FILES = frozenset({
     "projects_db.json",
     "read_safe_endpoints.json",
 })
+
+# The baked files that are the source file itself: the Dockerfile COPYs each from
+# the chat_nextseek named context, so the plugin tree carries no copy to drift.
+EXPECTED_FROM_SOURCE = frozenset({
+    "capabilities.md",
+    "min_api_endpoints.json",
+    "min_api_endpoints_enriched.json",
+    "min_assays_db.json",
+    "min_sampletypes_db.json",
+    "projects_db.json",
+})
+
+# What the plugin tree's context directory itself holds: the baked-only files
+# and the two graph snapshots whose source twins have drifted (see
+# KNOWN_DIVERGENCES and test_shared_context_file_is_identical_to_source).
+EXPECTED_PLUGIN_TREE_FILES = EXPECTED_BAKED_FILES - EXPECTED_FROM_SOURCE
 
 # Baked-only by design — these have no counterpart in the source pack because
 # they exist to steer the *agent*, not the in-process pipeline.
@@ -174,7 +204,7 @@ def _files(directory: Path) -> set[str]:
 
 
 def _shared_names() -> list[str]:
-    return sorted(_files(SOURCE_DIR) & _files(BAKED_DIR))
+    return sorted(_files(SOURCE_DIR) & image_context_files())
 
 
 def _guarded_names() -> list[str]:
@@ -192,11 +222,25 @@ def test_baked_file_set_is_pinned():
     Without this, deleting a baked file would make it non-shared and silently
     exempt it from the equality check below.
     """
-    assert _files(BAKED_DIR) == set(EXPECTED_BAKED_FILES)
+    assert image_context_files() == set(EXPECTED_BAKED_FILES)
+
+
+def test_shared_files_are_baked_from_the_source_copy():
+    """One copy: the image takes each of these from the chat_nextseek named
+    context, and the plugin tree holds only the files that are not the source's.
+
+    A copy put back in the plugin tree would be overwritten in the image by the
+    later named-context COPY, so it could only drift; this fails on it.
+    """
+    assert canonical_context_copies() == set(EXPECTED_FROM_SOURCE)
+    assert _files(BAKED_DIR) == set(EXPECTED_PLUGIN_TREE_FILES), (
+        "the plugin tree's context directory changed; a file the image takes from "
+        f"the source pack must not be copied back into {BAKED_DIR}"
+    )
 
 
 def test_baked_only_files_are_the_expected_ones():
-    baked_only = _files(BAKED_DIR) - _files(SOURCE_DIR)
+    baked_only = image_context_files() - _files(SOURCE_DIR)
     assert baked_only == set(EXPECTED_BAKED_ONLY), (
         "a baked context file lost (or gained) its source-of-truth counterpart; "
         "either restore the counterpart or justify it in EXPECTED_BAKED_ONLY"
@@ -211,31 +255,40 @@ def test_source_only_files_are_the_expected_ones():
     silently — the agent then runs without context the pipeline has. This is the
     source-side mirror of test_baked_only_files_are_the_expected_ones.
     """
-    source_only = _files(SOURCE_DIR) - _files(BAKED_DIR)
+    source_only = _files(SOURCE_DIR) - image_context_files()
     unbaked = sorted(source_only - set(EXPECTED_SOURCE_ONLY))
     vanished = sorted(set(EXPECTED_SOURCE_ONLY) - source_only)
     assert source_only == set(EXPECTED_SOURCE_ONLY), (
         "the source context pack's un-baked file set changed.\n"
         f"  in source, never baked, undeclared: {unbaked or 'none'}\n"
         f"  declared source-only but gone (deleted, or now baked): {vanished or 'none'}\n"
-        "For a new file: either copy it into the baked pack and rebuild the "
-        "cc-agent image, or add it to EXPECTED_SOURCE_ONLY with the reason the "
-        "agent does not need it."
+        "For a new file: either bake it (add it to CANONICAL_CONTEXT_FILES in "
+        "NessieAI/build_tools/gen_op_surfaces/constants.py, regenerate the "
+        "Dockerfile block and rebuild the cc-agent image), or add it to "
+        "EXPECTED_SOURCE_ONLY with the reason the agent does not need it."
     )
 
 
 @pytest.mark.parametrize("name", _guarded_names())
 def test_shared_context_file_is_identical_to_source(name):
     """Direction 1: every baked file with a source counterpart matches it byte
-    for byte. This is the check that would have caught #65a."""
+    for byte. This is the check that would have caught #65a.
+
+    ``image_context_source`` names the file the image's last COPY of that path
+    reads. For the files baked from the named context that is the source file
+    itself, so this holds by construction; for a plugin-tree file it is a real
+    byte comparison.
+    """
     source = (SOURCE_DIR / name).read_bytes()
-    baked = (BAKED_DIR / name).read_bytes()
+    baked_path = image_context_source(name)
+    baked = baked_path.read_bytes()
     assert baked == source, (
         f"{name} has drifted between the source pack and the baked CC copy.\n"
         f"  source: {SOURCE_DIR / name}\n"
-        f"  baked:  {BAKED_DIR / name}\n"
-        "Nothing syncs these automatically — copy source -> baked and rebuild "
-        "the cc-agent image."
+        f"  baked:  {baked_path}\n"
+        "Nothing syncs a plugin-tree copy: delete it, add the file to the "
+        "capabilities-copy block (python -m NessieAI.build_tools.gen_op_surfaces) "
+        "and rebuild the cc-agent image."
     )
 
 
@@ -249,7 +302,7 @@ def test_known_divergences_still_actually_diverge(name):
     """
     assert name in _shared_names(), f"{name} is exempted but no longer shared"
     source = (SOURCE_DIR / name).read_bytes()
-    baked = (BAKED_DIR / name).read_bytes()
+    baked = image_context_source(name).read_bytes()
     assert baked != source, (
         f"{name} is now in sync — delete it from KNOWN_DIVERGENCES (and this "
         "docstring's rationale) so the drift guard covers it again."
@@ -346,13 +399,19 @@ FORBIDDEN_SAMPLE_MUTATIONS = (
 )
 
 
-@pytest.mark.parametrize("directory", [SOURCE_DIR, BAKED_DIR], ids=["source", "baked"])
-def test_enriched_endpoints_advertise_no_sample_mutations(directory):
-    rows = json.loads((directory / "min_api_endpoints_enriched.json").read_text())
+def _catalog(which: str, name: str) -> Path:
+    """``source``: the source pack's file. ``baked``: the file the image bakes."""
+    return SOURCE_DIR / name if which == "source" else image_context_source(name)
+
+
+@pytest.mark.parametrize("which", ["source", "baked"])
+def test_enriched_endpoints_advertise_no_sample_mutations(which):
+    catalog = _catalog(which, "min_api_endpoints_enriched.json")
+    rows = json.loads(catalog.read_text())
     advertised = {(r.get("method", "").upper(), r.get("path", "")) for r in rows}
     leaked = [pair for pair in FORBIDDEN_SAMPLE_MUTATIONS if pair in advertised]
     assert not leaked, (
-        f"{directory.name} copy re-advertises sample mutation endpoints to the "
+        f"{which} copy ({catalog}) re-advertises sample mutation endpoints to the "
         f"CC agent: {leaked} (removed from the source of truth by 03840f0, #65a)"
     )
 
@@ -364,11 +423,12 @@ def test_enriched_endpoints_advertise_no_sample_mutations(directory):
 # does still advertise sample mutations. That is DELIBERATE and was ruled on
 # explicitly: the write path is meant to exist, so these rows stay.
 #
-# What was missing is any statement of WHICH mutations are on offer. The two
-# copies are byte-identical, so the equality guard above catches them drifting
-# apart -- but it says nothing if someone adds a row to BOTH, which is exactly
-# what a sync script or a bulk regeneration would do. A new privileged endpoint
-# could therefore reach the agent with nobody having looked at it.
+# What was missing is any statement of WHICH mutations are on offer. The image
+# bakes the source file itself (one copy), and the equality guard above would
+# catch a second copy drifting apart -- but neither says anything when a row is
+# added to the one file, which is exactly what a bulk regeneration would do. A
+# new privileged endpoint could therefore reach the agent with nobody having
+# looked at it.
 #
 # So the advertised mutating surface is pinned below as data. Any addition OR
 # removal fails these tests and forces a human to classify the change.
@@ -418,8 +478,8 @@ ADVERTISED_MUTATIONS = {
 }
 
 
-def _advertised_mutations(directory: Path) -> set[tuple[str, str]]:
-    rows = json.loads((directory / "min_api_endpoints.json").read_text())
+def _advertised_mutations(catalog: Path) -> set[tuple[str, str]]:
+    rows = json.loads(catalog.read_text())
     return {
         (r.get("method", "").upper(), r.get("path", ""))
         for r in rows
@@ -427,17 +487,18 @@ def _advertised_mutations(directory: Path) -> set[tuple[str, str]]:
     }
 
 
-@pytest.mark.parametrize("directory", [SOURCE_DIR, BAKED_DIR], ids=["source", "baked"])
-def test_advertised_mutating_endpoints_are_pinned(directory):
+@pytest.mark.parametrize("which", ["source", "baked"])
+def test_advertised_mutating_endpoints_are_pinned(which):
     """The set of mutating endpoints offered to the agent is exactly the pinned
     set — no silent additions, no silent removals."""
-    actual = _advertised_mutations(directory)
+    catalog = _catalog(which, "min_api_endpoints.json")
+    actual = _advertised_mutations(catalog)
     expected = set(ADVERTISED_MUTATIONS)
     added = sorted(actual - expected)
     removed = sorted(expected - actual)
     assert actual == expected, (
-        f"the mutating endpoints advertised to the CC agent by {directory.name}/"
-        f"min_api_endpoints.json changed.\n"
+        f"the mutating endpoints advertised to the CC agent by {which} "
+        f"{catalog} changed.\n"
         f"  newly advertised: {added or 'none'}\n"
         f"  no longer advertised: {removed or 'none'}\n"
         "This is the agent's write surface. Classify each change (WRITE / "

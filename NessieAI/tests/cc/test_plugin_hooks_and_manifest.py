@@ -13,6 +13,7 @@ import json
 import os
 
 from NessieAI import paths
+from NessieAI.tests.cc.image_context import image_context_files
 
 _PLUGIN = paths.CC_PLUGIN_DIR
 _HOOKS_JSON = _PLUGIN / "hooks" / "hooks.json"
@@ -52,12 +53,13 @@ def test_manifest_lists_context_files_and_when_to_consult():
               "min_graph_schema.json", "projects_db.json", "min_api_endpoints"):
         assert f in md, f"manifest missing pointer to {f}"
     assert "consult" in md.lower()
-    # Every non-manifest context file must be pointed to by the manifest.
-    ctx_dir = _PLUGIN / "context"
-    for p in ctx_dir.iterdir():
-        if p.name == "MANIFEST.md" or not p.is_file():
+    # Every non-manifest context file the image bakes must be pointed to by the
+    # manifest, including those the Dockerfile takes from the chat_nextseek
+    # named context rather than the plugin tree (NessieAI Phase C).
+    for name in sorted(image_context_files()):
+        if name == "MANIFEST.md":
             continue
-        assert p.name in md, f"context file {p.name} not listed in MANIFEST.md"
+        assert name in md, f"context file {name} not listed in MANIFEST.md"
 
 
 def test_skill_points_to_manifest_and_auto_entity_extract():

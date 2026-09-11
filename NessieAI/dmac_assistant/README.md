@@ -106,15 +106,15 @@ the sync one.
   `NessieAI/dmac_assistant/build_context/route_capabilities.json:170`, each carrying its
   `tools` and `task_families` arrays. It is **generated output**, registered as a
   whole-file surface target at
-  `NessieAI/build_tools/gen_op_surfaces/emit.py:226-228` under the path constant at
-  `NessieAI/build_tools/gen_op_surfaces/constants.py:32`, and the generator round-trips its
+  `NessieAI/build_tools/gen_op_surfaces/emit.py:209-211` under the path constant at
+  `NessieAI/build_tools/gen_op_surfaces/constants.py:50`, and the generator round-trips its
   own bytes back through this package's real loader before returning them
-  (`NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:307-324`). Its standing
+  (`NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:301-318`). Its standing
   ruling is `NessieAI/docs/dev-v5-merge-decisions.md`.
 - `NessieAI/dmac_assistant/build_context/router_model_class_map.json` maps the three
   `ModelClass` members of `NessieAI/dmac_assistant/baml_src/router.baml:39-43` onto
   Bedrock-qualified model ids. It is hand-maintained: it appears in no target
-  tuple in `NessieAI/build_tools/gen_op_surfaces/emit.py:217-235`. Every value is validated
+  tuple in `NessieAI/build_tools/gen_op_surfaces/emit.py:205-218`. Every value is validated
   against a `us.anthropic.` regex at
   `NessieAI/dmac_assistant/src/dmac_assistant/router/models.py:30` before use, and the
   design note at `NessieAI/dmac_assistant/src/dmac_assistant/router/models.py:7-9` makes
@@ -146,8 +146,6 @@ directory lives under `NessieAI/dmac_assistant`, and its `pyproject.toml` has no
 `NessieAI/tests/README.md`; the Django lane needs the generated client, which the app
 image carries.
 
-`NessieAI/tests/router/test_route_capabilities.py` fails while the baked
-`capabilities.md` differs from the canonical one (`NessieAI/chat_nextseek/CLAUDE.md`).
 See `NessieAI/dmac_assistant/CLAUDE.md` for why a host lane stops at the generated client.
 
 ## Depends on / depended on by
@@ -165,7 +163,7 @@ Depended on by (non-test files; the test modules named under "Running and testin
 - **Live session summary.** `NessieAI/cc/cc_summary.py:206` and `NessieAI/cc/cc_summary.py:274` pull the generated types and client.
 - **Live classification.** `NessieAI/router/family_labels.py:102` takes the generated `TypeBuilder` so the family vocabulary can be injected at call time.
 - **Live turn cleanup.** `NessieAI/cc/cc_engine.py:1852` imports the diff helper to decide which scratch files a turn produced.
-- **Build-time generation.** `NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:311` imports this package's loader to validate the bytes it is about to write.
+- **Build-time generation.** `NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:305` imports this package's loader to validate the bytes it is about to write.
 - **Offline grading.** `NessieAI/hibayes/judge_human_compare.py:480-481` imports the generated sync client.
 
 What the other matches are NOT:
@@ -173,6 +171,6 @@ What the other matches are NOT:
 - `NessieAI/tests/nessie_tests/FAMILIES.json:6114-6115` and `NessieAI/tests/nessie_tests/FAMILIES.json:3899` name files here as provenance strings in a corpus record, not as imports.
 - `NessieAI/history/plan005/plan005_baseline.py:323-327` names boundary paths as container bind-mount sources for a mutation-testing subject tree, and `NessieAI/history/plan005/plan005_closeout_control.py:956` hashes `baml_src` into a manifest; neither imports the package, and both are frozen.
 - `NessieAI/history/cc/archive/PLAN-2-multi-user-provisioning.md:969` shows an import of the copier inside a superseded plan document, which is prose, not code.
-- The agent image is a second build of `baml_src/`, not an importer: `docker-compose.yml` hands the tree to its build as the named context `dmac_assistant_baml`, which is copied to `/app/baml_src/` and generated there (`NessieAI/docker/cc-runtime/Dockerfile:113-117`), so the agent never imports anything from this directory.
+- The agent image is a second build of `baml_src/`, not an importer: `docker-compose.yml` hands the tree to its build as the named context `dmac_assistant_baml`, which is copied to `/app/baml_src/` and generated there (`NessieAI/docker/cc-runtime/Dockerfile:121-125`), so the agent never imports anything from this directory.
 
 See `NessieAI/dmac_assistant/CLAUDE.md` for the invariants that hold these edges together.

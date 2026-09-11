@@ -21,7 +21,7 @@ Rules that span units (the box env, the one BAML tree both images build from) ar
 - **`build_context/route_capabilities.json` is generated, not authored.** Every
   surface target is re-rendered into a temp directory and byte-compared against the
   committed file, and a mismatch aborts with "stale bytes"
-  (`NessieAI/build_tools/gen_op_surfaces/emit.py:291-295`), so a hand edit here fails the
+  (`NessieAI/build_tools/gen_op_surfaces/emit.py:274-278`), so a hand edit here fails the
   generated-surface check rather than taking effect. See `NessieAI/dmac_assistant/README.md`
   for which generator owns it and which registry is hand-maintained.
 - **The `<router_unavailable>` sentinel must keep being read as a failure.** This
@@ -123,7 +123,7 @@ Rules that span units (the box env, the one BAML tree both images build from) ar
   a gitignore entry, mutation-testing bind mounts and a hash-manifest prefix, never an
   import. Deleting the block is not free: the same generator file is copied into the
   agent image, whose build pre-creates the router output directory for it
-  (`NessieAI/docker/cc-runtime/Dockerfile:115-117`).
+  (`NessieAI/docker/cc-runtime/Dockerfile:123-125`).
 - **`JudgeRouterAnswer` has no caller anywhere.** Grepping the whole tree for the
   name returns only its own declaration at
   `NessieAI/dmac_assistant/baml_src/judge_router.baml:32` and the two comments above it

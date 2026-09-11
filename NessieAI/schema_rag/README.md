@@ -177,10 +177,10 @@ two that constrain it are kept.
   imports sit inside a guard or a function body. That ViewSet module is itself pulled in
   unguarded by the re-export hub at `nextseek_api/views.py:60`, so an import failure here
   takes the whole URL prefix down rather than these two routes.
-- `NessieAI/tests/cc/test_cc_context_drift_guard.py:505-507` pins this
+- `NessieAI/tests/cc/test_cc_context_drift_guard.py:566-568` pins this
   directory's `service.py` and two of its function names as literal strings, then parses
   the file with `ast` to assert the retrieval entry point still calls the ingestion one
-  (`NessieAI/tests/cc/test_cc_context_drift_guard.py:551-565`).
+  (`NessieAI/tests/cc/test_cc_context_drift_guard.py:612-626`).
 - `nextseek_api/tests/test_models_coverage.py:469-492` (`TestRebuildSchemaRagModels`) is
   the only test of the rebuild helper: it checks that the rebuild runs, that
   `RetrieveResponse` validates afterwards, and that a missing `NessieAI.schema_rag.models`
@@ -192,7 +192,7 @@ two that constrain it are kept.
   reads, the second after deleting a copy of it that the caller cannot write.
 - What a hit here is NOT. `nextseek_api/services/assistant.py:688` defines a `delete_session`
   that is a chat ViewSet action and has no relation to
-  `NessieAI/schema_rag/session.py:172`. The two `min_api_endpoints.json` copies and
+  `NessieAI/schema_rag/session.py:172`. The `min_api_endpoints.json` catalog and
   `NessieAI/tests/nessie_tests/FAMILIES.json` carry this feature's URL paths as data for an agent, not as
   a code edge. `NessieAI/chat_nextseek/src/chat_nextseek/context/nextseek_api.yaml:1996` is a
   captured snapshot of a generated document, so it drifts rather than binding anything.

@@ -84,8 +84,9 @@ python -m NessieAI.build_tools.gen_op_surfaces --check --root <repo>
 ```
 
 Commands, SKILL matrices, container CLAUDE inventories, Dockerfile
-COPY/PATH, Compose additional contexts, baked capabilities, and
-`route_capabilities.json` are generated. Do not hand-edit marked blocks.
+COPY/PATH (including the canonical context-file COPYs), Compose additional
+contexts, and `route_capabilities.json` are generated. Do not hand-edit
+marked blocks.
 
 ## 8. Run Audit A, no-write checks, focused tests, and the Task 12 gate
 

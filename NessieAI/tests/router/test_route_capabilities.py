@@ -15,9 +15,13 @@ import pytest
 
 from NessieAI import paths
 from NessieAI.build_tools.gen_op_surfaces.constants import (
-    BAKED_CAPABILITIES_REL,
     CANONICAL_CAPABILITIES_REL,
+    IMAGE_CAPABILITIES_PATH,
+    PLUGIN_CONTEXT_REL,
     ROUTE_CAPABILITIES_REL,
+)
+from NessieAI.build_tools.gen_op_surfaces.docker_blocks import (
+    validate_canonical_capabilities_final_writer,
 )
 from NessieAI.build_tools.gen_op_surfaces.route_capabilities import (
     build_route_capabilities_payload,
@@ -46,7 +50,9 @@ from NessieAI.cc.op_registry.routes import (
 
 REPO_ROOT = paths.REPO_ROOT
 CANONICAL_MD = REPO_ROOT / CANONICAL_CAPABILITIES_REL
-BAKED_MD = REPO_ROOT / BAKED_CAPABILITIES_REL
+# The plugin tree's own capabilities.md copy is gone (NessieAI Phase C): the image
+# COPYs CANONICAL_MD from the chat_nextseek named context to IMAGE_CAPABILITIES_PATH.
+RETIRED_BAKED_MD = REPO_ROOT / PLUGIN_CONTEXT_REL / "capabilities.md"
 ROUTE_JSON = REPO_ROOT / ROUTE_CAPABILITIES_REL
 EVIDENCE_PATH = paths.CC_DIR / "op_registry" / "route_example_evidence.json"
 CORPUS_PATH = paths.NESSIE_CORPUS
@@ -279,7 +285,13 @@ def _family_index(route: dict[str, Any]) -> dict[str, dict[str, Any]]:
 
 
 def test_baked_capabilities_bytes_equal_canonical() -> None:
-    assert BAKED_MD.read_bytes() == CANONICAL_MD.read_bytes()
+    """The capabilities.md baked into the agent image is the canonical file: the
+    Dockerfile's last writer of its in-image path is the named-context COPY of
+    CANONICAL_MD, and no plugin-tree copy exists to drift from it."""
+    assert CANONICAL_MD.is_file()
+    assert IMAGE_CAPABILITIES_PATH == "/app/plugins/nextseek/context/capabilities.md"
+    validate_canonical_capabilities_final_writer(DOCKERFILE.read_text(encoding="utf-8"))
+    assert not RETIRED_BAKED_MD.exists(), f"plugin-tree capabilities.md copy is back: {RETIRED_BAKED_MD}"
 
 
 def test_registry_loads_through_real_loader_and_is_nonempty() -> None:

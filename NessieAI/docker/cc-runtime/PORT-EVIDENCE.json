@@ -28,14 +28,8 @@
     }
   ],
   "context_file_inventory": [
-    {"path": "build_context/plugins/nextseek/context/capabilities.md", "size_bytes": 11747, "sha256": "fae548efa7c0ac8b768e8f6361728b2249c73d84842aaae3c12bdd7098b970ef"},
-    {"path": "build_context/plugins/nextseek/context/min_api_endpoints.json", "size_bytes": 18665, "sha256": "ae647d7fc5745e56351f479929e56bc804648ca1e8801647cda6d0c750579e32"},
-    {"path": "build_context/plugins/nextseek/context/min_api_endpoints_enriched.json", "size_bytes": 9506, "sha256": "e82ca1962e302ecdca91cb9296f4cdc4f9cbeb6a432844c109a04d00ec3ebf4b"},
-    {"path": "build_context/plugins/nextseek/context/min_assays_db.json", "size_bytes": 178403, "sha256": "55d327dfb0039b94a2fb271d9bf74aa5178b80fc0fbc9bf64ed0b7b477b8f678"},
     {"path": "build_context/plugins/nextseek/context/min_graph_schema.json", "size_bytes": 4165, "sha256": "8884fe59a0edfb46acc0374fbd99b881639a67c3c2e611aaa67af9b3affc40c7"},
-    {"path": "build_context/plugins/nextseek/context/min_sampletypes_db.json", "size_bytes": 58849, "sha256": "38ba18667a4223ea9285d466e7dbb32681c6e4019e3e4ca79ee237e5d10060b4"},
     {"path": "build_context/plugins/nextseek/context/neo4j_schema.json", "size_bytes": 13542, "sha256": "f8b0334e8e886cc0e7f1fe632826fb2eee50f241eafb980bd8458ae813a959ea"},
-    {"path": "build_context/plugins/nextseek/context/projects_db.json", "size_bytes": 490, "sha256": "f99087cc780a22c43596cb903442b7521a6335eaa17c6206b604cb1970081c31"},
     {"path": "build_context/plugins/nextseek/context/read_safe_endpoints.json", "size_bytes": 3860, "sha256": "216144b92545339ade4cc15e1478519c1fa0318101cccdd2125425477ec54ef8"},
     {"path": "docs/nextseek/.content-hash", "size_bytes": 65, "sha256": "63bf80efdd5a692e50f9661b19ef9e35082935f62a3ed3a8687e31bc6cbd5059"},
     {"path": "docs/nextseek/01-overview.md", "size_bytes": 3414, "sha256": "1eafd47790d10dc6b7fe85d617d2c803aa6f0c3e1e9d85362c6d61a7bbfbea68"},
@@ -68,6 +62,27 @@
         "NessieAI/tests/build_tools/unit/test_gen_op_surfaces_dockerfile.py"
       ],
       "context_file_inventory_affected": false
+    },
+    {
+      "date": "2026-09-11",
+      "path": "build_context/plugins/nextseek/context/",
+      "change": "Removed the six plugin context files that had a canonical twin in NessieAI/chat_nextseek/src/chat_nextseek/context/, and their context_file_inventory entries. The generated capabilities-copy block of the Dockerfile now COPYs each canonical file from the Compose named context chat_nextseek, after the plugin COPY, to the same /app/plugins/nextseek/context/ path, so the image holds the same eleven context files. Five of the six were byte-identical to their canonical twin, so the image bytes are unchanged. capabilities.md had drifted (the ported copy lacks a Publication entry), but the image already took the canonical file through the named-context COPY, so its image bytes are unchanged too. The plugin tree keeps MANIFEST.md, ops.json, read_safe_endpoints.json and the two graph snapshots min_graph_schema.json and neo4j_schema.json, which differ from their canonical twins and stay in context_file_inventory.",
+      "why": "NessieAI consolidation Phase C: one copy of each plugin context file, so nobody keeps two copies identical by hand.",
+      "removed_inventory_entries": [
+        {"path": "build_context/plugins/nextseek/context/capabilities.md", "size_bytes": 11747, "sha256": "fae548efa7c0ac8b768e8f6361728b2249c73d84842aaae3c12bdd7098b970ef", "now_from": "NessieAI/chat_nextseek/src/chat_nextseek/context/capabilities.md"},
+        {"path": "build_context/plugins/nextseek/context/min_api_endpoints.json", "size_bytes": 18665, "sha256": "ae647d7fc5745e56351f479929e56bc804648ca1e8801647cda6d0c750579e32", "now_from": "NessieAI/chat_nextseek/src/chat_nextseek/context/min_api_endpoints.json"},
+        {"path": "build_context/plugins/nextseek/context/min_api_endpoints_enriched.json", "size_bytes": 9506, "sha256": "e82ca1962e302ecdca91cb9296f4cdc4f9cbeb6a432844c109a04d00ec3ebf4b", "now_from": "NessieAI/chat_nextseek/src/chat_nextseek/context/min_api_endpoints_enriched.json"},
+        {"path": "build_context/plugins/nextseek/context/min_assays_db.json", "size_bytes": 178403, "sha256": "55d327dfb0039b94a2fb271d9bf74aa5178b80fc0fbc9bf64ed0b7b477b8f678", "now_from": "NessieAI/chat_nextseek/src/chat_nextseek/context/min_assays_db.json"},
+        {"path": "build_context/plugins/nextseek/context/min_sampletypes_db.json", "size_bytes": 58849, "sha256": "38ba18667a4223ea9285d466e7dbb32681c6e4019e3e4ca79ee237e5d10060b4", "now_from": "NessieAI/chat_nextseek/src/chat_nextseek/context/min_sampletypes_db.json"},
+        {"path": "build_context/plugins/nextseek/context/projects_db.json", "size_bytes": 490, "sha256": "f99087cc780a22c43596cb903442b7521a6335eaa17c6206b604cb1970081c31", "now_from": "NessieAI/chat_nextseek/src/chat_nextseek/context/projects_db.json"}
+      ],
+      "guards": [
+        "NessieAI/tests/cc/test_cc_context_drift_guard.py",
+        "NessieAI/tests/cc/test_step7_cc_runtime_port.py::test_cc_runtime_named_context_catalog_copies_exist_in_chat_nextseek",
+        "NessieAI/tests/build_tools/unit/test_gen_op_surfaces.py::test_capabilities_copy_matches_canonical_bytes",
+        "NessieAI/tests/build_tools/unit/test_gen_op_surfaces_dockerfile.py"
+      ],
+      "context_file_inventory_affected": true
     }
   ]
 }

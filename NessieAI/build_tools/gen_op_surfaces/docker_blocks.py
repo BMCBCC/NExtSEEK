@@ -8,12 +8,14 @@ from NessieAI.build_tools.gen_op_surfaces.blocks import validate_markers
 from NessieAI.build_tools.gen_op_surfaces.constants import (
     ADDITIONAL_CONTEXTS_BEGIN,
     ADDITIONAL_CONTEXTS_END,
-    CANONICAL_CAPABILITIES_IN_CONTEXT,
+    CANONICAL_CONTEXT_DIR_IN_CONTEXT,
+    CANONICAL_CONTEXT_FILES,
     IMAGE_BAML_SRC_PATH,
-    IMAGE_CAPABILITIES_PATH,
+    IMAGE_CONTEXT_DIR,
     NAMED_BAML_CONTEXT,
     NAMED_BUILD_CONTEXTS,
     NAMED_CAPABILITIES_CONTEXT,
+    PLUGIN_CONTEXT_REL,
     PLUGINS_ROOT_REL,
 )
 from NessieAI.cc.op_registry.install_oracle import (
@@ -64,12 +66,29 @@ def emit_plugin_path_block(repo_root: Path) -> str:
     return f'ENV PATH="{joined}:${{PATH}}"\n'
 
 
-def emit_capabilities_copy_block(_repo_root: Path) -> str:
-    """Copy canonical capabilities.md from the named chat_nextseek context."""
-    return (
+def emit_capabilities_copy_block(repo_root: Path) -> str:
+    """Copy every canonical context file from the named chat_nextseek context.
+
+    One COPY line per CANONICAL_CONTEXT_FILES entry, capabilities.md first, each
+    to the same in-image path under the plugin context directory. Refuses a
+    plugin-tree copy of any of them: the image would never read it (these lines
+    come after the plugin COPY), so it could only drift.
+    """
+    plugin_context = repo_root / PLUGIN_CONTEXT_REL
+    copies = sorted(
+        name for name in CANONICAL_CONTEXT_FILES if (plugin_context / name).exists()
+    )
+    if copies:
+        raise SystemExit(
+            "gen_op_surfaces failed: the plugin tree carries a copy of canonical "
+            f"context file(s) {copies} in {PLUGIN_CONTEXT_REL}; the image takes them "
+            f"from the {NAMED_CAPABILITIES_CONTEXT} named context, so delete the copies"
+        )
+    return "".join(
         f"COPY --from={NAMED_CAPABILITIES_CONTEXT} "
-        f"{CANONICAL_CAPABILITIES_IN_CONTEXT} "
-        f"{IMAGE_CAPABILITIES_PATH}\n"
+        f"{CANONICAL_CONTEXT_DIR_IN_CONTEXT}/{name} "
+        f"{IMAGE_CONTEXT_DIR}/{name}\n"
+        for name in CANONICAL_CONTEXT_FILES
     )
 
 
@@ -124,24 +143,26 @@ def _from_context(flags: str) -> str | None:
     return None
 
 
-def _writes_capabilities(dest: str) -> bool:
-    if dest.rstrip("/") == IMAGE_CAPABILITIES_PATH.rstrip("/"):
+def _writes_image_path(dest: str, image_path: str) -> bool:
+    if dest.rstrip("/") == image_path.rstrip("/"):
         return True
-    if dest.endswith("/") and IMAGE_CAPABILITIES_PATH.startswith(dest):
+    if dest.endswith("/") and image_path.startswith(dest):
         return True
     return dest.rstrip("/") == "/app/plugins/nextseek"
 
 
-def _is_canonical_writer(from_name: str | None, src: str, dest: str) -> bool:
+def _is_canonical_writer(from_name: str | None, src: str, dest: str, name: str) -> bool:
     return (
         from_name == NAMED_CAPABILITIES_CONTEXT
-        and src == CANONICAL_CAPABILITIES_IN_CONTEXT
-        and dest == IMAGE_CAPABILITIES_PATH
+        and src == f"{CANONICAL_CONTEXT_DIR_IN_CONTEXT}/{name}"
+        and dest == f"{IMAGE_CONTEXT_DIR}/{name}"
     )
 
 
-def validate_canonical_capabilities_final_writer(dockerfile_text: str) -> None:
-    """Require the named-context COPY to be the last writer of in-image capabilities."""
+def _validate_canonical_final_writer(dockerfile_text: str, name: str) -> None:
+    """Require the named-context COPY to be the last writer of in-image context ``name``."""
+    image_path = f"{IMAGE_CONTEXT_DIR}/{name}"
+    label = "capabilities" if name == "capabilities.md" else name
     writers: list[tuple[str | None, str, str, bool]] = []
     for line in dockerfile_text.splitlines():
         stripped = line.strip()
@@ -153,20 +174,31 @@ def validate_canonical_capabilities_final_writer(dockerfile_text: str) -> None:
         src = match.group("src")
         dest = match.group("dest")
         from_name = _from_context(match.group("flags"))
-        if _writes_capabilities(dest):
+        if _writes_image_path(dest, image_path):
             writers.append(
-                (from_name, src, dest, _is_canonical_writer(from_name, src, dest))
+                (from_name, src, dest, _is_canonical_writer(from_name, src, dest, name))
             )
     if not any(canonical for *_, canonical in writers):
         raise CanonicalCapabilitiesError(
-            "missing named context COPY of canonical capabilities.md from chat_nextseek"
+            f"missing named context COPY of canonical {name} from chat_nextseek"
         )
     last_from, last_src, last_dest, last_canonical = writers[-1]
     if not last_canonical:
         raise CanonicalCapabilitiesError(
-            "later overwrite of in-image capabilities path after canonical COPY: "
+            f"later overwrite of in-image {label} path after canonical COPY: "
             f"{last_from} {last_src} {last_dest}"
         )
+
+
+def validate_canonical_capabilities_final_writer(dockerfile_text: str) -> None:
+    """Require the named-context COPY to be the last writer of in-image capabilities."""
+    _validate_canonical_final_writer(dockerfile_text, "capabilities.md")
+
+
+def validate_canonical_context_final_writers(dockerfile_text: str) -> None:
+    """Require a named-context COPY to be the last writer of every canonical context file."""
+    for name in CANONICAL_CONTEXT_FILES:
+        _validate_canonical_final_writer(dockerfile_text, name)
 
 
 def validate_compose_named_context(

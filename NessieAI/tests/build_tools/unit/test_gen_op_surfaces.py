@@ -13,31 +13,50 @@ import pytest
 from NessieAI import paths
 from NessieAI.build_tools.gen_op_surfaces.blocks import MarkerError, render_marked_file
 from NessieAI.build_tools.gen_op_surfaces.constants import (
-    BAKED_CAPABILITIES_REL,
     CANONICAL_CAPABILITIES_REL,
+    CANONICAL_CONTEXT_DIR_IN_CONTEXT,
+    CANONICAL_CONTEXT_FILES,
     EXIT_CHANGES_WRITTEN,
     EXIT_ERROR,
     EXIT_NO_CHANGE,
+    IMAGE_CONTEXT_DIR,
+    NAMED_CAPABILITIES_CONTEXT,
+    NAMED_CAPABILITIES_CONTEXT_PATH,
+    PLUGIN_CONTEXT_REL,
     ROUTE_CAPABILITIES_REL,
 )
-
-
-def _capabilities_only_targets() -> tuple[SurfaceTarget, ...]:
-    return (
-        SurfaceTarget(
-            rel_path=BAKED_CAPABILITIES_REL,
-            kind="whole_file",
-            emit=capabilities_bytes,
-        ),
-    )
+from NessieAI.build_tools.gen_op_surfaces.docker_blocks import (
+    emit_capabilities_copy_block,
+    validate_canonical_context_final_writers,
+)
 from NessieAI.build_tools.gen_op_surfaces.emit import (
     SurfaceTarget,
-    capabilities_bytes,
     check_surfaces,
     surface_targets,
     write_surfaces,
 )
 from NessieAI.build_tools.gen_op_surfaces.paths import PathEscapeError, resolve_under_root
+
+# A whole-file target that copies a "canonical" file to a "copy" path: the shape
+# the retired plugin-tree capabilities.md target had, kept as a fixture for the
+# check/write machinery that route_capabilities.json still uses.
+FIXTURE_CANONICAL_REL = "canonical/capabilities.md"
+FIXTURE_COPY_REL = "copy/capabilities.md"
+
+
+def _fixture_copy_bytes(repo_root: Path) -> bytes:
+    return resolve_under_root(repo_root, FIXTURE_CANONICAL_REL).read_bytes()
+
+
+def _capabilities_only_targets() -> tuple[SurfaceTarget, ...]:
+    return (
+        SurfaceTarget(
+            rel_path=FIXTURE_COPY_REL,
+            kind="whole_file",
+            emit=_fixture_copy_bytes,
+        ),
+    )
+
 
 REPO_ROOT = paths.REPO_ROOT
 EXPORT_MODULE = "NessieAI.cc.op_registry.export"
@@ -147,10 +166,39 @@ def test_surface_targets_have_stable_sorted_order() -> None:
 
 
 def test_capabilities_copy_matches_canonical_bytes() -> None:
+    """The image's capabilities.md, and every other canonical context file, is the
+    canonical file itself: the plugin tree holds no copy, and the Dockerfile's last
+    writer of each in-image path is the named-context COPY of the canonical file."""
     canonical = resolve_under_root(REPO_ROOT, CANONICAL_CAPABILITIES_REL)
-    baked = resolve_under_root(REPO_ROOT, BAKED_CAPABILITIES_REL)
-    assert baked.read_bytes() == canonical.read_bytes()
-    assert capabilities_bytes(REPO_ROOT) == canonical.read_bytes()
+    assert canonical.is_file()
+    assert CANONICAL_CAPABILITIES_REL == (
+        f"{NAMED_CAPABILITIES_CONTEXT_PATH}/{CANONICAL_CONTEXT_DIR_IN_CONTEXT}/capabilities.md"
+    )
+    plugin_context = REPO_ROOT / PLUGIN_CONTEXT_REL
+    assert plugin_context.is_dir()
+    for name in CANONICAL_CONTEXT_FILES:
+        source = REPO_ROOT / NAMED_CAPABILITIES_CONTEXT_PATH / CANONICAL_CONTEXT_DIR_IN_CONTEXT / name
+        assert source.is_file(), f"canonical context file missing: {source}"
+        assert not (plugin_context / name).exists(), f"plugin-tree copy is back: {name}"
+    dockerfile_text = (paths.CC_RUNTIME_DIR / "Dockerfile").read_text(encoding="utf-8")
+    validate_canonical_context_final_writers(dockerfile_text)
+    assert emit_capabilities_copy_block(REPO_ROOT) == "".join(
+        f"COPY --from={NAMED_CAPABILITIES_CONTEXT} {CANONICAL_CONTEXT_DIR_IN_CONTEXT}/{name} "
+        f"{IMAGE_CONTEXT_DIR}/{name}\n"
+        for name in CANONICAL_CONTEXT_FILES
+    )
+
+
+def test_plugin_tree_copy_of_a_canonical_context_file_is_refused(tmp_path: Path) -> None:
+    """A copy put back in the plugin tree would never reach the image, so the
+    capabilities-copy emitter refuses it and --check and --write both stop."""
+    repo = tmp_path / "repo"
+    plugin_context = repo / PLUGIN_CONTEXT_REL
+    plugin_context.mkdir(parents=True)
+    emit_capabilities_copy_block(repo)
+    (plugin_context / "min_assays_db.json").write_bytes(b"[]\n")
+    with pytest.raises(SystemExit, match="min_assays_db.json"):
+        emit_capabilities_copy_block(repo)
 
 
 def test_check_surfaces_passes_on_current_tree() -> None:
@@ -168,8 +216,8 @@ def test_check_surfaces_does_not_rewrite_targets_or_create_repo_pyc() -> None:
 
 def test_stale_capabilities_copy_fails_check(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
-    canonical = repo / CANONICAL_CAPABILITIES_REL
-    baked = repo / BAKED_CAPABILITIES_REL
+    canonical = repo / FIXTURE_CANONICAL_REL
+    baked = repo / FIXTURE_COPY_REL
     canonical.parent.mkdir(parents=True)
     baked.parent.mkdir(parents=True)
     canonical.write_bytes(b"canonical bytes\n")
@@ -181,8 +229,8 @@ def test_stale_capabilities_copy_fails_check(tmp_path: Path) -> None:
 
 def test_write_surfaces_is_idempotent(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
-    canonical = repo / CANONICAL_CAPABILITIES_REL
-    baked = repo / BAKED_CAPABILITIES_REL
+    canonical = repo / FIXTURE_CANONICAL_REL
+    baked = repo / FIXTURE_COPY_REL
     canonical.parent.mkdir(parents=True)
     baked.parent.mkdir(parents=True)
     canonical.write_bytes(b"same\n")
@@ -193,8 +241,8 @@ def test_write_surfaces_is_idempotent(tmp_path: Path) -> None:
 
 def test_write_surfaces_returns_exit_changes_written(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
-    canonical = repo / CANONICAL_CAPABILITIES_REL
-    baked = repo / BAKED_CAPABILITIES_REL
+    canonical = repo / FIXTURE_CANONICAL_REL
+    baked = repo / FIXTURE_COPY_REL
     canonical.parent.mkdir(parents=True)
     baked.parent.mkdir(parents=True)
     canonical.write_bytes(b"canonical\n")
@@ -206,8 +254,8 @@ def test_write_surfaces_returns_exit_changes_written(tmp_path: Path) -> None:
 
 def test_check_mode_does_not_mutate_committed_targets(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
-    canonical = repo / CANONICAL_CAPABILITIES_REL
-    baked = repo / BAKED_CAPABILITIES_REL
+    canonical = repo / FIXTURE_CANONICAL_REL
+    baked = repo / FIXTURE_COPY_REL
     canonical.parent.mkdir(parents=True)
     baked.parent.mkdir(parents=True)
     payload = b"canonical payload\n"
@@ -272,9 +320,11 @@ def test_export_check_cli_exits_zero() -> None:
 
 def test_readonly_repo_mount_no_write_oracle_for_export_and_gen_surfaces() -> None:
     """Load-bearing oracle: real CLIs on read-only targets cannot write the tree."""
+    # The plugin tree's capabilities.md copy is gone (NessieAI Phase C: the image
+    # takes the canonical file); the generated route_capabilities.json takes its slot.
     target_paths = [
         paths.CHAT_NEXTSEEK_DIR / "src" / "chat_nextseek" / "context" / "capabilities.md",
-        paths.CC_PLUGIN_DIR / "context" / "capabilities.md",
+        paths.DMAC_BUILD_CONTEXT / "route_capabilities.json",
         paths.CC_DIR / "op_registry" / "ops.json",
         paths.CC_PLUGIN_DIR / "context" / "ops.json",
     ]
