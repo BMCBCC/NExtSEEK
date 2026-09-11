@@ -63,6 +63,9 @@ LANE_DEADLINE_S = 720
 POLL_INTERVAL_S = 2.0
 CHAT_PATH = "/nextseek_api/cc-assistant/query/async/"
 GRAPH_MODE = "graph_query"       # the mode the NS graph branch records on its bundle
+# The modes the REST branch records on a search bundle; search_results answers only
+# these (download_artifact in nextseek_api/services/assistant.py).
+API_MODES = ("new_search", "refine_last_search")
 ROUTE_ENTRY_AGENT = "router"     # the Debug panel's agent label for a route_decided entry
 NESSIE_PREFIXES = ("assistant/", "cc-assistant/", "nessie/", "evaluator/", "schema_rag/")
 
@@ -159,7 +162,15 @@ def reported_cost(result: dict | None) -> float | None:
 
 
 def bundle_path(mode: str | None) -> str:
-    return "graph" if mode == GRAPH_MODE else "api"
+    """The path a bundle's mode says the turn took: graph for the graph branch,
+    api for a search mode, and any other mode under its own name, so a turn that
+    lands on reporter (say) fails the path check naming reporter instead of
+    passing as api."""
+    if mode == GRAPH_MODE:
+        return "graph"
+    if mode in API_MODES:
+        return "api"
+    return mode or "no mode"
 
 
 def observed_path(route: str | None, bundle_id: int | None) -> str | None:
@@ -369,7 +380,10 @@ def test_the_write_account_is_an_admin_in_a_participating_project(nessie_admin_a
 
 def test_the_smoke_account_is_not_an_admin(api, base_url):
     r = api.get(f"{base_url}/nextseek_api/assistant/me/", timeout=60)
-    assert r.status_code == 200 and r.json().get("is_admin") is False
+    assert r.status_code == 200, (
+        f"assistant/me as the smoke account answered {r.status_code}: {r.text[:200]}")
+    assert r.json().get("is_admin") is False, (
+        f"assistant/me says the smoke account has is_admin={r.json().get('is_admin')!r}")
 
 
 def test_the_chat_page_renders_every_control(nessie_page):
@@ -427,7 +441,8 @@ def test_sessions_test_cases_and_uploads_answer(nessie_admin_api, base_url):
     for path, key in (("assistant/sessions/", "sessions"), ("assistant/test-cases/", "test_cases"),
                       ("nessie/uploads/", "files")):
         r = nessie_admin_api.get(f"{base_url}/nextseek_api/{path}", timeout=60)
-        assert r.status_code == 200 and key in r.json(), f"{path}: {r.status_code} {r.text[:200]}"
+        assert r.status_code == 200, f"{path} answered {r.status_code}: {r.text[:200]}"
+        assert key in r.json(), f"{path} has no {key!r} key: {list(r.json())[:20]}"
 
 
 def test_schema_rag_retrieve_returns_endpoints(api, base_url):
@@ -452,11 +467,15 @@ def test_a_scratch_session_is_created_renamed_and_deleted(nessie_admin_api, base
     sid = r.json()["session_id"]
     try:
         r = nessie_admin_api.patch(f"{root}{sid}/", json={"title": "ci nessie scratch"}, timeout=60)
-        assert r.status_code == 200 and r.json().get("title") == "ci nessie scratch"
+        assert r.status_code == 200, f"rename: {r.status_code} {r.text[:200]}"
+        assert r.json().get("title") == "ci nessie scratch", (
+            f"rename answered title {r.json().get('title')!r}")
     finally:
         r = nessie_admin_api.delete(f"{root}{sid}/", timeout=60)
     assert r.status_code == 204, f"delete: {r.status_code}"
-    assert nessie_admin_api.get(f"{root}{sid}/", timeout=60).status_code == 404
+    gone = nessie_admin_api.get(f"{root}{sid}/", timeout=60)
+    assert gone.status_code == 404, (
+        f"assistant/sessions/{sid}/ answered {gone.status_code} after the delete, expected 404")
 
 
 # --------------------------------------------------------------------------- #
@@ -662,8 +681,11 @@ def _completed(records: list, key: str) -> TurnRecord:
 
 
 turn = pytest.mark.nessie_turn
+# Each per-question check is parametrized over the rows it applies to, so a new
+# row gets every check its kind has (test_nessie_unit.py pins this).
+SYSTEM_QUESTIONS = [q for q in QUESTIONS if q.path == "system"]
 BUNDLE_QUESTIONS = [q for q in QUESTIONS if q.bundle]
-CC_QUESTION = next(q for q in QUESTIONS if q.cc_artifact)
+CC_QUESTIONS = [q for q in QUESTIONS if q.route == "container_cc"]
 #: The one warning a healthy mixed chat raises: session_debug._warnings compares
 #: bundles with chat_log entries, and the system answer and the CC turn write a
 #: chat_log entry but no bundle.
@@ -685,7 +707,8 @@ def test_each_question_completes_on_its_engine_through_the_router(q, chat_run):
 @turn
 def test_every_turn_rendered_its_reply_and_its_route_entry(chat_run, nessie_page):
     bubbles = nessie_page.locator('[data-testid="message-bubble"][data-role="assistant"]')
-    assert bubbles.count() >= len(chat_run)
+    assert bubbles.count() >= len(chat_run), (
+        f"the page shows {bubbles.count()} replies for {len(chat_run)} questions")
     for i, rec in enumerate(chat_run):
         _completed(chat_run, rec.key)
         assert plain_prefix(rec.reply) in normalize(bubbles.nth(i).inner_text()), (
@@ -696,8 +719,12 @@ def test_every_turn_rendered_its_reply_and_its_route_entry(chat_run, nessie_page
 
 
 @turn
-def test_the_system_answer_registers_no_bundle(chat_run):
-    assert _completed(chat_run, "capabilities").bundle_id is None
+@pytest.mark.parametrize("q", SYSTEM_QUESTIONS, ids=lambda q: q.key)
+def test_each_system_answer_registers_no_bundle(q, chat_run):
+    rec = _completed(chat_run, q.key)
+    assert rec.bundle_id is None, (
+        f"{q.key}: the system answer registered bundle {rec.bundle_id}; the system "
+        "agent path ends with bundle_id=None")
 
 
 @turn
@@ -707,7 +734,7 @@ def test_bundle_turns_download_and_took_the_expected_path(q, chat_run, nessie_ad
     assert isinstance(rec.bundle_id, int), f"{q.key}: no bundle registered"
     root = f"{base_url}/nextseek_api/assistant/sessions/{rec.session_id}/bundles/{rec.bundle_id}/"
     r = nessie_admin_api.get(root, timeout=60)
-    assert r.status_code == 200, f"bundle JSON: {r.status_code}"
+    assert r.status_code == 200, f"{q.key}: the bundle JSON answered {r.status_code}"
     bundle = r.json()
     # Recorded on the turn for the CI record's path column: chat_run's teardown
     # writes the summary after every test in this module has run.
@@ -716,7 +743,10 @@ def test_bundle_turns_download_and_took_the_expected_path(q, chat_run, nessie_ad
         f"{q.key}: the bundle was built by the {rec.path} path "
         f"(mode {bundle.get('mode')!r}); expected {q.path}")
     meta = nessie_admin_api.get(f"{root}?part=metadata", timeout=60)
-    assert meta.status_code == 200 and "omitted" in meta.json()
+    assert meta.status_code == 200, (
+        f"{q.key}: the bundle's ?part=metadata answered {meta.status_code}: {meta.text[:200]}")
+    assert "omitted" in meta.json(), (
+        f"{q.key}: the bundle's ?part=metadata has no 'omitted' key: {list(meta.json())[:20]}")
     if q.path == "api":
         assert "api_result_full" in bundle, "the API bundle lacks the full API result"
         # A graph bundle offers no spreadsheet: search_results answers only a
@@ -738,37 +768,45 @@ def test_bundle_turns_download_and_took_the_expected_path(q, chat_run, nessie_ad
             f"{q.key}: artifact key {key!r} is not word characters, so its download "
             "URL cannot resolve")
         got = nessie_admin_api.get(f"{root}artifacts/{key}/", timeout=120)
-        assert got.status_code == 200 and len(got.content) > 0, (
-            f"{q.key}: artifact {key}: {got.status_code}")
+        assert got.status_code == 200, f"{q.key}: artifact {key} answered {got.status_code}"
+        assert len(got.content) > 0, f"{q.key}: artifact {key} downloaded empty"
     assert set(rec.page_downloads) == {"json", "metadata"}, (
         f"{q.key}: the page's JSON and Metadata downloads did not both work")
 
 
 @turn
-def test_the_cc_turn_has_a_model_artifacts_and_a_bounded_cost(chat_run, nessie_admin_api, base_url):
-    rec = _completed(chat_run, CC_QUESTION.key)
-    assert rec.model_id, "cc_turn_meta.model_id is null, so the proxy will answer 403"
-    assert rec.cost_usd is not None and 0 < rec.cost_usd <= CC_TURN_CAP_USD, (
-        f"reported CC cost {rec.cost_usd}")
+@pytest.mark.parametrize("q", CC_QUESTIONS, ids=lambda q: q.key)
+def test_each_cc_turn_has_a_model_artifacts_and_a_bounded_cost(q, chat_run, nessie_admin_api,
+                                                               base_url):
+    rec = _completed(chat_run, q.key)
+    assert rec.model_id, f"{q.key}: cc_turn_meta.model_id is null, so the proxy will answer 403"
+    assert rec.cost_usd is not None, f"{q.key}: the CC turn reported no total_cost_usd"
+    assert 0 < rec.cost_usd <= CC_TURN_CAP_USD, (
+        f"{q.key}: reported CC cost ${rec.cost_usd} is outside (0, {CC_TURN_CAP_USD}]")
+    if not q.cc_artifact:
+        return
     # A turn that wrote one file lists that file; one that wrote several lists only
     # their <turn_id>/artifacts.zip (_publish_artifacts in cc_engine.py). Either key
     # names a real file under the turn's directory.
     files = [a for a in (rec.result or {}).get("artifacts") or []
              if a.get("artifact_type") == "file"]
-    assert files, "the CC turn left no artifact"
-    assert rec.page_artifacts >= 1, "the page rendered no artifact link for the CC turn"
+    assert files, f"{q.key}: the CC turn left no artifact"
+    assert rec.page_artifacts >= 1, f"{q.key}: the page rendered no artifact link for the CC turn"
     key = files[0]["key"]
     turn_id = key.split("/", 1)[0]
     root = f"{base_url}/nextseek_api/cc-assistant/artifacts/{rec.session_id}/download/"
     one = nessie_admin_api.get(root, params={"key": key}, timeout=120)
-    assert one.status_code == 200 and len(one.content) > 0, f"one file: {one.status_code}"
+    assert one.status_code == 200, f"{q.key}: the one-file download of {key} answered {one.status_code}"
+    assert len(one.content) > 0, f"{q.key}: the one-file download of {key} was empty"
     zipped = nessie_admin_api.get(root, params={"key": "all", "turn_id": turn_id}, timeout=120)
-    assert zipped.status_code == 200 and "zip" in zipped.headers.get("Content-Type", ""), (
-        f"the zip: {zipped.status_code} {zipped.headers.get('Content-Type')}")
+    assert zipped.status_code == 200, (
+        f"{q.key}: the zip of turn {turn_id} answered {zipped.status_code}")
+    content_type = zipped.headers.get("Content-Type", "")
+    assert "zip" in content_type, f"{q.key}: the zip of turn {turn_id} came back as {content_type!r}"
     alias = nessie_admin_api.get(
         f"{base_url}/nextseek_api/nessie/sessions/{rec.session_id}/artifacts/",
         params={"key": key}, timeout=120)
-    assert alias.status_code == 200, f"nessie artifacts alias: {alias.status_code}"
+    assert alias.status_code == 200, f"{q.key}: the nessie artifacts alias answered {alias.status_code}"
 
 
 @turn
@@ -777,46 +815,71 @@ def test_the_session_detail_matches_the_page(chat_run, nessie_admin_api, base_ur
     assert {r.session_id for r in chat_run} == {sid}, "the questions did not share one chat"
     r = nessie_admin_api.get(f"{base_url}/nextseek_api/assistant/sessions/{sid}/",
                              params={"include": "turns"}, timeout=60)
-    assert r.status_code == 200
+    assert r.status_code == 200, (
+        f"assistant/sessions/{sid}/?include=turns answered {r.status_code}: {r.text[:200]}")
     turns = r.json()["turns"]
     assert len(turns) == len(QUESTIONS), f"{len(turns)} turns, expected {len(QUESTIONS)}"
     for t, rec in zip(turns, chat_run):
-        assert t["user_query"] == rec.text
+        assert t["user_query"] == rec.text, (
+            f"{rec.key}: the session stores the question {t['user_query']!r}, "
+            f"the page sent {rec.text!r}")
         # The NS writer stores the reply cut at its "**Debug info**" block
         # (chat_memory._strip_debug_block); the CC writer stores it whole.
         stored = t["reply"].strip()
-        assert stored and rec.reply.strip().startswith(stored), (
-            f"{rec.key}: the stored reply is not the reply the API returned")
+        assert stored, f"{rec.key}: the session stores an empty reply"
+        assert rec.reply.strip().startswith(stored), (
+            f"{rec.key}: the stored reply is not the reply the API returned "
+            f"(stored {stored[:80]!r})")
         if rec.bundle_id is not None:
-            assert t["bundle_id"] == rec.bundle_id
+            assert t["bundle_id"] == rec.bundle_id, (
+                f"{rec.key}: the session stores bundle {t['bundle_id']}, "
+                f"the turn registered {rec.bundle_id}")
 
 
 @turn
 def test_the_debug_endpoint_reports_the_session_and_resolves_a_task(chat_run, nessie_admin_api, base_url):
     sid = chat_run[0].session_id
-    r = nessie_admin_api.get(f"{base_url}/nextseek_api/nessie/sessions/{sid}/debug/",
+    debug = f"nessie/sessions/{sid}/debug/"
+    r = nessie_admin_api.get(f"{base_url}/nextseek_api/{debug}",
                              params={"include": "transcripts"}, timeout=60)
-    assert r.status_code == 200
+    assert r.status_code == 200, f"{debug} answered {r.status_code}: {r.text[:200]}"
     d = r.json()
-    assert d["resolved_as"] == "session"
+    assert d["resolved_as"] == "session", f"{debug} resolved as {d['resolved_as']!r}"
     counts = d["session"]["counts"]
-    assert (counts["tasks"], counts["ledger_turns"], counts["chat_log_entries"]) == (
-        len(QUESTIONS),) * 3, counts
-    assert len(d["turns"]) == len(QUESTIONS) and len(d["tasks"]) == len(QUESTIONS)
-    assert [row["route"] for row in d["ledger"]] == [q.route for q in QUESTIONS]
-    assert all(row["route_source"] == "baml" for row in d["ledger"]), d["ledger"]
-    assert d["transcripts"], "no CC transcript recorded"
-    assert d["files"], "no files listed"
+    for name in ("tasks", "ledger_turns", "chat_log_entries"):
+        assert counts[name] == len(QUESTIONS), (
+            f"{debug} counts {counts[name]} {name}, expected {len(QUESTIONS)}: {counts}")
+    assert len(d["turns"]) == len(QUESTIONS), (
+        f"{debug} lists {len(d['turns'])} turns, expected {len(QUESTIONS)}")
+    assert len(d["tasks"]) == len(QUESTIONS), (
+        f"{debug} lists {len(d['tasks'])} tasks, expected {len(QUESTIONS)}")
+    ledger = [row["route"] for row in d["ledger"]]
+    assert ledger == [q.route for q in QUESTIONS], (
+        f"{debug} route ledger reads {ledger}, expected {[q.route for q in QUESTIONS]}")
+    sources = [row["route_source"] for row in d["ledger"]]
+    assert all(source == "baml" for source in sources), (
+        f"{debug} route ledger sources are {sources}, expected every one baml")
+    if BUNDLE_QUESTIONS:
+        # session_debug lists the files the session's bundles recorded.
+        assert d["files"], f"{debug} lists no files, though a bundle turn ran"
     bundled = sum(1 for rec in chat_run if rec.bundle_id is not None)
     expected = {BUNDLE_COUNT_WARNING} if counts["bundles"] == bundled < len(QUESTIONS) else set()
     unexpected = [w for w in d["warnings"] if w.get("code") not in expected]
     assert not unexpected, f"warnings: {unexpected}"
-    t = nessie_admin_api.get(
-        f"{base_url}/nextseek_api/nessie/sessions/{chat_run[-1].task_id}/debug/", timeout=60)
-    assert t.status_code == 200 and t.json()["resolved_as"] == "task"
+    task_debug = f"nessie/sessions/{chat_run[-1].task_id}/debug/"
+    t = nessie_admin_api.get(f"{base_url}/nextseek_api/{task_debug}", timeout=60)
+    assert t.status_code == 200, f"{task_debug} answered {t.status_code}: {t.text[:200]}"
+    assert t.json()["resolved_as"] == "task", (
+        f"{task_debug} resolved as {t.json()['resolved_as']!r}, expected task")
+    if not CC_QUESTIONS:
+        return
+    assert d["transcripts"], f"{debug} lists no CC transcript, though a CC turn ran"
     transcript = d["transcripts"][0]
     got = nessie_admin_api.get(f"{base_url}{transcript['url']}", timeout=60)
-    assert got.status_code == 200 and "ndjson" in got.headers.get("Content-Type", "")
+    assert got.status_code == 200, f"{transcript['url']} answered {got.status_code}"
+    content_type = got.headers.get("Content-Type", "")
+    assert "ndjson" in content_type, (
+        f"{transcript['url']} came back as {content_type!r}, not ndjson")
     alias = nessie_admin_api.get(
         f"{base_url}/nextseek_api/nessie/sessions/{sid}/transcript/{transcript['turn_id']}/",
         params={"cc_session_id": transcript["cc_session_id"]}, timeout=60)
@@ -836,13 +899,16 @@ def test_the_reopened_chat_shows_every_turn(chat_run, nessie_page):
     item.click()
     bubbles = page.locator('[data-testid="message-bubble"][data-role="assistant"]')
     bubbles.nth(len(QUESTIONS) - 1).wait_for(state="visible", timeout=60_000)
-    assert bubbles.count() == len(QUESTIONS)
+    assert bubbles.count() == len(QUESTIONS), (
+        f"the reopened chat shows {bubbles.count()} replies, expected {len(QUESTIONS)}")
     # Each turn's debug detail is rebuilt from the server: NS bundle turns from the
     # bundle's plans, the CC turn from its cc_traces (hydrateFromTurns in
     # chat_frontend/src/hooks/useMessages.ts). The Debug panel itself shows only the
     # newest turn (debugForTurns), and a CC turn legitimately has no entries there.
+    # A CC turn's details come from its cc_traces, not from its artifacts
+    # (hasCcTrace in MessageBubble.tsx), so CC rows are selected by route.
     for i, q in enumerate(QUESTIONS):
-        if q.bundle or q.cc_artifact:
+        if q.bundle or q.route == "container_cc":
             expect(bubbles.nth(i).get_by_role("button", name="Search Details"),
                    f"{q.key}: the reopened turn has no Search Details").to_be_visible(
                 timeout=30_000)

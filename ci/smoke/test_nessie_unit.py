@@ -170,8 +170,42 @@ def test_status_cost_and_path_helpers():
     assert not is_terminal("running") and not is_terminal(None)
     assert reported_cost({"total_cost_usd": 0.21}) == 0.21
     assert reported_cost({"reply": "x"}) is None and reported_cost(None) is None
+
+
+def test_bundle_path_names_an_unexpected_mode_instead_of_calling_it_api():
+    """Only the two search modes are the API path (search_results answers only
+    them, services/assistant.py). Any other mode is reported under its own name,
+    so a flip to reporter or a submission fails the path check saying which."""
     assert bundle_path("graph_query") == "graph"
     assert bundle_path("new_search") == "api"
+    assert bundle_path("refine_last_search") == "api"
+    assert bundle_path("reporter") == "reporter"
+    assert bundle_path("generate_submission") == "generate_submission"
+    assert bundle_path("") == "no mode"
+    assert bundle_path(None) == "no mode"
+
+
+def _parametrized_rows(test_function) -> list:
+    marks = [m for m in getattr(test_function, "pytestmark", []) if m.name == "parametrize"]
+    assert len(marks) == 1, f"{test_function.__name__} is not parametrized once: {marks}"
+    return list(marks[0].args[1])
+
+
+@pytest.mark.parametrize("test_name, kind", [
+    ("test_each_question_completes_on_its_engine_through_the_router", lambda q: True),
+    ("test_each_system_answer_registers_no_bundle", lambda q: q.path == "system"),
+    ("test_bundle_turns_download_and_took_the_expected_path", lambda q: q.bundle),
+    ("test_each_cc_turn_has_a_model_artifacts_and_a_bounded_cost",
+     lambda q: q.route == "container_cc"),
+], ids=lambda v: v if isinstance(v, str) else "")
+def test_every_per_question_check_covers_every_row_of_its_kind(test_name, kind):
+    """"A new question is a new row" (spec 3.1): each per-question check is
+    parametrized over every row it applies to, never tied to one key or to the
+    first match, so a second system or CC row gets every check too."""
+    import ci.smoke.test_nessie as nessie
+    assert hasattr(nessie, test_name), f"{test_name} is not in test_nessie.py"
+    got = [q.key for q in _parametrized_rows(getattr(nessie, test_name))]
+    assert got == [q.key for q in QUESTIONS if kind(q)], f"{test_name} covers {got}"
 
 
 def test_observed_path_of_a_turn_without_a_bundle():
