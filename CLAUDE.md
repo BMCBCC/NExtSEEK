@@ -1,235 +1,146 @@
-# Project Instructions — NExtSEEK (docker monorepo)
+# NExtSEEK: the map
 
-A Django/Mezzanine extension of the FAIRDOM **SEEK** platform for active
-scientific data curation, with a graph-backed sample database (Neo4j) and an
-embedded AI assistant (`chat_nextseek`). This repo is the self-contained
-**Docker bring-up** of the whole stack. Day-to-day usage runs everything in
-containers via `./startup.sh`.
+NExtSEEK extends FAIRDOM SEEK (a Django/Mezzanine app for active scientific data curation) with a
+Neo4j sample graph and the Nessie chat assistant. This repo is the Docker bring-up of the whole stack,
+driven by `./startup.sh`. It is the PUBLIC repo BioMicroCenter/NExtSEEK.
+- All AI code lives in `NessieAI/`; the API surface stays in `nextseek_api/`. Read `NessieAI/README.md` and `NessieAI/CLAUDE.md` before working there.
+- The chat panel sends every turn to `POST /nextseek_api/cc-assistant/query/async/`, where a router picks `nextseek_query`, `container_cc` or `unrelated` (`NessieAI/router/README.md`).
+- Each folder documents itself beside its code: `README.md` for everyone, `CLAUDE.md` for agent rules. This file only maps and links.
 
-> `chat_nextseek/` is a vendored subpackage with its **own** `CLAUDE.md` and
-> `README.md` — read those before working inside it. This file covers the
-> outer repo (Django app, docker stack, startup CLI).
+## Rules for every task
 
-## The stack (`docker-compose.yml`)
+- Public repo: no credentials, emails, personal home paths, or anything from `NessieAI/history/` evidence, in any doc, issue or commit.
+- Never commit secrets (`DEPLOYMENT.md` §8) or local data: `filestore/`, `startup/seed/filestore.tar.gz`, `logs/`, `outputs/`.
+- uv, not pip: `uv add`, `uv run`. Never hand-edit dependency pins.
+- Conventional commits with module scopes: `feat(startup): ...`, `fix(pipeline): ...`, `refactor(schemas): ...`.
+- Stage files by name, never `git add -A`: the shared tree holds other sessions' work. `.gitattributes` keeps bytes as-is, so edit CRLF files in binary mode.
+- Deferred work becomes a GitHub issue, never a silent TODO: draft per `docs/ISSUE-CONVENTIONS.md`, validate with `scripts/validate_issue.py`, file only after a person approves.
+- Before editing inside a folder, read its `CLAUDE.md`. Deploy hygiene is `DEPLOYMENT.md` §1.
 
-| Service | Image / build | Role |
+## I need to...
+
+| Task | Skill | Read |
 |---|---|---|
-| `nextseek` | built from `Dockerfile` | Django + gunicorn (this repo's app) |
-| `nextseek_nginx` | nginx | serves static + proxies to gunicorn (published port) |
-| `bedrock-proxy` | built from `docker/bedrock-proxy` | model gateway for the Container-CC route; reachable only on `dmac-cc-net`, never published to the host |
-| `cc-agent` | built from `docker/cc-runtime` | **build target only** (tags `dmac-assistant:poc`, `command: ["true"]`). The Django worker spawns one ephemeral sibling container per CC turn via the host docker socket; nothing long-running comes from this stanza |
-| `nextseek-sidecar` | built from `docker/ns-sidecar` | brokers per-request NExtSEEK ops for the CC agent over a WebSocket; writes only under the reserved `_staging/` subpath of `dmac-cc-users` |
-| `db` | mysql:8.0 | two schemas: `dmac` (NExtSEEK) + `seek_production` (SEEK) |
-| `neo4j` | neo4j | sample/assay relationship graph |
-| `seek` / `seek_workers` | fairdom/seek:1.15.1 | upstream SEEK Rails app + delayed-job workers |
-| `solr` | fairdom/seek-solr:8.11 | SEEK search index |
+| Bring up a stack | | `README.md`, then `startup/README.md` |
+| Find out why the stack misbehaves | | `./startup.sh doctor`; `startup/README.md` "When bring-up misbehaves"; `docker logs nextseek`; `logs/django.log`; `outputs/<timestamp>_<user>/console.txt` per chat turn |
+| Deploy, roll back or verify | `deploy` | `DEPLOYMENT.md` §3, §5, §6; `NessieAI/cc/DEPLOY.md` for Container-CC |
+| Know which rebuild a change needs | `deploy` | `DEPLOYMENT.md` §3.2 |
+| Change config or a secret | | `DEPLOYMENT.md` §8; render source `startup/templates/nextseek.env.template`; `.env.example` |
+| Harden an instance before exposing it | | `NExtSTEPS.md` (rotating the demo passwords is the minimum) |
+| Add or change an endpoint | `nextseek-viewset` | `nextseek_api/CLAUDE.md`, `docs/endpoint-authorization-register.md`, `ci/README.md` |
+| Add a Django migration | | `nextseek_api/CLAUDE.md` (the chain forks; check heads first) |
+| Change a page, template or static file | | `themes/README.md`, `seek/README.md`, `docs/UI.md` |
+| Change settings, URLs or the SEEK login | | `dmac/README.md`, `dmac/CLAUDE.md` |
+| Work on ingest, attributes or assay registration | | `nextseek_api/README.md` (children table) |
+| Work on sample downloads | | `docs/sample-download-workflow.md`, `nextseek_api/services/README.md` |
+| Query Neo4j or rotate its password | | `docs/neo4j-programmatic-access.md` |
+| Add a Container-CC operation | `add-cc-op` | `.claude/skills/add-cc-op/SKILL.md` (`/add-cc-op`) |
+| Make any other AI change | | `NessieAI/README.md` "To change X, edit Y" |
+| Review or grade a Nessie run | `nessie-run-review`, `nessie-bayes-report` | Skills table below |
+| Run Django, startup or AI tests | | Build and test, below |
+| Know what CI blocks | | `ci/README.md` "What can fail a job, and what is only a report" |
+| File an issue | `nextseek-issues` | `docs/ISSUE-CONVENTIONS.md` |
+| Find a doc, or history | | `docs/INDEX.md`, `docs/archive/INDEX.md`, `NessieAI/history/INDEX.md` |
+| Add, move or retire a doc | | Editing these docs, below |
 
-External named volumes: `seek-filestore`, `seek-mysql-db`, `seek-solr-data`,
-`seek-cache`, `nextseek-static-files`, `neo4j-data`, `dmac-cc-users` (created by
-startup). `nextseek-luria-ssh` is compose-managed, not external.
+## Skills
 
-## The assistant (two engines behind one endpoint)
+<!-- BEGIN DOCS-MAP:skills -->
+| Skill | Use when | Path | Loads |
+|---|---|---|---|
+| `add-cc-op` | adding or wiring a `nextseek-*` op or CC tool; `ops.py` is the source of truth, never `plugin.json` or `discover_ops` | `.claude/skills/add-cc-op/SKILL.md` | auto (`/add-cc-op`) |
+| `deploy` | install, redeploy, rollback or post-deploy verification on any box | `.claude/skills/deploy/SKILL.md` | auto |
+| `nextseek-issues` | a deferred bug, plan residuals, or any request to file an issue | `.claude/skills/nextseek-issues/SKILL.md` | auto |
+| `nextseek-viewset` | adding or changing a `nextseek_api` ViewSet; finish with `scripts/validate_viewset_conventions.py` | `.claude/skills/nextseek-viewset/SKILL.md` | auto |
+| `nessie-run-review` | triaging a finished nessie_tests run into an HTML review | `NessieAI/tests/nessie_tests/output-skill/SKILL.md` | by path |
+| `nessie-bayes-report` | grading a paired `--bayesian` run and merging it into HiBayes | `NessieAI/tests/nessie_tests/output-skill-bayesian/SKILL.md` | by path |
+<!-- END DOCS-MAP:skills -->
 
-`POST /nextseek_api/cc-assistant/query/async/` is the router-dispatched chat
-entry point. Per turn a router picks one of two engines: `nextseek_query`, the
-deterministic `chat_nextseek` pipeline run in-process by Django, or
-`container_cc`, a sandboxed Claude Code agent run as an ephemeral sibling
-container. A third outcome, `unrelated`, returns a fixed out-of-scope reply
-without running either engine. Both engines write the same `QueryTask` rows and
-stream over the one existing websocket consumer
-(`ws/assistant/progress/{task_id}/`), so `chat_frontend` needs no per-route code.
+Personal and external tools (session handoff, the parallel fix lane, the dmac-curation plugin) live outside this repo. The handoff skill writes only into ignored paths of the checkout (a local session-index `CLAUDE.md` and `reports/`, both under `.claude/`); the fix-lane skills work in their own worktrees and branches.
 
-- **Router** (`nextseek_api/cc_assistant/router.py`) wraps `dmac_assistant`'s
-  BAML `RouteQuery`. Every dmac import is lazy and guarded, and on a BAML
-  failure (or dmac's own `<router_unavailable>` sentinel, which would otherwise
-  send *everything* to CC) it falls back to a keyword heuristic. A vendoring or
-  `uv sync` hiccup degrades routing; it never stops Django booting.
-- **Overrides** live in `_decide_route` (`nextseek_api/services/cc_assistant.py`),
-  in precedence order `force_route` > `pipeline_agent` > sticky CC > the router.
-  An admin-only `force_route` (`ns`/`cc`) and the `cc/query/async/` endpoint beat
-  the router; non-admin `force_route` is ignored. An open `pipeline_agent` wizard
-  only keeps a turn the router *already* sent to NExtSEEK. **Sticky CC**: when the
-  previous turn in the chat routed `container_cc` *and* completed, an NS-classified
-  turn is converted to `container_cc` (`source: "sticky"`); `unrelated` is never
-  converted, and a CC turn that errored does not make the chat sticky. The chat
-  then stays on CC until a new chat, an admin `force_route`, or an intervening
-  `unrelated` turn (logged as `unrelated`/completed, so the next turn no longer
-  sees a preceding CC turn), an accepted consequence of the rule rather than a bug.
-- **`dmac_assistant/`** is a vendored subset of the upstream dmac-assistant repo.
-  Only the BAML router (`dmac_assistant.router.*`) and `run_tracker.diff_files`
-  are imported; the FastAPI/websocket bridge is deliberately not vendored. The
-  BAML client is generated at image build time (see `Dockerfile`), not committed.
-- **`nessie_tests/`** is a router-aware e2e harness that drives the real endpoint
-  above. `route` tier is cheap and pre-merge, `full` tier is paid and needs a
-  seeded instance. See `nessie_tests/README.md`.
+## Folders
 
-## Build & Run
+<!-- BEGIN DOCS-MAP:folders -->
+| Folder | What it does | Read first | Area label |
+|---|---|---|---|
+| `.claude/` | committed project skills only; everything else under it is local | Skills, above | by subject |
+| `.github/` | CI workflows (`ci-pytest.yml`, `ci-smoke.yml`) and the structured issue form | `ci/README.md` | `deployment` |
+| `NessieAI/` | all AI code: router, NS and CC engines, HiBayes, AI images, AI tests, AI docs and history | `NessieAI/README.md`, `NessieAI/CLAUDE.md` | `router`, `cc_assistant`, `chat_nextseek`, `schema-rag` |
+| `api_app/` | the original REST app: installed, imported, never mounted | `api_app/README.md` | `nextseek_api` |
+| `ci/` | route registry, blocking gates, baseline differ, post-deploy smoke suite, docs checker | `ci/README.md` | `deployment` |
+| `dmac/` | Django project package: settings modules, root URLconf, ASGI/WSGI, SEEK login views | `dmac/README.md` | `nextseek_api` |
+| `docker/` | nginx config, app-container scripts, env docs; AI images are in `NessieAI/docker/` | `docker/README.md` | `deployment` |
+| `docs/` | cross-cutting docs only; folder docs live beside their code | `docs/INDEX.md` | by subject |
+| `nextseek_api/` | the Django app behind every `/nextseek_api/` URL, and the API half of the assistant | `nextseek_api/README.md` | `nextseek_api` |
+| `scripts/` | validators, the macOS/worktree test runner, one-off programs | `scripts/README.md`, `scripts/CLAUDE.md` | by subject |
+| `seek/` | Django app over SEEK's tables: table layer, search, the NExtSEEK pages | `seek/README.md` | `ui`, `sample-search` |
+| `startup/` | the `./startup.sh` Typer CLI (its own uv project) and the seed data | `startup/README.md` | `installer` |
+| `static/` | source static files (second entry of `STATICFILES_DIRS`, behind the theme) and the committed chat bundle `static/js/chat_assistant/` | `DEPLOYMENT.md` §3.2 (collectstatic); `themes/CLAUDE.md` for which twin wins | `ui` |
+| `templates/` | upstream Mezzanine template tree; inert, nothing resolves here | `themes/README.md` | `ui` |
+| `themes/` | the NextSeek theme: its templates and static win site-wide | `themes/README.md` | `ui` |
+<!-- END DOCS-MAP:folders -->
 
-The supported entry point is the **startup CLI** (`./startup.sh`, a Typer app
-under `startup/` that runs as its own isolated `uv` project):
+Area labels are written without their `area:` prefix (`docs/ISSUE-CONVENTIONS.md` "Area labels").
 
-```
-./startup.sh install          # first-time: prereqs → config → volumes → seeds → build → users → health
-./startup.sh doctor           # read-only diagnostic (run this first when something's broken)
-./startup.sh rebuild          # rebuild+restart one service (default: nextseek), volumes untouched
-./startup.sh reset            # DESTRUCTIVE: drop volumes + re-install
-./startup.sh seed-filestore   # (re)load the SEEK filestore blobs into a running stack
-./startup.sh dump-db          # maintainer-only: regenerate seed dumps
-```
+- Root build files (`docker-compose.yml`, `Dockerfile`, `startup.sh`, `manage.py`, `gunicorn.conf.py`, `pyproject.toml`, `uv.lock`, `.env.example`): `DEPLOYMENT.md` §0. The empty root `__init__.py` stays: removing it can change pytest module naming.
+- Untracked runtime dirs: `logs/`, `outputs/`, and the root `schema_rag/` (DuckDB data). Per-instance state is `startup/.instance.json`.
+- Subfolders are listed in `NessieAI/README.md` and `nextseek_api/README.md`.
 
-See `startup/README.md` for full subcommand docs and known failure modes.
+## Build and test
 
-Seeds live in `startup/seed/`: `dmac.sql.gz`, `seek_production.sql.gz`,
-`neo4j.cypher.gz` (DB dumps, committed). The SEEK content blobs
-(`filestore.tar.gz`, ~215MB) are NOT in git — hosted on S3 and downloaded on
-demand by the startup CLI, then streamed into the `seek` container. See
-`startup/seed/README.md`.
+`./startup.sh` verbs: `install`, `doctor`, `rebuild` (`--component app|cc-agent|bedrock-proxy|nextseek-sidecar|custom-stack`; app is the default), `reset` (DESTRUCTIVE: drops volumes), `ci`, `seed-filestore`, `dump-db`. Details: `startup/README.md`.
 
-## Layout
+| Lane | Where | Read |
+|---|---|---|
+| Django (`nextseek_api`, `seek`, `dmac`, `ci/gate`) | throwaway container over a read-only mount of the checkout | `ci/README.md` "Running and testing" |
+| startup CLI | its own uv project, run from `startup/` | `startup/CLAUDE.md` "Test command" |
+| Every AI lane (four runtimes) | see the lane table | `NessieAI/tests/README.md` |
+| This checkout inside the stack image (macOS, worktrees) | `scripts/run_tests.sh`; copy `dmac/local_settings.py` in first | `scripts/README.md` |
 
-```
-dmac/                  Django project: settings.py, test_settings.py, urls.py, wsgi/asgi
-seek/                  main app (models, views, urls, SEEK integration, search, snapshot)
-nextseek_api/          REST API app; services/ + assistant/ + cc_assistant/ (router, CC engine)
-api_app/               API app
-chat_frontend/         Vite/React UI for the chat panel (npm run build:embedded → collectstatic)
-chat_nextseek/         VENDORED assistant subpackage (own CLAUDE.md + README.md)
-dmac_assistant/        VENDORED BAML router + run_tracker (own README.md)
-nessie_tests/          router-aware e2e harness for the assistant (own README.md)
-startup/               Typer install/bring-up CLI (isolated uv project) + seed/ data
-docker/                db.env / nextseek.env (rendered), nginx.conf, init scripts
-themes/ static/ templates/   Mezzanine theme + collected static + templates
-manage.py              Django entry point (DJANGO_SETTINGS_MODULE=dmac.settings)
-docker-compose.yml Dockerfile gunicorn.conf.py
-```
+A bare root `pytest` loads the real `dmac.settings` and walks the whole tree, so always pass the test settings module and explicit paths. Host `uv sync` fails without MySQL client headers. `host_only` marks source-tree tests that in-container runs exclude (`pyproject.toml`). Docs check: `python3 ci/docs_map.py`.
 
-## Testing
+## Where work stands
 
-`uv`-managed (`uv.lock`, `pyproject.toml`). Tests use **pytest-django**:
+<!-- BEGIN DOCS-MAP:status -->
+Live state comes from GitHub and git, never from spec headers or plan checkboxes.
+- Boards: [needs-ruling](https://github.com/BioMicroCenter/NExtSEEK/issues?q=is%3Aopen+label%3Aneeds-ruling), [priority: high](https://github.com/BioMicroCenter/NExtSEEK/issues?q=is%3Aopen+label%3A%22priority%3A+high%22), [area labels](https://github.com/BioMicroCenter/NExtSEEK/labels), [open PRs](https://github.com/BioMicroCenter/NExtSEEK/pulls).
+- Commands: `git branch -r --no-merged origin/dev` and `gh issue list --label needs-ruling`.
+- NessieAI consolidation: Phase B (thin `nextseek_api/services` into NessieAI callers) and Phase C (BAML mirror dedupe) remain (#TBD).
+- SEEK OAuth consumer, `origin/feat/seek-oauth-consumer-c`; removes password login (#16).
+- CI coverage increments 2 to 5, and the prod cutover (#104).
+- Session reports are local and never committed.
+<!-- END DOCS-MAP:status -->
 
-```
-uv run pytest                 # config in [tool.pytest.ini_options]
-./scripts/run_tests.sh [targets]   # same suite, inside the stack image
-```
+## Gotchas
 
-The whole pytest config is two keys under `[tool.pytest.ini_options]` in
-`pyproject.toml`, so a bare `uv run pytest` is blunter than it looks:
+- Admin gates read `is_superuser`, never `is_staff`: the SEEK login sets `is_staff` on everyone (`dmac/CLAUDE.md`).
+- A new `router.register` goes into `ci/routes.py` in the same change, or the blocking gate fails (`nextseek_api/CLAUDE.md`).
+- Nothing may be registered after the Mezzanine catch-all (`dmac/CLAUDE.md`).
+- A `static/` change needs `collectstatic` after the rebuild (`DEPLOYMENT.md` §3.2). Schema fixups run only on `install`, never on `rebuild` (`startup/CLAUDE.md`).
+- A chat UI change is two commits, source then the rebuilt bundle; only `npm run build:embedded` ships (`NessieAI/chat_frontend/CLAUDE.md`).
+- A rebuild wipes `MEDIA_ROOT`, including batch-upload jobs (`nextseek_api/batch_upload/CLAUDE.md`).
+- A theme template or static file name wins site-wide, and theme CSS is cached 30 days: hard-reload before blaming a deploy (`themes/CLAUDE.md`).
+- Never add a published port on dev or prod; multiplex onto 443 (`docker/CLAUDE.md`).
+- Proxy ViewSets share one SEEK session; do not copy the pattern (`nextseek_api/CLAUDE.md`).
+- `docker/seek-nginx.conf` must exist as a file before `seek` is recreated (`DEPLOYMENT.md` §3.1).
+- Rebuild never re-renders `docker/nextseek.env`, and the `DMAC_*` override lines must be absent from it (`NessieAI/CLAUDE.md`).
+- Importing `dmac.settings` creates directories, so read-only mounts need them made first (`ci/CLAUDE.md`).
+- `seek/views/` is a package; patch the owning module, not `seek.views` (`seek/README.md`).
+- Paid lanes (`RUN_REALSTACK=1`, `--tier full`, `--bayesian`) need the owner's approval per run (`DEPLOYMENT.md` §1, §7).
 
-- `DJANGO_SETTINGS_MODULE = "dmac.settings"`, the **real** settings, not
-  `dmac.test_settings`
-- no `testpaths` key, so collection starts at the repo root and walks the whole tree
-- no `python_files` key either, so only pytest's defaults (`test_*.py`,
-  `*_test.py`) are collected; the legacy Django `tests.py` modules are not
-- `markers = ["host_only: ..."]`, for source-tree/host-lane tests that in-container
-  runs exclude
+## Editing these docs
 
-In practice pass the test settings module and the paths explicitly:
-
-```
-docker exec -e DJANGO_SETTINGS_MODULE=dmac.test_settings nextseek \
-  sh -c 'cd /app && uv run pytest <paths> --no-migrations -q'
-```
-
-`chat_nextseek/` has its own separate test suite. Run it from inside that
-directory per `chat_nextseek/CLAUDE.md`. `nessie_tests/` likewise has its own
-runners rather than being driven by the root pytest invocation: its unit tests
-run from that directory in an isolated env and its `tests_container/` tests run
-inside the `nextseek` container. See `nessie_tests/README.md`.
-
-On macOS the host route is unavailable: the pinned `mysqlclient` does not
-build there. `./scripts/run_tests.sh` covers that case, and the worktree case
-the `docker exec` command above does not — it mounts *this* checkout over
-`/app` in the stack image rather than running the code baked into the image,
-and passes your arguments straight through. It needs the gitignored
-`dmac/local_settings.py` copied into the checkout.
-
-## Development workflow
-
-| What you changed | Command |
+| Fact | Its one home |
 |---|---|
-| Python views / models / settings | `docker compose up -d --build nextseek` (entrypoint runs `migrate`) |
-| `static/` CSS/JS/images (hand-edited) | rebuild **then** `docker compose exec nextseek uv run manage.py collectstatic --noinput` |
-| `chat_frontend/` React source | `npm run build:embedded` in `chat_frontend/`, then `collectstatic` (see the note below) |
-| `chat_nextseek/` snapshot | `startup/scripts/sync_chat_nextseek.sh <source>`, commit, then `./startup.sh rebuild` |
-| Wipe + re-seed everything | `./startup.sh reset` |
+| What a folder is and its rules | that folder's `README.md` + `CLAUDE.md` |
+| Deploy, config, secrets, rebuild table | `DEPLOYMENT.md` |
+| Test lanes | `ci/README.md`, `startup/CLAUDE.md`, `NessieAI/tests/README.md` |
+| The list of cross-cutting docs | `docs/INDEX.md` |
+| AI facts | `NessieAI/` |
 
-**Gotcha:** rebuilding does **not** auto-run `collectstatic`. If you changed
-anything under `static/`, run it after the rebuild or your change isn't served.
-
-**Gotcha (frontend):** the two Vite scripts are not interchangeable.
-`npm run build` uses `vite.config.ts` and emits `chat_frontend/dist`, which is
-gitignored (`chat_frontend/.gitignore`) and served by nothing. Only
-`npm run build:embedded` (`vite.config.embedded.ts`) emits what the site
-actually loads, into `static/js/chat_assistant/`, and those built files are
-**committed**. The `Dockerfile` has no npm/node step at all, so the image ships
-whatever bundle is in git: every UI change is a two-step commit (source, then
-rebuilt bundle).
-
-## Config & secrets (all gitignored)
-
-- `docker/db.env` — MySQL credentials
-- `docker/nextseek.env` — Django secret, Neo4j password, LLM API keys (chat
-  features stay disabled until real keys are filled in)
-- `dmac/local_settings.py` — Django settings overlay (template:
-  `dmac/local_settings.example.py`)
-- `startup/.instance.json` — per-instance state (name, prefix, ports)
-
-`./startup.sh reset` re-renders the first three from templates.
-
-## Conventions
-
-- **Never commit secrets.** The four files above are gitignored — keep it that way.
-- **uv, not pip.** `uv add <pkg>` / `uv run …`; don't hand-edit dependency pins.
-- **Conventional commits** with module scopes: `feat(startup): …`,
-  `fix(pipeline): …`, `refactor(schemas): …`.
-- **Don't commit** the raw `filestore/` working dir or `startup/seed/filestore.tar.gz`
-  (both gitignored — the snapshot is hosted on S3 and downloaded on demand),
-  `logs/`, `outputs/`, or `.env` files.
-- **Deferred work becomes a GitHub issue, not a silent TODO.** When you find a
-  bug you won't fix now, or finish a plan with residuals, draft a structured
-  issue per [docs/ISSUE-CONVENTIONS.md](docs/ISSUE-CONVENTIONS.md), validate it
-  (`scripts/validate_issue.py` — on this box run it via the repo-mounted
-  container lane), and ask the user before filing. Claude Code users: the
-  committed `nextseek-issues` skill automates this workflow.
-- **New `nextseek_api` ViewSets follow the committed skill.** When adding or
-  changing REST ViewSets, read [`.claude/skills/nextseek-viewset/SKILL.md`](.claude/skills/nextseek-viewset/SKILL.md)
-  and run `scripts/validate_viewset_conventions.py` before calling the work done.
-
-## Debugging a failing stack
-
-- `docker logs nextseek 2>&1 | tail -100` — gunicorn/Django crashes
-- `logs/django.log` (host bind-mount, root-owned) — app-level request errors
-- `outputs/<timestamp>_<user>/console.txt` — per-chat-turn agent traces
-
-For deeper SEEK/assistant issues see `startup/README.md` and
-`chat_nextseek/CLAUDE.md`.
-
-## Going to production
-
-`NExtSTEPS.md` (repo root) lists the credentials, env vars, and config to
-change before exposing an install beyond a private localhost demo. Rotating the
-default `demo`/`user` passwords is the minimum.
-
-**Deploying, redeploying, rolling back, or verifying a real instance:**
-`DEPLOYMENT.md` (repo root) is the authoritative deployment-hygiene runbook —
-follow it exactly (rollback tags before rebuilds, mysqldump gate before
-migration deploys, scoped service recreation, the post-deploy verification
-checklist, and the Container-CC isolation invariants). The Container-CC
-subsystem specifics live in `nextseek_api/cc_assistant/DEPLOY.md`.
-
-## Adding a Container-CC operation
-
-Do not invent a parallel op catalog. Follow
-[`.claude/skills/add-cc-op/SKILL.md`](.claude/skills/add-cc-op/SKILL.md)
-(`/add-cc-op`): shim + `_DISPATCH`/`_CMDS` + `OpSpec` + export +
-`gen_op_surfaces`. Registration SoT is `ops.py` / exported `ops.json`,
-not `plugin.json` or `discover_ops`.
-
-## Session reports / handoffs
-
-- 2026-09-02 — CI increment 1 is merged, pushed (origin/dev 72146c87), green on GitHub (gate passed on a real runner) and green on fairdata-dev after a hooked rebuild (217 passed / 6 skipped / 11 xfailed, readiness 5:22). Dev needed four prerequisites, including two loopback CSRF origins; prod needs the same four plus its SEEK config file. Of the 57 'new' GitHub failures only 3 are real. FIRST TASK for the next session: run the attribute-mutation worker, dispatcher and recovery loop inside the app container the way Taisha's batch_upload worker runs, so the compose profile and its image-parity trap disappear. START WITH THE FIRST handoff_note. See `.claude/reports/2026-09-02-ci-live-on-dev-next-fold-attribute-workers-into-the-app-container.json`.
-- 2026-09-01 — Executed the 8-task increment-1 plan via subagent-driven development on feat/ci-cd (24 commits above dev, whole-branch review clean after one fix wave): 153-route registry with a blocking completeness gate, a GuardedSession that structurally cannot write under prod, T0 reachability across 93 routes, and ./startup.sh ci plus a rebuild hook. Full suite 207 passed / 6 skipped / 13 xfailed. Integration (merge vs PR) is the operator's pending choice; one residual must be fixed before the FIRST PROD RUN. START WITH THE FIRST handoff_note. See `.claude/reports/2026-09-01-ci-increment-1-built-reviewed-on-feat-ci-cd.json`.
-- 2026-09-01 — Built and proved a post-deploy smoke suite (39 passed / 2 xfailed / 13s local), which found a real cross-caller SEEK identity defect on its first run. Then designed the expansion from ~20% to declared coverage of all ~157 routes: spec + an 8-task increment-1 plan ready to execute via SDD. Nothing is committed. START WITH THE FIRST handoff_note. See `.claude/reports/2026-09-01-ci-comprehensive-coverage-spec-plan-and-working-suite.json`.
-- 2026-09-01 — Scoped a frontend-only rewrite of /seek/samples/attributes/. The page already runs entirely on the attributes API and that API is verified on production, so this is a UI job with no server-side risk. Spec at docs/superpowers/specs/2026-09-01-sample-attributes-gui-rewrite-design.md. START WITH THE FIRST handoff_note. See `.claude/reports/2026-09-01-rewrite-the-sample-attributes-gui-frontend-only.json`.
-- 2026-09-01 — Approved a CI/CD design (spec at docs/superpowers/specs/2026-09-01-nextseek-ci-cd-design.md) for a new session to implement. Also: three defects that had never let the attributes mutation API complete a write on production are fixed and live, the Sample Attributes GUI now runs on that API, and the batch assay-registration endpoint is merged. dev = 32043fe8, deployed to the dev box. START WITH THE FIRST handoff_note. See `.claude/reports/2026-09-01-ci-cd-design-plus-the-attribute-and-assay-work-now-on-dev.json`.
-- 2026-08-04 — Superuser-only Users admin ViewSet merged to dev and pushed (6d99f85); mints SEEK logins via Rails runner. HTTP E2E deferred until deploy on shared box. See `.claude/reports/2026-08-04-users-admin-viewset-shipped.json`.
+- Cite docs as `FILE §N` or `FILE "Heading"`, and code by symbol. No line numbers in map files. Write no dated counts or run results into a README or CLAUDE file (cite the command that produces them); older ones go when their section is next edited.
+- A new folder gets a `README.md` (plus a `CLAUDE.md` only if it has invariants) and one row in its parent map.
+- Retire a doc with `git mv` into `docs/archive/<yyyy-mm>/` and add its row to `docs/archive/INDEX.md`. A spec names `Tracking: #N`.
+- `NessieAI/history/**` and `docs/archive/**` are frozen.
+- Run `python3 ci/docs_map.py` before pushing; its failures print the row to add.
+- Never add a Session reports section to a tracked file.
