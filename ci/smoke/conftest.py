@@ -99,8 +99,8 @@ def pytest_addoption(parser):
                 help="Skip the Nessie lane (ci/smoke/test_nessie.py). Never use -m "
                      "for this: any -m expression re-admits the write lane.")
     g.addoption("--nessie-no-turns", action="store_true",
-                help="Run only the Nessie lane's stage 1: no chat turn, no model "
-                     "spend. For iterating on the lane itself.")
+                help="Skip the Nessie lane's chat turns, so only its stage 1 runs "
+                     "(no model spend). The rest of the suite is unaffected.")
 
 
 # --------------------------------------------------------------------------- #

@@ -208,7 +208,7 @@ Nothing under `docker/bedrock-proxy/`, `docker/ns-sidecar/`, `docker/nginx.conf`
 instead lives in `nextseek_api/cc_assistant/tests/` — digest drift guards, port-evidence
 guards, compose-topology guards — and in `startup/tests/`. Building the images is a
 separate lane again, `./startup.sh rebuild --component <name>`, documented in
-`DEPLOYMENT.md:263-266`.
+`DEPLOYMENT.md:273-276`.
 
 ## Depends on / depended on by
 

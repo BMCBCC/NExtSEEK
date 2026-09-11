@@ -112,7 +112,7 @@ security regression, a silent deployment failure, or a red suite — never a ref
   `find` for `seek-nginx.conf*` across the whole worktree outside `.git` returns nothing,
   yet `docker-compose.yml:281` bind-mounts it into the SEEK container. If it is absent
   when SEEK is recreated, Docker creates a directory there and SEEK crash-loops;
-  `DEPLOYMENT.md:249-257` carries the command that renders it.
+  `DEPLOYMENT.md:259-267` carries the command that renders it.
 - **Never add a new published port on the dev or prod hosts.** All five published-port
   mappings bind `127.0.0.1` (`docker-compose.yml:58`, `docker-compose.yml:215`,
   `docker-compose.yml:261-262`, `docker-compose.yml:283`), and an awk pass over every
@@ -221,7 +221,7 @@ here; see the coverage-gate landmine above. The second test root under the plugi
   instructions — write-safety, the plugin inventory, and the operation list.
 - See `docker/cc-runtime/docs/nextseek/README.md` for the ingested NExtSEEK
   documentation set baked into the agent image.
-- See `DEPLOYMENT.md:263-266` for the per-component rebuild verbs, and
+- See `DEPLOYMENT.md:273-276` for the per-component rebuild verbs, and
   `DEPLOYMENT.md:607-609` for the two-BAML-client warning.
 - See `nextseek_api/cc_assistant/CLAUDE.md` for the host side of the agent sandbox:
   network segmentation, mount subpaths, and the route decision.

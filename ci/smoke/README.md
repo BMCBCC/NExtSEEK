@@ -30,7 +30,7 @@ Useful flags:
 | `--headed` | Watch the browser. |
 | `-m write` | Run only the write lane. It is deselected otherwise. |
 | `--no-nessie` | Skip the Nessie lane (`test_nessie.py`). The only supported opt-out: never skip it with `-m "not nessie"`, because any `-m` expression switches the write lane back on. |
-| `--nessie-no-turns` | Run only the Nessie lane's stage 1: no chat turn, no model spend. For iterating on the lane itself. |
+| `--nessie-no-turns` | Skip the Nessie lane's chat turns, so only its stage 1 runs (no model spend). The rest of the suite is unaffected; to iterate on the lane, name `test_nessie.py` as well. |
 
 `./startup.sh ci` is the operator entry point. It runs exactly this command
 against the instance's own port, and derives the profile from `ci_profile` in
@@ -153,8 +153,8 @@ When Nessie changes, `test_nessie.py` changes, and nothing else should need to.
 - **A new endpoint** is an entry in `ci/routes.py` plus a check in
   `test_nessie.py`. A GET route with a literal path under one of the five
   prefixes above reaches stage 1's reachability check with no code at all.
-- **`--nessie-no-turns`** runs stage 1 only: no chat turn, no model spend. Use it
-  while you iterate on the lane.
+- **`--nessie-no-turns`** skips only the lane's chat turns: stage 1 runs, nothing is
+  spent, and the rest of the suite is unaffected. Iterate with the command below.
 
 ```bash
 CI_BOX_PROFILE=local uv run --no-project --with pytest --with requests --with playwright \

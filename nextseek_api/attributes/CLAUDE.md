@@ -82,7 +82,7 @@ schema. Breaking one is a defect, not a refactor.
 - **`DEPLOYMENT.md:284` describes that rebuild as unconditional for these runtimes**
   and conditions only the assay-registration worker on an exported profile, so an
   operator following it will believe all three were refreshed when they were not. The
-  cohort description at `DEPLOYMENT.md:268-269` reads the same way.
+  cohort description at `DEPLOYMENT.md:278-279` reads the same way.
 - **The documented sole write surface for job rows is dead code.**
   `nextseek_api/attributes/models_db.py:373-375` states that product code must not call
   `objects.create`, but the live creation path does exactly that
