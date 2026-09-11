@@ -15,7 +15,7 @@ from startup.lib.docker_ops import (
     image_exists,
     DockerOpsError,
 )
-from startup.lib.rebuild_policy import component_policies
+from startup.lib.rebuild_policy import app_runtime_services, component_policies
 from startup.lib.env import read_env
 
 
@@ -152,6 +152,75 @@ def check_cc_services(repo_root: Path, env: dict[str, str]) -> HealthResult:
         )
     return HealthResult(
         name="cc services", ok=True, detail="bedrock-proxy + nextseek-sidecar running"
+    )
+
+
+#: The container that publishes the instance's port. Every user request and every
+#: smoke-suite request arrives through it.
+FRONT_DOOR_SERVICE = "nextseek_nginx"
+
+
+def check_app_runtimes(repo_root: Path, env: dict[str, str]) -> HealthResult:
+    """Whether the app and the nginx in front of it both have a running container.
+
+    Running, not healthy: straight after a rebuild the app is still booting and
+    its healthcheck says so, which is what the smoke suite's readiness floor
+    waits out. A container that is not running at all is a different condition
+    that no amount of waiting fixes -- a stopped nginx on 2026-09-10 cost the
+    suite its whole five-minute floor before a probe said "connection refused".
+    """
+    name = "app + front door"
+    wanted = [*app_runtime_services(), FRONT_DOOR_SERVICE]
+    try:
+        running = compose_ps_running(wanted, repo_root, env)
+    except DockerOpsError as exc:
+        return HealthResult(name=name, ok=False, detail=str(exc))
+    missing = [s for s in wanted if s not in running]
+    if missing:
+        return HealthResult(
+            name=name,
+            ok=False,
+            detail=(f"not running: {', '.join(missing)} -- start it with: "
+                    f"docker compose up -d --no-deps {' '.join(missing)}"),
+        )
+    return HealthResult(name=name, ok=True, detail=f"{' + '.join(wanted)} running")
+
+
+@dataclass(frozen=True)
+class StackHealth:
+    """Step 1 of a CI run: what is up before the suite is asked anything.
+
+    ``blocking`` holds the checks without which every smoke test fails the same
+    way, so the suite is not started. ``advisory`` holds the ones the suite
+    cannot see -- the CC image and services are never requested by it -- which
+    are reported, recorded, and make a rebuild exit non-zero, but do not stop
+    the run, because its result still says something true about the deploy.
+    """
+    blocking: tuple[HealthResult, ...]
+    advisory: tuple[HealthResult, ...]
+
+    @property
+    def results(self) -> tuple[HealthResult, ...]:
+        return self.blocking + self.advisory
+
+    @property
+    def testable(self) -> bool:
+        return all(r.ok for r in self.blocking)
+
+    @property
+    def ok(self) -> bool:
+        return all(r.ok for r in self.results)
+
+
+def stack_health(
+    repo_root: Path, env: dict[str, str], compose_project_name: str
+) -> StackHealth:
+    return StackHealth(
+        blocking=(check_app_runtimes(repo_root, env),),
+        advisory=(
+            check_first_party_images(compose_project_name),
+            check_cc_services(repo_root, env),
+        ),
     )
 
 

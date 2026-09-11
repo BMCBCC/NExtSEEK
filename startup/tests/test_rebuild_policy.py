@@ -90,6 +90,15 @@ def test_no_service_declares_a_compose_profile() -> None:
         assert "profiles" not in service, name
 
 
+def test_the_front_door_comes_back_after_a_crash_or_a_reboot() -> None:
+    """nginx publishes the only port the smoke suite and every user reach, and
+    it was the one long-running service with no restart policy. A manual
+    `docker stop` still keeps it down (Docker honours that under either value),
+    which is why `./startup.sh rebuild` also starts it."""
+    nginx = _compose()["services"]["nextseek_nginx"]
+    assert nginx.get("restart") in ("always", "unless-stopped")
+
+
 def test_the_folded_services_are_gone_from_compose() -> None:
     services = _compose()["services"]
     for name in FOLDED_SERVICES:

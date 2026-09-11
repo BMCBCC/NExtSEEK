@@ -85,6 +85,10 @@ services:
 
   nextseek_nginx:
     image: nginx:latest
+    # The front door: every user and the smoke suite arrive through this port.
+    # A manual `docker stop` still keeps it down, so `./startup.sh rebuild`
+    # also starts it (never recreates it) after restarting the app.
+    restart: unless-stopped
     ports:
       - "127.0.0.1:${NEXTSEEK_PORT:-8000}:80"
     volumes:

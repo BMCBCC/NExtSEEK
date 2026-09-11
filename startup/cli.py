@@ -700,22 +700,33 @@ def rebuild(
                 no_deps=True,
             )
         ui.ok(f"{policy.name} rebuilt and restarted")
+        # Start the front door if it is down, and do nothing else to it. `up`
+        # without --force-recreate is a no-op on a running nginx, which needs no
+        # restart anyway (docker/nginx.conf re-resolves `nextseek` per request);
+        # --no-deps keeps it from touching any other service. A stopped nginx
+        # used to survive every rebuild, and the CI hook then spent its whole
+        # readiness floor on a refused port.
+        compose_up(
+            services=("nextseek_nginx",),
+            project_dir=REPO_ROOT,
+            env=state.compose_env(),
+            no_deps=True,
+        )
+        ui.ok("front door (nextseek_nginx) running")
     elif not policy.restart_services:
         ui.ok(f"{policy.name} image rebuilt; no persistent container to restart")
     else:
         ui.ok(f"{policy.name} image rebuilt; runtime restart deferred by request")
 
-    # Every first-party image, not just this component's: a bare `rebuild`
-    # builds only the app image, so the routine deploy is exactly the one that
-    # can leave cc-agent's image absent for weeks. Nothing else looks -- the
-    # smoke suite never requests the Container-CC routes and cc-agent has no
-    # container to health-check. Reported here, at the top of the output, but
-    # not exited on until the end so a failure never costs the CI run.
-    image_health = validate.check_first_party_images(state.compose_project_name)
-    if image_health.ok:
-        ui.ok(f"{image_health.name}: {image_health.detail}")
-    else:
-        ui.fail(f"{image_health.name}: {image_health.detail}")
+    # Stack health, step 1 of CI. Every first-party image, not just this
+    # component's: a bare `rebuild` builds only the app image, so the routine
+    # deploy is exactly the one that can leave cc-agent's image absent for weeks,
+    # and the smoke suite never requests the Container-CC routes. Reported here,
+    # at the top of the output. A down app or front door stops the suite before
+    # it starts; anything else is exited on at the end, so it never costs the run.
+    health = validate.stack_health(REPO_ROOT, state.compose_env(),
+                                   state.compose_project_name)
+    _report_health(health)
 
     # Off-box rollback baselines (DEPLOYMENT.md §5.2). Non-fatal by contract,
     # and belt-and-braces guarded: the deploy is never hostage to the registry.
@@ -741,6 +752,12 @@ def rebuild(
             # would blame the new. Neither is worth the minutes it costs.
             ui.warn("CI skipped: runtime restart was deferred, so the running "
                     "containers do not carry the new image")
+        elif not health.testable:
+            # Every smoke test enters through nginx to the app; with either down
+            # they all fail the same way, after the whole readiness floor.
+            ui.fail("CI not run: the stack it tests is down (see the ✗ above). The "
+                    "rebuild itself succeeded; start what is down, then run "
+                    "`./startup.sh ci`.")
         else:
             from startup.ci import runner
 
@@ -758,6 +775,7 @@ def rebuild(
                 label=prepared[0].tag if prepared else None,
                 image_ref=image_ref, image_id=image_id,
                 profile=state.ci_profile,
+                health=_health_rows(health),
             )
             if record is not None:
                 ui.info(f"CI record: {record}")
@@ -774,10 +792,20 @@ def rebuild(
                 raise typer.Exit(code=rc)
             ui.ok(f"CI passed: {outcome}")
 
-    if not image_health.ok:
-        # The build itself succeeded; the box is nonetheless short an image that
-        # only a chat turn would otherwise have reported.
+    if not health.ok:
+        # The build itself succeeded; the box is nonetheless short an image, a
+        # service, or the front door, which only a user would otherwise report.
         raise typer.Exit(code=1)
+
+
+def _report_health(health: "validate.StackHealth") -> None:
+    for result in health.results:
+        (ui.ok if result.ok else ui.fail)(f"{result.name}: {result.detail}")
+
+
+def _health_rows(health: "validate.StackHealth") -> list[tuple[str, bool, str]]:
+    """The health step as the plain tuples the CI record takes."""
+    return [(r.name, r.ok, r.detail) for r in health.results]
 
 
 def _tilde(path: Path) -> str:
@@ -894,6 +922,16 @@ def ci(
             raise typer.Exit(code=1)
         confirm_force = True
 
+    # Step 1: stack health. Only a down app or front door stops the run; the
+    # rest is printed and recorded, but `ci` answers what the suite says.
+    health = validate.stack_health(REPO_ROOT, state.compose_env(),
+                                   state.compose_project_name)
+    _report_health(health)
+    if not health.testable:
+        ui.fail("CI not run: the stack it tests is down (see the ✗ above). Start "
+                "what is down, then run this again.")
+        raise typer.Exit(code=1)
+
     cmd = runner.build_command(REPO_ROOT, state, wait_ready=wait_ready,
                                profile=profile, force_profile=force_profile)
     _ci_banner(state, cmd, wait_ready=wait_ready)
@@ -905,7 +943,8 @@ def ci(
     # is keyed on the image actually under test plus the time it was tested.
     image_ref, image_id = runner.running_image()
     record = runner.write_report(REPO_ROOT, image_ref=image_ref, image_id=image_id,
-                                 profile=state.ci_profile, command=cmd)
+                                 profile=state.ci_profile, command=cmd,
+                                 health=_health_rows(health))
     if record is not None:
         ui.info(f"CI record: {record}")
     if rc != 0:

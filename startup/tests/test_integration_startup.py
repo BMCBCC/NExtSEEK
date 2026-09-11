@@ -35,8 +35,19 @@ def _stub_the_rebuild_ci_hook(monkeypatch: pytest.MonkeyPatch) -> None:
     test_cli_commands.py.
     """
     from startup.ci import runner as ci_runner
+    from startup.steps import validate
 
     monkeypatch.setattr(ci_runner, "run_ci", lambda *args, **kwargs: 0)
+    # The tests here fake subprocess.run for the push, and that fake would also
+    # answer the stack-health step's `docker compose ps`. Health is not their
+    # subject; test_validate.py and test_cli_commands.py cover it.
+    monkeypatch.setattr(
+        validate, "stack_health",
+        lambda repo_root, env, compose_project_name: validate.StackHealth(
+            blocking=(validate.HealthResult("app + front door", True, "running"),),
+            advisory=(),
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------

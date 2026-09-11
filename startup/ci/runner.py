@@ -152,12 +152,16 @@ def _outcomes(path: Path) -> list[tuple[str, str, str]]:
 def write_report(repo_root: Path, *, label: str | None = None,
                  image_ref: str | None = None, image_id: str | None = None,
                  profile: str | None = None, command: list[str] | None = None,
+                 health: list[tuple[str, bool, str]] | None = None,
                  now: datetime.datetime | None = None) -> Path | None:
     """Write one markdown record of the run the junit file describes.
 
     `label` names the file. A rebuild passes its rollback tag, which ties the
     record to the deploy that produced it; a standalone `startup ci` has no tag,
     so the running image's ref plus a timestamp is used instead.
+
+    `health` is the stack-health step that ran before the suite, as plain
+    (name, ok, detail) tuples so this module stays free of startup.steps.
 
     Returns the path written, or None when there is no usable junit report --
     a run that never produced one (an unreachable stack, a refused profile) has
@@ -198,6 +202,11 @@ def write_report(repo_root: Path, *, label: str | None = None,
         f"| xfailed | {summary.xfailed} |",
         "",
     ]
+
+    if health:
+        lines += ["## Stack health", ""]
+        lines += [f"- {'✓' if ok else '✗'} **{name}:** {detail}" for name, ok, detail in health]
+        lines.append("")
 
     outcomes = _outcomes(junit_path(repo_root))
     for kind, heading in (("FAILED", "Failures"), ("ERROR", "Errors"),
