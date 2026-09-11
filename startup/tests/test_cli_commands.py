@@ -1078,6 +1078,7 @@ def test_ci_no_nessie_turns_the_lane_off_and_checks_nothing_for_it(
     assert [k["nessie"] for k in seen.run] == [False]
     assert checked == []
     assert seen.report[0]["nessie_summary"] is None
+    assert seen.report[0]["nessie_ran"] is False
 
 
 @pytest.mark.parametrize("profile", ["prod", ""])
@@ -1148,6 +1149,39 @@ def test_ci_hands_the_nessie_summary_to_the_ci_record(
 
     assert result.exit_code == 0, result.output
     assert seen.report[0]["nessie_summary"] is summary
+    assert seen.report[0]["nessie_ran"] is True
+
+
+def test_ci_tells_the_ci_record_the_lane_ran_when_it_wrote_no_summary(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A lane that died before chat_run's teardown writes no summary but may leave a
+    trace. The record must still file that evidence (spec 3.4), so it is told the
+    lane ran even though there is no summary to render."""
+    _saved_state(repo, ci_profile="local")
+    seen = _spy_ci(monkeypatch, rc=1)
+    monkeypatch.setattr(ci_runner, "read_nessie_summary", lambda repo_root: None)
+
+    result = runner.invoke(cli.app, ["ci"])
+
+    assert result.exit_code == 1, result.output
+    assert seen.report[0]["nessie_ran"] is True
+    assert seen.report[0]["nessie_summary"] is None
+
+
+def test_rebuild_tells_the_ci_record_the_lane_ran_when_it_wrote_no_summary(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _saved_state(repo, ci_profile="dev")
+    _mock_rebuild(monkeypatch)
+    seen = _spy_ci(monkeypatch, rc=1)
+    monkeypatch.setattr(ci_runner, "read_nessie_summary", lambda repo_root: None)
+
+    result = runner.invoke(cli.app, ["rebuild"])
+
+    assert result.exit_code == 1, result.output
+    assert seen.report[0]["nessie_ran"] is True
+    assert seen.report[0]["nessie_summary"] is None
 
 
 def test_rebuild_of_the_app_runs_the_nessie_lane_on_a_local_box(
@@ -1184,6 +1218,7 @@ def test_rebuild_of_a_component_skips_the_nessie_lane(
     assert [k["nessie"] for k in seen.run] == [False]
     assert checked == []
     assert seen.report[0]["nessie_summary"] is None
+    assert seen.report[0]["nessie_ran"] is False
 
 
 def test_rebuild_no_nessie_turns_the_lane_off(

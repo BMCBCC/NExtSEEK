@@ -254,12 +254,13 @@ def test_read_nessie_summary_is_none_when_absent_or_unreadable(tmp_path):
 SUMMARY = {
     "questions": [
         {"key": "capabilities", "text": "What can you do?", "expected_route": "nextseek_query",
-         "route": "nextseek_query", "source": "baml", "task_id": "t1", "session_id": "s",
-         "status": "completed", "seconds": 31.5, "cost_usd": None, "error": None},
+         "route": "nextseek_query", "source": "baml", "path": "system", "task_id": "t1",
+         "session_id": "s", "status": "completed", "seconds": 31.5, "cost_usd": None,
+         "error": None},
         {"key": "nhp_graph", "text": "Make me a graph of NHP species",
          "expected_route": "container_cc", "route": "container_cc", "source": "baml",
-         "task_id": "t4", "session_id": "s", "status": "completed", "seconds": 88.0,
-         "cost_usd": 0.24, "error": None},
+         "path": "cc", "task_id": "t4", "session_id": "s", "status": "completed",
+         "seconds": 88.0, "cost_usd": 0.24, "error": None},
     ],
     "posts": 2, "refused_posts": 0, "spent_usd": 0.24, "ceiling_usd": 1.0,
     "kept_session": {"session_id": "s", "debug_url": "http://127.0.0.1:8000/nextseek_api/nessie/sessions/s/debug/"},
@@ -270,18 +271,30 @@ SUMMARY = {
 def test_render_nessie_section():
     text = "\n".join(runner.render_nessie_section(SUMMARY))
     assert text.startswith("## Nessie")
-    assert "| capabilities | nextseek_query | baml | 31.5 | unmeasured | completed |" in text
-    assert "| nhp_graph | container_cc | baml | 88.0 | $0.24 | completed |" in text
+    assert "| capabilities | nextseek_query | baml | system | 31.5 | unmeasured | completed |" in text
+    assert "| nhp_graph | container_cc | baml | cc | 88.0 | $0.24 | completed |" in text
     assert "$0.24 of $1.00" in text
     assert "/nessie/sessions/s/debug/" in text
     assert "\u2014" not in text
 
 
+def test_render_nessie_section_names_each_question_s_path():
+    """Spec 3.4: route, source, path, task_id, duration and cost per question."""
+    text = "\n".join(runner.render_nessie_section(SUMMARY))
+    assert "| question | route | source | path | seconds | cost | status | task |" in text
+    # A summary from before the lane recorded a path still renders, with a dash.
+    old = dict(SUMMARY, questions=[{k: v for k, v in SUMMARY["questions"][0].items()
+                                    if k != "path"}])
+    assert "| capabilities | nextseek_query | baml | - | 31.5 |" in "\n".join(
+        runner.render_nessie_section(old))
+
+
 def test_render_nessie_section_names_each_turn_s_task_id():
     """The spec's record carries the task_id, the handle /debug/ resolves a turn by."""
     text = "\n".join(runner.render_nessie_section(SUMMARY))
-    assert "| capabilities | nextseek_query | baml | 31.5 | unmeasured | completed | `t1` |" in text
-    assert "| nhp_graph | container_cc | baml | 88.0 | $0.24 | completed | `t4` |" in text
+    assert ("| capabilities | nextseek_query | baml | system | 31.5 | unmeasured | completed "
+            "| `t1` |") in text
+    assert "| nhp_graph | container_cc | baml | cc | 88.0 | $0.24 | completed | `t4` |" in text
 
 
 def test_render_nessie_section_carries_a_question_s_error_and_a_turn_never_asked():
@@ -293,7 +306,7 @@ def test_render_nessie_section_carries_a_question_s_error_and_a_turn_never_asked
     ])
     text = "\n".join(runner.render_nessie_section(summary))
     assert "| failed: HTTP 502 |" in text
-    assert "| ndma_mice | - | - | - | unmeasured | not run: not asked:" in text
+    assert "| ndma_mice | - | - | - | - | unmeasured | not run: not asked:" in text
     assert "Kept session" not in text
 
 
@@ -323,6 +336,33 @@ def test_write_report_without_a_nessie_summary_has_no_nessie_section(tmp_path):
     # Not the lane's run, so not its evidence to file.
     assert (evidence / "page.png").is_file()
     assert not (runner.reports_dir(tmp_path) / "run2-nessie").exists()
+
+
+def test_write_report_files_the_evidence_of_a_lane_that_wrote_no_summary(tmp_path):
+    """Spec 3.4. The lane writes its summary in chat_run's teardown, so a lane that
+    died earlier (the chat page never loaded, the write account could not log in)
+    leaves a trace and no summary. That trace is the evidence a failed rebuild most
+    needs, and the next run clears the slot it sits in."""
+    _junit(tmp_path)
+    evidence = runner.nessie_evidence_path(tmp_path)
+    evidence.mkdir(parents=True)
+    (evidence / "trace.zip").write_bytes(b"zip")
+    path = runner.write_report(tmp_path, label="run4", nessie_ran=True, nessie_summary=None)
+    text = path.read_text()
+    moved = runner.reports_dir(tmp_path) / "run4-nessie"
+    assert (moved / "trace.zip").is_file() and not evidence.exists()
+    assert "## Nessie" in text
+    assert "stopped before it wrote its summary" in text
+    assert str(moved) in text
+    assert "\u2014" not in text.split("## Nessie", 1)[1].split("\n## ", 1)[0]
+
+
+def test_write_report_says_a_lane_without_a_summary_left_no_evidence(tmp_path):
+    _junit(tmp_path)
+    text = runner.write_report(tmp_path, label="run5", nessie_ran=True).read_text()
+    assert "stopped before it wrote its summary" in text
+    assert "**Evidence:** none written" in text
+    assert not (runner.reports_dir(tmp_path) / "run5-nessie").exists()
 
 
 def test_write_report_puts_the_nessie_section_after_stack_health(tmp_path):

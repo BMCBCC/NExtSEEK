@@ -161,6 +161,18 @@ def bundle_path(mode: str | None) -> str:
     return "graph" if mode == GRAPH_MODE else "api"
 
 
+def observed_path(route: str | None, bundle_id: int | None) -> str | None:
+    """The path a completed turn took, where the turn alone says: cc for a CC turn,
+    system for an NS turn that registered no bundle (the system agent ends with
+    bundle_id=None). A bundle turn's path is its bundle's mode, which only the
+    bundle says, so it is None here and the bundle test records it."""
+    if route == "container_cc":
+        return "cc"
+    if route == "nextseek_query" and bundle_id is None:
+        return "system"
+    return None
+
+
 def normalize(text: str) -> str:
     """Letters and digits only, lower case, single spaces."""
     return re.sub(r"[^0-9A-Za-z]+", " ", text or "").strip().lower()
@@ -190,6 +202,7 @@ class TurnRecord:
     bundle_id: int | None = None
     route: str | None = None
     source: str | None = None
+    path: str | None = None        # system | api | graph | cc, as observed (CI record)
     model_id: str | None = None
     cost_usd: float | None = None
     seconds: float | None = None
@@ -199,7 +212,7 @@ class TurnRecord:
     page_artifacts: int = 0                              # artifact links the page rendered
 
 
-_SUMMARY_FIELDS = ("key", "text", "expected_route", "route", "source", "task_id",
+_SUMMARY_FIELDS = ("key", "text", "expected_route", "route", "source", "path", "task_id",
                    "session_id", "status", "seconds", "cost_usd", "error")
 
 
@@ -504,6 +517,7 @@ def _ask(page, q: Question, rec: TurnRecord, index: int, *, api, base_url: str,
     budget.add_cost(rec.cost_usd)
     if rec.error or rec.status != "completed":
         return            # no reply to render; the per-question test names the cause
+    rec.path = observed_path(rec.route, rec.bundle_id)
 
     # The page must render the reply before the next question is typed.
     bubble = page.locator('[data-testid="message-bubble"][data-role="assistant"]').nth(index)
@@ -652,8 +666,11 @@ def test_bundle_turns_download_and_took_the_expected_path(q, chat_run, nessie_ad
     r = nessie_admin_api.get(root, timeout=60)
     assert r.status_code == 200, f"bundle JSON: {r.status_code}"
     bundle = r.json()
-    assert bundle_path(bundle.get("mode")) == q.path, (
-        f"{q.key}: the bundle was built by the {bundle_path(bundle.get('mode'))} path "
+    # Recorded on the turn for the CI record's path column: chat_run's teardown
+    # writes the summary after every test in this module has run.
+    rec.path = bundle_path(bundle.get("mode"))
+    assert rec.path == q.path, (
+        f"{q.key}: the bundle was built by the {rec.path} path "
         f"(mode {bundle.get('mode')!r}); expected {q.path}")
     meta = nessie_admin_api.get(f"{root}?part=metadata", timeout=60)
     assert meta.status_code == 200 and "omitted" in meta.json()

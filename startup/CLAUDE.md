@@ -47,7 +47,8 @@ Breaking one is a regression, not a refactor.
   pre-filled ANSWER and never the protected set, which
   `test_the_protected_set_is_identical_on_every_profile` pins. `dmac-assistant:poc`
   depends on this: it is the one first-party image with no container to protect it.
-- **Stack health is step 1 of CI, and only two of its checks may stop the suite**
+- **Stack health is step 1 of CI, and only two of its checks may stop the suite,
+  unless the Nessie lane is on**
   (`validate.stack_health`, run by both `rebuild` and `ci` before the suite). The
   *blocking* check is `check_app_runtimes`: the app and `nextseek_nginx` must each have a
   running container, because every smoke test enters through them and with either down
@@ -59,7 +60,14 @@ Breaking one is a regression, not a refactor.
   advisory failure never stops the run; `rebuild` exits non-zero on it at the end, after
   the CI hook, and `ci` only prints it. Moving an advisory check to blocking throws away
   a suite run whose result was still true. `doctor` runs the same checks, but its exit
-  code is read by nothing while the rebuild hook's is.
+  code is read by nothing while the rebuild hook's is. The Nessie lane is a separate
+  step, not a promotion of these checks: with the lane on (an app rebuild or `ci`, on a
+  box declaring `local` or `dev`), `validate.nessie_prerequisites` runs after stack
+  health and stops the run before the suite starts when the Bedrock proxy token is
+  empty, a first-party image is absent, a CC service is down or the CC runner fails
+  (`_nessie_prerequisites_or_exit` in `startup/cli.py`), because the lane's CC question
+  cannot pass without them. `--no-nessie` skips that step, and a component rebuild
+  never runs it.
 - **`rebuild` starts the front door and never recreates it.** After restarting the app it
   runs `up -d --no-deps nextseek_nginx` without `--force-recreate`, which is a no-op on a
   running nginx and a start on a stopped one. nginx needs no restart for a new app

@@ -787,6 +787,9 @@ def rebuild(
                 image_ref=image_ref, image_id=image_id,
                 profile=state.ci_profile,
                 health=_health_rows(health),
+                # nessie_ran as well as the summary: a lane that died before its
+                # summary still left evidence for the record to file.
+                nessie_ran=nessie_on,
                 nessie_summary=runner.read_nessie_summary(REPO_ROOT) if nessie_on else None,
             )
             if record is not None:
@@ -1014,6 +1017,7 @@ def ci(
     record = runner.write_report(REPO_ROOT, image_ref=image_ref, image_id=image_id,
                                  profile=state.ci_profile, command=cmd,
                                  health=_health_rows(health),
+                                 nessie_ran=nessie_on,
                                  nessie_summary=(runner.read_nessie_summary(REPO_ROOT)
                                                  if nessie_on else None))
     if record is not None:

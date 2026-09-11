@@ -42,8 +42,9 @@ def test_the_nessie_switch_is_not_a_mark_expression():
 
 from ci.smoke.test_nessie import (
     CHAT_PATH, MAX_CHAT_POSTS, QUESTIONS, SPEND_CEILING_USD, ChatBudget, TurnRecord,
-    bundle_path, cc_model_id, classify_request, is_terminal, normalize, plain_prefix,
-    query_error, reported_cost, require_write_creds, route_decision, summary_payload,
+    bundle_path, cc_model_id, classify_request, is_terminal, normalize, observed_path,
+    plain_prefix, query_error, reported_cost, require_write_creds, route_decision,
+    summary_payload,
 )
 
 BASE = "http://127.0.0.1:8000"
@@ -104,6 +105,17 @@ def test_status_cost_and_path_helpers():
     assert bundle_path("new_search") == "api"
 
 
+def test_observed_path_of_a_turn_without_a_bundle():
+    """The CI record's path column. A CC turn took the cc path; an NS turn that
+    registered no bundle took the system path (the system agent ends with
+    bundle_id=None); a bundle turn's path is its bundle's mode, which the bundle
+    test reads, so it is not guessed here."""
+    assert observed_path("container_cc", None) == "cc"
+    assert observed_path("nextseek_query", None) == "system"
+    assert observed_path("nextseek_query", 7) is None
+    assert observed_path(None, None) is None
+
+
 def test_reply_matching_survives_markdown():
     reply = "**NDMA-treated mice**: 12 found\n\n| id | sex |"
     assert plain_prefix(reply) == "ndma treated mice 12 found"
@@ -114,7 +126,7 @@ def test_reply_matching_survives_markdown():
 def test_summary_payload_shape():
     rec = TurnRecord(key="nhp_graph", text="t", expected_route="container_cc",
                      route="container_cc", source="baml", task_id="a", session_id="s",
-                     status="completed", seconds=88.0, cost_usd=0.24)
+                     status="completed", seconds=88.0, cost_usd=0.24, path="cc")
     b = ChatBudget()
     b.admit_post()
     b.add_cost(0.24)
@@ -122,6 +134,8 @@ def test_summary_payload_shape():
     assert out["posts"] == 1 and out["spent_usd"] == 0.24 and out["ceiling_usd"] == 1.0
     assert out["questions"][0]["key"] == "nhp_graph"
     assert out["questions"][0]["expected_route"] == "container_cc"
+    # Spec 3.4: the record names the path each question took.
+    assert out["questions"][0]["path"] == "cc"
     assert out["kept_session"] is None and out["evidence_dir"] == "/tmp/e"
 
 

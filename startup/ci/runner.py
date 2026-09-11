@@ -68,11 +68,12 @@ def read_nessie_summary(repo_root: Path) -> dict | None:
 
 
 def render_nessie_section(summary: dict) -> list[str]:
-    """The CI record's Nessie section: one row per question, then the spend,
-    and on a failure the kept chat and the evidence folder."""
+    """The CI record's Nessie section: one row per question (route, source, the
+    path it took, seconds, cost, status, task id), then the spend, and on a
+    failure the kept chat and the evidence folder."""
     lines = ["## Nessie", "",
-             "| question | route | source | seconds | cost | status | task |",
-             "|---|---|---|---|---|---|---|"]
+             "| question | route | source | path | seconds | cost | status | task |",
+             "|---|---|---|---|---|---|---|---|"]
     for q in summary.get("questions") or []:
         cost = "unmeasured" if q.get("cost_usd") is None else f"${q['cost_usd']:.2f}"
         status = q.get("status") or "not run"
@@ -80,6 +81,7 @@ def render_nessie_section(summary: dict) -> list[str]:
             status = f"{status}: {q['error']}"
         task = f"`{q['task_id']}`" if q.get("task_id") else "-"
         lines.append(f"| {q.get('key')} | {q.get('route') or '-'} | {q.get('source') or '-'} "
+                     f"| {q.get('path') or '-'} "
                      f"| {q.get('seconds') if q.get('seconds') is not None else '-'} "
                      f"| {cost} | {status} | {task} |")
     lines += ["",
@@ -90,6 +92,24 @@ def render_nessie_section(summary: dict) -> list[str]:
         lines.append(f"- **Kept session:** `{kept['session_id']}`; debug: {kept['debug_url']}")
     if summary.get("evidence_dir"):
         lines.append(f"- **Evidence:** `{summary['evidence_dir']}`")
+    return lines + [""]
+
+
+def render_nessie_without_summary(evidence_dir: str | None) -> list[str]:
+    """The Nessie section of a run whose lane was on but wrote no summary.
+
+    The lane writes its summary in chat_run's teardown. A lane that stopped before
+    then (the chat page never loaded, the write account could not log in, the
+    lane's own cleanup raised) writes none, though its browser context may still
+    have left a trace. The record says so, and where that trace went, rather than
+    dropping the section.
+    """
+    lines = ["## Nessie", "",
+             "- **No summary:** the lane was on but stopped before it wrote its summary, "
+             "so no question is listed. A fixture failed before the first question or "
+             "during the lane's cleanup; the Failures and Errors sections below name it."]
+    lines.append(f"- **Evidence:** `{evidence_dir}`" if evidence_dir
+                 else "- **Evidence:** none written")
     return lines + [""]
 
 
@@ -226,7 +246,8 @@ def write_report(repo_root: Path, *, label: str | None = None,
                  profile: str | None = None, command: list[str] | None = None,
                  health: list[tuple[str, bool, str]] | None = None,
                  now: datetime.datetime | None = None,
-                 nessie_summary: dict | None = None) -> Path | None:
+                 nessie_summary: dict | None = None,
+                 nessie_ran: bool = False) -> Path | None:
     """Write one markdown record of the run the junit file describes.
 
     `label` names the file. A rebuild passes its rollback tag, which ties the
@@ -236,10 +257,13 @@ def write_report(repo_root: Path, *, label: str | None = None,
     `health` is the stack-health step that ran before the suite, as plain
     (name, ok, detail) tuples so this module stays free of startup.steps.
 
-    `nessie_summary` is what read_nessie_summary returned for a run with the
-    Nessie lane on. It adds the record's Nessie section, and any failure evidence
-    the lane left is moved to `<label>-nessie/` next to the record, so the next
-    run's clearing of the evidence slot cannot take it.
+    `nessie_ran` says the Nessie lane was on for this run, and `nessie_summary` is
+    what read_nessie_summary returned (a summary implies the lane ran). Whenever
+    the lane ran, any evidence it left is moved to `<label>-nessie/` next to the
+    record, so the next run's clearing of the evidence slot cannot take it. That
+    includes a lane that died before writing its summary, whose trace is the
+    evidence a failed run most needs: its record gets a short Nessie section
+    saying so, with the evidence path.
 
     Returns the path written, or None when there is no usable junit report --
     a run that never produced one (an unreachable stack, a refused profile) has
@@ -257,7 +281,9 @@ def write_report(repo_root: Path, *, label: str | None = None,
         base = image_ref or "nextseek"
         label = f"{base}-{stamp.strftime('%Y%m%dT%H%M%S')}"
 
-    if nessie_summary is not None:
+    lane_ran = nessie_ran or nessie_summary is not None
+    evidence_dir: str | None = None
+    if lane_ran:
         evidence = nessie_evidence_path(repo_root)
         if evidence.is_dir() and any(evidence.iterdir()):
             dest = reports_dir(repo_root) / f"{_safe_name(label)}-nessie"
@@ -265,9 +291,11 @@ def write_report(repo_root: Path, *, label: str | None = None,
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 shutil.rmtree(dest, ignore_errors=True)
                 shutil.move(str(evidence), str(dest))
-                nessie_summary["evidence_dir"] = str(dest)
+                evidence_dir = str(dest)
             except OSError:
                 pass
+        if nessie_summary is not None and evidence_dir:
+            nessie_summary["evidence_dir"] = evidence_dir
 
     lines = [
         f"# CI run — {label}",
@@ -300,6 +328,8 @@ def write_report(repo_root: Path, *, label: str | None = None,
 
     if nessie_summary:
         lines += render_nessie_section(nessie_summary)
+    elif lane_ran:
+        lines += render_nessie_without_summary(evidence_dir)
 
     outcomes = _outcomes(junit_path(repo_root))
     for kind, heading in (("FAILED", "Failures"), ("ERROR", "Errors"),
