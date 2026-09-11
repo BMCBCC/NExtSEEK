@@ -251,7 +251,7 @@ import django
 django.setup()
 
 from nextseek_api.assistant.models_db import CCSessionTranscript, QueryTask
-from nextseek_api.cc_assistant import cc_transcript_store
+from NessieAI.cc import cc_transcript_store
 
 __CANON_SRC__
 

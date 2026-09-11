@@ -55,6 +55,12 @@ What it deliberately leaves alone:
   disk is reported.
 * File paths (``nextseek_api/eval/...`` joins, ``parents[N]`` anchors) are not
   module names; commit C5 fixes those by hand.
+* Import statements written as text inside a string (probe source that is
+  injected into another process) are seen only as dotted names. In
+  ``"from nextseek_api.cc_assistant import cc_transcript_store"`` the only
+  dotted name is the package that stays, so the line is left alone even
+  though the imported module moved, and nothing is reported. After a re-run,
+  grep string bodies for ``from <kept package> import <moved module>``.
 
 The report lists every kept, archived, missing or unresolved reference, so a
 re-run on another branch says exactly what still needs a human.
