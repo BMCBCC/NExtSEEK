@@ -30,7 +30,7 @@ Breaking one is a regression, not a refactor.
   one on the old image. A second service running the app image re-opens that failure
   unless startup also restarts it; `startup/tests/test_rebuild_policy.py` asserts the set
   against compose.
-- **An absent or empty `ci_profile` resolves to the narrowest value, `prod`** — at the
+- **An absent or empty `ci_profile` resolves to the narrowest value, `prod`**: at the
   install default (`startup/cli.py:46-47`), at the runner
   (`startup/ci/runner.py:54`) and in the diagnostic (`startup/steps/doctor.py:31-36`).
   Defaulting the other way would let a machine nobody configured run write routes.
@@ -71,15 +71,16 @@ Breaking one is a regression, not a refactor.
   out what unconditional application costs: a stock install aborting after the seeds are
   in and the containers are up, on real data, with no remediation path.
 - **A hand-filled Bedrock token is never reset to empty by a re-run**
-  (`startup/steps/config.py:190-194`). The precedence is operator environment, then the
-  existing file, then empty.
+  (`startup/steps/config.py:197-203`). The precedence is operator environment, then the
+  existing `NessieAI/docker/bedrock-proxy/proxy-secret.env`, then the pre-move
+  `docker/bedrock-proxy/proxy-secret.env` (read only, never written), then empty.
 - **No broad exception handler is permitted on the index readiness, apply or reverse
   path** (`startup/steps/schema_fixups.py:27-29`). A swallowed connectivity error would
   be reported as an absent index, and the next step would try to create one that is
   already there.
 - **The repo-root `.env` is written from a fixed key allowlist**
-  (`startup/steps/config.py:230-239`), for the reason given at
-  `startup/steps/config.py:213-214`: a secret sitting in the instance's environment
+  (`startup/steps/config.py:240-249`), for the reason given at
+  `startup/steps/config.py:223-224`: a secret sitting in the instance's environment
   would otherwise be persisted into a file that lives in the working tree.
 
 ## Landmines
@@ -92,7 +93,7 @@ Breaking one is a regression, not a refactor.
   (`startup/steps/validate.py:214-223`) and the diagnostic
   (`startup/steps/doctor.py:79-111`) never look at a fixup table. So a table added to
   the registry never reaches a box that is only ever rebuilt, arrives from no seed dump,
-  and produces no error — the feature is silently dark until somebody runs `install` or
+  and produces no error: the feature is silently dark until somebody runs `install` or
   the destructive `reset`.
 - **The tests here import a plugin that most hosts cannot load.**
   `startup/tests/conftest.py:7` registers `nextseek_api.attributes.tests.attribute_fixtures`,
@@ -132,17 +133,17 @@ Breaking one is a regression, not a refactor.
   `nextseek` (`startup/cli.py:165`). Both trees end up driving the same unprefixed
   external volumes, so a `reset` in one destroys the other's data.
 - **Re-running `install` rotates the Django secret key.** A fresh key is minted on every
-  call (`startup/steps/config.py:123`) and written into the settings overlay
-  (`startup/steps/config.py:165-170`), invalidating every live session. That is why the
+  call (`startup/steps/config.py:124`) and written into the settings overlay
+  (`startup/steps/config.py:166-171`), invalidating every live session. That is why the
   diagnostic tells operators to hand-edit the state file instead
   (`startup/steps/doctor.py:34-35`).
 - **One misspelled key in the hand-edited state file breaks every command.**
   `startup/lib/instance.py:63-68` splats the JSON straight into the dataclass with no
   guard, so an unexpected field raises `TypeError` inside `doctor`, `rebuild` and
-  `reset` alike — including the very command an operator would run to find out what went
+  `reset` alike, including the very command an operator would run to find out what went
   wrong.
 - **Template rendering silently tolerates an unknown placeholder.**
-  `startup/steps/config.py:146` uses `safe_substitute`, which leaves the literal `${…}`
+  `startup/steps/config.py:147` uses `safe_substitute`, which leaves the literal `${…}`
   in the output file rather than raising. That is why reading a value back has to sniff
   for the residue (`startup/steps/config.py:63-65`); a rendered env file can look
   complete and still contain an uninterpolated token.
@@ -153,7 +154,7 @@ Breaking one is a regression, not a refactor.
   (`startup/dev/run_full_test_lane.sh:146`). Trusting the header wastes a build.
 - **The Django settings overlay exists twice, and nothing keeps the copies in step.**
   Install renders `dmac/local_settings.py` from the template at
-  `startup/steps/config.py:166`, while the full lane bind-mounts its own file over that
+  `startup/steps/config.py:167`, while the full lane bind-mounts its own file over that
   same path (`startup/dev/run_full_test_lane.sh:114` and
   `startup/dev/run_full_test_lane.sh:240`). The two are byte-identical today, verified
   2026-09-03 by running `cmp startup/dev/lane_local_settings.py
@@ -174,7 +175,7 @@ Breaking one is a regression, not a refactor.
   `.venv/` and this pair's own files, matches nothing outside `startup/seed/sql/`: no
   fixup entry lists them (`startup/steps/schema_fixups.py:109-152`), no test reads them
   and no script applies them. They are hand-applied or unused.
-- **The default credentials are committed, not generated.** `startup/steps/config.py:120-122`
+- **The default credentials are committed, not generated.** `startup/steps/config.py:121-123`
   hardcodes the MySQL root password, the MySQL user password and the Neo4j password into
   every rendered install, and only the Django key is random. An install exposed beyond
   localhost with these untouched is open.

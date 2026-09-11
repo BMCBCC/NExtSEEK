@@ -136,9 +136,11 @@ non-empty volume prefix and a distinct Compose project (`startup/cli.py:144`,
 **What startup writes** (all gitignored): `docker/db.env`, `docker/nextseek.env`,
 `dmac/local_settings.py` (`startup/steps/config.py:151`,
 `startup/steps/config.py:159`, `startup/steps/config.py:167`),
-`docker/bedrock-proxy/proxy-secret.env` at mode 0600
-(`startup/steps/config.py:188-202`), the repo-root `.env`
-(`startup/steps/config.py:240-247`), `startup/.instance.json`
+`NessieAI/docker/bedrock-proxy/proxy-secret.env` (`PROXY_SECRET_ENV` in
+`startup/lib/layout.py`) at mode 0600 (`render_proxy_secret_env`,
+`startup/steps/config.py:174-213`; a token still at the pre-move
+`docker/bedrock-proxy/proxy-secret.env` is read as a fallback and never written), the
+repo-root `.env` (`startup/steps/config.py:250-257`), `startup/.instance.json`
 (`startup/lib/instance.py:53-60`), and the junit report the CI shim reads back
 (`startup/ci/runner.py:22-27`).
 
