@@ -45,6 +45,29 @@ hooks, services, types), the **build outputs**, and the **DOM and URL contract**
 the host Django page must satisfy. Cited lines are `export` sites and config
 values rather than imports.
 
+### Structure
+
+```
+NessieAI/chat_frontend/src/
+├── App.tsx, AppLayout.tsx     # the standalone shell (local development only)
+├── EmbeddedApp.tsx            # the embedded shell, the one Django loads
+├── main.tsx                   # standalone entry
+├── main.embedded.tsx          # embedded entry
+├── index.css                  # standalone styles
+├── index.embedded.css         # embedded styles, scoped to the mount node
+├── components/
+│   ├── ChatPanel/             # transcript, composer, stepper, artifact list, upload control
+│   ├── DebugPanel/            # the admin Debug panel
+│   ├── Layout/                # toolbar, sidebars and the admin controls
+│   ├── Sessions/              # session list, rename, delete
+│   ├── TestRunner/            # the test-case runner
+│   ├── __tests__/             # shared component tests
+│   └── ui/                    # shadcn/ui primitives
+├── hooks/                     # useProcessingState, useSessions, useMessages, useChatRoute and the rest
+├── lib/                       # services/ (chatApi.ts and the auth strategies), types/, utils/, the admin toggles
+└── test/                      # vitest setup
+```
+
 ### Build outputs and their configuration
 
 | Script | Config | Emits |
