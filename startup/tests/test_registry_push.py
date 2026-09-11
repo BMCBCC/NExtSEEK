@@ -44,8 +44,17 @@ def _stub_the_rebuild_ci_hook(monkeypatch: pytest.MonkeyPatch) -> None:
     test_cli_commands.py.
     """
     from startup.ci import runner as ci_runner
+    from startup.steps import validate
 
     monkeypatch.setattr(ci_runner, "run_ci", lambda *args, **kwargs: 0)
+    # Nor may one ask a real docker daemon whether a real stack is up.
+    monkeypatch.setattr(
+        validate, "stack_health",
+        lambda repo_root, env, compose_project_name: validate.StackHealth(
+            blocking=(validate.HealthResult("app + front door", True, "running"),),
+            advisory=(),
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -704,9 +713,14 @@ def test_rebuild_nextseek_triggers_baseline_push(
     # Default rebuild restarts only the always-on app runtime. The attribute
     # runtimes are gated on the `attributes` compose profile, and naming them
     # here would start them regardless of that profile.
-    assert mock_up.call_args.kwargs["services"] == ("nextseek",)
-    assert mock_up.call_args.kwargs["no_deps"] is True
-    assert mock_up.call_args.kwargs["force_recreate"] is True
+    app_up, front_door_up = mock_up.call_args_list
+    assert app_up.kwargs["services"] == ("nextseek",)
+    assert app_up.kwargs["no_deps"] is True
+    assert app_up.kwargs["force_recreate"] is True
+    # Then nginx is started if it is down, never recreated.
+    assert front_door_up.kwargs["services"] == ("nextseek_nginx",)
+    assert front_door_up.kwargs["no_deps"] is True
+    assert front_door_up.kwargs.get("force_recreate", False) is False
     mock_push.assert_called_once()
     assert mock_push.call_args.kwargs["compose_project_name"] == "nextseek"
 

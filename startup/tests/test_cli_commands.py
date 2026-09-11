@@ -689,11 +689,43 @@ def test_ci_exits_with_the_suite_return_code(
     assert "DEPLOYMENT.md" in result.output
 
 
+def _stub_stack_health(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    runtimes_ok: bool = True,
+    runtimes_detail: str = "nextseek + nextseek_nginx running",
+    images_ok: bool = True,
+    image_detail: str = "all 4 present",
+) -> None:
+    """The stack-health step, answered without asking docker."""
+    from startup.steps import validate
+
+    monkeypatch.setattr(
+        validate, "stack_health",
+        lambda repo_root, env, compose_project_name: validate.StackHealth(
+            blocking=(validate.HealthResult("app + front door", runtimes_ok, runtimes_detail),),
+            advisory=(
+                validate.HealthResult("first-party images", images_ok, image_detail),
+                validate.HealthResult("cc services", True, "bedrock-proxy + nextseek-sidecar running"),
+            ),
+        ),
+    )
+
+
+@pytest.fixture(autouse=True)
+def _the_stack_is_up(monkeypatch: pytest.MonkeyPatch) -> None:
+    """No test here may ask a real docker daemon about a real stack. Tests about
+    a down stack override this."""
+    _stub_stack_health(monkeypatch)
+
+
 def _mock_rebuild(
     monkeypatch: pytest.MonkeyPatch,
     *,
     images_ok: bool = True,
     image_detail: str = "all 4 present",
+    runtimes_ok: bool = True,
+    runtimes_detail: str = "nextseek + nextseek_nginx running",
 ) -> None:
     """Everything a rebuild touches before the CI hook, stubbed out.
 
@@ -702,7 +734,7 @@ def _mock_rebuild(
     exercise the first-build path.
     """
     from startup.lib import docker_ops
-    from startup.steps import disk_preflight, registry_push, rollback_tags, validate
+    from startup.steps import disk_preflight, registry_push, rollback_tags
 
     monkeypatch.setattr(
         rollback_tags, "create_verified", lambda images, build_root: ()
@@ -710,12 +742,10 @@ def _mock_rebuild(
     monkeypatch.setattr(docker_ops, "compose_build", lambda **kwargs: None)
     monkeypatch.setattr(docker_ops, "compose_up", lambda **kwargs: None)
     monkeypatch.setattr(registry_push, "push_baselines", lambda *args, **kwargs: ())
-    monkeypatch.setattr(
-        validate,
-        "check_first_party_images",
-        lambda compose_project_name: validate.HealthResult(
-            name="first-party images", ok=images_ok, detail=image_detail
-        ),
+    _stub_stack_health(
+        monkeypatch,
+        runtimes_ok=runtimes_ok, runtimes_detail=runtimes_detail,
+        images_ok=images_ok, image_detail=image_detail,
     )
     monkeypatch.setattr(
         disk_preflight, "run_preflight",
@@ -819,6 +849,151 @@ def test_rebuild_of_an_image_only_component_still_runs_ci(
     assert result.exit_code == 0, result.output
     assert ran == [{"wait_ready": True}]
     assert "CI skipped" not in result.output
+
+
+def _record_compose_up(monkeypatch: pytest.MonkeyPatch) -> list[dict]:
+    from startup.lib import docker_ops
+
+    calls: list[dict] = []
+    monkeypatch.setattr(docker_ops, "compose_up", lambda **kwargs: calls.append(kwargs))
+    return calls
+
+
+def test_rebuild_starts_a_stopped_front_door_without_recreating_it(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A stopped nginx survived every rebuild on 2026-09-10, and the suite then
+    spent its whole readiness floor on a refused port. `up` without
+    --force-recreate is a no-op on a running nginx and a start on a stopped one;
+    --no-deps keeps it from touching anything else, which is the rule an
+    unscoped recreate taught on 2026-09-02."""
+    _saved_state(repo, ci_profile="dev")
+    _mock_rebuild(monkeypatch)
+    calls = _record_compose_up(monkeypatch)
+    monkeypatch.setattr(ci_runner, "run_ci", lambda *a, **k: 0)
+
+    result = runner.invoke(cli.app, ["rebuild"])
+
+    assert result.exit_code == 0, result.output
+    front_door = [c for c in calls if "nextseek_nginx" in c["services"]]
+    assert len(front_door) == 1, calls
+    assert list(front_door[0]["services"]) == ["nextseek_nginx"]
+    assert front_door[0]["no_deps"] is True
+    assert front_door[0].get("force_recreate", False) is False
+
+
+def test_rebuild_starts_the_front_door_after_the_app_restart(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _saved_state(repo, ci_profile="dev")
+    _mock_rebuild(monkeypatch)
+    calls = _record_compose_up(monkeypatch)
+    monkeypatch.setattr(ci_runner, "run_ci", lambda *a, **k: 0)
+
+    runner.invoke(cli.app, ["rebuild"])
+
+    assert [list(c["services"]) for c in calls] == [["nextseek"], ["nextseek_nginx"]]
+
+
+def test_rebuild_no_restart_leaves_the_front_door_alone(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """--no-restart asks for no runtime to be touched. That includes nginx."""
+    _saved_state(repo, ci_profile="dev")
+    _mock_rebuild(monkeypatch)
+    calls = _record_compose_up(monkeypatch)
+
+    result = runner.invoke(cli.app, ["rebuild", "--no-restart"])
+
+    assert result.exit_code == 0, result.output
+    assert calls == []
+
+
+_NGINX_DOWN = ("not running: nextseek_nginx -- start it with: "
+               "docker compose up -d --no-deps nextseek_nginx")
+
+
+def test_rebuild_does_not_run_ci_against_a_stack_that_is_down(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Stack health is step 1 of CI. With the front door down every test fails
+    the same way, so the suite is not started, and the rebuild says why."""
+    _saved_state(repo, ci_profile="dev")
+    _mock_rebuild(monkeypatch, runtimes_ok=False, runtimes_detail=_NGINX_DOWN)
+    ran: list[dict] = []
+    monkeypatch.setattr(ci_runner, "run_ci", lambda *a, **k: ran.append(k) or 0)
+
+    result = runner.invoke(cli.app, ["rebuild"])
+
+    assert result.exit_code == 1
+    assert ran == []
+    compact = "".join(result.output.split())
+    assert "notrunning:nextseek_nginx" in compact
+    assert "CInotrun" in compact
+    assert "CIpassed" not in compact
+
+
+def test_rebuild_prints_stack_health_before_the_ci_run(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _saved_state(repo, ci_profile="dev")
+    _mock_rebuild(monkeypatch)
+    monkeypatch.setattr(ci_runner, "run_ci", lambda *a, **k: 0)
+
+    result = runner.invoke(cli.app, ["rebuild"])
+
+    out = result.output
+    assert out.index("app + front door") < out.index("running CI after rebuild")
+    assert out.index("cc services") < out.index("running CI after rebuild")
+
+
+def test_rebuild_hands_the_health_lines_to_the_ci_record(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """One file per deploy says everything about it: health and suite together."""
+    _saved_state(repo, ci_profile="dev")
+    _mock_rebuild(monkeypatch, images_ok=False, image_detail="ABSENT: dmac-assistant:poc")
+    monkeypatch.setattr(ci_runner, "run_ci", lambda *a, **k: 0)
+    written: list[dict] = []
+    monkeypatch.setattr(ci_runner, "write_report", lambda *a, **k: written.append(k))
+
+    runner.invoke(cli.app, ["rebuild"])
+
+    assert len(written) == 1
+    assert ("first-party images", False, "ABSENT: dmac-assistant:poc") in written[0]["health"]
+    assert written[0]["health"][0][0] == "app + front door"
+
+
+def test_ci_does_not_run_the_suite_against_a_stack_that_is_down(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _saved_state(repo, ci_profile="local")
+    _stub_stack_health(monkeypatch, runtimes_ok=False, runtimes_detail=_NGINX_DOWN)
+    calls = _record_ci_subprocess(monkeypatch)
+
+    result = runner.invoke(cli.app, ["ci"])
+
+    assert result.exit_code == 1
+    assert [c for c in calls if "pytest" in c.cmd] == []
+    compact = "".join(result.output.split())
+    assert "notrunning:nextseek_nginx" in compact
+    assert "CInotrun" in compact
+
+
+def test_ci_still_runs_the_suite_when_only_an_advisory_check_fails(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`ci` answers one question, what the suite says. An absent CC image is
+    printed but does not change that answer; `rebuild` is what exits red on it."""
+    _saved_state(repo, ci_profile="local")
+    _stub_stack_health(monkeypatch, images_ok=False, image_detail="ABSENT: dmac-assistant:poc")
+    calls = _record_ci_subprocess(monkeypatch)
+
+    result = runner.invoke(cli.app, ["ci"])
+
+    assert result.exit_code == 0, result.output
+    _suite_call(calls)
+    assert "ABSENT: dmac-assistant:poc" in result.output
 
 
 def test_run_ci_reports_a_missing_uv_instead_of_a_traceback(

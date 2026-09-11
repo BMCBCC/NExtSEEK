@@ -711,6 +711,90 @@ def test_check_first_party_images_reports_a_daemon_outage_rather_than_four_absen
     assert "--component" not in result.detail
 
 
+def test_check_app_runtimes_names_a_stopped_front_door_and_how_to_start_it(monkeypatch):
+    """2026-09-10: nginx was stopped, the app was healthy, and the smoke suite
+    spent five minutes finding out. This is the line that says so at once."""
+    monkeypatch.setattr(
+        validate, "compose_ps_running",
+        lambda services, project_dir, env: ["nextseek"],
+    )
+
+    result = validate.check_app_runtimes(Path("/repo"), {})
+
+    assert result.ok is False
+    assert "nextseek_nginx" in result.detail
+    assert "docker compose up -d --no-deps nextseek_nginx" in result.detail
+    # The one that is running must not be reported as a problem.
+    assert "not running: nextseek," not in result.detail
+
+
+def test_check_app_runtimes_asks_for_the_app_and_the_front_door(monkeypatch):
+    asked = []
+    monkeypatch.setattr(
+        validate, "compose_ps_running",
+        lambda services, project_dir, env: asked.extend(services) or list(services),
+    )
+
+    result = validate.check_app_runtimes(Path("/repo"), {})
+
+    assert result.ok is True
+    assert sorted(asked) == ["nextseek", "nextseek_nginx"]
+
+
+def test_check_app_runtimes_reports_a_daemon_outage(monkeypatch):
+    def explode(services, project_dir, env):
+        raise validate.DockerOpsError("docker compose ps failed (exit 1): daemon unreachable")
+
+    monkeypatch.setattr(validate, "compose_ps_running", explode)
+
+    result = validate.check_app_runtimes(Path("/repo"), {})
+
+    assert result.ok is False
+    assert "daemon unreachable" in result.detail
+
+
+def _stub_checks(monkeypatch, *, runtimes=True, images=True, cc=True):
+    monkeypatch.setattr(validate, "check_app_runtimes", lambda repo_root, env:
+                        validate.HealthResult("app + front door", runtimes, "d"))
+    monkeypatch.setattr(validate, "check_first_party_images", lambda name:
+                        validate.HealthResult("first-party images", images, "d"))
+    monkeypatch.setattr(validate, "check_cc_services", lambda repo_root, env:
+                        validate.HealthResult("cc services", cc, "d"))
+
+
+def test_stack_health_lets_ci_run_when_only_an_advisory_check_fails(monkeypatch):
+    """A missing CC image or a stopped sidecar changes nothing the smoke suite
+    requests, so the run still says something true about the deploy."""
+    _stub_checks(monkeypatch, images=False, cc=False)
+
+    health = validate.stack_health(Path("/repo"), {}, "nextseek")
+
+    assert health.testable is True
+    assert health.ok is False
+
+
+def test_stack_health_blocks_ci_when_the_app_or_front_door_is_down(monkeypatch):
+    """Every smoke test enters through nginx to the app. With either down, each
+    one fails the same way, and the run says nothing about the deploy."""
+    _stub_checks(monkeypatch, runtimes=False)
+
+    health = validate.stack_health(Path("/repo"), {}, "nextseek")
+
+    assert health.testable is False
+    assert health.ok is False
+
+
+def test_stack_health_reports_every_check_blocking_first(monkeypatch):
+    _stub_checks(monkeypatch)
+
+    health = validate.stack_health(Path("/repo"), {}, "nextseek")
+
+    assert [r.name for r in health.results] == [
+        "app + front door", "first-party images", "cc services",
+    ]
+    assert health.ok is True and health.testable is True
+
+
 def test_check_cc_runner_runs_deployment_step_6_in_the_app_container(monkeypatch):
     """Host-side image presence does not prove the APP CONTAINER's docker socket
     can see the image, which is the thing that actually failed. This runs the

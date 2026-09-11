@@ -146,6 +146,20 @@ def test_report_records_every_outcome_class_and_the_identity(tmp_path):
     assert "| xfailed | 1 |" in body
 
 
+def test_report_records_the_stack_health_lines(tmp_path):
+    _junit(tmp_path)
+    p = ci_runner.write_report(tmp_path, label="run", health=[
+        ("app + front door", True, "nextseek + nextseek_nginx running"),
+        ("first-party images", False, "ABSENT: dmac-assistant:poc"),
+    ])
+    body = p.read_text()
+    assert "## Stack health" in body
+    assert "✓ **app + front door:** nextseek + nextseek_nginx running" in body
+    assert "✗ **first-party images:** ABSENT: dmac-assistant:poc" in body
+    # Health comes before the suite's own outcomes: it is step 1 of the run.
+    assert body.index("## Stack health") < body.index("## Failures")
+
+
 def test_no_junit_means_no_report_rather_than_an_empty_one(tmp_path):
     """A run that never produced a report has nothing to record."""
     assert ci_runner.write_report(tmp_path, label="run") is None

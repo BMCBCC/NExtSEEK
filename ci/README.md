@@ -146,6 +146,13 @@ application's own suite are all outside this entry point. It sets
 every non-passing outcome (`startup/ci/runner.py:write_report`). It is
 gitignored: each box records its own runs.
 
+Before the suite, both `./startup.sh ci` and the rebuild hook run a stack-health
+step (`startup/steps/validate.py:stack_health`) and print one ✓/✗ line per check.
+A stopped app or `nextseek_nginx` container stops the run there, since every
+smoke test would fail the same way; an absent first-party image or a stopped CC
+service is printed and written into the run record but does not stop it, because
+the suite never requests what those serve.
+
 **The rebuild hook** runs that same command with the readiness gate on after a
 successful `./startup.sh rebuild` unless `--no-ci` is passed
 (`startup/cli.py:632-646`), and skips itself when the restart was deferred,
