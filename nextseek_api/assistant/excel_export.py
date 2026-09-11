@@ -462,15 +462,34 @@ def generate_table_xlsx(tables: list[dict[str, Any]]) -> bytes:
     return buf.getvalue()
 
 
+def _search_items(data: Any) -> list[Any]:
+    """The records in a search result's ``data``, whichever shape it has.
+
+    JSON:API endpoints answer a list of resources. The advanced-search endpoint the
+    NS search modes call answers a grid, ``{"total": N, "rows": [...], "footer": ...}``,
+    and looping over that dict yielded its key names, which is how the search_results
+    download answered 500 (Nessie CI lane, 2026-09-11). The fallbacks follow
+    chat_nextseek's own readers (helpers/results.py): ``rows``, ``samples``, ``nodes``.
+    """
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict):
+        for key in ("rows", "samples", "nodes"):
+            if isinstance(data.get(key), list):
+                return data[key]
+    return []
+
+
 def generate_search_xlsx(bundle: dict[str, Any]) -> bytes:
     """Generate Excel from a search result bundle.
 
-    Flattens JSON:API response data into a tabular format.
+    Flattens a search result into one sheet: JSON:API resources, or the rows of the
+    advanced-search grid (see _search_items).
     """
     from chat_nextseek.artifacts import load_api_result_full
 
     api_result = load_api_result_full(bundle)
-    data_list = api_result.get("data") or []
+    data_list = _search_items(api_result.get("data"))
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -482,16 +501,22 @@ def generate_search_xlsx(bundle: dict[str, Any]) -> bytes:
         wb.save(buf)
         return buf.getvalue()
 
-    # Flatten JSON:API: merge id, type, and attributes
+    # One row per record. A JSON:API resource contributes its id, its type and its
+    # attributes; a grid row is already flat.
     rows: list[dict[str, Any]] = []
     for item in data_list:
+        if not isinstance(item, dict):
+            continue
         row: dict[str, Any] = {}
-        if "id" in item:
-            row["id"] = item["id"]
-        if "type" in item:
-            row["type"] = item["type"]
-        attrs = item.get("attributes") or {}
-        for k, v in attrs.items():
+        if "attributes" in item:
+            if "id" in item:
+                row["id"] = item["id"]
+            if "type" in item:
+                row["type"] = item["type"]
+            source = item.get("attributes") or {}
+        else:
+            source = item
+        for k, v in source.items():
             # Skip deeply nested values
             if not isinstance(v, (dict, list)):
                 row[k] = v
