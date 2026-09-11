@@ -108,8 +108,8 @@ import json
 from ci.smoke.test_nessie import (
     CHAT_PATH, MAX_CHAT_POSTS, QUESTIONS, SPEND_CEILING_USD, ChatBudget, TurnRecord,
     bundle_path, cc_model_id, classify_request, finish_chat, is_terminal, normalize,
-    observed_path, plain_prefix, query_error, reported_cost, require_write_creds,
-    route_decision, summary_payload,
+    observed_path, plain_prefix, query_error, reported_cost, require_smoke_creds,
+    require_write_creds, route_decision, summary_payload,
 )
 
 # pytester runs the lane's real chat_run fixture in a throwaway session, to pin
@@ -275,20 +275,66 @@ def test_write_credentials_come_from_the_environment_or_the_file(monkeypatch, tm
     assert require_write_creds() == ("env-user", "env-pass")
 
 
-def test_no_nessie_fixture_or_test_takes_the_skipping_write_creds_fixture():
-    """conftest's write_creds skips when the account is missing (the opt-in write
-    lane depends on that). Any Nessie function that requests it turns a missing
-    account back into a green skip."""
+def test_missing_smoke_credentials_fail_the_lane_and_never_skip(monkeypatch, tmp_path):
+    """Decision 6 again: without the smoke account the smoke-auth and web-auth checks
+    would skip, and the lane would exit green on a misconfigured box."""
+    monkeypatch.delenv("CI_SMOKE_USER", raising=False)
+    monkeypatch.delenv("CI_SMOKE_PASS", raising=False)
+    monkeypatch.setenv("NEXTSEEK_CI_ENV", str(tmp_path / "absent.env"))
+    # Caught explicitly for the reason the write-credentials pin gives: a skip is
+    # not a failure, and would report this pin itself as skipped.
+    try:
+        require_smoke_creds()
+    except pytest.skip.Exception:
+        pytest.fail("require_smoke_creds skipped; a missing smoke account must fail "
+                    "the lane, never skip it")
+    except pytest.fail.Exception as failed:
+        message = str(failed)
+    else:
+        pytest.fail("require_smoke_creds returned with no credentials set anywhere")
+    for name in ("CI_SMOKE_USER", "CI_SMOKE_PASS", "ci.env"):
+        assert name in message, f"the failure does not name {name}: {message}"
+
+
+def test_smoke_credentials_come_from_the_environment_or_the_file(monkeypatch, tmp_path):
+    monkeypatch.delenv("CI_SMOKE_USER", raising=False)
+    monkeypatch.delenv("CI_SMOKE_PASS", raising=False)
+    env_file = tmp_path / "ci.env"
+    env_file.write_text("CI_SMOKE_USER=file-user\nCI_SMOKE_PASS=file-pass\n")
+    monkeypatch.setenv("NEXTSEEK_CI_ENV", str(env_file))
+    assert require_smoke_creds() == ("file-user", "file-pass")
+    monkeypatch.setenv("CI_SMOKE_USER", "env-user")
+    monkeypatch.setenv("CI_SMOKE_PASS", "env-pass")
+    assert require_smoke_creds() == ("env-user", "env-pass")
+
+
+# conftest fixtures that skip when an account is missing: write_creds and
+# smoke_creds themselves, and the clients and browser state built on smoke_creds.
+SKIPPING_FIXTURES = frozenset({"write_creds", "smoke_creds", "api", "web",
+                               "storage_state", "page"})
+
+
+def test_no_nessie_fixture_or_test_takes_a_skipping_credentials_fixture():
+    """The opt-in write lane and the general sweep rely on those fixtures skipping.
+    Any Nessie test or fixture that requests one turns a missing account back into
+    a green skip, which decision 6 rules out. Plain helpers (_poll, _ask) take
+    clients by argument and are not fixtures, so only tests and fixtures count."""
     import ast
     import ci.smoke.test_nessie as nessie
     tree = ast.parse(Path(nessie.__file__).read_text())
+
+    def is_fixture(node) -> bool:
+        return any("fixture" in ast.unparse(d) for d in node.decorator_list)
+
     takers = sorted(
-        node.name for node in ast.walk(tree)
+        f"{node.name}({arg.arg})"
+        for node in ast.walk(tree)
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-        and any(a.arg == "write_creds"
-                for a in node.args.posonlyargs + node.args.args + node.args.kwonlyargs)
+        and (node.name.startswith("test_") or is_fixture(node))
+        for arg in node.args.posonlyargs + node.args.args + node.args.kwonlyargs
+        if arg.arg in SKIPPING_FIXTURES
     )
-    assert takers == [], f"these request write_creds, which skips: {takers}"
+    assert takers == [], f"these request a fixture that skips: {takers}"
 
 
 # --------------------------------------------------------------------------- #

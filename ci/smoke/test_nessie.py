@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from ci import routes
 from ci.smoke.client import GuardedSession
-from ci.smoke.conftest import _cred, _guard_context, login_storage_state
+from ci.smoke.conftest import _cred, _guard_context, login_storage_state, web_session
 
 pytestmark = [pytest.mark.nessie, pytest.mark.flow, pytest.mark.profiles("local", "dev")]
 
@@ -283,6 +283,49 @@ def nessie_admin_api(profile, base_url, nessie_write_creds) -> GuardedSession:
     return s
 
 
+_SMOKE_HELP = ("CI_SMOKE_USER (the non-superuser in ~/.config/nextseek/ci.env) answers the "
+               "Nessie lane's smoke-auth and web-auth checks")
+
+
+def require_smoke_creds() -> tuple[str, str]:
+    """The smoke account's credentials, or a failure that names where they go.
+
+    Not conftest's smoke_creds fixture, nor its api and web clients built on it:
+    those skip when the account is missing, so the smoke-auth and web-auth checks
+    below would skip and the lane would still exit green on a misconfigured box,
+    which decision 6 of the spec rules out.
+    """
+    creds = _cred(("CI_SMOKE_USER", "CI_SMOKE_PASS"))
+    if creds is None:
+        pytest.fail(
+            "CI_SMOKE_USER and CI_SMOKE_PASS are not set in the environment and not in "
+            "~/.config/nextseek/ci.env (or the file NEXTSEEK_CI_ENV names). "
+            f"{_SMOKE_HELP}, so they cannot run.", pytrace=False)
+    return creds
+
+
+@pytest.fixture(scope="module")
+def nessie_smoke_creds() -> tuple[str, str]:
+    return require_smoke_creds()
+
+
+@pytest.fixture(scope="module")
+def nessie_smoke_api(profile, base_url, nessie_smoke_creds) -> GuardedSession:
+    """Basic-authenticated client for the smoke account: conftest's api, but failing
+    rather than skipping when the account is missing."""
+    s = GuardedSession(profile=profile, base_url=base_url)
+    s.auth = nessie_smoke_creds
+    s.headers["Accept"] = "application/json"
+    return s
+
+
+@pytest.fixture(scope="module")
+def nessie_web(profile, base_url, nessie_smoke_creds) -> GuardedSession:
+    """Session-cookie client for /seek/* as the smoke account: conftest's web, but
+    failing rather than skipping when the account is missing."""
+    return web_session(profile, base_url, nessie_smoke_creds)
+
+
 @pytest.fixture(scope="module")
 def nessie_budget() -> ChatBudget:
     return ChatBudget()
@@ -369,6 +412,12 @@ def test_the_write_credentials_are_present():
     require_write_creds()
 
 
+def test_the_smoke_credentials_are_present():
+    """Its own red line too: the smoke-auth and web-auth checks below need them, and
+    without this each of them would error with the same message."""
+    require_smoke_creds()
+
+
 def test_the_write_account_is_an_admin_in_a_participating_project(nessie_admin_api, base_url):
     r = nessie_admin_api.get(f"{base_url}/nextseek_api/assistant/me/", timeout=60)
     assert r.status_code != 403, (
@@ -378,8 +427,8 @@ def test_the_write_account_is_an_admin_in_a_participating_project(nessie_admin_a
     assert r.json().get("is_admin") is True, f"{_ADMIN_HELP}, and it is not a superuser"
 
 
-def test_the_smoke_account_is_not_an_admin(api, base_url):
-    r = api.get(f"{base_url}/nextseek_api/assistant/me/", timeout=60)
+def test_the_smoke_account_is_not_an_admin(nessie_smoke_api, base_url):
+    r = nessie_smoke_api.get(f"{base_url}/nextseek_api/assistant/me/", timeout=60)
     assert r.status_code == 200, (
         f"assistant/me as the smoke account answered {r.status_code}: {r.text[:200]}")
     assert r.json().get("is_admin") is False, (
@@ -420,7 +469,8 @@ NESSIE_ROUTES = [
 
 
 @pytest.mark.parametrize("route", NESSIE_ROUTES, ids=lambda r: r.path)
-def test_every_nessie_route_answers(route, profile, base_url, anon, api, web, nessie_admin_api):
+def test_every_nessie_route_answers(route, profile, base_url, anon, nessie_smoke_api, nessie_web,
+                                   nessie_admin_api):
     """T0 for the Nessie surface, including the superuser-only routes T0 never
     requests (its sweep must never hold superuser; the pin is
     test_t0_never_sweeps_a_write_auth_route_under_any_profile)."""
@@ -428,7 +478,8 @@ def test_every_nessie_route_answers(route, profile, base_url, anon, api, web, ne
         pytest.skip(f"not enabled for {profile}")
     if "{" in route.path:
         pytest.skip("needs a discovered placeholder; T0 covers it")
-    client = {"anon": anon, "smoke": api, "web": web, "write": nessie_admin_api}[route.auth]
+    client = {"anon": anon, "smoke": nessie_smoke_api, "web": nessie_web,
+              "write": nessie_admin_api}[route.auth]
     r = client.get(f"{base_url}{route.path}", timeout=60, allow_redirects=False)
     expected = route.expect if isinstance(route.expect, tuple) else (route.expect,)
     if route.xfail and r.status_code not in expected:
@@ -445,14 +496,15 @@ def test_sessions_test_cases_and_uploads_answer(nessie_admin_api, base_url):
         assert key in r.json(), f"{path} has no {key!r} key: {list(r.json())[:20]}"
 
 
-def test_schema_rag_retrieve_returns_endpoints(api, base_url):
+def test_schema_rag_retrieve_returns_endpoints(nessie_smoke_api, base_url):
     """It answers 200 even when retrieval failed, so the list is what is asserted.
 
     The list is `endpoints_minimal` in the default minimal mode (`endpoints_full` in
     full mode): RetrieveResponse in nextseek_api/models.py has no `endpoints` key.
     """
     body = {**SCHEMA_RAG_QUERY, "schema_url": f"{base_url}{SELF_SCHEMA_PATH}"}
-    r = api.post(f"{base_url}/nextseek_api/schema_rag/retrieve/", json=body, timeout=120)
+    r = nessie_smoke_api.post(f"{base_url}/nextseek_api/schema_rag/retrieve/", json=body,
+                              timeout=120)
     assert r.status_code == 200, f"{r.status_code}: {r.text[:200]}"
     data = r.json()
     assert data.get("endpoints_minimal"), (

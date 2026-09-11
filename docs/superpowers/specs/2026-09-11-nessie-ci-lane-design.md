@@ -56,8 +56,9 @@ When Nessie changes, this file changes. Its parts:
 
 **Stage 1: everything exists (no model call)**
 
-- Preconditions, checked first: the write credentials are present; `assistant/me` as the write user says
-  `is_admin: true`; the write user belongs to a participating project (`assistant/me` answers 200, not 403).
+- Preconditions, checked first: the write and smoke credentials are present (a missing account fails the
+  lane, never skips it); `assistant/me` as the write user says `is_admin: true`; the write user belongs to a
+  participating project (`assistant/me` answers 200, not 403).
 - The page: `/seek/assistant/` renders the chat input (`chat-input`), the send button (`send-button`), the
   New chat button, the saved-chats sidebar, the upload control, the Debug panel (it opens through "Toggle
   debug panel"), the admin route override (`#route-override`), and the JSON and Metadata buttons

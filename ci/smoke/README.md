@@ -129,6 +129,10 @@ and in pytest's warnings summary on a direct run.
   in `ASSISTANT_PARTICIPATING_PROJECTS` (`dmac/local_settings.py`). Without that
   membership the assistant answers 403 and no turn can be sent. Like every CI
   account, it must have logged in through `/login/` once, by hand.
+- **The smoke account.** `CI_SMOKE_USER` and `CI_SMOKE_PASS`, the existing
+  non-superuser. The lane's smoke-auth and web-auth checks run as this account,
+  and it proves a non-superuser gets `is_admin: false`. If it is missing, those
+  checks fail rather than skip.
 - **The Bedrock proxy token.** A non-empty `AWS_BEARER_TOKEN_BEDROCK` in
   `docker/bedrock-proxy/proxy-secret.env`. The CC turn reaches the model only
   through the proxy.
@@ -139,7 +143,7 @@ and in pytest's warnings summary on a direct run.
 With the lane on, startup checks the proxy token, every first-party image, the
 two CC services and the CC runner right after stack health. It prints one line
 per check and stops before the suite starts, naming the one that is missing. It
-checks only that the token is non-empty, and never prints it. The account is
+checks only that the token is non-empty, and never prints it. The accounts are
 checked by the lane itself: its first stage 1 tests fail, naming the fix, when
 the credentials are missing, the account is not a superuser, or it is outside
 every participating project. They fail rather than skip, because a skipped lane

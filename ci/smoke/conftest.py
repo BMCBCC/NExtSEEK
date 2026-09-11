@@ -529,12 +529,13 @@ def anon(profile, base_url) -> GuardedSession:
     return GuardedSession(profile=profile, base_url=base_url)
 
 
-@pytest.fixture(scope="session")
-def web(profile, base_url, smoke_creds) -> GuardedSession:
-    """Session-cookie client for /seek/* pages.
+def web_session(profile: str, base_url: str, creds: tuple[str, str]) -> GuardedSession:
+    """A session-cookie client logged in through /login/ as `creds`.
 
-    Those views read request.session['username'], which only the login view
-    writes, so Basic auth is not sufficient for them.
+    The /seek/* views read request.session['username'], which only the login view
+    writes, so Basic auth is not sufficient for them. Shared by the `web` fixture
+    below and by the Nessie lane, which needs the same login but must fail rather
+    than skip when its account is missing.
     """
     s = GuardedSession(profile=profile, base_url=base_url)
     # Not followed: send() guards every hop, so a /login/ that ever redirected
@@ -546,8 +547,8 @@ def web(profile, base_url, smoke_creds) -> GuardedSession:
     r = s.post(
         f"{base_url}/login/",
         data={
-            "username": smoke_creds[0],
-            "password": smoke_creds[1],
+            "username": creds[0],
+            "password": creds[1],
             "no-expire": "yes",
             "csrfmiddlewaretoken": token,
         },
@@ -556,12 +557,18 @@ def web(profile, base_url, smoke_creds) -> GuardedSession:
         timeout=90,   # login shells out to curl against SEEK Rails
     )
     assert r.status_code == 302, (
-        f"login as {smoke_creds[0]} returned {r.status_code}, expected 302. "
+        f"login as {creds[0]} returned {r.status_code}, expected 302. "
         "A 200 here means the credentials were rejected: this view re-renders "
         "the login page on failure rather than returning 4xx."
     )
     assert s.cookies.get("sessionid"), "login did not set a sessionid cookie"
     return s
+
+
+@pytest.fixture(scope="session")
+def web(profile, base_url, smoke_creds) -> GuardedSession:
+    """Session-cookie client for /seek/* pages, as the smoke account."""
+    return web_session(profile, base_url, smoke_creds)
 
 
 # --------------------------------------------------------------------------- #
