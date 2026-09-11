@@ -152,9 +152,9 @@ does not depend on this lane.
 **Browser lanes — Playwright.** `npm run test:e2e`
 (`chat_frontend/package.json:15`). The default `mock` project stubs the REST and
 WebSocket surfaces (`chat_frontend/e2e/fixtures/ws-mock.ts:1-6`) and excludes the
-real-backend directory (`chat_frontend/playwright.config.ts:26`); the two
+real-backend directory (`chat_frontend/playwright.config.ts:42`); the two
 real-backend projects appear only when an environment flag is set
-(`chat_frontend/playwright.config.ts:28-52`) and each spec self-skips otherwise
+(`chat_frontend/playwright.config.ts:44-68`) and each spec self-skips otherwise
 (`chat_frontend/e2e/real-backend/test-case-1-embedded.spec.ts:4`). (not run) —
 the mock project needs Playwright's browser binaries downloaded, and the
 real-backend projects additionally need a reachable deployed instance with a

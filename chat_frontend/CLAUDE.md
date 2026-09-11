@@ -142,11 +142,12 @@ Break one of these and the failure is silent: a page that renders, returns HTTP
   string `chat_frontend/reports`, excluding that directory itself, returns no
   hits at all. It is a snapshot of a past run, and it still records the dead URL
   above at `chat_frontend/reports/test-report.html:406`.
-- **The Playwright web-server ternary has identical branches**
-  (`chat_frontend/playwright.config.ts:54`), so the local dev server declared at
-  `chat_frontend/playwright.config.ts:5-9` is started and awaited on port 5173
-  even for the remote-target project at
-  `chat_frontend/playwright.config.ts:41-49`, which never visits it. A machine
+- **Both branches of the Playwright web-server ternary start the local dev
+  server** (`chat_frontend/playwright.config.ts:70`): the mock project gets it
+  with placeholder credentials and the real-backend projects get it plain. So
+  the dev server declared at `chat_frontend/playwright.config.ts:5-9` is started
+  and awaited on port 5173 even for the remote-target project at
+  `chat_frontend/playwright.config.ts:57-65`, which never visits it. A machine
   that cannot bring that server up cannot run the remote project either.
 - **The unit lane only sees `src/`.** The include glob is
   `chat_frontend/vitest.config.ts:16`; a test placed under `chat_frontend/e2e/`
