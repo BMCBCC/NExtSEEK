@@ -27,6 +27,69 @@ def test_nessie_skip_reason(keywords, no_nessie, no_turns, expected):
     assert nessie_skip_reason(keywords, no_nessie=no_nessie, no_turns=no_turns) == expected
 
 
+class _Config:
+    """What pytest_collection_modifyitems reads from a config: three options and
+    the memoised profile (set, so resolve_profile reads no environment)."""
+
+    def __init__(self, *, m: str = "", no_nessie: bool = False, no_turns: bool = False):
+        self._nextseek_profile = "local"
+        self._options = {"-m": m, "--no-nessie": no_nessie, "--nessie-no-turns": no_turns}
+
+    def getoption(self, name):
+        return self._options[name]
+
+
+class _Item:
+    def __init__(self, *keywords: str):
+        self.keywords = dict.fromkeys(keywords, True)
+        self.skip_reasons: list[str] = []
+
+    def get_closest_marker(self, name):
+        return None                       # no profiles marker: the profile gate passes
+
+    def add_marker(self, mark):
+        assert mark.name == "skip", mark
+        self.skip_reasons.append(mark.kwargs["reason"])
+
+
+WRITE_SKIP = "write lane is opt-in: run with -m write"
+NESSIE_SKIP = "Nessie lane skipped by --no-nessie"
+
+
+def _collect(config: _Config) -> dict[str, list[str]]:
+    from ci.smoke.conftest import pytest_collection_modifyitems
+    items = {"write": _Item("write"), "nessie": _Item("nessie"),
+             "turn": _Item("nessie", "nessie_turn"), "plain": _Item("test_x")}
+    pytest_collection_modifyitems(config, list(items.values()))
+    return {name: item.skip_reasons for name, item in items.items()}
+
+
+def test_no_nessie_skips_the_lane_and_keeps_the_write_lane_deselected():
+    """Spec 5: --no-nessie selection, including that the write lane stays out."""
+    got = _collect(_Config(no_nessie=True))
+    assert got["write"] == [WRITE_SKIP], got
+    assert got["nessie"] == [NESSIE_SKIP], got
+    assert got["turn"] == [NESSIE_SKIP], got
+    assert got["plain"] == [], got
+
+
+def test_nessie_no_turns_skips_only_the_turns_and_keeps_the_write_lane_deselected():
+    got = _collect(_Config(no_turns=True))
+    assert got["write"] == [WRITE_SKIP], got
+    assert got["nessie"] == [], got
+    assert got["turn"] == ["chat turns skipped by --nessie-no-turns"], got
+
+
+def test_a_mark_expression_re_admits_the_write_lane_and_the_nessie_switch_still_holds():
+    """The landmine in ci/CLAUDE.md, pinned: any -m (here the tempting
+    "not nessie") leaves the write item unskipped, so the superuser write lane
+    runs. --no-nessie is applied before that early return and still skips."""
+    got = _collect(_Config(m="not nessie", no_nessie=True))
+    assert got["write"] == [], got
+    assert got["nessie"] == [NESSIE_SKIP], got
+    assert got["turn"] == [NESSIE_SKIP], got
+
+
 def test_the_nessie_switch_is_not_a_mark_expression():
     """-m re-admits the write lane; the Nessie switch must never need one."""
     import ci.smoke.conftest as conftest
