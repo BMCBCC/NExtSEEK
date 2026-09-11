@@ -249,6 +249,7 @@ docs/superpowers/specs/*
 !docs/superpowers/specs/2026-07-31-hibayes-eval-routing-design.md
 !docs/superpowers/specs/2026-09-01-nextseek-ci-cd-full-spec.md
 !docs/superpowers/specs/2026-09-01-nextseek-ci-comprehensive-coverage-design.md
+!docs/superpowers/specs/2026-09-11-nessie-ci-lane-design.md
 !docs/superpowers/plans/
 docs/superpowers/plans/*
 # Exception: the implementation plan for the spec above is tracked alongside it, so the
