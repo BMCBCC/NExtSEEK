@@ -8,34 +8,28 @@ against Neo4j, report exports, and nf-core pipeline launches. Django runs it
 in process for the non-sandboxed half of the chat endpoint, described at
 `nextseek_api/services/cc_assistant.py:15-18`.
 
-It is also a **vendored snapshot of a separate repository**. The canonical
-source is an independent private repo, and this directory is a copy of it
-refreshed wholesale by `startup/scripts/sync_chat_nextseek.sh:2-7`. The refresh
-is an `rsync -a --delete` with a short exclude list
-(`startup/scripts/sync_chat_nextseek.sh:36-45`), so it is a replace, never a
-line-merge, and the script refuses to run against a dirty source checkout
-(`startup/scripts/sync_chat_nextseek.sh:28-31`). The outer project consumes the
-result as an editable local path dependency rather than a pinned git revision
-(`pyproject.toml:136`), with the git+revision form kept as a commented
-alternative for when the package goes public (`pyproject.toml:140-141`).
+It is edited in place in this repo, like any other code here. It started as a copy of a
+separate repository, refreshed wholesale by a sync script; that script is retired
+(`NessieAI/history/retired/startup/scripts/sync_chat_nextseek.sh`) and must never be run
+again, because its `rsync --delete` would replace this tree with the old one. The outer
+project installs the package as an editable local path dependency
+(`pyproject.toml:136`), with a commented git+revision form kept for when the package
+goes public (`pyproject.toml:140-141`). The dist and import name stay `chat_nextseek`.
 
-Because it is vendored from a standalone application, much of the tree is
-carried along rather than exercised here. Measured 2026-09-03 by `find` over
-this directory excluding `__pycache__`: 298 files, 219 of them Python, 104 of
-those under `tests/` and 94 under `src/`. The package is a `src/` layout
-(`NessieAI/chat_nextseek/pyproject.toml:32-33`) whose importable half is what Django
-touches; the Streamlit app, the CLI, the MCP server and the E2E runner at the
-directory root are the standalone half.
+The package is a `src/` layout (`NessieAI/chat_nextseek/pyproject.toml:32-33`) whose
+importable half is what Django touches; the Streamlit app, the CLI and the MCP server at
+the directory root are the standalone half. Its tests live in
+`NessieAI/tests/chat_nextseek/`, and its catalog-driven E2E runner in `NessieAI/tests/e2e/`.
 
 ## Surface
 
 This boundary has **three different surfaces**, and they are worth separating
 because only one of them is an import edge.
 
-### 1. The importable package — the only surface Django uses
+### 1. The importable package: the only surface Django uses
 
-`portable.py` is the declared stable API: twelve symbols as of 2026-09-03, each
-an agent or a tool with a contract stated in its module docstring
+`portable.py` is the declared stable API: a fixed list of symbols, each an agent or a
+tool with a contract stated in its module docstring
 (`NessieAI/chat_nextseek/src/chat_nextseek/portable.py:1-14`), listed at
 `NessieAI/chat_nextseek/src/chat_nextseek/portable.py:27-43` and pinned against drift by
 `NessieAI/tests/chat_nextseek/test_portable_contract.py:13-26`.
@@ -55,136 +49,113 @@ the shared helpers and I/O tools (`NessieAI/chat_nextseek/src/chat_nextseek/help
 the nf-core tool loop (`NessieAI/chat_nextseek/src/chat_nextseek/pipeline/agent_tools.py:211-225`),
 the Luria launch backend, whose cluster host is hardcoded and whose three
 required environment variables are checked together
-(`NessieAI/chat_nextseek/src/chat_nextseek/config.py:46-59`), and
-18 prompt files plus 15 cached catalog files, counted 2026-09-03 by listing
-`NessieAI/chat_nextseek/src/chat_nextseek/prompts/` and
+(`NessieAI/chat_nextseek/src/chat_nextseek/config.py:46-59`), the prompt files in
+`NessieAI/chat_nextseek/src/chat_nextseek/prompts/`, and the cached catalogs in
 `NessieAI/chat_nextseek/src/chat_nextseek/context/`.
 
 The two monolith modules the package was refactored out of, `agents.py` and
 `helpers.py`, are gone: a `find` for files of either name anywhere under
-`NessieAI/chat_nextseek/` outside `tests/` returns nothing. Their package `__init__`
+`NessieAI/chat_nextseek/` returns nothing. Their package `__init__`
 files now carry the re-exports instead
 (`NessieAI/chat_nextseek/src/chat_nextseek/agents/__init__.py:1-7`).
 
-### 2. Standalone entry points — carried, not run by this repo
+### 2. Standalone entry points: carried, not run by this repo
 
 `app.py` is a Streamlit UI (`NessieAI/chat_nextseek/app.py:7-10`), `cli.py` an argparse
-front end whose provider-profile flag
-enumerated nine routing profiles on 2026-09-03 (`NessieAI/chat_nextseek/cli.py:394`), `mcp_server.py` an MCP server exposing
-resources, prompts and tools (`NessieAI/chat_nextseek/mcp_server.py:2-8`), and `e2e.py`
-a catalog-driven E2E runner (`NessieAI/tests/e2e/__main__.py:1-13`). Nothing in this
-repository executes any of them: a grep for the regex matching
-`NessieAI/chat_nextseek/` followed by `app`, `cli`, `e2e` or `mcp_server` and `.py`,
-run over the whole worktree and filtered to paths that do not start with
-`NessieAI/chat_nextseek/`, returned 14 lines on 2026-09-03, and every one is prose or a
-coverage record: `NessieAI/docs/nessie-blocked-capabilities.md:391`,
+front end with a provider-profile flag (`NessieAI/chat_nextseek/cli.py:393`), and
+`mcp_server.py` an MCP server exposing resources, prompts and tools
+(`NessieAI/chat_nextseek/mcp_server.py:2-8`). Nothing in this repository executes any of
+them: outside this directory, the only mentions of those files are prose and coverage
+records, such as `NessieAI/docs/nessie-blocked-capabilities.md:391`,
 `NessieAI/history/docs/testing-review/01-chat_nextseek-e2e-harness-review.md:3`,
-`nessie_tests/FAMILIES.json:2779-2780`, `nextseek_api/schema_rag/README.md:170`
-and that boundary's own `nextseek_api/schema_rag/CITATIONS.txt:64`. A grep for
-`streamlit` over `docker-compose.yml` likewise returns nothing.
+`NessieAI/tests/nessie_tests/FAMILIES.json:2779-2780` and `NessieAI/schema_rag/README.md`.
+A grep for `streamlit` over `docker-compose.yml` returns nothing.
 
-The E2E catalog holds 11 task families and 366 variants, of which 4 are tagged
-for the Playwright browser tier, counted 2026-09-03 by parsing
-`NessieAI/tests/e2e/catalog.json:3`.
+The catalog-driven E2E runner moved to the test tree: `NessieAI/tests/e2e/__main__.py:1-13`,
+run as `python -m NessieAI.tests.e2e`. Its catalog is `NessieAI/tests/e2e/catalog.json`,
+whose variants carry a tag for the Playwright browser tier.
 
 ### 3. Data other build steps read
 
 `NessieAI/chat_nextseek/src/chat_nextseek/context/capabilities.md` is named as the
-canonical capabilities document by `build_tools/gen_op_surfaces/constants.py:8-10`,
+canonical capabilities document by `NessieAI/build_tools/gen_op_surfaces/constants.py:26-28`,
 and the agent image copies it in from a named build context declared at
-`docker-compose.yml:124-125` and consumed at `docker/cc-runtime/Dockerfile:54`.
+`docker-compose.yml:124-125` and consumed at `NessieAI/docker/cc-runtime/Dockerfile:54`.
 That COPY deliberately lands after the broad plugin copy at
-`docker/cc-runtime/Dockerfile:51`, and a generator check enforces that ordering
-(`build_tools/gen_op_surfaces/docker_blocks.py:154-159`).
+`NessieAI/docker/cc-runtime/Dockerfile:51`, and a generator check enforces that ordering
+(`NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:156-161`).
 
 ## Running and testing
 
-The package's own suite is `NessieAI/tests/chat_nextseek/`: 83 top-level modules plus 21
-under `tests/evaluator/`, counted 2026-09-03. There is no pytest configuration
-in `NessieAI/chat_nextseek/pyproject.toml`, so the root project's block applies
-(`pyproject.toml:146-147`); `chat_nextseek/conftest.py:1-6` explains the
-consequence and puts the directory on `sys.path`
-(`chat_nextseek/conftest.py:13-15`).
+The package's suite is `NessieAI/tests/chat_nextseek/`, including `evaluator/`. Its
+command is the Django lane in `NessieAI/tests/README.md`. The image installs this
+package editable from its own baked copy, so to test uncommitted source either mount a
+writable copy of this directory over `/app/NessieAI/chat_nextseek`, or put the checkout's
+copy first on the path with the `PYTHONPATH` form that file gives.
 
-**Lane actually run, 2026-09-03**: a throwaway container from the stack image
-with a writable scratch copy of this directory bind-mounted over
-`/app/NessieAI/chat_nextseek`, so the editable install
-(`pyproject.toml:136`) resolves to the worktree source:
+There is no pytest configuration in `NessieAI/chat_nextseek/pyproject.toml`, so the root
+project's block applies (`pyproject.toml:146-147`); `NessieAI/conftest.py` only stops a
+walk of `NessieAI/` from collecting `NessieAI/history/`, `NessieAI/docker/` and
+`NessieAI/chat_frontend/`.
 
-```
-mkdir -p schema_rag/duckdb schema_rag/embedding_models
-docker run --rm --network none -e LOG_DIR=/tmp/nextseek-logs \
-  -e DJANGO_SETTINGS_MODULE=dmac.test_settings -e PYTHONDONTWRITEBYTECODE=1 \
-  -v "$PWD":/src:ro -v <scratch-copy>:/app/NessieAI/chat_nextseek:z \
-  -w /src nextseek-nextseek:latest \
-  /app/.venv/bin/python -m pytest NessieAI/tests/chat_nextseek \
-  --ignore=NessieAI/tests/chat_nextseek/evaluator -q -p no:cacheprovider
-```
+The failures that lane shows are recorded in `ci/pytest-baseline.txt`, and they fall into
+three groups:
 
-Result: **849 passed, 4 failed, 2 xfailed, 18 errors in 35.08s**. All 22 non-passing
-outcomes are already recorded as known failures in `ci/pytest-baseline.txt:48-73`,
-and they fall into three groups:
-
-- The 18 errors all come from two module-scoped fixtures in one test module
+- Errors from two module-scoped fixtures in one test module
   (`NessieAI/tests/chat_nextseek/test_shortlist_recall.py:44-55`) that build a config
   object with no provider key set, which raises at
   `NessieAI/chat_nextseek/src/chat_nextseek/config.py:490-493`.
-- Three failures need the gitignored `docker/db.env` and `dmac/local_settings.py`
-  that `NessieAI/tests/e2e/import_env.py:21-23` walks up to find; both are kept
+- Failures that need the gitignored `docker/db.env` and `dmac/local_settings.py`,
+  which `NessieAI/tests/e2e/import_env.py:23-25` walks up to find; both are kept
   out of the image at `.dockerignore:43-45`.
-- See `NessieAI/chat_nextseek/CLAUDE.md` for the fourth failure, a stub gone stale.
+- One stale stub; see `NessieAI/chat_nextseek/CLAUDE.md` "Landmines".
 
-`tests/evaluator/` aborts collection in that same lane unless two modules are
-excluded. The reason older copies of this file gave for skipping it — that the
-subdirectory is Django-stack dependent — is false: a case-insensitive grep for
-`django` over `NessieAI/tests/chat_nextseek/evaluator/` returns nothing at all. See
+`evaluator/` aborts collection unless two modules are excluded. It is not
+Django-stack dependent: a case-insensitive grep for `django` over
+`NessieAI/tests/chat_nextseek/evaluator/` returns nothing. See
 `NessieAI/chat_nextseek/CLAUDE.md` for the two real blockers and the flags that get past
 them.
 
-The catalog-driven E2E lane and its Playwright tier
-(`NessieAI/tests/e2e/__main__.py:10-13`) are **(not run)** here: they drive real agents
-end to end, so they need a seeded running instance, live LLM provider
+The catalog E2E lane and its Playwright tier (`NessieAI/tests/e2e/__main__.py:10-13`)
+drive real agents end to end, so they need a seeded running instance, live LLM provider
 credentials, and a Chromium install for the browser tier.
 
-The repository-level lane that does include this directory is the GitHub
-workflow at `.github/workflows/ci-pytest.yml:62-64`, whose baseline was measured
-2026-09-01 (`ci/pytest-baseline.txt:19-21`).
+CI runs this directory in the no-stack lanes step of `.github/workflows/ci-pytest.yml`,
+scored against `ci/pytest-baseline.txt`.
 
 ## Depends on / depended on by
 
 Depends on, outside this directory:
 
 - The host's `openssh-client` binaries, which the Luria launch path shells out to as subprocesses (`NessieAI/chat_nextseek/src/chat_nextseek/luria/ssh.py:1` and `NessieAI/chat_nextseek/src/chat_nextseek/luria/ssh.py:36-37`).
-- `docker/db.env`, `docker/nextseek.env` and `dmac/local_settings.py`, read by file path from the parent repo at `NessieAI/tests/e2e/import_env.py:29-32`.
-- `nextseek_api/assistant/granular.py`, loaded by absolute file path from a test in this tree at `NessieAI/tests/chat_nextseek/test_generate_submission_hydration.py:27-28`.
+- `docker/db.env`, `docker/nextseek.env` and `dmac/local_settings.py`, read by file path from the repo root by the E2E runner's `NessieAI/tests/e2e/import_env.py:31-34`.
+- `nextseek_api.assistant.excel_export`, imported lazily and behind a guard by the orchestrator: an allowed back-edge (`NessieAI/CLAUDE.md` "Boundary").
 - The NExtSEEK REST API, whose base URL and Basic-auth pair are read from the environment at `NessieAI/chat_nextseek/src/chat_nextseek/config.py:561-563` and then overridden per turn with the caller's own identity at `NessieAI/chat_nextseek/src/chat_nextseek/orchestrator.py:195-199`.
 - Neo4j, whose URI defaults to a localhost bolt endpoint at `NessieAI/chat_nextseek/src/chat_nextseek/config.py:600`.
 
-Depended on by. Non-test importers only; the many test modules under
-`nextseek_api/` that import this package are omitted. So is the import at
+Depended on by. Non-test importers only; the test modules under `NessieAI/tests/` that
+import this package are omitted. So is the import at
 `startup/tests/test_validate.py:67`, which is not an import that file performs:
 it is fixture source inside the string literal opened at
 `startup/tests/test_validate.py:65`.
 
-- The stack image itself copies this directory in whole (`.dockerignore:1-3`) and installs it editable, so the container imports this source rather than a divergent site-packages copy (`pyproject.toml:134-136`) and the code is baked in rather than mounted (`DEPLOYMENT.md:47-48`).
+- The stack image itself copies this directory in whole (`.dockerignore:1-3`) and installs it editable, so the container imports this source rather than a divergent site-packages copy (`pyproject.toml:134-136`) and the code is baked in rather than mounted (`DEPLOYMENT.md` §0).
 - `nextseek_api/services/assistant.py:102-103` is the classic assistant ViewSet path, importing both orchestrator entry points and the config class.
 - `nextseek_api/services/cc_assistant.py:56` imports the same two entry points for the router-dispatched endpoint, plus the nf-core agent at `nextseek_api/services/cc_assistant.py:75` and a chat-log helper at `nextseek_api/services/cc_assistant.py:77`.
-- `nextseek_api/assistant/granular.py:62` and the other lazy call-time imports through `nextseek_api/assistant/granular.py:208` are the granular per-agent ops; they are deferred deliberately, for the reason given at `nextseek_api/assistant/granular.py:3-7`.
-- `nextseek_api/cc_assistant/cc_turn_complete.py:11` shares this package's chat-log derivation so the two writers cannot diverge, argued at `nextseek_api/cc_assistant/cc_turn_complete.py:7-10`.
-- `nextseek_api/cc_assistant/step7_llm_cost_ledger.py:88` reads provider token usage out of this package's LLM clients.
+- `NessieAI/ns/granular.py:62` and the other lazy call-time imports through `NessieAI/ns/granular.py:208` are the granular per-agent ops; they are deferred deliberately, for the reason given at `NessieAI/ns/granular.py:3-7`.
+- `NessieAI/cc/cc_turn_complete.py:11` shares this package's chat-log derivation so the two writers cannot diverge, argued at `NessieAI/cc/cc_turn_complete.py:7-10`.
+- `NessieAI/cc/step7_llm_cost_ledger.py:88` reads provider token usage out of this package's LLM clients.
 - `nextseek_api/services/evaluator.py:395` imports the orchestrator inside a function body.
 - `startup/dev/lane_local_settings.py:19` constructs the Django-wide config singleton at settings-import time, and `startup/dev/lane_local_settings.py:69` optionally builds a second one for the production toggle.
-- `build_tools/gen_op_surfaces/route_capabilities.py:32-34` reads the capabilities document as generator input, not as an import.
+- `NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:34-39` reads the capabilities document as generator input, not as an import.
 - See `NessieAI/chat_nextseek/CLAUDE.md` for what breaks when any of these edges moves.
 
-Not a dependency, despite appearances: `dmac_assistant/` does **not** import this
-package. A grep for `chat_nextseek` over every file under `dmac_assistant/`
-returned 9 lines on 2026-09-03, all of them comments, README prose, or the path
-constant at
-`dmac_assistant/src/dmac_assistant/config.py:32-34`, which points at a
+Not a dependency, despite appearances: `NessieAI/dmac_assistant/` does **not** import this
+package. Its mentions of `chat_nextseek` are comments, README prose, and the path constant
+at `NessieAI/dmac_assistant/src/dmac_assistant/config.py:32-34`, which points at a
 `vendor/chat_nextseek/` directory that does not exist in this repo. The
 sandboxed agent image does not carry the package either, stated at
-`docker/cc-runtime/Dockerfile:102-104`; its plugin reaches these agents over the
+`NessieAI/docker/cc-runtime/Dockerfile:102-104`; its plugin reaches these agents over the
 network through Django.
 
-See `NessieAI/chat_nextseek/CLAUDE.md` for the invariants, the traps, and the one command.
+See `NessieAI/chat_nextseek/CLAUDE.md` for the invariants and the traps.

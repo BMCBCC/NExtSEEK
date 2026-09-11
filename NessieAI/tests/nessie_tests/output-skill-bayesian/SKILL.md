@@ -66,7 +66,7 @@ python NessieAI/tests/nessie_tests/output-skill-bayesian/scripts/merge_grades.py
 ```
 
 `fetch_run.py` is **not duplicated here**. Pull the run with the sibling skill's
-copy, unchanged — it handles both transports:
+copy, unchanged; it handles both transports:
 
 ```bash
 # run executed on the dev box (the default target is fairdata-dev)
@@ -218,7 +218,7 @@ over an arm that produced nothing, and the refusal message reached no file at al
 `error_class` can never contradict `is_error`: it takes the flag from the same
 `runtime_flags` call the CSV row is built from, and `none` is the only token that
 asserts the arm was fine. An arm that errored without a recoverable message is
-`no_text`, and an arm with nothing collected is `unobserved` — which asserts
+`no_text`, and an arm with nothing collected is `unobserved`, which asserts
 nothing, so it cannot contradict anything either.
 
 `stop_reason` is the last one **in what was collected**, and is a floor rather
@@ -240,7 +240,7 @@ how Stage C keys `stage_c.json`, which is what lets the two be joined at all.
 other value as ungraded and **refuses to emit a table**, because a quietly
 shorter one is how a partial grading pass gets read as a complete one. The page
 pins all of this in `GRADE_CONTRACT` and builds its keys from it;
-`tests/test_bayes_report.py` pins `GRADE_CONTRACT` against `export` itself.
+`NessieAI/tests/nessie_tests/tests/test_bayes_report.py` pins `GRADE_CONTRACT` against `export` itself.
 
 ## Files
 

@@ -27,8 +27,11 @@ dashboard/__init__.py       -> standalone HTML artifact
 ## Key components
 
 - **BAML** (`baml_src/*.baml` -> `src/baml_client/`): declarative LLM
-  function specs. Regenerated on CLI entry via `bootstrap._bootstrap_baml_client`
-  (DD-40..DD-42). `baml_client/` is gitignored and must be regenerable.
+  function specs. The CLI entry attempts regeneration via
+  `bootstrap._bootstrap_baml_client` (DD-40..DD-42); in this repo the attempt fails
+  on a version pin, so set `CHAT_NEXTSEEK_SKIP_BAML_BOOTSTRAP=1` (see
+  [operations.md](operations.md#baml-regeneration)). `baml_client/` is gitignored
+  and must be regenerable.
 - **EvaluatorWorkflow** (`workflow.py`): single seam for BAML calls so tests
   can swap in `FakeBamlClient`.
 - **Classifier** (`reports._classify_report`): precedence-based mapping from
@@ -37,8 +40,9 @@ dashboard/__init__.py       -> standalone HTML artifact
 ## Invariants
 
 1. **DL-010 evaluator file boundary**: all subsystem edits stay inside
-   `src/chat_nextseek/evaluator/` and `tests/evaluator/` (one reviewed
-   exception for a CLAUDE.md pointer in the broader plan history).
+   `src/chat_nextseek/evaluator/` and its tests, now in
+   `NessieAI/tests/chat_nextseek/evaluator/` (one reviewed exception for a
+   CLAUDE.md pointer in the broader plan history).
 2. **DD-32 generated code boundary**: never edit `src/baml_client/` by hand.
 3. **DD-43 classification exclusivity**: every report lands in exactly one
    bucket; `run_status` is derived, not stored independently.

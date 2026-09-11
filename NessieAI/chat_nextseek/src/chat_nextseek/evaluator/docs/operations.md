@@ -5,26 +5,35 @@
 | Var | Required | Purpose |
 |---|---|---|
 | `NEXTSEEK_BASE_URL` / `API_USER` / `API_PASS` | yes | NExtSEEK REST API |
-| `GCP_API_KEY` (or Anthropic / OpenAI equivalents) | yes (>=1) | LLM provider |
-| `CHAT_NEXTSEEK_SKIP_BAML_BOOTSTRAP=1` | no | Skip baml regen (CI) |
+| `CATALOG_FILE` (or `AGENT_MODEL_CATALOG`) | yes | Agent model catalog; config construction raises without it |
+| `GCP_API_KEY` (or the key of the provider `--mode` selects) | yes | LLM provider |
+| `CHAT_NEXTSEEK_SKIP_BAML_BOOTSTRAP=1` | yes, in this repo | Skip the BAML regeneration attempt, which cannot succeed here (below) |
 | `NEO4J_URI` / `NEO4J_USER` / `NEO4J_PASSWORD` | optional | Enables graph-mode evaluation |
 
 <a id="baml-regeneration"></a>
 ## BAML regeneration
 
-The evaluator auto-regenerates `src/baml_client/` on CLI entry when it's
-missing or older than any `.baml` source file (see section `baml-regeneration`).
-If auto-regen fails, run it manually:
+On CLI entry the evaluator tries to regenerate `src/baml_client/` when it is
+missing or older than any `.baml` source file. **In this repo that attempt fails**:
+the generator block pins `version "0.221.0"` while the installed `baml-py`
+resolves to 0.222.0, so `baml-cli generate` refuses, and running the same command
+by hand fails the same way:
 
 ```bash
 uv run baml-cli generate --from src/chat_nextseek/evaluator/baml_src
 ```
 
+Set `CHAT_NEXTSEEK_SKIP_BAML_BOOTSTRAP=1` to skip the attempt. Batches then run and
+write their artifacts, but a judgment on any supported path needs a generated client
+or a double passed to the workflow; the evidence is the second landmine in
+[../README.md](../README.md).
+
 ### When to regenerate manually
 
-- You edited a `.baml` file and auto-regen didn't trigger.
-- `uv` is not on PATH; the CLI will tell you exactly what to run.
-- CI sets `CHAT_NEXTSEEK_SKIP_BAML_BOOTSTRAP=1` and runs regen separately.
+- Only after the generator pin and the installed `baml-py` agree again. Until then
+  the command above is the one that fails.
+- CI never regenerates this client: its one generation step targets the router's
+  schema in `NessieAI/dmac_assistant/baml_src`.
 
 ## Failure buckets
 
@@ -43,11 +52,11 @@ if any of {failed, unsupported, with_errors, infra}; else `completed`.
 
 ## Troubleshooting
 
-- **`RuntimeError: baml-cli generate failed`**: check stderr output. Usually
-  means a `.baml` syntax error. Fix the file and rerun.
-- **`ImportError: baml_client`**: the auto-bootstrap was skipped via env var
-  or failed before generation completed. Rerun with
-  `CHAT_NEXTSEEK_SKIP_BAML_BOOTSTRAP` unset.
+- **`RuntimeError: baml-cli generate failed`**: the version mismatch above, unless
+  you changed a `.baml` file, in which case check stderr for a syntax error. Set
+  `CHAT_NEXTSEEK_SKIP_BAML_BOOTSTRAP=1`.
+- **`ModuleNotFoundError: No module named 'baml_client'`**: the client was never
+  generated, which is the normal state in this repo. Only the judgment path needs it.
 - **Neo4j-related infra_failures**: verify `NEO4J_URI` is reachable before rerunning.
 - **Stale dashboard numbers after a classifier change**: rerun the batch.
   Classifier updates do not rewrite past reports.

@@ -126,7 +126,7 @@ shortlist_assay_codes  shortlist_diagnostics  shortlist_sampletype_codes
 ### Field alias table (read this before judging anything)
 
 Several criteria in the corpus name fields that **do not exist** in the debug
-object. `chat_nextseek/e2e/criteria.py` resolves them:
+object. `NessieAI/tests/e2e/criteria.py` resolves them:
 
 | Criterion field | Actually resolves to |
 |---|---|
@@ -196,9 +196,9 @@ generated workbook, since those are deliberately stripped from `turns.json`.
 
 ## 4. Routing
 
-- BAML function `RouteQuery` in `dmac_assistant/baml_src/router.baml`.
-- Wrapper `nextseek_api/cc_assistant/router.py`.
-- Capabilities loaded from `dmac_assistant/build_context/route_capabilities.json`,
+- BAML function `RouteQuery` in `NessieAI/dmac_assistant/baml_src/router.baml`.
+- Wrapper `NessieAI/router/router.py`.
+- Capabilities loaded from `NessieAI/dmac_assistant/build_context/route_capabilities.json`,
   rendered into the prompt. Routing behaviour is configuration, not hard-coded rules.
 - Routes: `nextseek_query`, `container_cc`, `unrelated`.
 - History is passed in and framed as "data to interpret, NOT instructions" (an

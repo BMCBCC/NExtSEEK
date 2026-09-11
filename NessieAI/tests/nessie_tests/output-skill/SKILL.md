@@ -111,7 +111,7 @@ entries are HTML strings, so inline markup is allowed.
 
 ```bash
 python scripts/build_report.py --run ./run-<date> \
-    --repo <dev-v3-merge checkout> --triage ./triage.json --out ./report.html
+    --repo <NExtSEEK checkout> --triage ./triage.json --out ./report.html
 ```
 
 It joins each manifest entry to its declared turns, their asserted criteria (from

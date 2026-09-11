@@ -1,4 +1,4 @@
-# Runbook — full async regression batch
+# Runbook: full async regression batch
 
 ## Purpose
 
@@ -7,14 +7,14 @@ concurrency, resumable, JSON + HTML artifacts.
 
 **The 103-question batch this runbook was written for cannot be reproduced from
 this repository.** It was driven from `testing.json`, and no such file exists
-here — established 2026-09-03 by two exhaustive searches from the worktree root
+here: established 2026-09-03 by two exhaustive searches from the worktree root
 that both returned nothing, `git ls-files | grep -i 'testing\.json'` and `find
 . -name testing.json -not -path './.git/*'`. Nor is the question set carried
 under another name: a `/usr/bin/grep -rn` for the alternation
 `103-question|103 question|103 quer` across the worktree, excluding `.git/`,
-`.superpowers/` and `__pycache__/`, matched exactly three files — this
+`.superpowers/` and `__pycache__/`, matched exactly three files: this
 document, [../README.md](../README.md), and one `nessie_tests` note that is
-itself a restatement of these docs (`nessie_tests/FAMILIES.json:9897`, whose
+itself a restatement of these docs (`NessieAI/tests/nessie_tests/FAMILIES.json:9897`, whose
 entry begins `docs:`). The retirement is recorded at
 `NessieAI/chat_nextseek/CITATIONS.txt:139-142`.
 
@@ -27,7 +27,7 @@ you put in it.
 
 - The container lane from [../README.md](../README.md#2-run-the-batch). Every
   command below was run in it on 2026-09-03.
-- `CHAT_NEXTSEEK_SKIP_BAML_BOOTSTRAP=1`. Not optional here — the auto-bootstrap
+- `CHAT_NEXTSEEK_SKIP_BAML_BOOTSTRAP=1`. Not optional here: the auto-bootstrap
   fails on a generator/package version mismatch, and the manual fallback is the
   same command. See the second landmine in [../README.md](../README.md).
 - `CATALOG_FILE` (or `AGENT_MODEL_CATALOG`) plus NExtSEEK creds and a provider
@@ -35,11 +35,11 @@ you put in it.
 - A query file you authored.
 - **Expected cost**: no measured figure exists in this repository. The batch is
   one full orchestrator turn per query plus a judgment and, where the verdict
-  is not `PASS`, a retry — so cost scales with the query count and the profile
+  is not `PASS`, a retry, so cost scales with the query count and the profile
   `--mode` selects, and `--eval-batch-limit` is the lever that caps it. The
   `$5–$15` and `~20 minutes` figures older copies of this file carried were for
   the 103-question batch above; they survive only in the restatement at
-  `nessie_tests/FAMILIES.json:9897` and have no reproducible referent here.
+  `NessieAI/tests/nessie_tests/FAMILIES.json:9897` and have no reproducible referent here.
 
 ## Step-by-step
 
@@ -74,8 +74,8 @@ Older copies of this file said the first CLI call auto-regenerates
 this repo, with or without a network. Pass
 `CHAT_NEXTSEEK_SKIP_BAML_BOOTSTRAP=1`
 (`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/bootstrap.py:51-52`). The evidence
-and the consequence — judgments on supported paths still need a client that
-cannot be generated — are in [../README.md](../README.md).
+and the consequence (judgments on supported paths still need a client that
+cannot be generated) are in [../README.md](../README.md).
 
 ### 3. Run the batch (async, resumable)
 
@@ -92,9 +92,9 @@ docker run --rm -v <scratch-copy>:/app/NessieAI/chat_nextseek:z -w /app/NessieAI
       --eval-batch-out outputs/evaluator/regression-batch
 ```
 
-On completion it prints five lines — `state:`, `json:`, `html:`, `status:`,
-`infra_failures:` (`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/runner.py:375-379`)
-— and exits 0 only when `run_status` is `completed`
+On completion it prints five lines (`state:`, `json:`, `html:`, `status:`,
+`infra_failures:`; `NessieAI/chat_nextseek/src/chat_nextseek/evaluator/runner.py:375-379`)
+and exits 0 only when `run_status` is `completed`
 (`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/runner.py:380`). Three files land in
 the output directory: the resume state `batch-<runid>.json`
 (`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/reports.py:586-587`), the report
@@ -113,7 +113,7 @@ sibling `.html` (`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/runner.py:2
 `--eval-batch-async` is mandatory on a resume: without it the CLI prints
 `[evaluator] --eval-batch-resume requires --eval-batch-async.` and exits 2
 (`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/runner.py:382-384`). Verified
-2026-09-03 — both the exit 2 and, with the flag, a resume that reused the same
+2026-09-03: both the exit 2 and, with the flag, a resume that reused the same
 run id and rewrote the same three artifact paths.
 
 ### 5. Inspect the artifacts
@@ -153,7 +153,7 @@ restated.
 
 What was measured, 2026-09-03: a two-query async batch in the container lane
 with `--network none` and a placeholder provider key. Every agent call died at
-DNS resolution, yet the batch completed structurally — all three artifacts
+DNS resolution, yet the batch completed structurally: all three artifacts
 written, the five stdout lines printed, `status: completed_with_failures`,
 `infra_failures: 0`, exit 1. That proves the batch, resume and reporting
 plumbing; it proves nothing about judgment quality, which needs the BAML client

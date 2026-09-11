@@ -1,4 +1,4 @@
-# HiBayes × NExtSEEK — evaluation and routing feedback loop (design spec)
+# HiBayes × NExtSEEK: evaluation and routing feedback loop (design spec)
 
 **Status:** implemented; posterior routing ships off by default (`NEXTSEEK_POSTERIOR_ROUTING_ENABLED`)
 **Date:** 2026-07-31
@@ -6,14 +6,14 @@
 **Companion clone:** `dmac-assistant` `main` @ `dcca50c187890dc93659e5594810179793bb94eb`
 
 Every file:line reference in this document was verified against the anchor commit. If the tip has
-moved, re-verify before relying on a line number — see **Drift protocol** at the end.
+moved, re-verify before relying on a line number: see **Drift protocol** at the end.
 
 ---
 
 ## 1. Problem
 
-The NExtSEEK integrated assistant routes each turn to one of two paths — the native NExtSEEK query
-pipeline or the sandboxed Container-CC agent — and then forgets how it went. There is no measurement
+The NExtSEEK integrated assistant routes each turn to one of two paths, the native NExtSEEK query
+pipeline or the sandboxed Container-CC agent, and then forgets how it went. There is no measurement
 loop. Separately, a Bayesian evaluator exists in `dmac-assistant` that scores an offline corpus and
 produces per-family reliability posteriors, but it is offline, it is not in this repository, and its
 inputs are a headless fixture rather than live traffic.
@@ -23,11 +23,11 @@ the result back into (a) guidance for the container agent and (b) a risk overlay
 
 ## 2. Goals
 
-1. An offline, scheduled job that evaluates real `ChatSession` turn data — never in the chat hot path.
+1. An offline, scheduled job that evaluates real `ChatSession` turn data, never in the chat hot path.
 2. **Incremental** judging: re-judge only new or changed turns, with fingerprint-based invalidation
    and an explicit force path. No mtime-only skip that can silently drop failures.
 3. The BAML router classifies **`task_family`** alongside its existing route decision, in one call.
-4. Posteriors inform **routing risk** — honestly, as risk *given the route taken*.
+4. Posteriors inform **routing risk**: honestly, as risk *given the route taken*.
 5. The existing router remains the fallback; the Bayesian layer is an overlay and gate, not a
    replacement.
 6. A consumer that gives the container agent family-level context on what has worked and failed.
@@ -41,30 +41,30 @@ the result back into (a) guidance for the container agent and (b) a risk overlay
   the agent reaches for *inside* a container turn; it is orthogonal to routing and to this work.
 - **No replacement of the heuristic router fallback.**
 - **No new credentials into the agent sandbox.** The isolation invariants are untouched.
-- **Not a model-architecture change** to the Bayesian fit — the existing hierarchical model and its
+- **Not a model-architecture change** to the Bayesian fit: the existing hierarchical model and its
   banding are preserved.
 
 ## 4. What already exists (verified at the anchor)
 
 | Fact | Where |
 |---|---|
-| Router returns route + model class + reasoning; **no** `task_family` | `dmac_assistant/baml_src/router.baml` |
+| Router returns route + model class + reasoning; **no** `task_family` | `NessieAI/dmac_assistant/baml_src/router.baml` |
 | Conversation-history contract already implemented | same file; call site in `nextseek_api/services/cc_assistant.py` |
-| A **shared per-turn envelope already spans both routes** — a documented contract naming both writers | `chat_nextseek/src/chat_nextseek/chat_memory.py:32-35` |
-| The query-path writer stamps route and status on every turn | `chat_nextseek/src/chat_nextseek/chat_memory.py:213-214` |
-| Container-only trace object: 11 structural fields, **no** success/validity/judgment field | `nextseek_api/cc_assistant/cc_trace.py:32-44` |
+| A **shared per-turn envelope already spans both routes**: a documented contract naming both writers | `NessieAI/chat_nextseek/src/chat_nextseek/chat_memory.py:32-35` |
+| The query-path writer stamps route and status on every turn | `NessieAI/chat_nextseek/src/chat_nextseek/chat_memory.py:213-214` |
+| Container-only trace object: 11 structural fields, **no** success/validity/judgment field | `NessieAI/cc/cc_trace.py:32-44` |
 | Session id is a real UUID primary key | `nextseek_api/assistant/models_db.py:8` |
-| The product's turn number lives **only inside a JSON blob**, computed in Python | `chat_nextseek/src/chat_nextseek/chat_memory.py:49-71` |
-| A column named `turn_id` exists but holds a task run UUID, not the chat turn number | `nextseek_api/assistant/models_db.py:83`; stated at `nextseek_api/cc_assistant/cc_turn_complete.py:22-24` |
+| The product's turn number lives **only inside a JSON blob**, computed in Python | `NessieAI/chat_nextseek/src/chat_nextseek/chat_memory.py:49-71` |
+| A column named `turn_id` exists but holds a task run UUID, not the chat turn number | `nextseek_api/assistant/models_db.py:83`; stated at `NessieAI/cc/cc_turn_complete.py:22-24` |
 | Chat log FIFO-evicts at 50 entries | `chat_nextseek/src/chat_nextseek/chat_memory.py:25,246-247` |
 | Celery beat exists, with one periodic entry today | `nextseek_api/batch_upload/celery_app.py` |
-| The Stage C judge's BAML contract **is already vendored**, in two byte-identical copies | `dmac_assistant/baml_src/functional_evaluator.baml`, `docker/cc-runtime/baml_src/functional_evaluator.baml` |
-| …and it carries a locked reuse rule pointing at `tools/hibayes/exporter.py`, **which does not exist in this tree** | `dmac_assistant/baml_src/functional_evaluator.baml:27` |
-| The Python evaluation packages, the eval Dockerfile, its shell wrappers and its Make targets are **all absent** | — |
+| The Stage C judge's BAML contract **is already vendored**, in two byte-identical copies | `NessieAI/dmac_assistant/baml_src/functional_evaluator.baml`, `NessieAI/docker/cc-runtime/baml_src/functional_evaluator.baml` |
+| …and it carries a locked reuse rule pointing at `tools/hibayes/exporter.py`, **which does not exist in this tree** | `NessieAI/dmac_assistant/baml_src/functional_evaluator.baml:27` |
+| The Python evaluation packages, the eval Dockerfile, its shell wrappers and its Make targets are **all absent** | none |
 | NExtSEEK already vendors `dmac_assistant` as an editable path dependency | `pyproject.toml:139` |
 | Exactly **one** test pins the capabilities file by hash | `nextseek_api/cc_assistant/tests/test_f_constraint_pins.py:12,17` |
 
-> A second test's docstring claims it also pins that file. It does not — the file contains no such
+> A second test's docstring claims it also pins that file. It does not: the file contains no such
 > assertion and its hashing import is unused. Treat the docstring as inaccurate.
 
 ## 5. Architecture
@@ -78,11 +78,11 @@ L2  OFFLINE (nightly, Celery beat)
     export → judge (incremental, cached) → fit → publish posteriors
 
 L3  CONSUMERS
-    (a) container playbook  — ships first
-    (b) routing risk overlay — ships second, gated
+    (a) container playbook - ships first
+    (b) routing risk overlay - ships second, gated
 ```
 
-### L1 — online
+### L1: online
 
 - **Router.** `RouterDecision` gains `task_family`, returned by the **same** call that returns the
   route. Both copies of the BAML tree must move together; nothing enforces that today, so the change
@@ -92,12 +92,12 @@ L3  CONSUMERS
 - **Persistence.** A new per-turn ledger row is written in the same transaction as the existing
   envelope write.
 
-### L2 — offline
+### L2: offline
 
 Nightly Celery beat task, incremental, with a hard spend cap that pauses the job when reached, plus
 an operator-invoked force path. Stages: export rows → judge new/changed turns → fit → publish.
 
-### L3 — consumers
+### L3: consumers
 
 - **Playbook (first).** Family-level guidance injected into the container agent's context. Carries
   aggregate statistics **and** worked examples; example content is scoped to the requesting user's
@@ -122,7 +122,7 @@ future renumbering of the JSON turn ids, which has already happened once in prod
 
 **Two implementation notes.**
 1. A new FK onto the session table on a seed-derived database must replicate the existing
-   charset-alignment step, or creation fails outright. The mechanism already exists in-tree —
+   charset-alignment step, or creation fails outright. The mechanism already exists in-tree:
    reuse it (`nextseek_api/migrations/_cc_transcript_heal.py:85-97`).
 2. There is currently **no locking** around the read-modify-write that assigns turn numbers, so two
    concurrent completions on one session can compute the same value. The ledger's uniqueness
@@ -138,20 +138,20 @@ Success is recorded as a **four-tier ladder**, not one bit:
 
 | Tier | Meaning | Source |
 |---|---|---|
-| 1 | Routing success — the turn reached the intended path | online, already stamped |
-| 2 | Runtime — completed without error, timeout, turn cap or spend cap | online, already stamped |
+| 1 | Routing success: the turn reached the intended path | online, already stamped |
+| 2 | Runtime: completed without error, timeout, turn cap or spend cap | online, already stamped |
 | 3 | Judge verdict | offline, Stage C |
 | 4 | Artifact and trace analysis (e.g. tool-choice correctness) | offline, net-new |
 
 Tiers 1–2 already have a durable home on both routes. Tiers 3–4 do not, on either, and are net-new
-work — that is where the real cost sits.
+work: that is where the real cost sits.
 
-**Taxonomy source of truth:** the eight task families declared in the capabilities file — five on the
+**Taxonomy source of truth:** the eight task families declared in the capabilities file, five on the
 query route, three on the container route, with no overlap.
 
 > **The capabilities file is forked.** The standalone `dmac-assistant` copy and the NExtSEEK-vendored
 > copy differ, including the name of one container-route family. **The vendored copy is
-> authoritative** — it is the one the router loads and the one the hash pin asserts against. The
+> authoritative**: it is the one the router loads and the one the hash pin asserts against. The
 > spec's taxonomy is the vendored copy's.
 
 Mapping the live op inventory underneath these families **edits the pinned file**, which turns
@@ -166,8 +166,8 @@ exactly one guard red. That guard is updated as part of the change, with the new
 - **Fit:** the existing hierarchical model and its four bands are preserved unchanged.
 - **Publish:** posteriors land in a database table that consumers read.
 
-**Judge model is not a design constraint.** It is a BAML client name and can be switched — including
-to an Anthropic client on Bedrock — without touching this design. Do not build anything that assumes
+**Judge model is not a design constraint.** It is a BAML client name and can be switched, including
+to an Anthropic client on Bedrock, without touching this design. Do not build anything that assumes
 a specific provider.
 
 ## 9. Statistical claims and non-claims
@@ -177,12 +177,12 @@ succeeds, with a credible interval and a band. This is risk **given the route ta
 
 **What it may not claim.** That the other route would have done better. The router chooses the route
 by inspecting the query, so route and difficulty are entangled in the logs; the two routes' turns are
-not comparable populations. The families make this sharper still — they are route-disjoint, so
+not comparable populations. The families make this sharper still: they are route-disjoint, so
 "route" is close to a relabelling of "family", and for many pairs the counterfactual has no referent
 at all (the query route cannot execute code).
 
 **Both routes have a router-free bypass**, so a few cross-route observations will accumulate.
-Neither bypass is an experiment — whoever invokes them is self-selecting. Record them; do not treat
+Neither bypass is an experiment: whoever invokes them is self-selecting. Record them; do not treat
 them as evidence about what the router should do.
 
 **Report route and family as separate columns** even though route is redundant for ordinary traffic,
@@ -190,10 +190,10 @@ so bypass rows stay visibly distinguishable.
 
 **Banding is a policy setting, not a measurement.** The top band keys on a posterior mean of 0.95.
 The model pools partially across families, and this pipeline's own prior probe records a family with
-a **perfect record being dragged into the worst band** at the library default — the prior scale was
+a **perfect record being dragged into the worst band** at the library default: the prior scale was
 raised specifically to prevent that. How much pooling applies is a tuned constant. Consequence: a
 family's band depends on its own sample size, the rest of the fleet, and that constant. If a lower
-bar is acceptable for a given family, the thresholds must say so — and on the axis the overlay reads
+bar is acceptable for a given family, the thresholds must say so, and on the axis the overlay reads
 first they are hardcoded literals, not configuration.
 
 **Expect the overlay to be quiet for a long time.** There is a hard floor below three observations,
@@ -204,7 +204,7 @@ why the playbook consumer ships first.
 ## 10. Porting strategy
 
 The evaluation code is **vendored into this repository**, following the pattern already proven here
-for the assistant package. A NExtSEEK-owned container remains for the heavy numerical dependencies —
+for the assistant package. A NExtSEEK-owned container remains for the heavy numerical dependencies:
 it is a dependency-isolation tool, not a substitute for integration.
 
 This is required, not stylistic: the existing eval image contains no application source, every
@@ -216,12 +216,12 @@ at a Python module that is not. Bringing that module in closes a dangling refere
 creating new coupling.
 
 **Acceptance bar (user-stated, binding):**
-1. Ported logic preserves the original's core behaviour — copy, do not rewrite.
-2. The result is natively part of this codebase — no import from, or reference to, a separate
+1. Ported logic preserves the original's core behaviour: copy, do not rewrite.
+2. The result is natively part of this codebase: no import from, or reference to, a separate
    `dmac-assistant` checkout or image.
 3. It builds and runs on a machine that does not have `dmac-assistant` at all.
 
-Scope note: the port is larger than a Python file count suggests — the Dockerfile, the shell
+Scope note: the port is larger than a Python file count suggests; the Dockerfile, the shell
 wrappers and the Make targets are absent too, not only the packages.
 
 ## 11. Privacy, retention and threats
@@ -245,7 +245,7 @@ wrappers and the Make targets are absent too, not only the packages.
 ## 12. Test strategy
 
 - **Coverage target: 95%**, across unit, integration and live end-to-end tests.
-- **Hermetic unit tests** — no database, no spend — for the router schema change, the family
+- **Hermetic unit tests** (no database, no spend) for the router schema change, the family
   classifier fallback, the fingerprint and invalidation logic, the export shaping, and the ledger
   writers.
 - **Container/DB-backed integration tests** for the migration, the FK and uniqueness constraint,

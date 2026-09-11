@@ -26,7 +26,7 @@ Regenerate the worked example end to end, no dev box needed:
 ```bash
 python scripts/build_report.py \
     --run examples/run-2026-07-24 \
-    --repo /path/to/dev-v3-merge \
+    --repo /path/to/NExtSEEK \
     --triage examples/triage.json \
     --out /tmp/report.html
 ```

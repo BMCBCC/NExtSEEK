@@ -17,7 +17,7 @@ Each is enforced from outside this folder. Breaking one is a security regression
 
 ## Landmines
 
-- **The baked `capabilities.md` differs from the canonical copy today.** The running agent gets the canonical bytes (the named-context `COPY` overwrites the baked one), but every `gen_op_surfaces` caller refuses the mismatch. It is a known baseline failure. Fixing it also needs `PORT-EVIDENCE.json` updated.
+- **The baked `capabilities.md` is not what the agent reads.** The named-context `COPY` overwrites it with the canonical bytes. Its drift from the canonical file is documented once, in `NessieAI/chat_nextseek/CLAUDE.md`; the fix touches `PORT-EVIDENCE.json` here.
 - **Two other baked catalogs, `min_graph_schema.json` and `neo4j_schema.json`, differ from canonical and DO reach the agent.** Nothing overwrites them. The catalog snapshot generator lives in an external clone, so they are hand-maintained here, together with their digests.
 - **A bare `pytest` inside `cc-runtime/` exits 1 even when every test passes**: the declared coverage targets name trees this port lacks. Pass `-o addopts=""`.
 - **`docker build` on `cc-runtime/` alone fails.** The named context `chat_nextseek` exists only through compose.

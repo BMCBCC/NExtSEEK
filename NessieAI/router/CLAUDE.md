@@ -15,7 +15,7 @@
 - **A test pins the source hash of `_heuristic`** (`NessieAI/tests/router/test_f_constraint_pins.py`). Never run a formatter over this package.
 - **`DMAC_ROUTE_CAPABILITIES_FILE` and `DMAC_ROUTER_MODEL_CLASS_MAP_FILE` in a box's `docker/nextseek.env` beat the package defaults.** A stale value drops every turn to the heuristic, or strips the model id from every CC turn. See `NessieAI/CLAUDE.md` "Box env".
 - **The override precedence is not in this package yet.** `_decide_route` stays in `nextseek_api/services/cc_assistant.py` until Phase B moves it here.
-- **`NessieAI/tests/router/test_route_capabilities.py` fails on other units' state.** It imports build_tools, dmac_assistant, the harness and the op registry at module scope; it fails while the baked `capabilities.md` differs from canonical; and one test runs `git show` on a pinned commit, so it fails wherever `.git` is not reachable. Keep that `git show` path as it is.
+- **`NessieAI/tests/router/test_route_capabilities.py` fails on other units' state.** It imports build_tools, dmac_assistant, the harness and the op registry at module scope; it fails while the baked `capabilities.md` differs from canonical (`NessieAI/chat_nextseek/CLAUDE.md`); and one test runs `git show` on a pinned commit, so it fails wherever `.git` is not reachable. Keep that `git show` path as it is.
 - **Posterior routing is off by default** (`NEXTSEEK_POSTERIOR_ROUTING_ENABLED`). A green run with the flag off says nothing about the posterior leg.
 
 ## Test command

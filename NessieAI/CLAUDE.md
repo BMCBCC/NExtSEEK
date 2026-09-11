@@ -27,7 +27,7 @@ Test commands live only in `NessieAI/tests/README.md`.
 - The 8 `.baml` files in `NessieAI/dmac_assistant/baml_src/` and `NessieAI/docker/cc-runtime/baml_src/` stay byte-identical until the Phase C dedupe.
 - A judge-schema change touches three files (see `NessieAI/README.md` "To change X, edit Y"). Never change `PROMPT_VERSION` in `NessieAI/hibayes/judge_human_compare.py`: it is written into judged rows.
 - `NessieAI/cc/op_registry/ops.py` is the op registration source of truth; add ops only through `/add-cc-op`. `ops.json` and the plugin surfaces are generated.
-- `capabilities.md` is canonical in `NessieAI/chat_nextseek/src/chat_nextseek/context/`. The baked plugin copy differs today; fixing it also means updating `NessieAI/docker/cc-runtime/PORT-EVIDENCE.json`.
+- `capabilities.md` is canonical in `NessieAI/chat_nextseek/src/chat_nextseek/context/`. Its standing drift from the baked plugin copy is documented once, in `NessieAI/chat_nextseek/CLAUDE.md`.
 - A chat UI change is two commits: source, then the rebuilt bundle in `static/js/chat_assistant/`.
 - `NessieAI/docker/cc-runtime/container/CLAUDE.md` is what the agent is told and ships in the image. Only its marked blocks are generated.
 - The live router reads `NessieAI/tests/nessie_tests/corpus.json` for family labels. Do not dockerignore `NessieAI/tests/`.

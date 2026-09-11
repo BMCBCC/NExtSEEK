@@ -3,8 +3,8 @@
 ## What this is
 
 A library that turns an OpenAPI document into a searchable, per-session DuckDB file, then
-answers a natural-language question with the endpoints most like it. Nine Python files,
-2,696 lines, counted 2026-09-03 by a find for `*.py` beneath this directory.
+answers a natural-language question with the endpoints most like it. Its tests are in
+`NessieAI/tests/schema_rag/`.
 
 It is not a Django app. A grep over every file here for `django.db`, `models.Model`,
 `AppConfig` or `migrations` returns nothing, so there is no ORM model, no migration and no
@@ -28,8 +28,10 @@ import supplies both classes (`nextseek_api/models.py:2190`) and rebuilds the mo
 (`nextseek_api/models.py:2191`), with a swallowed `ImportError` for the case where this
 package is absent (`nextseek_api/models.py:2192-2193`). Importing any module here runs
 that initializer, which is why the live path arms it via
-`nextseek_api/services/schema_rag.py:27`. See `nextseek_api/schema_rag/CLAUDE.md` for the
-measured cost of dropping those two lines.
+`nextseek_api/services/schema_rag.py:27`. Drop those two lines and `RetrieveResponse`
+keeps its unresolved forward references. The import of `nextseek_api.models` is one of
+the allowed back-edges in `NessieAI/CLAUDE.md` "Boundary"; this unit has no `CLAUDE.md` of
+its own, so that file carries its rules.
 
 ## Surface
 
@@ -99,16 +101,14 @@ still the one the caller sent (`NessieAI/schema_rag/service.py:362`).
 
 ## Running and testing
 
-There are two lanes and this directory owns only the smaller one.
+Every test is in `NessieAI/tests/schema_rag/`, and the commands are the Django lane in
+`NessieAI/tests/README.md` (its `schema_rag` bullet). There are two lanes.
 
-**The hermetic lane** is eleven modules that live in the parent app rather than here: ten
-whose names begin `test_schema_` under `nextseek_api/tests/`, counted 2026-09-03, plus
-`nextseek_api/tests/test_services_schema_rag_coverage.py`. It wants no live database and
-no network, but it does want two things a fresh container will not hand it. The naive
-attempt on 2026-09-03 — a throwaway container over a writable copy of the worktree,
-networking off, this directory's own tests included — supplied neither and came back
-4 failed, 201 passed, 5 skipped in 25.13s, every failure being the embedder reaching for
-Hugging Face.
+**The hermetic lane** is every module there except the live one. It wants no live
+database and no network, but it does want two things a fresh container will not hand
+it: a populated embedding-model cache, and `HF_HUB_OFFLINE=1`. Without them the
+embedder reaches for Hugging Face, and on a container with networking off those tests
+fail.
 
 Both causes are visible in the repository. The sentence-transformers cache is resolved
 under `BASE_DIR` (`dmac/settings.py:491-492`), so relocating the checkout inside a
@@ -116,31 +116,26 @@ container aims it at a directory `dmac/settings.py:498-499` has just created emp
 even with a populated cache in reach, the loader still opens an HTTP conversation with
 Hugging Face unless `HF_HUB_OFFLINE` is set. The supported lane already encodes both
 (`startup/dev/run_full_test_lane.sh:41-49`), fails fast instead of downloading
-(`startup/dev/run_full_test_lane.sh:162-170`), and points at
+(`startup/dev/run_full_test_lane.sh:196-204`), and points at
 `startup/dev/provision_embedding_model.sh:196` for populating the cache once per checkout.
-Supplied, the same selection goes green, and the only tests still not executed are the
-five in this directory.
+Supplied, the hermetic selection goes green, and the only tests still not executed are
+the live ones.
 
-**The live lane** is this directory's only test module. Its five tests fetch the real
-FAIRDOM SEEK document (`NessieAI/tests/schema_rag/test_schema_rag_live.py:39`) and are
-skipped unless an environment flag is set
+**The live lane** is `NessieAI/tests/schema_rag/test_schema_rag_live.py`. Its tests fetch
+the real FAIRDOM SEEK document (`NessieAI/tests/schema_rag/test_schema_rag_live.py:39`)
+and are skipped unless `RUN_SCHEMA_RAG_LIVE=1` is set
 (`NessieAI/tests/schema_rag/test_schema_rag_live.py:41`,
-`NessieAI/tests/schema_rag/test_schema_rag_live.py:45`), which is why they cost nothing
-in the run above. They need outbound egress to fairdomhub.org, which the container had
-none of, so they were not exercised. Their hermetic counterpart serves a vendored fixture
-instead, as their own docstring explains
+`NessieAI/tests/schema_rag/test_schema_rag_live.py:45`), so a hermetic run skips them at
+no cost. They need outbound egress to fairdomhub.org. Their hermetic counterpart serves a
+vendored fixture instead, as their own docstring explains
 (`NessieAI/tests/schema_rag/test_schema_rag_live.py:4-8`).
-
-See `nextseek_api/schema_rag/CLAUDE.md` for the exact invocation and the result it
-produced.
 
 ## Depends on / depended on by
 
 Depends on, outside this directory:
 
-- Eight third-party distributions besides Django, counted 2026-09-03 by reading every
-  module-scope import line in the seven non-test modules here, all declared at the repo
-  root: `duckdb` (`pyproject.toml:36`), `jsonref` (`pyproject.toml:56`), `numpy`
+- Eight third-party distributions besides Django, found by reading every module-scope
+  import line in the non-test modules here, all declared at the repo root: `duckdb` (`pyproject.toml:36`), `jsonref` (`pyproject.toml:56`), `numpy`
   (`pyproject.toml:68`), `pandas` (`pyproject.toml:74`), `pydantic` (`pyproject.toml:80`),
   `PyYAML` (`pyproject.toml:88`), `requests` (`pyproject.toml:92`) and
   `sentence-transformers` (`pyproject.toml:101`).
@@ -162,12 +157,12 @@ Depends on, outside this directory:
 - Four environment variables read directly rather than through settings
   (`NessieAI/schema_rag/schema_processor.py:113-119`). The app service takes its
   environment from a rendered file (`docker-compose.yml:17-19`) whose template sets three
-  of the four — `startup/templates/nextseek.env.template:11`,
+  of the four (`startup/templates/nextseek.env.template:11`,
   `startup/templates/nextseek.env.template:21` and
-  `startup/templates/nextseek.env.template:27` — so the internal-URL rewrite is armed on a
+  `startup/templates/nextseek.env.template:27`), so the internal-URL rewrite is armed on a
   default install. The fourth, `NEXTSEEK_PROD_URL`, is assigned nowhere in this repo: a
-  tree-wide grep for that name returns only reader lines under `chat_nextseek/`, one being
-  `chat_nextseek/cli.py:85`, and no line that sets it.
+  tree-wide grep for that name returns only reader lines under `NessieAI/chat_nextseek/`,
+  such as `NessieAI/chat_nextseek/cli.py:90`, and no line that sets it.
 
 Depended on by. Derived from a repo-wide grep for `schema_rag` restricted to lines that
 begin an import, then a second unrestricted pass over the same tree for the name in
@@ -180,11 +175,11 @@ two that constrain it are kept.
   imports sit inside a guard or a function body. That ViewSet module is itself pulled in
   unguarded by the re-export hub at `nextseek_api/views.py:60`, so an import failure here
   takes the whole URL prefix down rather than these two routes.
-- `nextseek_api/cc_assistant/tests/test_cc_context_drift_guard.py:505-507` pins this
+- `NessieAI/tests/cc/test_cc_context_drift_guard.py:505-507` pins this
   directory's `service.py` and two of its function names as literal strings, then parses
   the file with `ast` to assert the retrieval entry point still calls the ingestion one
-  (`nextseek_api/cc_assistant/tests/test_cc_context_drift_guard.py:551-565`).
-- `nextseek_api/tests/test_models_coverage.py:471-482` is the only test of the rebuild
+  (`NessieAI/tests/cc/test_cc_context_drift_guard.py:551-565`).
+- `nextseek_api/tests/test_models_coverage.py:471-492` is the only test of the rebuild
   helper, and it asserts nothing beyond the absence of an exception.
 - `ci/routes.py:828-832` declares the retrieval route to the CI registry and records in its
   own note that the route answers 200 whatever happens.
@@ -194,9 +189,9 @@ two that constrain it are kept.
 - What a hit here is NOT. `nextseek_api/services/assistant.py:688` defines a `delete_session`
   that is a chat ViewSet action and has no relation to
   `NessieAI/schema_rag/session.py:172`. The two `min_api_endpoints.json` copies and
-  `nessie_tests/FAMILIES.json` carry this feature's URL paths as data for an agent, not as
-  a code edge. `chat_nextseek/src/chat_nextseek/context/nextseek_api.yaml:1996` is a
+  `NessieAI/tests/nessie_tests/FAMILIES.json` carry this feature's URL paths as data for an agent, not as
+  a code edge. `NessieAI/chat_nextseek/src/chat_nextseek/context/nextseek_api.yaml:1996` is a
   captured snapshot of a generated document, so it drifts rather than binding anything.
-- Excluded deliberately: the eleven hermetic test modules named under Running and testing,
-  which import this package the ordinary way (`nextseek_api/tests/test_schema_rag_unit.py:23-32`
+- Excluded deliberately: the hermetic test modules in `NessieAI/tests/schema_rag/`,
+  which import this package the ordinary way (`NessieAI/tests/schema_rag/test_schema_rag_unit.py:23-32`
   is typical) but constrain nothing beyond their own assertions.

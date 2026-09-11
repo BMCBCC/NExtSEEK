@@ -16,11 +16,11 @@ picks a branch on the suffix alone
 (`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/reports.py:456-459`) and accepts
 three shapes:
 
-- any non-`.json` path — one query per line, with blank lines and `#` comments
+- any non-`.json` path: one query per line, with blank lines and `#` comments
   skipped (`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/reports.py:408-415`)
-- `.json` holding a list — each entry an object with a `question` key
+- `.json` holding a list, each entry an object with a `question` key
   (`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/reports.py:444-453`)
-- `.json` holding an object — `full_test.tests[]`, each entry with a `query`
+- `.json` holding an object: `full_test.tests[]`, each entry with a `query`
   key (`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/reports.py:421-437`). This is
   the shape the retired `testing.json` had; see the first landmine.
 
@@ -59,7 +59,7 @@ docker run --rm -v <scratch-copy>:/app/NessieAI/chat_nextseek:z -w /app/NessieAI
 
 Two of those env vars are load-bearing beyond the credentials:
 
-- `CATALOG_FILE` (or `AGENT_MODEL_CATALOG`) is required — without it config
+- `CATALOG_FILE` (or `AGENT_MODEL_CATALOG`) is required: without it, config
   construction raises `Neither AGENT_MODEL_CATALOG nor CATALOG_FILE is set.`
   before any query runs
   (`NessieAI/chat_nextseek/src/chat_nextseek/config.py:262-266`). The value in
@@ -72,10 +72,10 @@ The provider key the default mode needs is `GCP_API_KEY`; a different `--mode`
 requires that provider's key instead, and the check is a hard raise at
 `NessieAI/chat_nextseek/src/chat_nextseek/config.py:490-493`.
 
-Outside this monorepo — in the standalone repository this directory is a
-vendored snapshot of — the documented route is `uv sync` followed by the same
-`python -m chat_nextseek.evaluator` invocation. That route was not exercised
-here; every command in this file was run in the container lane above.
+Outside the app image the package also runs standalone: `uv sync` in
+`NessieAI/chat_nextseek/`, then the same `python -m chat_nextseek.evaluator`
+invocation. That route was not exercised here; every command in this file was
+run in the container lane above.
 
 ### 3. Open the dashboard
 
@@ -94,7 +94,7 @@ scratch copy, owned by root.
 (`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/reports.py:346-349`) and a sibling
 `.html` rendered from it
 (`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/runner.py:226-233`). Every query
-lands in exactly one bucket — the classifier returns a single bucket name per
+lands in exactly one bucket: the classifier returns a single bucket name per
 report (`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/reports.py:264-292`) and the
 summarizer increments only that one
 (`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/reports.py:295-306`):
@@ -108,13 +108,13 @@ produced both artifacts and printed `status: completed_with_failures`,
 `infra_failures: 0`, with the single query classified `queries_unsupported`.
 That is the artifact plumbing proving itself; it is not an evaluation.
 
-## Landmine — `--eval-batch testing.json` cannot work
+## Landmine: `--eval-batch testing.json` cannot work
 
 No file named `testing.json` exists in this repository. Established
 2026-09-03 by two exhaustive searches from the worktree root that returned
 nothing: `git ls-files | grep -i 'testing\.json'`, and `find . -name
 testing.json -not -path './.git/*'`. `NessieAI/chat_nextseek/CITATIONS.txt:139-142`
-records why — the `smart_test.py` / `test.py` / `testing.json` harness was
+records why: the `smart_test.py` / `test.py` / `testing.json` harness was
 retired.
 
 This is not only a documentation defect. The CLI itself still names the file, in
@@ -122,9 +122,9 @@ its own help text: two epilog examples at
 `NessieAI/chat_nextseek/src/chat_nextseek/evaluator/runner.py:247-248` and
 `NessieAI/chat_nextseek/src/chat_nextseek/evaluator/runner.py:251`, and the `--eval-batch`
 help string at `NessieAI/chat_nextseek/src/chat_nextseek/evaluator/runner.py:269`.
-Running `--help` therefore prints two examples that cannot run. The same stale
-name is carried in the flag table at [docs/cli.md](docs/cli.md). None of that is
-fixed here — this refresh may not change code.
+Running `--help` therefore prints two examples that cannot run. The flag table at
+[docs/cli.md](docs/cli.md) describes the accepted file shapes instead. The help
+text itself is code and is not changed here.
 
 Copying either example verbatim fails after config construction, at the loader
 (`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/runner.py:347-348`), and the
@@ -138,7 +138,7 @@ Observed 2026-09-03:
 
 Substitute your own query file, per step 1.
 
-## Landmine — the BAML bootstrap cannot succeed in this repo
+## Landmine: the BAML bootstrap cannot succeed in this repo
 
 `__main__.py` calls the bootstrap before dispatching to the parser
 (`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/__main__.py:15`), and the bootstrap
@@ -147,8 +147,8 @@ shells out to `uv run baml-cli generate`
 `src/baml_client/` is missing or stale. It is always missing here: the
 directory is gitignored at `NessieAI/chat_nextseek/.gitignore:47`, and it is absent from
 both the worktree and the built image, checked 2026-09-03 by listing
-`NessieAI/chat_nextseek/src/` on the host and `/app/chat_nextseek/src/` in
-`nextseek-nextseek:latest` — each holds only `chat_nextseek` and
+`NessieAI/chat_nextseek/src/` on the host and the same tree inside
+`nextseek-nextseek:latest`: each holds only `chat_nextseek` and
 `chat_nextseek.egg-info`.
 
 The regeneration then fails on a version pin, with the network up. The
@@ -187,9 +187,9 @@ CLI never supplies (`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/runner.p
 
 ## Next reads
 
-- [docs/architecture.md](docs/architecture.md) — how the pieces fit together
-- [docs/operations.md](docs/operations.md) — env vars, BAML regeneration, troubleshooting
-- [docs/cli.md](docs/cli.md) — full flag reference
-- [docs/runbook.md](docs/runbook.md) — the full async batch, resume, and what
+- [docs/architecture.md](docs/architecture.md): how the pieces fit together
+- [docs/operations.md](docs/operations.md): env vars, BAML regeneration, troubleshooting
+- [docs/cli.md](docs/cli.md): full flag reference
+- [docs/runbook.md](docs/runbook.md): the full async batch, resume, and what
   the 103-question claim is worth today
-- `NessieAI/chat_nextseek/CLAUDE.md` — the container test lane and this package's traps
+- `NessieAI/chat_nextseek/CLAUDE.md`: the container test lane and this package's traps

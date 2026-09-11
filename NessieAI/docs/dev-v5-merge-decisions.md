@@ -5,7 +5,7 @@ Base `origin/dev` @ `809c29b7`, merged `origin/dev-v4-merge` @ `a9de92bd`
 divergence). Five known dev-side defects were triaged before merging; four
 are fixed as separate commits on top of the merge. This records the fifth.
 
-## 4. route_capabilities.json — no change on this branch, gated before deploy
+## 4. route_capabilities.json: no change on this branch, gated before deploy
 
 **Decision: ship dev's generated file as committed. Change nothing here, and
 change nothing in nessie_tests.**
@@ -14,7 +14,7 @@ change nothing in nessie_tests.**
 
 *Pinning the pre-merge file* was rejected on measurement. That file predates
 the 2026-08-04 28-family remap: 11 of its 15 family names do not exist in
-`nessie_tests/corpus.json`, and it covers the `route_policy` contract by
+`NessieAI/tests/nessie_tests/corpus.json`, and it covers the `route_policy` contract by
 1 of 13 families. dev's file covers 13 of 13 and introduces no new names.
 Pinning would restore a vocabulary the test harness cannot reference, and
 would additionally red `test_check_surfaces_passes_on_current_tree`, since
@@ -34,10 +34,10 @@ one of dev's 25 families is already in its 28-family taxonomy.
 ### The open concern, stated precisely
 
 The disagreement is about route assignment, not names.
-`build_tools/gen_op_surfaces/route_capabilities.py` assigns a family to a
+`NessieAI/build_tools/gen_op_surfaces/route_capabilities.py` assigns a family to a
 route when that arm *succeeded* on it (`select_family_examples` ->
 `recompute_arm_success`), sourced from the 149 paired human-graded records in
-`op_registry/route_example_evidence.json` — the same bundle the HiBayes
+`op_registry/route_example_evidence.json`: the same bundle the HiBayes
 posterior fit uses. Because Container-CC succeeded wherever NExtSEEK did,
 `nextseek_query`'s families are now a strict subset of `container_cc`'s:
 
@@ -68,7 +68,7 @@ question above. Treat its result as the arbiter:
 
 **The route tier is cheaper than the full tier, but it is NOT free, and it
 cannot tell you what it spent.** `--tier route` stops the *client* polling at
-`route_decided` (`nessie_tests/http_driver.py:130-131`); it cancels nothing. The
+`route_decided` (`NessieAI/tests/nessie_tests/http_driver.py:130-131`); it cancels nothing. The
 server already started the turn on a daemon thread and returned 202
 (`nextseek_api/services/cc_assistant.py:759`), and its only early return is the
 `unrelated` route, so every case routing anywhere else runs to completion and
@@ -85,7 +85,7 @@ the worst case, not the expected one.
 This is the same taxonomy problem blocking the HiBayes posterior router, seen
 from the other side. `ClassifyQuery` receives family names and one-line
 descriptions only (`family_labels.py:87-90`), while `RouteQuery` receives the
-same families with example queries — so the classifier meant to replace the
+same families with example queries, so the classifier meant to replace the
 router runs on a strictly poorer prompt, which is the likeliest cause of its
 3-of-5 paid E2E misclassifications. One family-boundary ruling fixes the
 router prompt and the classifier together. Do it there, not here.

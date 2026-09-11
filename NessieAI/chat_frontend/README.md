@@ -4,9 +4,8 @@
 
 The React chat UI for the NExtSEEK assistant, and a boundary with no Python in
 it at all: a find for files named `*.py` anywhere beneath this directory,
-`node_modules` excluded, returns nothing. What it holds instead is 113
-TypeScript and TSX files as of 2026-09-03, 97 of them under
-`NessieAI/chat_frontend/src/`, counted the same way. React 19 and Vite 7 are the pinned majors
+`node_modules` excluded, returns nothing. What it holds instead is TypeScript and
+TSX, most of it under `NessieAI/chat_frontend/src/`. React 19 and Vite 7 are the pinned majors
 (`NessieAI/chat_frontend/package.json:32-33`, `NessieAI/chat_frontend/package.json:64`), styling is
 Tailwind v4 (`NessieAI/chat_frontend/package.json:61`) over shadcn/ui primitives generated
 with the config at `NessieAI/chat_frontend/components.json:2-12`.
@@ -30,7 +29,7 @@ progress-event vocabulary, so nothing here is per-route: a turn routed to the
 deterministic pipeline and a turn routed to the sandboxed agent arrive as the
 same envelope (`NessieAI/chat_frontend/src/lib/types/api.ts:8-20`).
 
-The two shells are near-duplicates by construction —
+The two shells are near-duplicates by construction:
 `NessieAI/chat_frontend/src/EmbeddedApp.tsx:28` and `NessieAI/chat_frontend/src/AppLayout.tsx:31`
 each own their own copy of the progress switch, the send handler and the download
 handlers. The commentary at `NessieAI/chat_frontend/src/lib/sessionAdoption.ts:8-18`
@@ -38,7 +37,7 @@ records what that cost once.
 
 ## Surface
 
-"Surface" here is not a set of importable modules — nothing outside this
+"Surface" here is not a set of importable modules: nothing outside this
 directory imports TypeScript from it, by the search recorded in the dependency
 section below. It is the set of **exported symbols** (components,
 hooks, services, types), the **build outputs**, and the **DOM and URL contract**
@@ -138,7 +137,7 @@ together in the Debug sheet (`NessieAI/chat_frontend/src/components/Layout/Right
 
 Components sit in six directories under `NessieAI/chat_frontend/src/components/`, beside
 a seventh holding shared tests: `ChatPanel/` (the transcript, composer, stepper,
-artifact list and upload control —
+artifact list and upload control,
 `NessieAI/chat_frontend/src/components/ChatPanel/ChatPanel.tsx:18`), `Layout/`
 (`NessieAI/chat_frontend/src/components/Layout/CompactToolbar.tsx:9`), `Sessions/`
 (`NessieAI/chat_frontend/src/components/Sessions/SessionSidebar.tsx:17`), `DebugPanel/`
@@ -153,38 +152,38 @@ session adoption at `NessieAI/chat_frontend/src/lib/sessionAdoption.ts:26-32`.
 
 ## Running and testing
 
-Everything below runs from `NessieAI/chat_frontend/`, after `npm ci`, which installed 563
-packages on 2026-09-03.
+The tests stay in this package, because Node resolves imports from the importing file
+and `NessieAI/chat_frontend/package.json` is the only `node_modules` root. The commands
+for the unit, build and browser lanes are in `NessieAI/tests/README.md` ("Chat panel
+unit", "Chat panel build", "Chat panel browser"); all of them run from this directory
+after `npm ci`.
 
-**Unit lane — vitest, jsdom, no backend.** `npm run test`
+**Unit lane: vitest, jsdom, no backend.** `npm run test`
 (`NessieAI/chat_frontend/package.json:12`) over the include glob at
-`NessieAI/chat_frontend/vitest.config.ts:16`. Run on 2026-09-03: 27 test files, 165
-passed, 0 failed, 4.10s. This is the lane to run before any commit.
+`NessieAI/chat_frontend/vitest.config.ts:16`. This is the lane to run before any commit.
 
 **Build lane.** `npm run build:embedded` type-checks with a project-references
-build and then bundles (`NessieAI/chat_frontend/package.json:9`). Run on 2026-09-03: exit
-0, 2592 modules transformed in 2.86s, and the three emitted files were
-byte-identical to the ones committed under `static/js/chat_assistant/assets/`,
-content hashes included.
+build and then bundles (`NessieAI/chat_frontend/package.json:9`). On an unchanged source
+tree the emitted files are byte-identical to the ones committed under
+`static/js/chat_assistant/assets/`, content hashes included, which is the quick check that
+the committed bundle matches its source.
 
-**Lint lane.** `npm run lint` (`NessieAI/chat_frontend/package.json:10`) over the flat
-config at `NessieAI/chat_frontend/eslint.config.js:8-9`. Run on 2026-09-03: 11 problems,
-9 errors and 2 warnings, exit code 1. The errors are pre-existing and the build
-does not depend on this lane.
+**Lint.** `npm run lint` (`NessieAI/chat_frontend/package.json:10`) over the flat
+config at `NessieAI/chat_frontend/eslint.config.js:8-9` exits 1 on pre-existing errors,
+and the build does not depend on it (`NessieAI/chat_frontend/CLAUDE.md`).
 
-**Browser lanes — Playwright.** `npm run test:e2e`
+**Browser lanes: Playwright.** `npm run test:e2e`
 (`NessieAI/chat_frontend/package.json:15`). The default `mock` project stubs the REST and
 WebSocket surfaces (`NessieAI/chat_frontend/e2e/fixtures/ws-mock.ts:1-6`) and excludes the
 real-backend directory (`NessieAI/chat_frontend/playwright.config.ts:26`); the two
 real-backend projects appear only when an environment flag is set
 (`NessieAI/chat_frontend/playwright.config.ts:28-52`) and each spec self-skips otherwise
-(`NessieAI/chat_frontend/e2e/real-backend/test-case-1-embedded.spec.ts:4`). (not run) —
-the mock project needs Playwright's browser binaries downloaded, and the
-real-backend projects additionally need a reachable deployed instance with a
-login that works.
+(`NessieAI/chat_frontend/e2e/real-backend/test-case-1-embedded.spec.ts:4`). The mock
+project needs Playwright's browser binaries downloaded, and the real-backend projects
+additionally need a reachable deployed instance with a login that works.
 
 **Coverage.** The merge recipe at `NessieAI/chat_frontend/Makefile:3-8` combines both
-Playwright and vitest output. (not run) — same browser-binary requirement.
+Playwright and vitest output, so it has the same browser-binary requirement.
 
 ## Depends on / depended on by
 
@@ -211,11 +210,10 @@ Playwright and vitest output. (not run) — same browser-binary requirement.
 
 The outbound edge is a **committed build artifact**, not an import, so the
 importer search that fits a Python package finds nothing here and its emptiness
-proves nothing. Measured on 2026-09-03: a recursive grep of the whole worktree
-for the literal string `chat_frontend`, with `node_modules` and the git
-directory excluded, returns 130 hits, none of them inside this directory itself,
-and every one is a prose mention, a path inside a JSON or Markdown inventory, or
-a path string in Python. Not one is an import statement. The real chain is:
+proves nothing. A recursive grep of the whole checkout for the literal string
+`chat_frontend`, with `node_modules` and the git directory excluded, finds prose
+mentions, paths inside JSON or Markdown inventories, and path strings in Python, and
+not one import statement. The real chain is:
 
 - `NessieAI/chat_frontend/vite.config.embedded.ts:14` writes the assets into the repo's
   own `static/` tree, and `NessieAI/chat_frontend/vite.config.embedded.ts:16` sets the
@@ -235,7 +233,7 @@ a path string in Python. Not one is an import statement. The real chain is:
   prefix the tag builds comes from `dmac/settings.py:85`.
 - The image build ingests the repository wholesale, so the emitted assets travel
   into the image as ordinary files rather than as something produced there; the
-  deploy row written around that arrangement is `DEPLOYMENT.md:286`.
+  deploy row written around that arrangement is in `DEPLOYMENT.md` §3.2.
 
 Consumers of the running UI, as opposed to the source:
 
@@ -247,12 +245,12 @@ Consumers of the running UI, as opposed to the source:
 
 Excluded from the list above, on the basis that they are references to paths
 rather than dependencies on behaviour: the per-file path inventories in
-`evidence/plan018-v4-9-owned-surface.json:1062-1067` and
-`nessie_tests/FAMILIES.json:3703-3708`, the ownership prefix at
-`scripts/plan018_v4_9_owned_surface.py:216`, the build-context assertion naming
-this directory's example env file at
-`nextseek_api/cc_assistant/tests/test_build_context_env_guard.py:103`, and the
-superseded plan and review documents under `nextseek_api/cc_assistant/`.
+`NessieAI/history/plan018/evidence/plan018-v4-9-owned-surface.json:1062-1067` and
+`NessieAI/tests/nessie_tests/FAMILIES.json:3703-3708`, the ownership prefix at
+`NessieAI/history/plan018/scripts/plan018_v4_9_owned_surface.py:216` (both frozen with
+plan018), the build-context assertion naming this directory's example env file at
+`nextseek_api/tests/repo_guards/test_build_context_env_guard.py:107`, and the
+superseded plan and review documents under `NessieAI/history/cc/archive/`.
 
 Prose descriptions of this boundary live at `docs/UI.md` "Architecture Overview",
 `NessieAI/docs/architecture.md` "Front door: page, auth, submit, progress" and `DEPLOYMENT.md` §3.2.

@@ -1,19 +1,18 @@
 # Working in `NessieAI/chat_nextseek/`
 
+This package is edited in place. The sync script that once refreshed it from a separate
+repository is retired; never run it (`NessieAI/chat_nextseek/README.md`). Rules that
+span units are in `NessieAI/CLAUDE.md`.
+
 ## Invariants
 
 Break one of these and something outside this directory stops working, usually
 without an error at the point of the change.
 
-- **Nothing you add here survives unless it also lands upstream.** The snapshot
-  refresh excludes only caches and local state
-  (`startup/scripts/sync_chat_nextseek.sh:37-44`), so every other file absent
-  from the canonical checkout — this one included — is deleted the next time a
-  maintainer bumps the vendored copy.
 - **Editing here is not enough to change a running instance.** This tree is
-  baked into the application image, listed among the paths that require a
-  rebuild at `DEPLOYMENT.md:47-52`; the short list of runtime bind mounts named
-  in that same entry contains nothing under this directory.
+  baked into the application image (`DEPLOYMENT.md` §0), and the rebuild table in
+  `DEPLOYMENT.md` §3.2 lists it among the paths that need `./startup.sh rebuild`.
+  No runtime bind mount covers anything under this directory.
 - **The exported symbol list is a downstream contract.** The pin at
   `NessieAI/tests/chat_nextseek/test_portable_contract.py:34-40` fails the moment the
   list drifts, and the file opens by saying a failure there is a breaking change
@@ -22,7 +21,7 @@ without an error at the point of the change.
   helpers shim says so at `NessieAI/chat_nextseek/src/chat_nextseek/helpers/__init__.py:3-6`
   and the agents shim at `NessieAI/chat_nextseek/src/chat_nextseek/agents/__init__.py:3-6`; dropping a
   re-export breaks importers that go through the package rather than the module,
-  such as `nextseek_api/assistant/granular.py:88`.
+  such as `NessieAI/ns/granular.py:88`.
 - **Half an identity is treated as none.** `NessieAI/chat_nextseek/src/chat_nextseek/orchestrator.py:155-164`
   refuses a credential pair with one side missing, because applying only the
   supplied half leaves the other on the service account and issues the request
@@ -53,50 +52,54 @@ without an error at the point of the change.
   working path together, and `NessieAI/chat_nextseek/src/chat_nextseek/pipeline/agent_tools.py:220-221`
   keys tool exposure off that; a partially configured box silently hands the
   model a build it cannot submit.
-- **This directory owns the canonical capabilities document.** Surface
+- **This directory owns the canonical capabilities document**,
+  `NessieAI/chat_nextseek/src/chat_nextseek/context/capabilities.md`. Surface
   generation refuses to run when the baked copy differs by a single byte
-  (`build_tools/gen_op_surfaces/route_capabilities.py:231-232`), so editing it
-  here without regenerating the other copy blocks that whole tool chain.
+  (`NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:232-233`), so editing it
+  here without bringing the baked copy along blocks that whole tool chain.
 
 ## Landmines
 
-- **The two capabilities copies differ right now.** Measured 2026-09-03 with
-  `md5sum` and `wc -c`: the canonical file named at
-  `build_tools/gen_op_surfaces/constants.py:8-10` is 12128 bytes, and the baked
-  copy named at `build_tools/gen_op_surfaces/constants.py:11-13` is 11747, with
-  different digests. The byte-identity test is
-  already carried as a known failure at `ci/pytest-baseline.txt:27`, so this is a
-  standing condition, not something you just caused. The built image is
-  unaffected — the canonical COPY at `docker/cc-runtime/Dockerfile:54` lands
-  after the plugin tree and wins — but every caller of the surface generator
-  raises until the two are reconciled.
-- **There is no recorded upstream commit for this snapshot.** The sync script
-  writes a marker file (`startup/scripts/sync_chat_nextseek.sh:47`), yet a `find`
-  for a file named `.chat_nextseek_snapshot` anywhere under `NessieAI/chat_nextseek/`
-  returns nothing. You cannot tell which canonical revision this copy is, so you
-  cannot diff it before overwriting it.
+- **The baked capabilities copy differs from the canonical one right now.** This is the
+  one home of that landmine; other docs point here. The canonical file (named at
+  `NessieAI/build_tools/gen_op_surfaces/constants.py:26-28`) and the baked copy
+  `NessieAI/docker/cc-runtime/build_context/plugins/nextseek/context/capabilities.md`
+  (named at `NessieAI/build_tools/gen_op_surfaces/constants.py:29-31`) first differ at
+  byte 1958 (check with `cmp`): the baked copy lacks a five-line Publication entry
+  documenting `DOI` and `PMID` on the Study node. The built image is unaffected, because
+  the canonical COPY at `NessieAI/docker/cc-runtime/Dockerfile:54` lands after the plugin
+  tree and wins. But every caller of the surface generator raises until the two are
+  reconciled (`NessieAI/build_tools/CLAUDE.md`), `NessieAI/tests/router/test_route_capabilities.py`
+  fails on it, and the byte-identity tests are carried as known failures in
+  `ci/pytest-baseline.txt`, so this is a standing condition, not something you just
+  caused. Fixing it means making the baked copy byte-identical to the canonical and
+  updating `NessieAI/docker/cc-runtime/PORT-EVIDENCE.json` in the same commit
+  (`NessieAI/docker/CLAUDE.md`).
 - **This directory's own `.gitignore` still governs it inside the monorepo.**
   `NessieAI/chat_nextseek/.gitignore:25` ignores any `docs/` directory and
   `NessieAI/chat_nextseek/.gitignore:33` ignores `.claude`, so a design note or a skill
-  written there is invisible to `git add` and disappears at the next refresh.
-- **pytest's rootdir escapes this directory.** `NessieAI/chat_nextseek/pyproject.toml`
-  carries no `[tool.pytest.ini_options]` table — a grep for `pytest` over that
-  file matches only the two dev-group dependency lines at
-  `NessieAI/chat_nextseek/pyproject.toml:50-51` — so collection falls through to the root
-  project's block and loads the real Django settings module, whose import calls
-  `os.makedirs` at `dmac/settings.py:497-499`. Over a read-only mount the entire
-  suite fails to collect.
-- **Two `tests/evaluator/` modules abort collection, so a plain run of that
-  directory executes zero tests.** `NessieAI/tests/chat_nextseek/evaluator/test_demo_server.py:6`
-  needs `pytest_asyncio`, absent from the stack image when measured 2026-09-03, and
+  written there is invisible to `git add`. Put Nessie docs in `NessieAI/docs/`.
+- **pytest's configuration comes from the repo root.** `NessieAI/chat_nextseek/pyproject.toml`
+  carries no `[tool.pytest.ini_options]` table (its only `pytest` lines are the two
+  dev-group dependencies at `NessieAI/chat_nextseek/pyproject.toml:50-51`), so collection
+  uses the root project's block and loads the real Django settings module unless the
+  lane passes the test settings, and that import calls `os.makedirs` at
+  `dmac/settings.py:497-499`. Over a read-only mount without the two pre-created
+  directories the entire suite fails to collect (`NessieAI/tests/README.md` "Django lane").
+- **Two `NessieAI/tests/chat_nextseek/evaluator/` modules abort collection, so a plain run
+  of that directory executes zero tests.** `NessieAI/tests/chat_nextseek/evaluator/test_demo_server.py:6`
+  needs `pytest_asyncio`, which the stack image lacks, and
   `NessieAI/tests/chat_nextseek/evaluator/test_normalization_additional.py:5` imports a
   private orchestrator symbol that no longer exists: a grep for
-  `_persist_bundle_reply` over `NessieAI/chat_nextseek/src/` returns nothing.
+  `_persist_bundle_reply` over `NessieAI/chat_nextseek/src/` returns nothing. To reach the
+  rest of that directory, pass
+  `--ignore=NessieAI/tests/chat_nextseek/evaluator/test_demo_server.py` and
+  `--ignore=NessieAI/tests/chat_nextseek/evaluator/test_normalization_additional.py`.
 - **This package's BAML client is never generated.** It is gitignored at
   `NessieAI/chat_nextseek/.gitignore:47`, and the one generation step this repo runs
-  targets only the sibling router's schema
-  (`.github/workflows/ci-pytest.yml:40-43`), so every module importing it fails
-  on `ModuleNotFoundError`. Do not read that as a vendoring regression.
+  (the "Generate the BAML client" step of `.github/workflows/ci-pytest.yml`, and the root
+  Dockerfile) targets only `NessieAI/dmac_assistant/baml_src`, so every module importing
+  it fails on `ModuleNotFoundError`. Do not read that as a move regression.
 - **An unregistered agent key degrades silently rather than raising.**
   `NessieAI/chat_nextseek/src/chat_nextseek/config.py:1331-1334` falls back through the
   `default` profile and then to the globally configured model at
@@ -113,12 +116,12 @@ without an error at the point of the change.
   Tower; the function it describes defaults to Luria
   (`NessieAI/chat_nextseek/src/chat_nextseek/config.py:36-43`). Believing the comment
   mispredicts which submit tool the model is handed.
-- **Two tests load a source file by path and both are stale against it.** One
+- **Two tests read a source file by path and both are stale against it.** One
   reaches out of the boundary:
-  `NessieAI/tests/chat_nextseek/test_generate_submission_hydration.py:106-107` stubs the
-  portable module with one attribute while `nextseek_api/assistant/granular.py:148`
-  imports two, so an edit in the Django app breaks a test in here. The other
-  stays inside it and reads a monolith that was refactored away —
+  `NessieAI/tests/chat_nextseek/test_generate_submission_hydration.py:102-103` stubs the
+  portable module with one attribute while `NessieAI/ns/granular.py:148`, which the test
+  loads by path through `NessieAI/paths.py`, imports two, so an edit in `NessieAI/ns/`
+  breaks a test here. The other reads a monolith that was refactored away:
   `NessieAI/tests/chat_nextseek/evaluator/test_frozen_planner_evaluator.py:10`.
 - **A retired-backend variant is still in the E2E catalog and silently vanishes
   from runs.** `NessieAI/tests/e2e/catalog.json:7806-7809` gates a Tower
@@ -128,54 +131,38 @@ without an error at the point of the change.
   (`NessieAI/tests/e2e/sampler.py:23-25`), so a fully green report is not
   evidence that the catalog was covered.
 - **The semantic catalog matcher downloads a model on first use.**
-  `DEPLOYMENT.md:185-187` records that nothing pre-fetches it and an air-gapped
-  box fails on whichever embedding path runs first; the feature ships off by
+  `DEPLOYMENT.md` §2.3 records that nothing pre-fetches the embedding models and an
+  air-gapped box fails on whichever embedding path runs first; the feature ships off by
   default (`NessieAI/chat_nextseek/.env.example:16`).
 - **The Bedrock token has to be in a second file for this package's direct
-  path.** `DEPLOYMENT.md:509-513` says filling only one of the two leaves the
-  other chat route dead with no automated cross-check.
-- **The two largest Python modules here run to
-  `NessieAI/chat_nextseek/src/chat_nextseek/config.py:2028` and
-  `NessieAI/chat_nextseek/src/chat_nextseek/orchestrator.py:1878`**, both last lines,
-  ranked 2026-09-03 by `wc -l` over every `.py` file in this directory. Grep for
-  the concern and read that region; reading either end to end burns the context
-  the change itself needs.
+  path.** `DEPLOYMENT.md` §8 lists `AWS_BEARER_TOKEN_BEDROCK` in both
+  `docker/nextseek.env` and the proxy's own secret file; filling only one of the two
+  leaves the other chat route dead with no automated cross-check.
+- **The two largest Python modules here are `config.py` and `orchestrator.py`**, both
+  under `NessieAI/chat_nextseek/src/chat_nextseek/`. Grep for the concern and read that
+  region; reading either end to end burns the context the change itself needs.
 - **A deployed instance is not evidence about this branch.** Code here is baked
-  into the image rather than mounted (`DEPLOYMENT.md:47-48`) and each deploy
-  pins a tag naming the sha it was built from (`DEPLOYMENT.md:354-356`), so a
+  into the image rather than mounted (`DEPLOYMENT.md` §0) and each deploy
+  keeps a tag naming the sha it was built from (`DEPLOYMENT.md` §5.2), so a
   running box can be serving an older revision of this package than the one you
   are reading, and a failure there proves nothing about this tree. <!-- UNVERIFIED: which revision any particular deployment carries is recorded nowhere in this repo -->
 
 ## Test command
 
-```
-mkdir -p schema_rag/duckdb schema_rag/embedding_models
-docker run --rm --network none -e LOG_DIR=/tmp/nextseek-logs \
-  -e DJANGO_SETTINGS_MODULE=dmac.test_settings -e PYTHONDONTWRITEBYTECODE=1 \
-  -v "$PWD":/src:ro -v <writable-scratch-copy>:/app/NessieAI/chat_nextseek:z \
-  -w /src nextseek-nextseek:latest \
-  /app/.venv/bin/python -m pytest NessieAI/tests/chat_nextseek \
-  --ignore=NessieAI/tests/chat_nextseek/evaluator -q -p no:cacheprovider
-```
-
-Copy this directory somewhere writable first: the mount has to be writable and
-the image's editable install (`pyproject.toml:136`) then resolves to your copy
-instead of the baked one. Drop the `--ignore` and add
-`--ignore=NessieAI/tests/chat_nextseek/evaluator/test_demo_server.py` plus
-`--ignore=NessieAI/tests/chat_nextseek/evaluator/test_normalization_additional.py` to reach the
-evaluator subdirectory; on 2026-09-03 that subdirectory reported 155 passed and
-8 failed in 0.74s.
+See `NessieAI/tests/README.md` (the Django lane with `NessieAI/tests/chat_nextseek`; mount
+a writable copy of this directory, or use the `PYTHONPATH` form, to test uncommitted
+source). The evaluator flags are in "Landmines" above.
 
 ## See also
 
-- See `NessieAI/chat_nextseek/README.md` for the module map, the three surfaces, the
-  dependency edges in both directions, and the main lane's measured result.
-- See `nextseek_api/assistant/README.md` for the granular per-agent ops that
-  call this package's exported functions.
-- See `nextseek_api/cc_assistant/README.md` for the router that decides whether
-  a turn reaches this engine at all.
-- See `DEPLOYMENT.md:284` for the rebuild command a change here requires.
-- See `nessie_tests/README.md` for the harness that exercises this engine
+- See `NessieAI/chat_nextseek/README.md` for the module map, the three surfaces and the
+  dependency edges in both directions.
+- See `NessieAI/ns/README.md` for the granular per-agent ops that call this package's
+  exported functions.
+- See `NessieAI/router/README.md` for the router that decides whether a turn reaches this
+  engine at all.
+- See `DEPLOYMENT.md` §3.2 for the rebuild a change here requires.
+- See `NessieAI/tests/nessie_tests/README.md` for the harness that exercises this engine
   through the live HTTP endpoint rather than by import.
-- See the repo-root `CLAUDE.md` for the snapshot-sync workflow row and the
-  stack-wide conventions.
+- See `NessieAI/chat_nextseek/src/chat_nextseek/evaluator/README.md` for the retry-context
+  evaluator.
