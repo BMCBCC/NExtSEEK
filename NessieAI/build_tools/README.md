@@ -160,12 +160,12 @@ tools read by path:
 
 - `NessieAI.cc.op_registry` is the data source for every generated op
   surface, imported at module scope by five modules here:
-  `NessieAI/build_tools/gen_op_surfaces/commands.py:7-9`,
+  `NessieAI/build_tools/gen_op_surfaces/commands.py:12-14`,
   `NessieAI/build_tools/gen_op_surfaces/skills.py:13-15`,
   `NessieAI/build_tools/gen_op_surfaces/claude_md.py:18-23`,
   `NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:14-19` and
-  `NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:8-28`.
-- `NessieAI/build_tools/plan005_validate_plugins/validate.py:9-18` is the sixth importer of
+  `NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:10-28`.
+- `NessieAI/build_tools/plan005_validate_plugins/validate.py:11-18` is the sixth importer of
   that registry, taking the install oracle and the plugin-identity loader.
 - `NessieAI.tests.nessie_tests` is imported at module scope by the route-capabilities
   generator for its corpus loader, exporter and fingerprint

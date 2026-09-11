@@ -203,7 +203,7 @@ re-derive rather than trusting this a third time.
   four DERIVED NS outcome fields — `api_outcome_observed`,
   `graph_outcome_observed`, `report_produced_output`, `outcome_observed` — are
   recorded `skipped` on an observed `container_cc` turn rather than failed
-  (`evaluate.py:397-404`), because a CC `query_complete` carries no `debug` key at
+  (`evaluate.py:394-401`), because a CC `query_complete` carries no `debug` key at
   all and they were constant-false by construction. Inline, hand-written criteria
   — `api_ok`, `neo4j_ok`, `parser_plan.*`, `api_plan.*`, `graph_result.*` — are
   deliberately NOT skipped and still fail, because a case carrying them is
@@ -221,7 +221,7 @@ re-derive rather than trusting this a third time.
   row count landing on a limit is only ever a guess — it went dead the moment the
   limit moved. The real signal is `graph_result.truncated`, which the Neo4j tool
   sets by comparing the returned count against the query's own trailing LIMIT. The
-  criterion to read is `graph_truncation_disclosed` (`evaluate.py:273-300`): it
+  criterion to read is `graph_truncation_disclosed` (`evaluate.py:270-297`): it
   asks whether the result is complete **or honest about being capped**, so a
   capped result passes only if it also reports a real `total` exceeding the rows
   returned. That is the right invariant — `graph.tissue_cell_impact` has 10,688
@@ -231,7 +231,7 @@ re-derive rather than trusting this a third time.
   one.
 - **`api_artifact.*` criteria CAN pass, including on a Container-CC turn.** They
   are no longer resolved against a `run_root`. `build_artifact_index`
-  (`evaluate.py:92-141`) builds a per-turn basename -> path index from the turn's
+  (`evaluate.py:89-138`) builds a per-turn basename -> path index from the turn's
   own `query_complete`, reading `debug.report_saved_files`, `files`, `artifacts`
   (file-typed entries only, so an inline `"table"` or `"preview"` label does not
   fake a file) and `cc_raw_files`. The last two are what let a CC turn prove it
@@ -248,7 +248,7 @@ re-derive rather than trusting this a third time.
     assert a real basename.
   - **`.rows_gte` returns 0 for a CC artifact.** A CC or reporter artifact carries
     no `path` and is indexed under its bare label, so `resolve_artifact`
-    (`evaluate.py:160-175`) returns 0 rather than resolving that label against the
+    (`evaluate.py:157-172`) returns 0 rather than resolving that label against the
     harness cwd and counting rows out of an unrelated same-named file
     (`samplesheet.csv` is asserted 3 times across 2 active variants,
     `pipeline.end_to_end_emit` and `pipeline.happy_path_scrnaseq`). A failing

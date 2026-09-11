@@ -107,7 +107,7 @@ three groups:
   `NessieAI/chat_nextseek/src/chat_nextseek/config.py:490-493`.
 - Failures that need the gitignored `docker/db.env` and `dmac/local_settings.py`,
   which `NessieAI/tests/e2e/import_env.py:23-25` walks up to find; both are kept
-  out of the image at `.dockerignore:43-45`.
+  out of the image at `.dockerignore:53-55`.
 - One stale stub; see `NessieAI/chat_nextseek/CLAUDE.md` "Landmines".
 
 `evaluator/` aborts collection unless two modules are excluded. It is not

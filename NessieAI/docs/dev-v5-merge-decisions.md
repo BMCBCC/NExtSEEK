@@ -84,7 +84,7 @@ the worst case, not the expected one.
 
 This is the same taxonomy problem blocking the HiBayes posterior router, seen
 from the other side. `ClassifyQuery` receives family names and one-line
-descriptions only (`family_labels.py:87-90`), while `RouteQuery` receives the
+descriptions only (`family_labels.py:106-109`), while `RouteQuery` receives the
 same families with example queries, so the classifier meant to replace the
 router runs on a strictly poorer prompt, which is the likeliest cause of its
 3-of-5 paid E2E misclassifications. One family-boundary ruling fixes the

@@ -17,16 +17,18 @@ stays importable with settings unconfigured
 sibling: `nextseek_api/urls.py:35` registers the ViewSet defined at
 `nextseek_api/services/schema_rag.py:43`.
 
-**Being imported repairs a model in the parent package.** `nextseek_api/models.py:2170`
+**Being imported repairs a model in the parent package.** `nextseek_api/models.py:2266`
 declares `RetrieveResponse` with two forward references written as strings
-(`nextseek_api/models.py:2174`, `nextseek_api/models.py:2177`). The classes they name are
-imported only under a type-checking guard (`nextseek_api/models.py:2070-2071`), so at run
+(`nextseek_api/models.py:2270`, `nextseek_api/models.py:2273`). The classes they name are
+imported only under a type-checking guard (`nextseek_api/models.py:2166-2167`), so at run
 time they are absent from that module. The repair is the tail of this package's
 initializer: `NessieAI/schema_rag/__init__.py:18` imports `_rebuild_schema_rag_models`
 and `NessieAI/schema_rag/__init__.py:19` calls it, whereupon that helper's own local
-import supplies both classes (`nextseek_api/models.py:2190`) and rebuilds the model
-(`nextseek_api/models.py:2191`), with a swallowed `ImportError` for the case where this
-package is absent (`nextseek_api/models.py:2192-2193`). Importing any module here runs
+import supplies both classes (`nextseek_api/models.py:2294`) and rebuilds the model
+(`nextseek_api/models.py:2300`). If that local import fails, the helper raises an
+`ImportError` naming `NessieAI.schema_rag.models` instead of swallowing it
+(`nextseek_api/models.py:2295-2299`), so a moved or broken models module fails at import
+time rather than on the first retrieve call. Importing any module here runs
 that initializer, which is why the live path arms it via
 `nextseek_api/services/schema_rag.py:27`. Drop those two lines and `RetrieveResponse`
 keeps its unresolved forward references. The import of `nextseek_api.models` is one of
@@ -179,8 +181,10 @@ two that constrain it are kept.
   directory's `service.py` and two of its function names as literal strings, then parses
   the file with `ast` to assert the retrieval entry point still calls the ingestion one
   (`NessieAI/tests/cc/test_cc_context_drift_guard.py:551-565`).
-- `nextseek_api/tests/test_models_coverage.py:471-492` is the only test of the rebuild
-  helper, and it asserts nothing beyond the absence of an exception.
+- `nextseek_api/tests/test_models_coverage.py:469-492` (`TestRebuildSchemaRagModels`) is
+  the only test of the rebuild helper: it checks that the rebuild runs, that
+  `RetrieveResponse` validates afterwards, and that a missing `NessieAI.schema_rag.models`
+  raises `ImportError`.
 - `ci/routes.py:828-832` declares the retrieval route to the CI registry and records in its
   own note that the route answers 200 whatever happens.
 - `startup/dev/provision_embedding_model.sh:196` and
