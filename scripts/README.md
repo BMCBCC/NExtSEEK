@@ -10,7 +10,7 @@ and nothing else. Every count below is over that same set of 50 program files,
 never over this documentation pair. There is no
 `__init__.py`: a `find` for that name directly inside this directory returns
 nothing, and the CI plan that proposed adding one
-(`docs/superpowers/plans/2026-09-01-ci-increment-1-skeleton-and-safety.md:389`)
+(`docs/archive/2026-09/2026-09-01-ci-increment-1-skeleton-and-safety.md:389`)
 was never carried out.
 
 Almost nothing here is imported the ordinary way. A repo-wide search for a line

@@ -164,11 +164,11 @@ dmac/local_settings.py
 local_settings.py
 .DS_Store
 
-# Real env files are gitignored — secrets must never land in git.
+# Real env files are gitignored: secrets must never land in git.
 # See docker/nextseek.env.example for the template.
 docker/nextseek.env
 docker/db.env
-# Ad-hoc backup copies of rendered env files (nextseek.env.bak.<date>, …) —
+# Ad-hoc backup copies of rendered env files (nextseek.env.bak.<date>, …):
 # same secrets, same rule, any depth.
 *.env.bak*
 
@@ -178,9 +178,12 @@ docker/db.env
 # A pattern, not an exact path: an exact path silently stops matching when the
 # directory moves (it lived at docker/bedrock-proxy/ before the NessieAI move).
 **/proxy-secret.env
+# SEEK's nginx config: an untracked host file that SEEK rewrites on every start
+# (DEPLOYMENT.md §3.1).
+docker/seek-nginx.conf
 internal_docs/
 .cursor/
-# .claude/ is local agent state — ignored except the committed project skills.
+# .claude/ is local agent state, ignored except the committed project skills.
 .claude/*
 !.claude/skills/
 duckdb/
@@ -188,29 +191,9 @@ embedding_models/
 *.swp
 setup-celery-worker.sh
 outputs
-CLAUDE.md
-# The subsystem CLAUDE.md files are repo CONTENT, not local agent state:
-# each is the agent-facing half of a documented subsystem boundary, paired with
-# the README.md beside it. The bare rule above still ignores stray local
-# CLAUDE.md files anywhere else in the tree.
-# Every CLAUDE.md under NessieAI/ is re-included by one glob. That includes the
-# cc-agent image's in-container CLAUDE.md
-# (NessieAI/docker/cc-runtime/container/CLAUDE.md), a required Dockerfile COPY
-# input (committed-but-generated; refresh via `python -m
-# NessieAI.build_tools.ingest_nextseek_docs`), so clean clones can build it.
-!NessieAI/**/CLAUDE.md
-!nextseek_api/CLAUDE.md
-!nextseek_api/batch_upload/CLAUDE.md
-!nextseek_api/attributes/CLAUDE.md
-!nextseek_api/assistant/CLAUDE.md
-!seek/CLAUDE.md
-!startup/CLAUDE.md
-!scripts/CLAUDE.md
-!docker/CLAUDE.md
-!dmac/CLAUDE.md
-!ci/CLAUDE.md
-!api_app/CLAUDE.md
-!themes/CLAUDE.md
+# Personal Claude Code notes. Folder CLAUDE.md files are tracked docs, and the
+# local session index lives in .claude/CLAUDE.md, ignored by .claude/* above.
+CLAUDE.local.md
 .python-version
 .serena/
 .venv_uv/data/
@@ -240,20 +223,11 @@ NessieAI/dmac_assistant/tools/e2e/baml_client/
 docs/superpowers/*
 !docs/superpowers/specs/
 docs/superpowers/specs/*
-# Exception: this design spec is deliberately tracked. The repo is PUBLIC, so it carries no
-# environment concretes and no reproduction detail for any unresolved platform issue.
-!docs/superpowers/specs/2026-07-31-hibayes-eval-routing-design.md
-!docs/superpowers/specs/2026-09-01-nextseek-ci-cd-full-spec.md
+# Exception: the live CI coverage spec is tracked, because code cites it. The repo is PUBLIC,
+# so it carries no environment concretes and no reproduction detail for any unresolved issue.
 !docs/superpowers/specs/2026-09-01-nextseek-ci-comprehensive-coverage-design.md
-!docs/superpowers/plans/
-docs/superpowers/plans/*
-# Exception: the implementation plan for the spec above is tracked alongside it, so the
-# design and the work it implies travel together. Same public-repo review applied: no
-# environment concretes, no credentials, no reproduction detail for any unresolved issue.
-!docs/superpowers/plans/2026-07-31-hibayes-eval-routing.md
-!docs/superpowers/plans/2026-09-01-ci-increment-1-skeleton-and-safety.md
 
-# SEEK filestore — too large for git (raw dir ~500MB; snapshot ~215MB, over
+# SEEK filestore: too large for git (raw dir ~500MB; snapshot ~215MB, over
 # GitHub's 100MB/file limit, and forks can't host LFS). The snapshot is hosted
 # on S3 and downloaded on demand by the startup CLI. See startup/seed/README.md.
 /filestore/
@@ -269,19 +243,18 @@ nessie_out*/
 
 # graphify knowledge-graph output: ~62MB per build, of which graph.json alone is
 # ~29MB. Regenerable from the tree at any time (`/graphify . --update`), so it is
-# a local index, not source — and a `git add -A` that swept it in would be hard
+# a local index, not source, and a `git add -A` that swept it in would be hard
 # to undo on a repo this widely forked.
 graphify-out/
 
 # Generated publication-transfer data, regenerable from the documented queries
-sample_publication_attributes/prod_pairs.tsv
-prod_publication_transfer/all_52_publications.sql
+docs/archive/2026-08/publication-rollout/sample_publication_attributes/prod_pairs.tsv
+docs/archive/2026-08/publication-rollout/prod_publication_transfer/all_52_publications.sql
 
 # CI credentials must never enter git (they live at ~/.config/nextseek/ci.env)
 ci/**/*.env
 ci.env
 
-# Brainstorming visual companion mockups (scratch). The SDD ledger and task
-# reports under .superpowers/sdd/ ARE tracked, deliberately -- see the existing
-# committed ones -- so only the brainstorm subtree is excluded here.
-.superpowers/brainstorm/
+# Superpowers working state (brainstorm mockups, SDD ledgers) is local only. A finished
+# ledger worth keeping is filed under docs/archive/<yyyy-mm>/ instead.
+.superpowers/

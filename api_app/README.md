@@ -48,7 +48,7 @@ That absence has one consequence outside the boundary. `dj_rest_auth` is in
 `api_app/urls.py:17`, so this deployment publishes no token-issuing endpoint at all even
 though `TokenAuthentication` is the first default authenticator at `dmac/settings.py:370`.
 The CI/CD spec reached the same conclusion independently at
-`docs/superpowers/specs/2026-09-01-nextseek-ci-cd-full-spec.md:315-317`.
+`docs/archive/2026-09/2026-09-01-nextseek-ci-cd-full-spec.md:315-317` (now archived).
 
 ### The imported surface: what actually executes at boot
 

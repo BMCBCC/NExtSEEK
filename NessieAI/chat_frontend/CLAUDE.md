@@ -187,6 +187,6 @@ the two build scripts, which each begin with a project-references compile
   `DEPLOYMENT.md:285` for the static-asset step it depends on.
 - See `architecture.md:57-76` for the whole turn, from page load to progress
   transport.
-- See `UI.md:37-78` for how this sits beside the server-rendered pages.
+- See `docs/UI.md` "Architecture Overview" for how this sits beside the server-rendered pages.
 - See the repository root `CLAUDE.md` for the router, the two engines and the
   sticky-route rule that decides what these progress events describe.

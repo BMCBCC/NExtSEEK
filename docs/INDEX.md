@@ -1,38 +1,24 @@
 # docs/
 
-Cross-cutting documentation: the things that belong to no single code boundary.
-Documentation that belongs to one boundary lives beside that code, as the
-`README.md` + `CLAUDE.md` + `CITATIONS.txt` triple.
+Cross-cutting documentation only: things that belong to no single folder.
+A folder's own docs live beside its code (`README.md`, plus `CLAUDE.md` when it has rules).
+A doc that tracked code cites must itself be tracked, or the citation points at a folder README.
 
 ## Current
 
-Every `.md` at the top level of `docs/`. All seven were re-verified against the
-tree on 2026-09-03.
+| File | Kind | Read when | Tracking issue |
+|---|---|---|---|
+| [`ISSUE-CONVENTIONS.md`](ISSUE-CONVENTIONS.md) | convention | filing any GitHub issue; `scripts/validate_issue.py` enforces it | |
+| [`endpoint-authorization-register.md`](endpoint-authorization-register.md) | register | changing who may call an endpoint. Incomplete for routes added after 2026-08-11; `ci/routes.py` is the full route list. Its `is_staff` question was ruled by #74 and #75 (admin means `is_superuser`); its per-endpoint buckets are still open under #64 | #64 |
+| [`neo4j-programmatic-access.md`](neo4j-programmatic-access.md) | runbook | querying Neo4j over HTTP, Browser or bolt, or rotating its password | |
+| [`sample-download-workflow.md`](sample-download-workflow.md) | explanation | changing any "Download samples" control or the workbook | |
+| [`UI.md`](UI.md) | snapshot | finding a page's route, view and template. Dated 2026-09-03; check it against the tree | |
+| [`superpowers/specs/2026-09-01-nextseek-ci-comprehensive-coverage-design.md`](superpowers/specs/2026-09-01-nextseek-ci-comprehensive-coverage-design.md) | live spec | extending CI coverage past tier T0 | #104 |
 
-| File | What it is |
-|---|---|
-| `ISSUE-CONVENTIONS.md` | The live convention for filing issues on a public repo, drift-guarded in code by `nextseek_api/cc_assistant/tests/test_issue_conventions_guard.py` and cited as the rule by the root `CLAUDE.md`, `AGENTS.md` and the `scripts/` pair. |
-| `dev-v5-merge-decisions.md` | The standing ruling on `route_capabilities.json` from the dev-v5 merge: do not pin the pre-merge file, do not teach the generator to honour `route_policy`. Pinned by `nextseek_api/assistant/tests/test_route_capabilities.py:569`; its gate is still open. |
-| `endpoint-authorization-register.md` | The authorization register for every endpoint, cited as the ruling by `nextseek_api/CLAUDE.md:153`, `nextseek_api/urls.py:61` and `nextseek_api/tests/test_api_docs_authentication.py`. Its headline question, whether `is_staff` still means admin, is explicitly unruled. |
-| `neo4j-programmatic-access.md` | Runbook for the three Neo4j access paths, the optional nginx drop-in that multiplexes bolt onto 443, and password rotation. Cited by `docker/CLAUDE.md:121`. |
-| `nessie-blocked-capabilities.md` | The 28-family capability table with 255 per-capability blockers at `file:line`, the five fields already in the payload and the one still missing. Counts are pinned to 2026-08-04; no successor document carries any of it. |
-| `nessie-question-set-2026-08-06.md` | The ground-truth reference for the corpus as committed: the 149-variant bayesian selection, generated from `nessie_tests/corpus.json` by `nessie_tests/scripts/build_doc.py`. Section 10 carries six unruled operator items. |
-| `sample-download-workflow.md` | How sample download works now, end to end. Cited as the live explanation by `nextseek_api/services/CLAUDE.md:210`, the module docstring at `nextseek_api/services/sample_workbook.py:5`, `nextseek_api/tests/test_download_call_sites.py` and `startup/seed/README.md:21`. |
+`docs/superpowers/` is gitignored by default; only files named by a negation in `.gitignore` are tracked.
 
-Two subdirectories hold current material of their own: `docs/superpowers/`
-(design specs and implementation plans, mostly gitignored) and
-`docs/testing-review/` (the three 2026-07 testing reviews that the harness
-design was built from).
+## Elsewhere
 
-## Historical
-
-Superseded documentation lives under `docs/archive/`, filed as
-`docs/archive/` for undated documents and `docs/archive/2026-07/` and
-`docs/archive/2026-08/` for the dated design and plan pairs.
-
-Read `docs/archive/INDEX.md` first. It carries one row per archived file saying
-what it covered, why it is historical, and what supersedes it. Nothing under
-`docs/archive/` describes current behaviour, and nothing there is maintained.
-
-Nothing was deleted. Every archived file was moved with `git mv`, so
-`git log --follow` still reaches its full history.
+- Nessie docs are listed in [`NessieAI/README.md`](../NessieAI/README.md).
+- Superseded docs: [`archive/INDEX.md`](archive/INDEX.md) for everything outside Nessie,
+  [`NessieAI/history/INDEX.md`](../NessieAI/history/INDEX.md) for Nessie.

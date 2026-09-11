@@ -22,7 +22,7 @@ Two consequences, both observed directly on 2026-08-31/09-01:
 
 - **The suite is not green and will not be.** Measured on merged code: **12 failed, 1704
   passed, 363 errors**. The failures and errors are pre-existing and environmental -- the
-  `/home/taishajo` evidence boundary that `scripts/attribute_api_test.sh` and
+  evidence boundary in a developer's home directory that `scripts/attribute_api_test.sh` and
   `attribute_fixtures.py:16` hard-code, and an unreachable neo4j. A "must be green" gate
   fails on run one and is ignored by run five.
 - **Counts lie; names do not.** A combined run once read "11 failed" where the pre/post
@@ -149,5 +149,5 @@ cleans up.
 - Deploying anything. CI observes; the operator rebuilds.
 - Fixing the 12 pre-existing failures or the 363 environmental errors. The baseline records
   them; shrinking it is separate work.
-- Running the `/home/taishajo`-bound attributes evidence lane. It cannot run outside its
+- Running the attributes evidence lane bound to a developer's home directory. It cannot run outside its
   author's machine and is tracked separately.

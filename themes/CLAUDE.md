@@ -106,10 +106,6 @@
   and `MEDIA_ROOT` is the container path `/media` (`dmac/settings.py:95`). A
   `{% static %}` or media URL aimed at one of its 8 logo files therefore
   renders a broken image instead of failing loudly.
-- `UI.md:117` still describes the home page as `direct_to_template` rendering
-  `index.html` into `content.embed.html`. Both halves are stale — the route is
-  `dmac.views.home` (`dmac/urls.py:48`) and the fragment is dead — so do not
-  use that table to decide which file to edit.
 
 ## Test command
 
@@ -131,8 +127,8 @@ under pytest on its own. See `themes/README.md` for why the anonymous
   full inbound/outbound edge list.
 - See `dmac/CLAUDE.md` for the routing half of the sign-out link that
   `themes/NextSeek/templates/accounts/includes/user_panel.html:38` reverses.
-- See `chat_frontend/README.md` for the React panel, which this tree neither
+- See `NessieAI/chat_frontend/README.md` for the React panel, which this tree neither
   loads nor styles.
-- See `UI.md` for the page-by-page route and view map, read with the staleness
-  warning above.
+- See `docs/UI.md` for the page-by-page route and view map, a dated snapshot to
+  check against the tree.
 - See `DEPLOYMENT.md` for what a rebuild does and does not replace.

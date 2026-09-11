@@ -238,9 +238,6 @@ import, because nothing in this directory is importable beyond two empty
   (`themes/NextSeek/static/jquery-easyui-1.5.2/demo/tree/basic.html:44`); they
   are excluded, and `static/` at the repo root is a sibling boundary excluded
   entirely.
-- `UI.md:117` lists `content.embed.html` as the home page's fragment. That is
-  a stale document, not an edge: no template includes it and no view renders
-  it.
 - Two names rendered from `dmac/views.py` resolve to nothing at all
   (`dmac/views.py:214` and `dmac/views.py:255`); they are consumers of this
   boundary that this boundary does not satisfy, so they are recorded as a

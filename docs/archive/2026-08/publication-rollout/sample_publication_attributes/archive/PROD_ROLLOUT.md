@@ -13,7 +13,7 @@ All 167 production assays point at the 7 project-level studies, so
 `assay_assets -> assays -> studies` distinguishes at most 7 groups for ~52
 papers. One DOI per project is not a usable answer. Production's paper-level
 studies exist only in Neo4j, with graph-local ids that collide with SEEK's —
-recorded as finding 14 in `../../docs/archive/2026-08/2026-08-21-publication-links-design.md`.
+recorded as finding 14 in `../../../2026-08-21-publication-links-design.md`.
 
 ## What was applied
 
