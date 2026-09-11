@@ -23,8 +23,8 @@
   broken status instead and the `xfail` reports green while the defect stands and
   red on the day somebody fixes it — both signals inverted.
 - An absent `CI_BOX_PROFILE` resolves to `prod`, the most restrictive profile,
-  and `--profile` can only narrow from there (`ci/smoke/conftest.py:142-145`,
-  `ci/smoke/conftest.py:162-170`). Change that default to anything else and an
+  and `--profile` can only narrow from there (`ci/smoke/conftest.py:149-152`,
+  `ci/smoke/conftest.py:168-177`). Change that default to anything else and an
   unconfigured box silently gains the right to issue writes.
 - Every pattern in `REGISTRY` appears exactly once, enforced at import time
   (`ci/routes.py:882-899`, `ci/routes.py:924`). A duplicate makes the second
