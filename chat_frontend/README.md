@@ -160,6 +160,16 @@ the mock project needs Playwright's browser binaries downloaded, and the
 real-backend projects additionally need a reachable deployed instance with a
 login that works.
 
+The mock project needs no `.env`. The standalone shell keeps its chat input
+disabled until `VITE_API_BASE_URL`, `VITE_API_USER` and `VITE_API_PASS` are all
+set (`chat_frontend/src/hooks/useAuth.ts`), so `chat_frontend/playwright.config.ts`
+starts the dev server for it with placeholder values (`http://mock.invalid`,
+`mock`, `mock`). Every request is mocked, so no real value is needed, and these
+override a real `.env` for the run. A dev server already listening on port 5173
+is reused as it was started, so stop yours first or give it the same three
+values. Run on 2026-09-11 with `npx playwright test --project mock` and no
+`.env`: 27 passed, 2 skipped (the two test-runner specs, which skip themselves).
+
 **Coverage.** The merge recipe at `chat_frontend/Makefile:3-8` combines both
 Playwright and vitest output. (not run) — same browser-binary requirement.
 
