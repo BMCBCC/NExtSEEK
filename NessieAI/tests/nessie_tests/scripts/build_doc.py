@@ -1,20 +1,21 @@
-"""Render docs/nessie-question-set-2026-08-06.md from qset.json + corpus.json.
+"""Render NessieAI/docs/nessie-question-set-2026-08-06.md from qset.json + corpus.json.
 
 The doc is GENERATED from the same file the corpus edit is generated from, so the
 table a reviewer reads and the questions that would run cannot drift apart.
 """
-import json, pathlib, sys, collections, csv
+import json, os, pathlib, sys, collections, csv
 
-S = pathlib.Path("/tmp/claude-1000/-home-cdemu-code-dmac-docker/"
-                 "7c6b89bb-13b7-48d6-8ccd-7b0eda6e02a0/scratchpad")
+# The one-off inputs lived outside the repo: qset.json in a session scratchpad, and the
+# 2026-08-06 grading CSVs in a developer's home directory. Point both variables at copies.
+S = pathlib.Path(os.environ["NESSIE_QSET_DIR"])
 spec = json.loads((S / "qset.json").read_text())
 HERE = pathlib.Path(__file__).resolve()
 corpus = json.loads((HERE.parents[1] / "corpus.json").read_text())
-DOC_OUT = HERE.parents[4] / "docs" / "nessie-question-set-2026-08-06.md"
+DOC_OUT = HERE.parents[3] / "docs" / "nessie-question-set-2026-08-06.md"  # NessieAI/docs/
 byid = {v["id"]: v for b in corpus["families"].values() for v in b["variants"]}
 doc = spec["doc"]
 
-REF = pathlib.Path("/home/cdemu/Desktop/nessie-grading-reference-2026-08-06")
+REF = pathlib.Path(os.environ["NESSIE_GRADING_REF_DIR"])
 ns = {r["query_id"]: r for r in csv.DictReader(open(REF / "ns_graded_answers.csv"))}
 cc = {r["query_id"]: r for r in csv.DictReader(open(REF / "cc_graded_answers_PRIMED.csv"))}
 
@@ -114,7 +115,7 @@ W("")
 W("## 2. Per-family targets, and why")
 W("")
 W("The distribution is weighted by **observed user traffic**, not by family symmetry.")
-W("`docs/nessie-adhoc-question-inventory.md` records 101 distinct questions really asked")
+W("`NessieAI/history/docs/nessie-adhoc-question-inventory.md` records 101 distinct questions really asked")
 W("against the dev box. Their themes:")
 W("")
 W("| theme in the ad-hoc log | share | families in the old selection |")
@@ -513,6 +514,6 @@ W("   from every measurement. Worth a pass before a third study.")
 W("")
 
 DOC_OUT.write_text("\n".join(lines) + "\n", encoding="utf-8")
-print("wrote docs/nessie-question-set-2026-08-06.md",
+print("wrote NessieAI/docs/nessie-question-set-2026-08-06.md",
       len(lines), "lines;", n_keep, "kept /", n_reword, "reworded /", n_new, "new;",
       len(graded_keep), "kept ids carry a 2026-08-06 grade")

@@ -51,6 +51,6 @@ README.md.
 - See README.md for the two lanes, the live-run commands and the paid run's flags.
 - See `NessieAI/tests/nessie_tests/output-skill/SKILL.md:2-3` for triaging a finished run into a report.
 - See `NessieAI/tests/nessie_tests/output-skill-bayesian/SKILL.md:2-3` for the paired run's grading flow.
-- See `docs/nessie-question-set-2026-08-06.md:1` for the question set and its ground truth.
+- See `NessieAI/docs/nessie-question-set-2026-08-06.md:1` for the question set and its ground truth.
 - See `nextseek_api/cc_assistant/CLAUDE.md:1` for the engine this harness points at.
 - See the repository-root CLAUDE.md for stack-wide build and test conventions.

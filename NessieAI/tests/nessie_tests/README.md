@@ -206,7 +206,7 @@ the 2026-08-06 question set. 25 of the 26 task families, one distinct question p
 variant, and every one asserting a verified value on `last_reply` (the only field
 that survives forcing on a `container_cc` arm).
 
-**Read `docs/nessie-question-set-2026-08-06.md` before running it.** That document
+**Read `NessieAI/docs/nessie-question-set-2026-08-06.md` before running it.** That document
 lists all 149 questions with their ground truth and how each was verified, the
 per-family targets and the reasoning behind them, the three write/launch hazards
 and what was done about each, and the cost. It is meant to be reviewed and argued
@@ -253,7 +253,7 @@ next section, and print the draw before paying for it.
 
 ### What `--scope all` can write or launch
 
-`docs/nessie-question-set-2026-08-06.md` §6 documents three hazards and says the
+`NessieAI/docs/nessie-question-set-2026-08-06.md` §6 documents three hazards and says the
 dangerous variants are **deselected**. Deselection means `is_bayesian: false`
 with `status` still `active` (the doc's own disposition table says so) — **it
 protects `--bayesian` runs ONLY.** `--scope all` at `--tier full` selects from

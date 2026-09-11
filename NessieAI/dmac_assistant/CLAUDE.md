@@ -94,10 +94,10 @@ repo depends on are narrow and the parts it does not are actively misleading.
   `streamjson` and dropping this directory's own path prefix returns four matches
   and no import among them: an attribution comment in the adapter that actually
   does the job (`nextseek_api/cc_assistant/translate.py:15-17`), a review that
-  repeats the false claim (`docs/testing-review/02-cc-dmac_assistant-testing-review.md:17`),
+  repeats the false claim (`NessieAI/history/docs/testing-review/02-cc-dmac_assistant-testing-review.md:17`),
   and two earlier passes that already caught it and left it unfixed
-  (`docs/archive/2026-08/2026-08-03-nessie-hardening-design.md:521` and
-  `docs/archive/2026-08/2026-08-03-nessie-hardening-plan-2-resilience-routing.md:267`). Believing
+  (`NessieAI/history/docs/2026-08/2026-08-03-nessie-hardening-design.md:521` and
+  `NessieAI/history/docs/2026-08/2026-08-03-nessie-hardening-plan-2-resilience-routing.md:267`). Believing
   that header leads to editing a module with no callers, which is how the claim
   spread in the first place.
 - **The model-class map is cached for the life of the process and never

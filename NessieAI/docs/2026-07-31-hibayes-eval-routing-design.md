@@ -1,6 +1,6 @@
 # HiBayes × NExtSEEK — evaluation and routing feedback loop (design spec)
 
-**Status:** design-approved, not implemented
+**Status:** implemented; posterior routing ships off by default (`NEXTSEEK_POSTERIOR_ROUTING_ENABLED`)
 **Date:** 2026-07-31
 **Anchor commit:** `9edd36958b6be06098d2cbdd8a5e3a0561e6623d` (`origin/dev`)
 **Companion clone:** `dmac-assistant` `main` @ `dcca50c187890dc93659e5594810179793bb94eb`

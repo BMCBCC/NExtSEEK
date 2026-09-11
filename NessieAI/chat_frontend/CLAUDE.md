@@ -185,7 +185,7 @@ the two build scripts, which each begin with a project-references compile
 - See `seek/templatetags/vite_assets.py:1-9` for the tag's own usage note.
 - See `DEPLOYMENT.md:286` for where this fits in the deploy runbook, and
   `DEPLOYMENT.md:285` for the static-asset step it depends on.
-- See `architecture.md:57-76` for the whole turn, from page load to progress
+- See `NessieAI/docs/architecture.md` "Anatomy of a turn" for the whole turn, from page load to progress
   transport.
 - See `docs/UI.md` "Architecture Overview" for how this sits beside the server-rendered pages.
 - See the repository root `CLAUDE.md` for the router, the two engines and the

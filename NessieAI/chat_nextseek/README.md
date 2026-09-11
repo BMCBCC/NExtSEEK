@@ -77,8 +77,8 @@ repository executes any of them: a grep for the regex matching
 `NessieAI/chat_nextseek/` followed by `app`, `cli`, `e2e` or `mcp_server` and `.py`,
 run over the whole worktree and filtered to paths that do not start with
 `NessieAI/chat_nextseek/`, returned 14 lines on 2026-09-03, and every one is prose or a
-coverage record — `docs/nessie-blocked-capabilities.md:391`,
-`docs/testing-review/01-chat_nextseek-e2e-harness-review.md:3`,
+coverage record: `NessieAI/docs/nessie-blocked-capabilities.md:391`,
+`NessieAI/history/docs/testing-review/01-chat_nextseek-e2e-harness-review.md:3`,
 `nessie_tests/FAMILIES.json:2779-2780`, `nextseek_api/schema_rag/README.md:170`
 and that boundary's own `nextseek_api/schema_rag/CITATIONS.txt:64`. A grep for
 `streamlit` over `docker-compose.yml` likewise returns nothing.
