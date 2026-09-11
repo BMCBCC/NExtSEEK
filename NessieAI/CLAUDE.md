@@ -1,12 +1,53 @@
 # Working in NessieAI/
 
-Placeholder written with the package skeleton. The docs step of the NessieAI move replaces it.
+Rules that span more than one unit. Each unit's own rules are in its `CLAUDE.md` (list at the end).
+Test commands live only in `NessieAI/tests/README.md`.
 
-- NessieAI declares no models, migrations, AppConfig or app label. Engine code that needs the ORM
-  imports `nextseek_api.assistant.models_db` and runs only inside a configured Django process.
-- Cross-unit paths go through `NessieAI/paths.py`, never a fresh `parents[N]` join.
-- Never create `NessieAI/.env`: chat_nextseek's `load_dotenv()` walks up the tree and would find
-  it before the repo-root `.env`.
-- No `conftest.py` at `NessieAI/tests/` itself. The per-area conftests under `NessieAI/tests/`
-  re-export fixtures by name and never declare `pytest_plugins`.
-- `NessieAI/history/` is read-only.
+## Boundary
+
+- NessieAI declares no models, migrations, AppConfig or app label. Engine code that needs the ORM imports `nextseek_api.assistant.models_db` directly and runs only inside a configured Django process.
+- Allowed back-edges into the API side, and no others:
+  - `nextseek_api.assistant.models_db`, from engine modules that persist (for example `NessieAI/cc/cc_transcript_store.py`, `NessieAI/router/turn_ledger.py`, the `NessieAI/hibayes/` ORM modules)
+  - `nextseek_api.batch_upload.helpers`, from `NessieAI/ns/reingest_qa.py`
+  - `seek.seekdb`, lazily, from `NessieAI/cc/cc_provision.py`
+  - `nextseek_api.models`, from `NessieAI/schema_rag/`
+  - `nextseek_api.assistant.excel_export`, lazily and behind a guard, from `NessieAI/chat_nextseek/src/chat_nextseek/orchestrator.py`
+  - `nextseek_api.conftest` (its fixtures), from `NessieAI/tests/nessie_tests/tests_container/`
+- Three engine-to-harness imports are frozen, and no new one may be added:
+  - `NessieAI/cc/op_registry/paired_evidence.py` imports the bayes harness
+  - `NessieAI/build_tools/gen_op_surfaces/route_capabilities.py` imports the corpus, export and runner
+  - `NessieAI/hibayes/human_grade_fit.py` imports `bayes_manifest`, lazily
+- `NessieAI/tests/api/test_nessie_boundaries.py` enforces both lists for `cc`, `router`, `hibayes`, `ns`, `schema_rag` and `build_tools`; chat_nextseek and the tests are not scanned. It fails on a new back-edge, a new import of `NessieAI.tests`, any `sys.path.insert` of the NessieAI directory, and any bare `e2e` or `pathsetup` import.
+
+## Invariants that span units
+
+- BAML imports stay lazy and guarded: routing degrades to the keyword heuristic, and never stops Django booting.
+- `<router_unavailable>` from the BAML router is a failure, not a route. Treating it as one sends every turn to CC.
+- Model ids live only in `NessieAI/dmac_assistant/build_context/router_model_class_map.json`. The Bedrock proxy allows Opus only, so a CC turn with no explicit model id gets a 403.
+- The 8 `.baml` files in `NessieAI/dmac_assistant/baml_src/` and `NessieAI/docker/cc-runtime/baml_src/` stay byte-identical until the Phase C dedupe.
+- A judge-schema change touches three files (see `NessieAI/README.md` "To change X, edit Y"). Never change `PROMPT_VERSION` in `NessieAI/hibayes/judge_human_compare.py`: it is written into judged rows.
+- `NessieAI/cc/op_registry/ops.py` is the op registration source of truth; add ops only through `/add-cc-op`. `ops.json` and the plugin surfaces are generated.
+- `capabilities.md` is canonical in `NessieAI/chat_nextseek/src/chat_nextseek/context/`. The baked plugin copy differs today; fixing it also means updating `NessieAI/docker/cc-runtime/PORT-EVIDENCE.json`.
+- A chat UI change is two commits: source, then the rebuilt bundle in `static/js/chat_assistant/`.
+- `NessieAI/docker/cc-runtime/container/CLAUDE.md` is what the agent is told and ships in the image. Only its marked blocks are generated.
+- The live router reads `NessieAI/tests/nessie_tests/corpus.json` for family labels. Do not dockerignore `NessieAI/tests/`.
+
+## Never
+
+- Edit anything under `NessieAI/history/`.
+- Create `NessieAI/.env`: `load_dotenv()` in chat_nextseek walks up and would read it before the repo-root `.env`.
+- Pass `NessieAI/` wholesale to pytest; name the `NessieAI/tests/<area>` paths.
+- Run a paid lane (`RUN_REALSTACK=1`, `--tier full`, `--bayesian`, a proxy Opus probe) without the owner's approval for that run.
+- `docker cp nessie_tests nextseek:/app/`. It succeeds and tests stale code. The current form is in `NessieAI/tests/README.md`.
+
+## Box env
+
+`docker/nextseek.env` is rendered once and never re-rendered by `rebuild`. On every box:
+- `CATALOG_FILE` must point under `/app/NessieAI/chat_nextseek/`.
+- `DMAC_ROUTE_CAPABILITIES_FILE` and `DMAC_ROUTER_MODEL_CLASS_MAP_FILE` must be absent. If present they beat the package default: routing silently drops to the heuristic and every CC turn loses its model id.
+
+## Unit rules
+
+`NessieAI/chat_nextseek/CLAUDE.md`, `NessieAI/dmac_assistant/CLAUDE.md`, `NessieAI/router/CLAUDE.md`,
+`NessieAI/cc/CLAUDE.md`, `NessieAI/ns/CLAUDE.md`, `NessieAI/hibayes/CLAUDE.md`, `NessieAI/build_tools/CLAUDE.md`,
+`NessieAI/chat_frontend/CLAUDE.md`, `NessieAI/docker/CLAUDE.md`, `NessieAI/tests/nessie_tests/CLAUDE.md`.
