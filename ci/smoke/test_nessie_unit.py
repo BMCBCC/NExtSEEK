@@ -131,9 +131,17 @@ def test_missing_write_credentials_fail_the_lane_and_never_skip(monkeypatch, tmp
     monkeypatch.delenv("CI_WRITE_USER", raising=False)
     monkeypatch.delenv("CI_WRITE_PASS", raising=False)
     monkeypatch.setenv("NEXTSEEK_CI_ENV", str(tmp_path / "absent.env"))
-    with pytest.raises(pytest.fail.Exception) as failed:
+    # Skipped is not a subclass of Failed, so pytest.raises(pytest.fail.Exception)
+    # would let a skip escape and report this pin itself as skipped: green again.
+    try:
         require_write_creds()
-    message = str(failed.value)
+    except pytest.skip.Exception:
+        pytest.fail("require_write_creds skipped; a missing write account must fail "
+                    "the lane, never skip it")
+    except pytest.fail.Exception as failed:
+        message = str(failed)
+    else:
+        pytest.fail("require_write_creds returned with no credentials set anywhere")
     for name in ("CI_WRITE_USER", "CI_WRITE_PASS", "ci.env"):
         assert name in message, f"the failure does not name {name}: {message}"
 
