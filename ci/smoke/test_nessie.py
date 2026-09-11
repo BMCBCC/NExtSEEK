@@ -26,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from ci import routes
 from ci.smoke.client import GuardedSession
-from ci.smoke.conftest import _guard_context, login_storage_state
+from ci.smoke.conftest import _cred, _guard_context, login_storage_state
 
 pytestmark = [pytest.mark.nessie, pytest.mark.flow, pytest.mark.profiles("local", "dev")]
 
@@ -225,12 +225,33 @@ _ADMIN_HELP = ("CI_WRITE_USER (the superuser in ~/.config/nextseek/ci.env) drive
                "Nessie lane")
 
 
+def require_write_creds() -> tuple[str, str]:
+    """The write account's credentials, or a failure that names where they go.
+
+    Not conftest's write_creds fixture: that one skips when they are missing, which
+    the opt-in write lane relies on. Here a skip would let the whole lane read green
+    on a misconfigured box, which decision 6 of the spec rules out.
+    """
+    creds = _cred(("CI_WRITE_USER", "CI_WRITE_PASS"))
+    if creds is None:
+        pytest.fail(
+            "CI_WRITE_USER and CI_WRITE_PASS are not set in the environment and not in "
+            "~/.config/nextseek/ci.env (or the file NEXTSEEK_CI_ENV names). "
+            f"{_ADMIN_HELP}, so none of its stages can run.", pytrace=False)
+    return creds
+
+
 @pytest.fixture(scope="module")
-def nessie_admin_api(profile, base_url, write_creds) -> GuardedSession:
+def nessie_write_creds() -> tuple[str, str]:
+    return require_write_creds()
+
+
+@pytest.fixture(scope="module")
+def nessie_admin_api(profile, base_url, nessie_write_creds) -> GuardedSession:
     """Basic-authenticated client for the write account, cookie-free for the reason
     the write lane's wapi fixture gives: a sessionid would outrank the Basic header."""
     s = GuardedSession(profile=profile, base_url=base_url)
-    s.auth = write_creds
+    s.auth = nessie_write_creds
     s.headers["Accept"] = "application/json"
     return s
 
@@ -255,7 +276,7 @@ def _module_failures(request) -> int:
 
 
 @pytest.fixture(scope="module")
-def nessie_context(request, browser, profile, base_url, write_creds, tmp_path_factory,
+def nessie_context(request, browser, profile, base_url, nessie_write_creds, tmp_path_factory,
                    nessie_budget, nessie_evidence_dir):
     """A browser context logged in as the write account.
 
@@ -263,7 +284,7 @@ def nessie_context(request, browser, profile, base_url, write_creds, tmp_path_fa
     aborted and fails the lane) and aborts any other paid POST outright.
     """
     failed_before = _module_failures(request)
-    state = login_storage_state(browser, profile, base_url, write_creds,
+    state = login_storage_state(browser, profile, base_url, nessie_write_creds,
                                 tmp_path_factory.mktemp("nessie-auth") / "state.json")
     ctx = browser.new_context(viewport={"width": 1440, "height": 900},
                               storage_state=state, base_url=base_url,
@@ -300,6 +321,12 @@ def nessie_page(request, nessie_context, base_url, nessie_evidence_dir):
 # --------------------------------------------------------------------------- #
 # stage 1: everything exists (no model call)
 # --------------------------------------------------------------------------- #
+
+def test_the_write_credentials_are_present():
+    """Checked first, as its own red line: without them every fixture below errors
+    with the same message, and this names the cause once."""
+    require_write_creds()
+
 
 def test_the_write_account_is_an_admin_in_a_participating_project(nessie_admin_api, base_url):
     r = nessie_admin_api.get(f"{base_url}/nextseek_api/assistant/me/", timeout=60)

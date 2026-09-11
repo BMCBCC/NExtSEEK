@@ -43,7 +43,7 @@ def test_the_nessie_switch_is_not_a_mark_expression():
 from ci.smoke.test_nessie import (
     CHAT_PATH, MAX_CHAT_POSTS, QUESTIONS, SPEND_CEILING_USD, ChatBudget, TurnRecord,
     bundle_path, cc_model_id, classify_request, is_terminal, normalize, plain_prefix,
-    query_error, reported_cost, route_decision, summary_payload,
+    query_error, reported_cost, require_write_creds, route_decision, summary_payload,
 )
 
 BASE = "http://127.0.0.1:8000"
@@ -123,3 +123,44 @@ def test_summary_payload_shape():
     assert out["questions"][0]["key"] == "nhp_graph"
     assert out["questions"][0]["expected_route"] == "container_cc"
     assert out["kept_session"] is None and out["evidence_dir"] == "/tmp/e"
+
+
+def test_missing_write_credentials_fail_the_lane_and_never_skip(monkeypatch, tmp_path):
+    """Decision 6: a misconfigured box fails and names the cause. A skip would let
+    the whole lane read green on a box whose ci.env has no write account."""
+    monkeypatch.delenv("CI_WRITE_USER", raising=False)
+    monkeypatch.delenv("CI_WRITE_PASS", raising=False)
+    monkeypatch.setenv("NEXTSEEK_CI_ENV", str(tmp_path / "absent.env"))
+    with pytest.raises(pytest.fail.Exception) as failed:
+        require_write_creds()
+    message = str(failed.value)
+    for name in ("CI_WRITE_USER", "CI_WRITE_PASS", "ci.env"):
+        assert name in message, f"the failure does not name {name}: {message}"
+
+
+def test_write_credentials_come_from_the_environment_or_the_file(monkeypatch, tmp_path):
+    monkeypatch.delenv("CI_WRITE_USER", raising=False)
+    monkeypatch.delenv("CI_WRITE_PASS", raising=False)
+    env_file = tmp_path / "ci.env"
+    env_file.write_text("CI_WRITE_USER=file-user\nCI_WRITE_PASS=file-pass\n")
+    monkeypatch.setenv("NEXTSEEK_CI_ENV", str(env_file))
+    assert require_write_creds() == ("file-user", "file-pass")
+    monkeypatch.setenv("CI_WRITE_USER", "env-user")
+    monkeypatch.setenv("CI_WRITE_PASS", "env-pass")
+    assert require_write_creds() == ("env-user", "env-pass")
+
+
+def test_no_nessie_fixture_or_test_takes_the_skipping_write_creds_fixture():
+    """conftest's write_creds skips when the account is missing (the opt-in write
+    lane depends on that). Any Nessie function that requests it turns a missing
+    account back into a green skip."""
+    import ast
+    import ci.smoke.test_nessie as nessie
+    tree = ast.parse(Path(nessie.__file__).read_text())
+    takers = sorted(
+        node.name for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and any(a.arg == "write_creds"
+                for a in node.args.posonlyargs + node.args.args + node.args.kwonlyargs)
+    )
+    assert takers == [], f"these request write_creds, which skips: {takers}"
