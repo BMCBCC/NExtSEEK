@@ -52,7 +52,7 @@ QUESTIONS: tuple[Question, ...] = (
     Question("capabilities", "What can you do?", "nextseek_query", "system", False, False),
     Question("ndma_mice", "What mice are treated with NDMA?", "nextseek_query", "api", True, False),
     Question("impact_studies", "What studies are in IMPACT?", "nextseek_query", "graph", True, False),
-    Question("nhp_graph", "Make me a graph of NHP species", "container_cc", "cc", False, True),
+    Question("nhp_graph", "Make me a histogram of NHP species", "container_cc", "cc", False, True),
 )
 
 MAX_CHAT_POSTS = len(QUESTIONS)
@@ -61,6 +61,9 @@ CC_TURN_CAP_USD = 0.50            # NEXTSEEK_CC_MAX_BUDGET_USD's default
 TURN_TIMEOUT_S = {"nextseek_query": 300, "container_cc": 240}
 LANE_DEADLINE_S = 720
 POLL_INTERVAL_S = 2.0
+# How long one progress poll may wait for its answer. The 2026-09-11 run 3 lost the
+# CC turn to a single poll that hit the old 60 s while the app was starved of memory.
+POLL_READ_TIMEOUT_S = 180
 CHAT_PATH = "/nextseek_api/cc-assistant/query/async/"
 GRAPH_MODE = "graph_query"       # the mode the NS graph branch records on its bundle
 # The modes the REST branch records on a search bundle; search_results answers only
@@ -552,7 +555,7 @@ def _poll(api, base_url: str, rec: TurnRecord, timeout_s: int) -> None:
     deadline = time.monotonic() + timeout_s
     url = f"{base_url}/nextseek_api/nessie/tasks/{rec.task_id}/progress/"
     while True:
-        r = api.get(url, timeout=60)
+        r = api.get(url, timeout=POLL_READ_TIMEOUT_S)
         assert r.status_code == 200, f"{rec.key}: progress answered {r.status_code}"
         body = r.json()
         rec.status, rec.progress, rec.result = body["status"], body["progress"], body.get("result")

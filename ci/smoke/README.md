@@ -83,7 +83,7 @@ It works in three stages, all in that one file:
    renamed and deleted.
 2. **Four questions, typed into the page, in one chat, in this order:** "What
    can you do?", "What mice are treated with NDMA?", "What studies are in
-   IMPACT?" (NS), then "Make me a graph of NHP species" (CC). None is forced, so
+   IMPACT?" (NS), then "Make me a histogram of NHP species" (CC). None is forced, so
    the real router picks each engine. NS goes first and CC last, because a
    completed CC turn makes the chat sticky and CC would then answer every later
    question.
