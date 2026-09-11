@@ -830,10 +830,13 @@ class TestSampleAdvancedSearch:
     @patch("nextseek_api.services.samples.resolve_sampletype_to_seek_id", return_value="2")
     @patch("nextseek_api.services.samples.DBtable_sample")
     def test_empty_search_text_list(self, mock_dbs, _):
-        """A list with empty strings becomes empty filter_searchText."""
+        """A list with empty strings becomes empty filter_searchText.
+
+        With a sample type: with neither a term nor a type the endpoint refuses
+        the search (test_advanced_search_needs_a_filter.py)."""
         vs = self._viewset()
         mock_dbs.return_value.searchAdvanced.return_value = _adv_search_result([])
-        req = self._req({"filter_searchText": ["", "  "]})
+        req = self._req({"filter_searchText": ["", "  "], "sampletype": "TIS"})
         resp = vs.create(req)
         assert resp.status_code == 200
 

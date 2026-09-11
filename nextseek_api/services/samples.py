@@ -528,6 +528,17 @@ class SampleAdvancedSearchViewSet(viewsets.ViewSet):
             uid_terms = [t for t in _terms if UID_RE.match(t)]
             other_terms = [t for t in _terms if not UID_RE.match(t)]
 
+            # Nothing to search on: no term, and no sample type that resolved on this
+            # instance (to_db_filters drops an unknown one silently). That search reads
+            # every sample in the database into this worker: 166,235 rows locally,
+            # OOM-killed in a 2 GB container (Nessie CI lane follow-up, 2026-09-11).
+            if not _terms and not filters.get('sampletype_ids'):
+                return HttpResponse(
+                    b'{"errors":[{"title":"Invalid request","detail":"Give a filter_searchText, '
+                    b'or a sampletype that exists on this instance. A search with neither '
+                    b'would read every sample."}]}',
+                    status=422, content_type='application/json')
+
             # Data scope. Mirrors AdminSampleViewSet in nextseek_api/views.py (#74).
             #
             # IsAuthenticated on this viewset answers "is this a real logged-in user",
