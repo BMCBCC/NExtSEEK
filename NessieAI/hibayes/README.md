@@ -162,7 +162,7 @@ this file. Provenance for the ported, non-vendored modules is recorded inline at
 
 Tests are in `NessieAI/tests/hibayes/`. The command is the Django lane in
 `NessieAI/tests/README.md`, over a **writable** copy of the checkout: Django settings
-create directories at import time (`dmac/settings.py:497-499`).
+create directories at import time (`dmac/settings.py:507-508`).
 
 The failures that lane shows are environmental, and they fall into three groups worth
 telling apart:

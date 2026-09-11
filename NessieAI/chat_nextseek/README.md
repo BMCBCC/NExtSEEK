@@ -66,7 +66,7 @@ front end with a provider-profile flag (`NessieAI/chat_nextseek/cli.py:393`), an
 `mcp_server.py` an MCP server exposing resources, prompts and tools
 (`NessieAI/chat_nextseek/mcp_server.py:2-8`). Nothing in this repository executes any of
 them: outside this directory, the only mentions of those files are prose and coverage
-records, such as `NessieAI/docs/nessie-blocked-capabilities.md:391`,
+records, such as `NessieAI/docs/nessie-blocked-capabilities.md:393`,
 `NessieAI/history/docs/testing-review/01-chat_nextseek-e2e-harness-review.md:3`,
 `NessieAI/tests/nessie_tests/FAMILIES.json:2779-2780` and `NessieAI/schema_rag/README.md`.
 A grep for `streamlit` over `docker-compose.yml` returns nothing.

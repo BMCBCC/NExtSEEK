@@ -64,8 +64,10 @@ the result back into (a) guidance for the container agent and (b) a risk overlay
 | NExtSEEK already vendors `dmac_assistant` as an editable path dependency | `pyproject.toml:139` |
 | Exactly **one** test pinned the capabilities file by hash; it has since been deleted, and a note where it stood says why and names the behavioural tests that replace it | `NessieAI/tests/router/test_f_constraint_pins.py:13-20` |
 
-> Another test's docstring claims it pins that file. It does not: the file contains no such
-> assertion and its hashing import is unused. Treat the docstring as inaccurate.
+> Another test's docstring once claimed it pinned that file, and it imported `hashlib`
+> without using it. Both were corrected: the docstring now says it does not pin the file
+> (`NessieAI/tests/router/test_baml_router_schema.py:5-11`), and a test guards both halves
+> (`NessieAI/tests/router/test_baml_router_schema.py:43-56`).
 
 ## 5. Architecture
 

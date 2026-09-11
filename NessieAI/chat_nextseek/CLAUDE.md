@@ -84,7 +84,7 @@ without an error at the point of the change.
   dev-group dependencies at `NessieAI/chat_nextseek/pyproject.toml:50-51`), so collection
   uses the root project's block and loads the real Django settings module unless the
   lane passes the test settings, and that import calls `os.makedirs` at
-  `dmac/settings.py:497-499`. Over a read-only mount without the two pre-created
+  `dmac/settings.py:507-508`. Over a read-only mount without the two pre-created
   directories the entire suite fails to collect (`NessieAI/tests/README.md` "Django lane").
 - **Two `NessieAI/tests/chat_nextseek/evaluator/` modules abort collection, so a plain run
   of that directory executes zero tests.** `NessieAI/tests/chat_nextseek/evaluator/test_demo_server.py:6`

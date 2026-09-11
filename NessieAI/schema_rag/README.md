@@ -64,7 +64,7 @@ and path (`NessieAI/schema_rag/service.py:231-233`), a per-endpoint exception on
 skips that endpoint (`NessieAI/schema_rag/service.py:262-268`), and any path matching
 a configured pattern is dropped before parsing
 (`NessieAI/schema_rag/service.py:212-214`), which is how the two endpoints of this
-feature stay out of their own index (`dmac/settings.py:493-495`).
+feature stay out of their own index (`dmac/settings.py:502-504`).
 
 **Retrieval** embeds the query once (`NessieAI/schema_rag/service.py:784`) and then
 runs at most three scoring passes, each a strictly richer text for the same endpoints:
@@ -111,8 +111,8 @@ embedder reaches for Hugging Face, and on a container with networking off those 
 fail.
 
 Both causes are visible in the repository. The sentence-transformers cache is resolved
-under `BASE_DIR` (`dmac/settings.py:491-492`), so relocating the checkout inside a
-container aims it at a directory `dmac/settings.py:498-499` has just created empty; and
+under `BASE_DIR` (`dmac/settings.py:500-501`), so relocating the checkout inside a
+container aims it at a directory `dmac/settings.py:508` has just created empty; and
 even with a populated cache in reach, the loader still opens an HTTP conversation with
 Hugging Face unless `HF_HUB_OFFLINE` is set. The supported lane already encodes both
 (`startup/dev/run_full_test_lane.sh:41-49`), fails fast instead of downloading
@@ -143,7 +143,7 @@ Depends on, outside this directory:
   request and response models from it (`NessieAI/schema_rag/service.py:24-32`) while
   that module names two classes of this one (`nextseek_api/models.py:2071`,
   `nextseek_api/models.py:2190`).
-- Eight settings keys defined at `dmac/settings.py:485-495`, of which the DuckDB directory
+- Seven settings keys defined at `dmac/settings.py:494-504`, of which the DuckDB directory
   is load-bearing input as well as output: `NessieAI/schema_rag/session.py:45` joins
   every session path onto it and `NessieAI/schema_rag/service.py:675-681` scans it whole to
   match a schema URL, so moving it strands every live session.
