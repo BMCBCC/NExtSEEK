@@ -95,6 +95,12 @@ def pytest_addoption(parser):
     g.addoption("--force-profile", default=None,
                 help="Widen the profile above what the box declares. Requires "
                      "CI_FORCE_PROFILE_CONFIRM=yes. Never use in a workflow file.")
+    g.addoption("--no-nessie", action="store_true",
+                help="Skip the Nessie lane (ci/smoke/test_nessie.py). Never use -m "
+                     "for this: any -m expression re-admits the write lane.")
+    g.addoption("--nessie-no-turns", action="store_true",
+                help="Run only the Nessie lane's stage 1: no chat turn, no model "
+                     "spend. For iterating on the lane itself.")
 
 
 # --------------------------------------------------------------------------- #
@@ -187,6 +193,8 @@ def pytest_configure(config):
         "markers",
         "profiles(*names): only run under these box profiles; skipped under any other.",
     )
+    config.addinivalue_line("markers", "nessie: the Nessie lane.")
+    config.addinivalue_line("markers", "nessie_turn: needs a real chat turn.")
     # --help and --version reach _do_configure() from a caller that does not
     # catch Exit, so a refusal raised here surfaces as a traceback and rc=1
     # instead of the message. Printing the options must always work.
@@ -198,8 +206,25 @@ def pytest_configure(config):
     resolve_profile(config)
 
 
+def nessie_skip_reason(keywords, *, no_nessie: bool, no_turns: bool) -> str | None:
+    """Why a Nessie-lane item is skipped, or None when it runs.
+
+    Pure, so the no-stack lane can pin it. Applied before the -m early return in
+    pytest_collection_modifyitems, which is what keeps the write lane deselected:
+    a -m expression would switch that lane back on, so the Nessie switches are
+    options, never mark expressions.
+    """
+    if "nessie" not in keywords:
+        return None
+    if no_nessie:
+        return "Nessie lane skipped by --no-nessie"
+    if no_turns and "nessie_turn" in keywords:
+        return "chat turns skipped by --nessie-no-turns"
+    return None
+
+
 def pytest_collection_modifyitems(config, items):
-    """Two independent gates, in this order.
+    """Three independent gates, in this order.
 
     The PROFILE gate runs unconditionally. GuardedSession refuses a non-GET under
     prod before it is sent, which is the right answer for a requests client and the
@@ -207,6 +232,9 @@ def pytest_collection_modifyitems(config, items):
     and the test then waits out its own response timeout and fails red, five
     minutes later, for a rule the suite is enforcing correctly. A test whose SHAPE
     is a write declares the profiles it belongs to and is skipped elsewhere.
+
+    The NESSIE gate also runs unconditionally, before the -m early return, so
+    --no-nessie and --nessie-no-turns hold whatever -m says (see nessie_skip_reason).
 
     The WRITE-LANE gate is the pre-existing opt-in and stays subject to -m. The
     profile gate must not be: `-m write` on a prod box would otherwise re-admit
@@ -222,6 +250,13 @@ def pytest_collection_modifyitems(config, items):
                     f"this box declares {active!r}"
                 )
             ))
+
+    no_nessie = config.getoption("--no-nessie")
+    no_turns = config.getoption("--nessie-no-turns")
+    for item in items:
+        reason = nessie_skip_reason(item.keywords, no_nessie=no_nessie, no_turns=no_turns)
+        if reason:
+            item.add_marker(pytest.mark.skip(reason=reason))
 
     if config.getoption("-m"):
         return
