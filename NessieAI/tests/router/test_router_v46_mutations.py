@@ -6,6 +6,7 @@ import pytest
 
 from NessieAI import paths
 from NessieAI.router import router as cc_router
+from NessieAI.tests.router.image_baml import image_baml_source
 
 
 def test_mutation_route_field_on_classifier_baml_fails_schema_oracle():
@@ -82,5 +83,6 @@ def test_mutation_extra_route_on_flag_off_still_single_call(settings):
 
 def test_mutation_dual_router_baml_identity():
     a = paths.DMAC_ASSISTANT_DIR / "baml_src" / "router.baml"
-    b = paths.CC_RUNTIME_DIR / "baml_src" / "router.baml"
+    b = image_baml_source("router.baml")
+    assert b.resolve() == a.resolve()
     assert hashlib.sha256(a.read_bytes()).hexdigest() == hashlib.sha256(b.read_bytes()).hexdigest()

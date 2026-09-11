@@ -69,14 +69,14 @@ reasoning client and one the cheap flash tier
 | `ClassifyQuery` | `NessieAI/dmac_assistant/baml_src/classifier.baml:15` | `NessieAI/router/router.py:205` |
 | `Summarize` | `NessieAI/dmac_assistant/baml_src/summarize.baml:56` | `NessieAI/cc/cc_summary.py:275` |
 | `EvaluateFunctionalUsefulness` | `NessieAI/dmac_assistant/baml_src/functional_evaluator.baml:143` | `NessieAI/hibayes/judge_human_compare.py:496` |
-| `JudgeUITranscript` | `NessieAI/dmac_assistant/baml_src/judge_ui.baml:35` | only via the mirror tree, `NessieAI/docker/cc-runtime/tools/e2e/judge_runner.py:120` |
+| `JudgeUITranscript` | `NessieAI/dmac_assistant/baml_src/judge_ui.baml:35` | only inside the agent image, `NessieAI/docker/cc-runtime/tools/e2e/judge_runner.py:120` |
 | `JudgeRouterAnswer` | `NessieAI/dmac_assistant/baml_src/judge_router.baml:32` | nothing |
 
 The last two rows are absences established the same way: grepping the whole tree
-for `JudgeRouterAnswer` returns only its declaration above and the identical mirror
-copy under `NessieAI/docker/cc-runtime/baml_src/`, and grepping for `JudgeUITranscript`
-returns, besides the two declarations, one caller which imports `tools.e2e.baml_client`:
-the client built from the mirror, not from here. The judge functions belong to HiBayes
+for `JudgeRouterAnswer` returns only its declaration above, and grepping for
+`JudgeUITranscript` returns, besides its declaration, one caller which imports
+`tools.e2e.baml_client`: the client the agent image generates from these files, not
+the router client Django imports. The judge functions belong to HiBayes
 (`NessieAI/hibayes/README.md` "HiBayes lives in these places").
 
 `RouteQuery`'s prompt interpolates the registry rows one route at a time
@@ -173,6 +173,6 @@ What the other matches are NOT:
 - `NessieAI/tests/nessie_tests/FAMILIES.json:6114-6115` and `NessieAI/tests/nessie_tests/FAMILIES.json:3899` name files here as provenance strings in a corpus record, not as imports.
 - `NessieAI/history/plan005/plan005_baseline.py:323-327` names boundary paths as container bind-mount sources for a mutation-testing subject tree, and `NessieAI/history/plan005/plan005_closeout_control.py:956` hashes `baml_src` into a manifest; neither imports the package, and both are frozen.
 - `NessieAI/history/cc/archive/PLAN-2-multi-user-provisioning.md:969` shows an import of the copier inside a superseded plan document, which is prose, not code.
-- `NessieAI/docker/cc-runtime/baml_src/` is a byte-identical mirror rather than a consumer: it is copied into the agent image and generated there against its own path (`NessieAI/docker/cc-runtime/Dockerfile:113-117`), so the agent never imports anything from this directory.
+- The agent image is a second build of `baml_src/`, not an importer: `docker-compose.yml` hands the tree to its build as the named context `dmac_assistant_baml`, which is copied to `/app/baml_src/` and generated there (`NessieAI/docker/cc-runtime/Dockerfile:113-117`), so the agent never imports anything from this directory.
 
 See `NessieAI/dmac_assistant/CLAUDE.md` for the invariants that hold these edges together.

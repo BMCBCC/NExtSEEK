@@ -55,5 +55,19 @@
       "path": "build_context/docs/nextseek-api/",
       "observation": "Empty and untracked (not in git) at the pinned port_source_commit, yet the dmac-assistant Dockerfile COPYs it to /app/docs/nextseek-api/ and that repo's own test_dockerfile_build.py::test_layout_contract_paths_present asserts /app/docs/nextseek-api/README.md exists in the built image. This is pre-existing drift in the port source (not introduced by this port) -- ported as an empty, git-trackable placeholder (.gitkeep) so the COPY line still succeeds on a fresh checkout; /app/docs/nextseek-api/README.md will be absent in images built from docker/cc-runtime/, matching the port source's actual current state rather than its stale test expectation."
     }
+  ],
+  "post_port_changes": [
+    {
+      "date": "2026-09-11",
+      "path": "baml_src/",
+      "change": "Removed from this build context. The port carried the dmac-assistant clone's root baml_src/ as a hand-kept copy of NessieAI/dmac_assistant/baml_src/ (byte-identical, all 8 files). The Dockerfile now COPYs the Compose named context dmac_assistant_baml, which docker-compose.yml maps onto NessieAI/dmac_assistant/baml_src/, to the same /app/baml_src/, so baml-cli generate and the generators' output_dir put the judge client at /app/tools/e2e/baml_client/ as before.",
+      "why": "NessieAI consolidation Phase C: one BAML tree, so nobody keeps two copies identical by hand.",
+      "guards": [
+        "NessieAI/tests/router/test_baml_single_source.py",
+        "NessieAI/tests/cc/test_step7_cc_runtime_port.py::test_cc_runtime_baml_sources_come_from_the_canonical_tree",
+        "NessieAI/tests/build_tools/unit/test_gen_op_surfaces_dockerfile.py"
+      ],
+      "context_file_inventory_affected": false
+    }
   ]
 }

@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1.7
 #
 # Container-CC (CC) agent image -- canonical, NExtSEEK-tracked build target.
-# Step 7 (compose-native deploy) Task 3: ported verbatim (same relative
-# layout, so every COPY below is unchanged) from the dmac-assistant working
-# clone's root Dockerfile, pinned at commit a429f1372a075e5db586a1b6efc8c3b1663e211a.
+# Step 7 (compose-native deploy) Task 3: ported, same relative layout, from the
+# dmac-assistant working clone's root Dockerfile at commit a429f1372a075e5db586a1b6efc8c3b1663e211a.
+# One COPY has changed since: the BAML sources now come from a named context.
 # See docker/cc-runtime/PORT-EVIDENCE.json for the full port record.
 #
 # This is the full production-capable agent image (node + uv + baked
@@ -104,13 +104,13 @@ RUN cd /tmp/dmac-deps \
 # (websockets, httpx) arrive via `uv sync --locked` above.
 RUN chmod -R a+rX /opt/uv-cache /opt/dmac-venv
 
-# Bake the JudgeUITranscript BAML client into the image. COPY before RUN:
-# without the COPY, baml-cli generate fails "directory not found". baml-cli
-# ships with the baml-py wheel installed by `uv sync` above; it lives at
-# /opt/dmac-venv/bin/baml-cli (on PATH already).
+# Bake the JudgeUITranscript BAML client into the image. The .baml files come from
+# the Compose named context dmac_assistant_baml, the one canonical tree, to the same
+# /app/baml_src/ as before. COPY before RUN, or baml-cli (from the baml-py wheel
+# `uv sync` installed, on PATH at /opt/dmac-venv/bin) fails "directory not found".
 COPY tools/__init__.py /app/tools/__init__.py
 COPY tools/e2e/__init__.py /app/tools/e2e/__init__.py
-COPY baml_src/ /app/baml_src/
+COPY --from=dmac_assistant_baml . /app/baml_src/
 COPY tools/e2e/judge_runner.py /app/tools/e2e/judge_runner.py
 RUN mkdir -p /app/src/dmac_assistant/router/ \
     && baml-cli generate --from /app/baml_src --no-version-check \

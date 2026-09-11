@@ -13,14 +13,14 @@ Each is enforced from outside this folder. Breaking one is a security regression
 - **A client `Authorization` header is dropped, never forwarded** (the hop-by-hop drop set in `bedrock-proxy/app/proxy.py`).
 - **The fd-shuffle in `cc-runtime/container/runner_ns.py` stays its first executable statement.**
 - **`cc-runtime/container/CLAUDE.md` stays committed.** It is a required Dockerfile `COPY` input. Only its marked blocks (`PLAN005-GEN`, `NEXTSEEK-DOCS`) are generated; everything else is hand-written.
-- **`cc-runtime/baml_src/` and `NessieAI/dmac_assistant/baml_src/` stay byte-identical** (all 8 files) until the Phase C dedupe.
+- **`cc-runtime/` holds no BAML sources.** Its Dockerfile COPYs the Compose named context `dmac_assistant_baml` (the canonical `NessieAI/dmac_assistant/baml_src/`) to `/app/baml_src/`; a copy added here is refused by `NessieAI/tests/router/test_baml_single_source.py`. A BAML edit therefore needs a cc-agent rebuild as well as the app rebuild.
 
 ## Landmines
 
 - **The baked `capabilities.md` is not what the agent reads.** The named-context `COPY` overwrites it with the canonical bytes. Its drift from the canonical file is documented once, in `NessieAI/chat_nextseek/CLAUDE.md`; the fix touches `PORT-EVIDENCE.json` here.
 - **Two other baked catalogs, `min_graph_schema.json` and `neo4j_schema.json`, differ from canonical and DO reach the agent.** Nothing overwrites them. The catalog snapshot generator lives in an external clone, so they are hand-maintained here, together with their digests.
 - **A bare `pytest` inside `cc-runtime/` exits 1 even when every test passes**: the declared coverage targets name trees this port lacks. Pass `-o addopts=""`.
-- **`docker build` on `cc-runtime/` alone fails.** The named context `chat_nextseek` exists only through compose.
+- **`docker build` on `cc-runtime/` alone fails.** The named contexts `chat_nextseek` and `dmac_assistant_baml` exist only through compose; a manual build must pass both as `--build-context`, exactly as the generated `additional_contexts` block in `docker-compose.yml` declares them.
 - **The plugin `hooks/hooks.json` is inert in the image.** The container entrypoint re-registers the hook; edit that block.
 - **`cc-runtime/container/runner_ns.py` ships but nothing calls it.** Do not read it as how a turn runs.
 - **`cc-runtime/build_context/docs/nextseek-api/` ships empty on purpose**: a placeholder keeps its `COPY` working.

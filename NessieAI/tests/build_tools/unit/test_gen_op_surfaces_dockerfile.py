@@ -17,6 +17,10 @@ from NessieAI.build_tools.gen_op_surfaces.constants import (
     CAPABILITIES_COPY_END,
     COMPOSE_REL,
     DOCKERFILE_REL,
+    IMAGE_BAML_SRC_PATH,
+    NAMED_BAML_CONTEXT,
+    NAMED_BAML_CONTEXT_PATH,
+    NAMED_BUILD_CONTEXTS,
     NAMED_CAPABILITIES_CONTEXT,
     NAMED_CAPABILITIES_CONTEXT_PATH,
     PLUGIN_COPY_BEGIN,
@@ -25,7 +29,9 @@ from NessieAI.build_tools.gen_op_surfaces.constants import (
     PLUGIN_PATH_END,
     PLUGINS_ROOT_REL,
 )
+from NessieAI.build_tools.gen_op_surfaces.blocks import render_marked_file
 from NessieAI.build_tools.gen_op_surfaces.docker_blocks import (
+    BamlContextError,
     CanonicalCapabilitiesError,
     ComposeContextError,
     emit_additional_contexts_block,
@@ -33,10 +39,13 @@ from NessieAI.build_tools.gen_op_surfaces.docker_blocks import (
     emit_plugin_copy_block,
     emit_plugin_path_block,
     four_install_sets,
+    parse_additional_contexts_block,
     parse_plugin_copy_names,
     parse_plugin_path_names,
+    validate_baml_context_copy,
     validate_canonical_capabilities_final_writer,
     validate_compose_named_context,
+    validate_compose_named_contexts,
 )
 from NessieAI.build_tools.gen_op_surfaces.emit import (
     SurfaceTarget,
@@ -55,6 +64,13 @@ NAMED_CONTEXT = "chat_nextseek"
 NAMED_CONTEXT_PATH = paths.repo_relative(paths.CHAT_NEXTSEEK_DIR)
 CANONICAL_SRC = "src/chat_nextseek/context/capabilities.md"
 IMAGE_CAPABILITIES = "/app/plugins/nextseek/context/capabilities.md"
+# The BAML sources reach the image through a second named context, which is the
+# canonical BAML tree itself (Phase C); the cc-runtime mirror it replaced is gone.
+BAML_CONTEXT = "dmac_assistant_baml"
+BAML_CONTEXT_PATH = paths.repo_relative(paths.DMAC_ASSISTANT_DIR / "baml_src")
+RETIRED_BAML_MIRROR = paths.repo_relative(paths.CC_RUNTIME_DIR / "baml_src")
+IMAGE_BAML_SRC = "/app/baml_src/"
+BAML_COPY = f"COPY --from={BAML_CONTEXT} . {IMAGE_BAML_SRC}"
 
 COMPOSE_QUIET = [
     "timeout",
@@ -317,6 +333,7 @@ def test_named_context_name_is_kept_and_its_path_is_the_moved_tree() -> None:
     assert emit_additional_contexts_block(REPO_ROOT) == (
         "      additional_contexts:\n"
         f"        {NAMED_CONTEXT}: ./{NAMED_CONTEXT_PATH}\n"
+        f"        {BAML_CONTEXT}: ./{BAML_CONTEXT_PATH}\n"
     )
     assert emit_capabilities_copy_block(REPO_ROOT) == (
         f"COPY --from={NAMED_CONTEXT} {CANONICAL_SRC} {IMAGE_CAPABILITIES}\n"
@@ -350,9 +367,9 @@ def test_real_compose_config_quiet_succeeds() -> None:
         return
     compose = REPO_ROOT / COMPOSE_REL
     assert compose.is_file()
-    validate_compose_named_context(
+    validate_compose_named_contexts(
         repo_root=REPO_ROOT,
-        contexts={NAMED_CONTEXT: f"./{NAMED_CONTEXT_PATH}"},
+        contexts=parse_additional_contexts_block(compose.read_text(encoding="utf-8")),
     )
 
 
@@ -364,21 +381,27 @@ def test_real_compose_config_json_resolves_chat_nextseek_inside_repo() -> None:
         build = payload["services"]["cc-agent"]["build"]
         contexts = build.get("additional_contexts") or build.get("additionalContexts")
         assert isinstance(contexts, dict), f"expected named context map, got {contexts!r}"
-        assert NAMED_CONTEXT in contexts
-        resolved = Path(contexts[NAMED_CONTEXT]).resolve()
-        expected = (REPO_ROOT / NAMED_CONTEXT_PATH).resolve()
-        assert resolved == expected
-        assert resolved.is_dir()
-        validate_compose_named_context(
+        for name, rel in ((NAMED_CONTEXT, NAMED_CONTEXT_PATH), (BAML_CONTEXT, BAML_CONTEXT_PATH)):
+            assert name in contexts
+            resolved = Path(contexts[name]).resolve()
+            expected = (REPO_ROOT / rel).resolve()
+            assert resolved == expected
+            assert resolved.is_dir()
+        validate_compose_named_contexts(
             repo_root=REPO_ROOT,
-            contexts={NAMED_CONTEXT: f"./{NAMED_CONTEXT_PATH}"},
+            contexts={
+                NAMED_CONTEXT: f"./{NAMED_CONTEXT_PATH}",
+                BAML_CONTEXT: f"./{BAML_CONTEXT_PATH}",
+            },
         )
         return
-    expected = (REPO_ROOT / NAMED_CONTEXT_PATH).resolve()
-    assert expected.is_dir()
-    validate_compose_named_context(
+    for rel in (NAMED_CONTEXT_PATH, BAML_CONTEXT_PATH):
+        assert (REPO_ROOT / rel).resolve().is_dir()
+    validate_compose_named_contexts(
         repo_root=REPO_ROOT,
-        contexts={NAMED_CONTEXT: f"./{NAMED_CONTEXT_PATH}"},
+        contexts=parse_additional_contexts_block(
+            (REPO_ROOT / COMPOSE_REL).read_text(encoding="utf-8")
+        ),
     )
 
 
@@ -390,3 +413,169 @@ def shutil_which_docker() -> bool:
 
 def test_gen_op_surfaces_check_includes_docker_surfaces() -> None:
     check_surfaces(repo_root=REPO_ROOT)
+
+
+def test_baml_named_context_constants() -> None:
+    assert NAMED_BAML_CONTEXT == BAML_CONTEXT
+    assert NAMED_BAML_CONTEXT_PATH == BAML_CONTEXT_PATH
+    assert IMAGE_BAML_SRC_PATH == IMAGE_BAML_SRC
+    assert NAMED_BUILD_CONTEXTS == (
+        (NAMED_CONTEXT, NAMED_CONTEXT_PATH),
+        (BAML_CONTEXT, BAML_CONTEXT_PATH),
+    )
+
+
+def test_compose_baml_context_must_be_the_canonical_tree(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    (repo / BAML_CONTEXT_PATH).mkdir(parents=True)
+    (repo / RETIRED_BAML_MIRROR).mkdir(parents=True)
+    assert validate_compose_named_context(
+        repo_root=repo,
+        contexts={BAML_CONTEXT: f"./{BAML_CONTEXT_PATH}"},
+        name=BAML_CONTEXT,
+    ) == (repo / BAML_CONTEXT_PATH).resolve()
+    with pytest.raises(ComposeContextError, match="missing"):
+        validate_compose_named_context(repo_root=repo, contexts={}, name=BAML_CONTEXT)
+    with pytest.raises(ComposeContextError, match="absolute|external"):
+        validate_compose_named_context(
+            repo_root=repo, contexts={BAML_CONTEXT: "/tmp/baml_src"}, name=BAML_CONTEXT
+        )
+    with pytest.raises(ComposeContextError, match="traversal"):
+        validate_compose_named_context(
+            repo_root=repo, contexts={BAML_CONTEXT: "../baml_src"}, name=BAML_CONTEXT
+        )
+    # The retired mirror exists as a directory here and is still refused.
+    with pytest.raises(ComposeContextError, match="resolve"):
+        validate_compose_named_context(
+            repo_root=repo,
+            contexts={BAML_CONTEXT: f"./{RETIRED_BAML_MIRROR}"},
+            name=BAML_CONTEXT,
+        )
+    # Each context is checked against its own tree, not any declared tree.
+    with pytest.raises(ComposeContextError, match="resolve"):
+        validate_compose_named_context(
+            repo_root=repo,
+            contexts={BAML_CONTEXT: f"./{NAMED_CONTEXT_PATH}"},
+            name=BAML_CONTEXT,
+        )
+
+
+def test_unknown_named_context_is_refused(tmp_path: Path) -> None:
+    with pytest.raises(ComposeContextError, match="unknown"):
+        validate_compose_named_context(
+            repo_root=tmp_path, contexts={"other": "./other"}, name="other"
+        )
+
+
+def test_every_named_context_is_required(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    (repo / NAMED_CONTEXT_PATH).mkdir(parents=True)
+    (repo / BAML_CONTEXT_PATH).mkdir(parents=True)
+    both = {
+        NAMED_CONTEXT: f"./{NAMED_CONTEXT_PATH}",
+        BAML_CONTEXT: f"./{BAML_CONTEXT_PATH}",
+    }
+    resolved = validate_compose_named_contexts(repo_root=repo, contexts=both)
+    assert resolved == {
+        NAMED_CONTEXT: (repo / NAMED_CONTEXT_PATH).resolve(),
+        BAML_CONTEXT: (repo / BAML_CONTEXT_PATH).resolve(),
+    }
+    for name in both:
+        partial = {key: value for key, value in both.items() if key != name}
+        with pytest.raises(ComposeContextError, match=f"missing named context {name}"):
+            validate_compose_named_contexts(repo_root=repo, contexts=partial)
+
+
+def test_parse_additional_contexts_block_reads_what_the_generator_writes(tmp_path: Path) -> None:
+    repo = _seed_docker_repo(tmp_path, ("keep-plugin",))
+    write_surfaces(repo_root=repo, targets=_docker_targets())
+    text = (repo / COMPOSE_REL).read_text(encoding="utf-8")
+    assert parse_additional_contexts_block(text) == {
+        name: f"./{rel}" for name, rel in NAMED_BUILD_CONTEXTS
+    }
+
+
+def test_parse_additional_contexts_block_refuses_what_it_cannot_read() -> None:
+    with pytest.raises(ComposeContextError, match="marker"):
+        parse_additional_contexts_block("services: {}\n")
+    unreadable = render_marked_file(
+        f"{ADDITIONAL_CONTEXTS_BEGIN}\n{ADDITIONAL_CONTEXTS_END}\n",
+        ADDITIONAL_CONTEXTS_BEGIN,
+        ADDITIONAL_CONTEXTS_END,
+        "      additional_contexts:\n        - not a mapping entry\n",
+    )
+    with pytest.raises(ComposeContextError, match="unparsed"):
+        parse_additional_contexts_block(unreadable)
+    keyless = render_marked_file(
+        f"{ADDITIONAL_CONTEXTS_BEGIN}\n{ADDITIONAL_CONTEXTS_END}\n",
+        ADDITIONAL_CONTEXTS_BEGIN,
+        ADDITIONAL_CONTEXTS_END,
+        f"        {BAML_CONTEXT}: ./{BAML_CONTEXT_PATH}\n",
+    )
+    with pytest.raises(ComposeContextError, match="additional_contexts key"):
+        parse_additional_contexts_block(keyless)
+
+
+def test_committed_compose_block_maps_every_context_onto_its_tree() -> None:
+    contexts = parse_additional_contexts_block(
+        (REPO_ROOT / COMPOSE_REL).read_text(encoding="utf-8")
+    )
+    assert contexts == {name: f"./{rel}" for name, rel in NAMED_BUILD_CONTEXTS}
+    resolved = validate_compose_named_contexts(repo_root=REPO_ROOT, contexts=contexts)
+    assert resolved[BAML_CONTEXT] == (paths.DMAC_ASSISTANT_DIR / "baml_src").resolve()
+
+
+def test_committed_docker_surfaces_are_current() -> None:
+    """The Dockerfile and compose blocks are exactly what the generator emits.
+
+    The full ``--check`` is red on the capabilities drift (see
+    NessieAI/chat_nextseek/CLAUDE.md); this checks the docker targets alone, so a
+    hand edit of the named-context block is caught regardless.
+    """
+    docker_targets = [
+        target
+        for target in surface_targets(REPO_ROOT)
+        if target.rel_path in (DOCKERFILE_REL, COMPOSE_REL)
+    ]
+    assert {target.rel_path for target in docker_targets} == {DOCKERFILE_REL, COMPOSE_REL}
+    check_surfaces(repo_root=REPO_ROOT, targets=docker_targets)
+
+
+def test_baml_context_copy_is_the_only_writer_of_the_image_tree() -> None:
+    validate_baml_context_copy(f"{BAML_COPY}\n")
+    validate_baml_context_copy(
+        f"COPY tools/__init__.py /app/tools/__init__.py\n{BAML_COPY}\n"
+        "COPY tools/e2e/judge_runner.py /app/tools/e2e/judge_runner.py\n"
+    )
+
+
+def test_baml_copy_from_the_build_context_is_refused() -> None:
+    """The pre-Phase-C line: the image read a mirror kept in its own context."""
+    with pytest.raises(BamlContextError, match="not the named context"):
+        validate_baml_context_copy(f"COPY baml_src/ {IMAGE_BAML_SRC}\n")
+
+
+def test_missing_or_extra_baml_writers_are_refused() -> None:
+    with pytest.raises(BamlContextError, match="missing"):
+        validate_baml_context_copy("COPY tools/__init__.py /app/tools/__init__.py\n")
+    with pytest.raises(BamlContextError, match="more than one"):
+        validate_baml_context_copy(
+            f"{BAML_COPY}\nCOPY baml_src/router.baml {IMAGE_BAML_SRC}router.baml\n"
+        )
+    with pytest.raises(BamlContextError, match="more than one"):
+        validate_baml_context_copy(f"{BAML_COPY}\nCOPY a.baml b.baml {IMAGE_BAML_SRC}\n")
+
+
+def test_partial_or_misplaced_named_context_copy_is_refused() -> None:
+    with pytest.raises(BamlContextError, match="whole tree"):
+        validate_baml_context_copy(
+            f"COPY --from={BAML_CONTEXT} router.baml {IMAGE_BAML_SRC}\n"
+        )
+    with pytest.raises(BamlContextError, match="not the named context"):
+        validate_baml_context_copy(f"COPY --from={NAMED_CONTEXT} . {IMAGE_BAML_SRC}\n")
+    with pytest.raises(BamlContextError, match="whole tree"):
+        validate_baml_context_copy(f"COPY --from={BAML_CONTEXT} . /app/baml_src/sub/\n")
+
+
+def test_current_dockerfile_takes_baml_from_the_named_context() -> None:
+    validate_baml_context_copy(DOCKERFILE.read_text(encoding="utf-8"))

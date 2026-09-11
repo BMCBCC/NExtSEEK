@@ -83,7 +83,7 @@ and the agent image copies it in from a named build context declared at
 `docker-compose.yml:124-125` and consumed at `NessieAI/docker/cc-runtime/Dockerfile:54`.
 That COPY deliberately lands after the broad plugin copy at
 `NessieAI/docker/cc-runtime/Dockerfile:51`, and a generator check enforces that ordering
-(`NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:156-161`).
+(`NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:164-169`).
 
 ## Running and testing
 

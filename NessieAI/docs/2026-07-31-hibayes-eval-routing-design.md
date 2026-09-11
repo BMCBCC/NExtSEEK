@@ -58,7 +58,7 @@ the result back into (a) guidance for the container agent and (b) a risk overlay
 | A column named `turn_id` exists but holds a task run UUID, not the chat turn number | `nextseek_api/assistant/models_db.py:335`; stated at `NessieAI/cc/cc_turn_complete.py:27-29` |
 | Chat log FIFO-evicts at 50 entries | `NessieAI/chat_nextseek/src/chat_nextseek/chat_memory.py:25,246-247` |
 | Celery beat exists, with one periodic entry today | `nextseek_api/batch_upload/celery_app.py` |
-| The Stage C judge's BAML contract **is already vendored**, in two byte-identical copies | `NessieAI/dmac_assistant/baml_src/functional_evaluator.baml`, `NessieAI/docker/cc-runtime/baml_src/functional_evaluator.baml` |
+| The Stage C judge's BAML contract **is already vendored**, in two byte-identical copies at the anchor commit (one since the NessieAI Phase C dedupe, which removed the cc-runtime mirror) | `NessieAI/dmac_assistant/baml_src/functional_evaluator.baml` |
 | …and it carries a locked reuse rule pointing at `tools/hibayes/exporter.py`, **which does not exist in this tree** | `NessieAI/dmac_assistant/baml_src/functional_evaluator.baml:27` |
 | The Python evaluation packages, the eval Dockerfile, its shell wrappers and its Make targets are **all absent** | none |
 | NExtSEEK already vendors `dmac_assistant` as an editable path dependency | `pyproject.toml:139` |

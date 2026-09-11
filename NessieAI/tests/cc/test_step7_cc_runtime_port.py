@@ -221,13 +221,34 @@ def test_cc_runtime_docs_nextseek_present():
     "tools/__init__.py",
     "tools/e2e/__init__.py",
     "tools/e2e/judge_runner.py",
-    "baml_src/generators.baml",
-    "baml_src/clients.baml",
     "build_context/docs/nextseek-api",
 ])
 def test_cc_runtime_dockerfile_copy_sources_exist(rel_path):
     path = CC_RUNTIME / rel_path
     assert path.exists(), f"Dockerfile COPY source missing from port: {path}"
+
+
+def test_cc_runtime_baml_sources_come_from_the_canonical_tree():
+    """The BAML sources are no longer part of this build context (Phase C): the
+    Dockerfile COPYs the Compose named context ``dmac_assistant_baml`` to the same
+    /app/baml_src/, and compose maps that name onto the canonical
+    NessieAI/dmac_assistant/baml_src/. The generators.baml and clients.baml the
+    build needs must exist there, and no mirror may come back here."""
+    canonical = paths.DMAC_ASSISTANT_DIR / "baml_src"
+    dockerfile_text = _read(CC_RUNTIME / "Dockerfile")
+    assert re.search(
+        r"^COPY\s+--from=dmac_assistant_baml\s+\.\s+/app/baml_src/\s*$",
+        dockerfile_text,
+        re.MULTILINE,
+    ), "the BAML COPY must read the dmac_assistant_baml named context"
+    assert re.search(
+        rf"^\s+dmac_assistant_baml:\s+\./{re.escape(paths.repo_relative(canonical))}\s*$",
+        _read(COMPOSE_FILE),
+        re.MULTILINE,
+    ), "compose must map dmac_assistant_baml onto the canonical BAML tree"
+    for name in ("generators.baml", "clients.baml"):
+        assert (canonical / name).is_file(), f"BAML COPY source missing: {canonical / name}"
+    assert not (CC_RUNTIME / "baml_src").exists(), "the cc-runtime BAML mirror is back"
 
 
 def test_cc_runtime_dockerfile_copy_lines_reference_only_existing_sources():

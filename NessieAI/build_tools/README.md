@@ -62,8 +62,8 @@ whole-file targets and a set of marked blocks:
 |---|---|---|
 | `NessieAI/dmac_assistant/build_context/route_capabilities.json` | whole file | `NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:327-328` |
 | `NessieAI/docker/cc-runtime/build_context/plugins/nextseek/context/capabilities.md` | whole file | `NessieAI/build_tools/gen_op_surfaces/emit.py:81-88` |
-| `NessieAI/docker/cc-runtime/Dockerfile` plugin `COPY`, plugin `PATH`, capabilities `COPY` | 3 blocks | `NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:39-64` |
-| `docker-compose.yml` additional build contexts | 1 block | `NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:67-72` |
+| `NessieAI/docker/cc-runtime/Dockerfile` plugin `COPY`, plugin `PATH`, capabilities `COPY` | 3 blocks | `NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:48-73` |
+| `docker-compose.yml` additional build contexts (`chat_nextseek`, `dmac_assistant_baml`) | 1 block | `NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:76-80` |
 | `NessieAI/docker/cc-runtime/container/CLAUDE.md` plugin, skill and operation inventories | 3 blocks | `NessieAI/build_tools/gen_op_surfaces/claude_md.py:146-190` |
 | each plugin `commands/*.md` carrying the command-ops markers | 1 block each | `NessieAI/build_tools/gen_op_surfaces/commands.py:39-69` |
 | each installed `SKILL.md` | 1 block each | `NessieAI/build_tools/gen_op_surfaces/skills.py:107-146` |
@@ -83,9 +83,17 @@ a straight byte read of the canonical, with no parsing or rewriting
 the baked copy: the Dockerfile first copies the whole plugin directory and then
 overwrites that one file from a named `chat_nextseek` build context
 (`NessieAI/docker/cc-runtime/Dockerfile:50-55`), which the generator both emits
-(`NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:58-64`) and validates as the final
+(`NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:67-73`) and validates as the final
 writer of that in-image path
-(`NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:135-161`).
+(`NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:143-169`).
+
+The second named context, `dmac_assistant_baml`, is the canonical BAML tree
+`NessieAI/dmac_assistant/baml_src/` itself (`NAMED_BUILD_CONTEXTS` in
+`NessieAI/build_tools/gen_op_surfaces/constants.py`), so the agent image has no BAML copy to
+drift. Its Dockerfile `COPY` sits outside the marked blocks, and `validate_baml_context_copy`
+in `NessieAI/build_tools/gen_op_surfaces/docker_blocks.py` holds it to being the only writer
+of `/app/baml_src/`. `validate_compose_named_contexts` checks every declared context against
+its own tree, and `parse_additional_contexts_block` reads the committed block back for the tests.
 
 Because targets are rendered in sorted order by path
 (`NessieAI/build_tools/gen_op_surfaces/emit.py:235`), `NessieAI/dmac_assistant/...` sorts ahead of
@@ -163,7 +171,7 @@ tools read by path:
   `NessieAI/build_tools/gen_op_surfaces/commands.py:12-14`,
   `NessieAI/build_tools/gen_op_surfaces/skills.py:13-15`,
   `NessieAI/build_tools/gen_op_surfaces/claude_md.py:18-23`,
-  `NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:14-19` and
+  `NessieAI/build_tools/gen_op_surfaces/docker_blocks.py:19-24` and
   `NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:10-28`.
 - `NessieAI/build_tools/plan005_validate_plugins/validate.py:11-18` is the sixth importer of
   that registry, taking the install oracle and the plugin-identity loader.

@@ -4,11 +4,16 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from NessieAI.build_tools.gen_op_surfaces.blocks import validate_markers
 from NessieAI.build_tools.gen_op_surfaces.constants import (
+    ADDITIONAL_CONTEXTS_BEGIN,
+    ADDITIONAL_CONTEXTS_END,
     CANONICAL_CAPABILITIES_IN_CONTEXT,
+    IMAGE_BAML_SRC_PATH,
     IMAGE_CAPABILITIES_PATH,
+    NAMED_BAML_CONTEXT,
+    NAMED_BUILD_CONTEXTS,
     NAMED_CAPABILITIES_CONTEXT,
-    NAMED_CAPABILITIES_CONTEXT_PATH,
     PLUGINS_ROOT_REL,
 )
 from NessieAI.cc.op_registry.install_oracle import (
@@ -29,7 +34,11 @@ class CanonicalCapabilitiesError(ValueError):
 
 
 class ComposeContextError(ValueError):
-    """Raised when the Compose named build context is missing or unsafe."""
+    """Raised when a Compose named build context is missing or unsafe."""
+
+
+class BamlContextError(ValueError):
+    """Raised when the image's BAML sources do not come only from the named context."""
 
 
 def _plugins_root(repo_root: Path) -> Path:
@@ -65,10 +74,9 @@ def emit_capabilities_copy_block(_repo_root: Path) -> str:
 
 
 def emit_additional_contexts_block(_repo_root: Path) -> str:
-    """Declare the chat_nextseek named additional build context at its tree."""
-    return (
-        "      additional_contexts:\n"
-        f"        {NAMED_CAPABILITIES_CONTEXT}: ./{NAMED_CAPABILITIES_CONTEXT_PATH}\n"
+    """Declare every named additional build context at its tree."""
+    return "      additional_contexts:\n" + "".join(
+        f"        {name}: ./{path}\n" for name, path in NAMED_BUILD_CONTEXTS
     )
 
 
@@ -165,13 +173,21 @@ def validate_compose_named_context(
     *,
     repo_root: Path,
     contexts: dict[str, str],
-) -> None:
-    """Require the chat_nextseek context to resolve to its tree inside repo_root."""
-    if NAMED_CAPABILITIES_CONTEXT not in contexts:
-        raise ComposeContextError("missing named context chat_nextseek")
-    raw = contexts[NAMED_CAPABILITIES_CONTEXT]
+    name: str = NAMED_CAPABILITIES_CONTEXT,
+) -> Path:
+    """Require the named context ``name`` to resolve to its tree inside repo_root.
+
+    Returns the resolved tree. ``name`` defaults to the chat_nextseek context.
+    """
+    expected_paths = dict(NAMED_BUILD_CONTEXTS)
+    if name not in expected_paths:
+        raise ComposeContextError(f"unknown named context {name}")
+    expected_path = expected_paths[name]
+    if name not in contexts:
+        raise ComposeContextError(f"missing named context {name}")
+    raw = contexts[name]
     if not isinstance(raw, str) or not raw.strip():
-        raise ComposeContextError("named context chat_nextseek source is empty")
+        raise ComposeContextError(f"named context {name} source is empty")
     path = Path(raw)
     if path.is_absolute() or raw.startswith("/") or raw.startswith("~"):
         raise ComposeContextError(
@@ -181,7 +197,7 @@ def validate_compose_named_context(
         raise ComposeContextError(
             f"named context traversal is forbidden: {raw}"
         )
-    expected = (repo_root / NAMED_CAPABILITIES_CONTEXT_PATH).resolve()
+    expected = (repo_root / expected_path).resolve()
     resolved = (repo_root / raw).resolve()
     try:
         resolved.relative_to(repo_root.resolve())
@@ -191,10 +207,105 @@ def validate_compose_named_context(
         ) from exc
     if resolved != expected:
         raise ComposeContextError(
-            f"named context does not resolve to the {NAMED_CAPABILITIES_CONTEXT_PATH} "
+            f"named context does not resolve to the {expected_path} "
             f"tree: {raw} -> {resolved}"
         )
     if not resolved.is_dir():
         raise ComposeContextError(
             f"named context path is not a directory: {resolved}"
+        )
+    return resolved
+
+
+def validate_compose_named_contexts(
+    *,
+    repo_root: Path,
+    contexts: dict[str, str],
+) -> dict[str, Path]:
+    """Require every declared named context to resolve to its tree; return them."""
+    return {
+        name: validate_compose_named_context(
+            repo_root=repo_root, contexts=contexts, name=name
+        )
+        for name, _ in NAMED_BUILD_CONTEXTS
+    }
+
+
+_CONTEXT_ENTRY_RE = re.compile(r"^(?P<name>[A-Za-z0-9_.-]+):\s+(?P<path>\S+)$")
+
+
+def parse_additional_contexts_block(compose_text: str) -> dict[str, str]:
+    """Return {NAME: PATH} from the generated additional-contexts block.
+
+    Reads only the marked block, so it sees what the generator wrote. Any line
+    it does not recognise is refused rather than skipped.
+    """
+    try:
+        validate_markers(compose_text, ADDITIONAL_CONTEXTS_BEGIN, ADDITIONAL_CONTEXTS_END)
+    except ValueError as exc:
+        raise ComposeContextError(f"additional-contexts block: {exc}") from exc
+    start = compose_text.index(ADDITIONAL_CONTEXTS_BEGIN) + len(ADDITIONAL_CONTEXTS_BEGIN)
+    body = compose_text[start : compose_text.index(ADDITIONAL_CONTEXTS_END)]
+    lines = [line.strip() for line in body.splitlines() if line.strip()]
+    if not lines or lines[0] != "additional_contexts:":
+        raise ComposeContextError("additional-contexts block has no additional_contexts key")
+    contexts: dict[str, str] = {}
+    for line in lines[1:]:
+        match = _CONTEXT_ENTRY_RE.match(line)
+        if not match:
+            raise ComposeContextError(f"unparsed additional-contexts line: {line!r}")
+        contexts[match.group("name")] = match.group("path")
+    return contexts
+
+
+def _copy_tokens(line: str) -> tuple[str | None, list[str], str] | None:
+    """Split a COPY line into (--from name, sources, destination)."""
+    tokens = line.split()
+    if len(tokens) < 3 or tokens[0] != "COPY":
+        return None
+    flags = [token for token in tokens[1:] if token.startswith("--")]
+    rest = [token for token in tokens[1:] if not token.startswith("--")]
+    if len(rest) < 2:
+        return None
+    return _from_context(" ".join(flags)), rest[:-1], rest[-1]
+
+
+def _writes_baml_src(dest: str) -> bool:
+    image_dir = IMAGE_BAML_SRC_PATH.rstrip("/")
+    return dest.rstrip("/") == image_dir or dest.startswith(image_dir + "/")
+
+
+def validate_baml_context_copy(dockerfile_text: str) -> None:
+    """Require exactly one writer of the in-image BAML tree: the named-context COPY.
+
+    A COPY of BAML sources from the cc-runtime build context itself means the
+    hand-kept mirror is back, and the image would generate its client from bytes
+    Django does not run.
+    """
+    writers: list[tuple[str | None, list[str], str]] = []
+    for line in dockerfile_text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        parsed = _copy_tokens(stripped)
+        if parsed and _writes_baml_src(parsed[2]):
+            writers.append(parsed)
+    if not writers:
+        raise BamlContextError(
+            f"missing named context COPY of the BAML sources from {NAMED_BAML_CONTEXT}"
+        )
+    if len(writers) > 1:
+        raise BamlContextError(
+            f"more than one COPY writes {IMAGE_BAML_SRC_PATH}: {writers}"
+        )
+    from_name, sources, dest = writers[0]
+    if from_name != NAMED_BAML_CONTEXT:
+        raise BamlContextError(
+            f"BAML sources are copied from {from_name or 'the build context'}, "
+            f"not the named context {NAMED_BAML_CONTEXT}: {sources} {dest}"
+        )
+    if sources not in (["."], ["./"]) or dest != IMAGE_BAML_SRC_PATH:
+        raise BamlContextError(
+            f"the named context COPY must copy the whole tree to {IMAGE_BAML_SRC_PATH}: "
+            f"{sources} {dest}"
         )

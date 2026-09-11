@@ -13,9 +13,9 @@ reintroduce a hash pin here.
 from pathlib import Path
 
 from NessieAI import paths
+from NessieAI.tests.router.image_baml import image_baml_source
 
 A = paths.DMAC_ASSISTANT_DIR / "baml_src" / "router.baml"
-B = paths.CC_RUNTIME_DIR / "baml_src" / "router.baml"
 
 # The canonical prompt region between the routes loop's close and the
 # unrelated-guard paragraph. Byte-exact (G-4): comments, rewording, or ANY
@@ -57,7 +57,10 @@ def test_module_docstring_does_not_claim_a_hash_pin():
 
 
 def test_router_baml_copies_byte_identical():
-    assert A.read_bytes() == B.read_bytes()
+    """The router.baml the agent image generates from is the file Django runs."""
+    b = image_baml_source("router.baml")
+    assert b.resolve() == A.resolve()
+    assert A.read_bytes() == b.read_bytes()
 
 
 def test_history_turn_class_declared():

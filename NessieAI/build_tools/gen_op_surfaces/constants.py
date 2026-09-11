@@ -85,3 +85,19 @@ SKILL_OPS_FIELDS = (
 
 MARKER_PREFIX = "<!-- BEGIN PLAN005-GEN:"
 MARKER_SUFFIX = "-->"
+
+# The Compose named build context the cc-agent Dockerfile COPYs its BAML sources
+# from. It is the canonical tree itself, so the image has no BAML copy of its own
+# to drift. The image path is unchanged, so `baml-cli generate` and the
+# generators' output_dir resolve exactly as they did when the build context held
+# a mirror.
+NAMED_BAML_CONTEXT = "dmac_assistant_baml"
+NAMED_BAML_CONTEXT_PATH = paths.repo_relative(paths.DMAC_ASSISTANT_DIR / "baml_src")
+IMAGE_BAML_SRC_PATH = "/app/baml_src/"
+
+# Every named context the cc-agent build declares, as (NAME, PATH), in the order
+# the generated Compose block lists them.
+NAMED_BUILD_CONTEXTS = (
+    (NAMED_CAPABILITIES_CONTEXT, NAMED_CAPABILITIES_CONTEXT_PATH),
+    (NAMED_BAML_CONTEXT, NAMED_BAML_CONTEXT_PATH),
+)

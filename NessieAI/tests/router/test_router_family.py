@@ -4,9 +4,9 @@ import hashlib
 from NessieAI import paths
 from NessieAI.router.baml_introspect import declared_family_members
 from NessieAI.router.family_labels import corpus_snapshot, declared_labels, type_builder
+from NessieAI.tests.router.image_baml import image_baml_source
 
 _A = paths.DMAC_ASSISTANT_DIR / "baml_src" / "router.baml"
-_B = paths.CC_RUNTIME_DIR / "baml_src" / "router.baml"
 
 
 def test_classification_contract_in_classifier_baml():
@@ -18,12 +18,16 @@ def test_classification_contract_in_classifier_baml():
 
 
 def test_both_router_baml_copies_stay_byte_identical():
-    assert hashlib.sha256(_A.read_bytes()).hexdigest() == hashlib.sha256(_B.read_bytes()).hexdigest()
+    """Django and the agent image read one router.baml."""
+    _b = image_baml_source("router.baml")
+    assert _b.resolve() == _A.resolve()
+    assert hashlib.sha256(_A.read_bytes()).hexdigest() == hashlib.sha256(_b.read_bytes()).hexdigest()
 
 
 def test_classifier_baml_copies_byte_identical():
     ca = paths.DMAC_ASSISTANT_DIR / "baml_src" / "classifier.baml"
-    cb = paths.CC_RUNTIME_DIR / "baml_src" / "classifier.baml"
+    cb = image_baml_source("classifier.baml")
+    assert cb.resolve() == ca.resolve()
     assert ca.read_bytes() == cb.read_bytes()
 
 

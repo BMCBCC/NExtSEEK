@@ -1,8 +1,8 @@
 """`NessieAI/hibayes/judge_models.py` matches `functional_evaluator.baml`.
 
-The judge schema lives in three files that change together (`NessieAI/README.md`
-"To change X, edit Y"): the canonical BAML file, its cc-runtime mirror (covered by
-`NessieAI/tests/router/test_baml_mirror_identity.py`) and the pydantic models here.
+The judge schema lives in two files that change together (`NessieAI/README.md`
+"To change X, edit Y"): the BAML file, which the cc-agent image also builds from
+(`NessieAI/tests/router/test_baml_single_source.py`), and the pydantic models here.
 A value or field added on one side and not the other only shows up as a validation
 error on a paid judge run, so this compares the two sources directly:
 

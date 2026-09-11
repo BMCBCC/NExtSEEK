@@ -2,7 +2,7 @@
 
 Vendored upstream code. Most edits here belong upstream instead; the parts this
 repo depends on are narrow and the parts it does not are actively misleading.
-Rules that span units (the box env, the byte-identical BAML mirror) are in
+Rules that span units (the box env, the one BAML tree both images build from) are in
 `NessieAI/CLAUDE.md`.
 
 ## Invariants
@@ -12,13 +12,12 @@ Rules that span units (the box env, the byte-identical BAML mirror) are in
   excluded from git at `.gitignore:216`, so an edit made there is destroyed by the next
   `./startup.sh rebuild` and cannot be reviewed in a diff. Change
   `NessieAI/dmac_assistant/baml_src/` instead.
-- **`NessieAI/dmac_assistant/baml_src/` and `NessieAI/docker/cc-runtime/baml_src/` must stay
-  byte-identical** until the Phase C dedupe. Editing one copy alone ships an agent image
-  whose judge client was generated from a different contract than the router's. The
-  plan018 deploy verifier that hashed both `router.baml` copies and byte-compared both
-  `classifier.baml` copies is archived
-  (`NessieAI/history/plan018/scripts/plan018_v4_6_verifier.py:70-77`), so nothing live
-  checks this for you.
+- **`NessieAI/dmac_assistant/baml_src/` is the only BAML tree, and two images build
+  from it.** The app image generates the router client from it, and the cc-agent image
+  takes it through the Compose named context `dmac_assistant_baml` and generates the
+  judge client. Rebuild both after an edit here, or the agent image keeps the old
+  contract. Never add a BAML copy under `NessieAI/docker/cc-runtime/`
+  (guard: `NessieAI/tests/router/test_baml_single_source.py`).
 - **`build_context/route_capabilities.json` is generated, not authored.** Every
   surface target is re-rendered into a temp directory and byte-compared against the
   committed file, and a mismatch aborts with "stale bytes"
@@ -127,8 +126,7 @@ Rules that span units (the box env, the byte-identical BAML mirror) are in
   (`NessieAI/docker/cc-runtime/Dockerfile:115-117`).
 - **`JudgeRouterAnswer` has no caller anywhere.** Grepping the whole tree for the
   name returns only its own declaration at
-  `NessieAI/dmac_assistant/baml_src/judge_router.baml:32`, the identical mirror declaration at
-  `NessieAI/docker/cc-runtime/baml_src/judge_router.baml:32`, and the two comments above them
+  `NessieAI/dmac_assistant/baml_src/judge_router.baml:32` and the two comments above it
   naming an upstream caller that was not vendored. Editing that file changes an LLM
   contract nothing exercises, and no test will catch a mistake in it.
 - **A host lane stops at the generated client.** With only

@@ -55,7 +55,7 @@ is a spend, evidence or routing regression, not a refactor.
   and says so on its first line. Editing it in place makes the next upstream sync a
   silent conflict rather than a merge.
 - **Never change `PROMPT_VERSION`** in `NessieAI/hibayes/judge_human_compare.py`: it is
-  written into judged rows. A judge-schema change touches three files together
+  written into judged rows. A judge-schema change touches two files together
   (`NessieAI/README.md` "To change X, edit Y").
 
 ## Landmines

@@ -302,6 +302,7 @@ exits non-zero rather than blocking on a question nobody can answer.
 | `static/` assets | rebuild + recreate, **then** `docker compose exec nextseek uv run manage.py collectstatic --noinput` |
 | `NessieAI/chat_frontend/` React source | `npm run build:embedded` in `NessieAI/chat_frontend/`, commit the emitted assets, then rebuild + recreate + collectstatic |
 | `NessieAI/docker/cc-runtime/**` (agent plugin/skills/CLAUDE.md/deps) | `./startup.sh rebuild --component cc-agent`: next turn uses it; no service restart. Also the recovery command when `dmac-assistant:poc` has been pruned: a first build with no rollback source is announced and allowed, not refused |
+| `NessieAI/dmac_assistant/baml_src/**` (BAML prompts and schemas) | both `./startup.sh rebuild` (the router client in the app image) and `./startup.sh rebuild --component cc-agent` (the judge client; the agent image reads this tree through the compose named context `dmac_assistant_baml`) |
 | `docker/nextseek.env` / `dmac/local_settings.py` (config only) | no build: `docker compose up -d --no-deps --force-recreate nextseek` |
 | `NessieAI/docker/bedrock-proxy/**` or its secret env | `./startup.sh rebuild --component bedrock-proxy` |
 | `NessieAI/docker/ns-sidecar/**` | `./startup.sh rebuild --component nextseek-sidecar` |
@@ -632,8 +633,8 @@ acceptance runs: [`NessieAI/cc/DEPLOY.md`](NessieAI/cc/DEPLOY.md) and
   *public* URL is typically unreachable (NAT hairpin); ingest against the
   internal URL. Tracked as GitHub #19.
 - **Two BAML clients** are generated at build time in two different images
-  (root Dockerfile: router client; cc-runtime: judge client); do not assume
-  one covers the other.
+  (root Dockerfile: router client; cc-runtime: judge client) from the one
+  `NessieAI/dmac_assistant/baml_src/` tree; do not assume one covers the other.
 - **Only the marked blocks of `NessieAI/docker/cc-runtime/container/CLAUDE.md`
   are generated** (see `NessieAI/build_tools/README.md`); hand-edit only
   outside them. The file is a required image input.

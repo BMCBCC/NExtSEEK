@@ -24,8 +24,8 @@ Test commands live only in `NessieAI/tests/README.md`.
 - BAML imports stay lazy and guarded: routing degrades to the keyword heuristic, and never stops Django booting.
 - `<router_unavailable>` from the BAML router is a failure, not a route. Treating it as one sends every turn to CC.
 - Model ids live only in `NessieAI/dmac_assistant/build_context/router_model_class_map.json`. The Bedrock proxy allows Opus only, so a CC turn with no explicit model id gets a 403.
-- The 8 `.baml` files in `NessieAI/dmac_assistant/baml_src/` and `NessieAI/docker/cc-runtime/baml_src/` stay byte-identical until the Phase C dedupe (guard: `NessieAI/tests/router/test_baml_mirror_identity.py`).
-- A judge-schema change touches three files (see `NessieAI/README.md` "To change X, edit Y"; guard: `NessieAI/tests/hibayes/test_judge_models_baml_parity.py`). Never change `PROMPT_VERSION` in `NessieAI/hibayes/judge_human_compare.py`: it is written into judged rows.
+- The 8 `.baml` files live only in `NessieAI/dmac_assistant/baml_src/`. The cc-agent image takes them through the Compose named context `dmac_assistant_baml`, so a BAML edit needs both the app and the cc-agent rebuild (guard: `NessieAI/tests/router/test_baml_single_source.py`).
+- A judge-schema change touches two files (see `NessieAI/README.md` "To change X, edit Y"; guard: `NessieAI/tests/hibayes/test_judge_models_baml_parity.py`). Never change `PROMPT_VERSION` in `NessieAI/hibayes/judge_human_compare.py`: it is written into judged rows.
 - `NessieAI/cc/op_registry/ops.py` is the op registration source of truth; add ops only through `/add-cc-op`. `ops.json` and the plugin surfaces are generated.
 - `capabilities.md` is canonical in `NessieAI/chat_nextseek/src/chat_nextseek/context/`. Its standing drift from the baked plugin copy is documented once, in `NessieAI/chat_nextseek/CLAUDE.md`.
 - A chat UI change is two commits: source, then the rebuilt bundle in `static/js/chat_assistant/`.

@@ -63,7 +63,7 @@ Both engines write the same `QueryTask` rows and stream over one websocket, so t
 | An NS agent, prompt or catalog | `NessieAI/chat_nextseek/` | `NessieAI/tests/chat_nextseek/` |
 | The write gate or a granular op | `NessieAI/ns/` | `NessieAI/tests/ns/` |
 | The chat UI | `NessieAI/chat_frontend/`, then commit the rebuilt bundle | in-package vitest |
-| A judge schema | three files together: `NessieAI/dmac_assistant/baml_src/functional_evaluator.baml`, its mirror `NessieAI/docker/cc-runtime/baml_src/functional_evaluator.baml`, and `NessieAI/hibayes/judge_models.py` | `NessieAI/tests/hibayes/` |
+| A judge schema | two files together: `NessieAI/dmac_assistant/baml_src/functional_evaluator.baml` and `NessieAI/hibayes/judge_models.py` | `NessieAI/tests/hibayes/` |
 | What the CC agent is told | `NessieAI/docker/cc-runtime/container/CLAUDE.md` outside its marked blocks; regenerate the blocks | `NessieAI/tests/cc/` |
 | Generated CC surfaces or `route_capabilities.json` | `python -m NessieAI.build_tools.gen_op_surfaces --write --root .` | `NessieAI/tests/build_tools/` |
 | Schema retrieval | `NessieAI/schema_rag/` | `NessieAI/tests/schema_rag/` |

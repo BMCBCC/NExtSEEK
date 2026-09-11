@@ -27,10 +27,9 @@ frames the whole thing as one plan increment (`NessieAI/hibayes/__init__.py:1`).
 
 ## HiBayes lives in these places
 
-HiBayes is not confined to this folder. One judge-schema change touches three files
-together: `NessieAI/dmac_assistant/baml_src/functional_evaluator.baml`, its mirror
-`NessieAI/docker/cc-runtime/baml_src/functional_evaluator.baml`, and the hand copy
-`NessieAI/hibayes/judge_models.py`.
+HiBayes is not confined to this folder. One judge-schema change touches two files
+together: `NessieAI/dmac_assistant/baml_src/functional_evaluator.baml` and the hand copy
+`NessieAI/hibayes/judge_models.py` (guard: `NessieAI/tests/hibayes/test_judge_models_baml_parity.py`).
 
 | Piece | Where | Why there |
 |---|---|---|
@@ -42,7 +41,7 @@ together: `NessieAI/dmac_assistant/baml_src/functional_evaluator.baml`, its mirr
 | Persistence | the nine `eval_*` models in `nextseek_api/assistant/models_db.py`; migrations `0011_turn_judgment`, `0012_posterior_generation`, `0013_family_posterior`, `0014_generation_activation_and_reservation`, `0016_paired_run_registry`, `0017_paid_run_state` in `nextseek_api/migrations/` | app label `nextseek_api` and migration ownership stay in the API |
 | Paired harness | `NessieAI/tests/nessie_tests/` (`bayesian.py`, `bayes_manifest.py`, `v4_2_verifier.py`, the shared `export.py`, `collect.py` and `corpus.json`), `NessieAI/tests/nessie_tests/output-skill-bayesian/`, `NessieAI/tests/nessie_tests/output_skill_bayesian/` | the paired run is a harness mode; `export.py` is also imported by `NessieAI/build_tools/gen_op_surfaces/route_capabilities.py` |
 | Judge contracts | `NessieAI/dmac_assistant/baml_src/`: `functional_evaluator.baml` (`EvaluateFunctionalUsefulness`), `judge_router.baml` (`JudgeRouterAnswer`), `judge_ui.baml` (`JudgeUITranscript`); `classifier.baml` is shared with the router | they must compile in the one tree that holds `clients.baml` |
-| BAML mirror | `NessieAI/docker/cc-runtime/baml_src/` (byte-identical) and `NessieAI/docker/cc-runtime/tools/e2e/judge_runner.py` | the agent image build context; the Phase C dedupe removes the mirror |
+| Agent-image judge client | `NessieAI/docker/cc-runtime/tools/e2e/judge_runner.py`, generated at build time from `NessieAI/dmac_assistant/baml_src/` through the compose named context `dmac_assistant_baml` | the agent image build context; it holds no BAML copy of its own |
 | Fit image | `NessieAI/docker/eval/` | JAX, NumPyro and ArviZ; copies this package plus what `human_grade_fit.py` imports from outside it |
 | Task 6 image, verifier scripts, plan and SDD ledgers | `NessieAI/history/plan018/docker/eval-task6/`, `NessieAI/history/plan018/scripts/`, `NessieAI/history/plan018/2026-07-31-hibayes-eval-routing.md`, `NessieAI/history/plan018/sdd/` | closed plan, frozen |
 | Design | `NessieAI/docs/2026-07-31-hibayes-eval-routing-design.md` | the live design of the loop |

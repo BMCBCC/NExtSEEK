@@ -158,6 +158,7 @@ services:
 # BEGIN PLAN005-GEN:additional-contexts
       additional_contexts:
         chat_nextseek: ./NessieAI/chat_nextseek
+        dmac_assistant_baml: ./NessieAI/dmac_assistant/baml_src
 # END PLAN005-GEN:additional-contexts
     image: dmac-assistant:poc
     network_mode: none

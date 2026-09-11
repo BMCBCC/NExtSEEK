@@ -22,7 +22,7 @@ Rebuild verbs: `./startup.sh rebuild --component cc-agent | bedrock-proxy | next
 - The baked `nextseek` plugin under `cc-runtime/build_context/plugins/nextseek/`: `plugin.json` (identity only), two skills, the `/nextseek` command, a `UserPromptSubmit` hook, the `nextseek-*` shims in `bin/`, and a `context/` catalog directory.
 - The in-container agent instructions, `cc-runtime/container/CLAUDE.md`.
 - The ingested NExtSEEK docs, `cc-runtime/docs/nextseek/` (generated; do not hand-edit).
-- A BAML judge client generated at build time from `cc-runtime/baml_src/`, a byte-identical mirror of `NessieAI/dmac_assistant/baml_src/`.
+- A BAML judge client generated at build time from `NessieAI/dmac_assistant/baml_src/`, the one BAML tree, through the compose named context `dmac_assistant_baml`.
 - The canonical `capabilities.md` from `NessieAI/chat_nextseek/src/chat_nextseek/context/`, through the compose named context `chat_nextseek`, overwriting the baked copy.
 
 ### bedrock-proxy: the model gateway
@@ -45,6 +45,6 @@ It stages artifacts under a SHA-256 of the user, and the Django sweep in `Nessie
 
 ## Depends on / depended on by
 
-- Depends on `NessieAI/chat_nextseek/` (canonical capabilities), `NessieAI/dmac_assistant/baml_src/` (mirror), `NessieAI/hibayes/` (eval image).
+- Depends on `NessieAI/chat_nextseek/` (canonical capabilities), `NessieAI/dmac_assistant/baml_src/` (BAML sources, through a named context), `NessieAI/hibayes/` (eval image).
 - `NessieAI/build_tools/gen_op_surfaces/` writes and validates the generated blocks here: the baked capabilities, the container CLAUDE.md inventories, the Dockerfile blocks.
 - `NessieAI/cc/` spawns containers from `dmac-assistant:poc` and reads the plugin `bin/` inventory.
