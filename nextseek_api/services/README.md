@@ -16,8 +16,8 @@ one of its eleven sibling directories under `nextseek_api/` has an `__init__.py`
 alone does not.
 
 Two populations live here and they answer to different callers. Seventeen modules define
-20 ViewSet classes carrying 85 request handlers between them — the standard CRUD method
-names plus every `@action` — counted by walking the AST of all 25 modules on 2026-09-03.
+20 ViewSet classes carrying 85 request handlers between them (the standard CRUD method
+names plus every `@action`), counted by walking the AST of all 25 modules on 2026-09-03.
 The remaining eight modules define no ViewSet and no URL: they are pure functions that the
 **legacy `seek/` Django app** imports and renders into HTML pages and Excel workbooks.
 `nextseek_api/services/context_catalog.py:3-6` states that division explicitly for its own
@@ -60,9 +60,9 @@ as a detail lookup (`nextseek_api/services/assays.py:41`).
 `nextseek_api/services/users.py:359` and `nextseek_api/services/project_export.py:256`.
 
 *The chat pair*: `nextseek_api/services/assistant.py:417` with 18 actions, and
-`nextseek_api/services/cc_assistant.py:446` with 8. Their query endpoints share a shape —
-create a `QueryTask`, hand a callback to the engine, hand the work to a background thread,
-return 202 — and their overlap is deliberate reuse rather than a fork, imported at
+`nextseek_api/services/cc_assistant.py:446` with 8. Their query endpoints share a shape
+(create a `QueryTask`, hand a callback to the engine, hand the work to a background thread,
+return 202) and their overlap is deliberate reuse rather than a fork, imported at
 `nextseek_api/services/cc_assistant.py:48-54`. `nextseek_api/services/evaluator.py:413`
 reads what those two wrote back out, normalized for retry.
 
@@ -95,16 +95,16 @@ artifact reads and writes such as `nextseek_api/services/assistant.py:1088` and
 ## Running and testing
 
 This directory has no test lane of its own. There is no `__init__.py`, no `conftest.py` and
-no file whose name begins with `test` anywhere beneath it — a `find` over
+no file whose name begins with `test` anywhere beneath it: a `find` over
 `nextseek_api/services` for those three names returns nothing. Its tests live one level up,
 in `nextseek_api/tests/`, where 15 modules are named after a module here
-(`nextseek_api/tests/test_services_assays.py:2` names its subject in its docstring), and in
-`nextseek_api/cc_assistant/tests/`, which owns the routing tests for
-`nextseek_api/services/cc_assistant.py`.
+(`nextseek_api/tests/test_services_assays.py:2` names its subject in its docstring), and
+under `NessieAI/tests/`, where the tests of `nextseek_api/services/cc_assistant.py` sit,
+mostly in `NessieAI/tests/cc/` and `NessieAI/tests/router/`.
 
-**The lane I ran, 2026-09-03.** A throwaway container from the stack image, with this
-worktree bind-mounted read-only and copied to a writable path inside the container, run
-under `dmac.test_settings` and with no network:
+Run them in a throwaway container from the stack image, with the checkout bind-mounted
+read-only and copied to a writable path inside the container, under `dmac.test_settings`
+and with no network:
 
 ```
 docker run --rm --network none -v "$PWD":/src:ro -e DJANGO_SETTINGS_MODULE=dmac.test_settings \
@@ -112,20 +112,18 @@ docker run --rm --network none -v "$PWD":/src:ro -e DJANGO_SETTINGS_MODULE=dmac.
   'cp -a /src /build && cd /build && /app/.venv/bin/python -m pytest nextseek_api/tests/test_services_*.py -q'
 ```
 
-Result: **7 failed, 794 passed, 868 warnings, 4 subtests passed in 12.64s**. The copy step is
-what makes a read-only checkout usable: `dmac/settings.py:497-498` creates directories beside
-the settings file at import time. Six of the seven failures share one cause and the seventh is
-a real gate, and an eighth test passes in this run but fails when the same module is run
-alone.
+The copy step is what makes a read-only checkout usable: `dmac/settings.py:507-508` creates
+directories beside the settings file at import time. Diff a run against
+`ci/pytest-baseline.txt` rather than reading red as new.
 
 `scripts/run_tests.sh:44-47` is the supported wrapper for the same idea and needs two things a
 fresh worktree does not have: a `dmac/local_settings.py` inside the checkout
 (`scripts/run_tests.sh:37-41`) and a compose directory holding the gitignored `docker/*.env`
 files (`scripts/run_tests.sh:20`).
 
-The cheap gate, and the one this directory fails today, is the AST-only convention validator,
-`python3 scripts/validate_viewset_conventions.py`; `nextseek_api/CLAUDE.md` "Test command"
-records what it prints.
+The cheap gate is the AST-only convention validator,
+`python3 scripts/validate_viewset_conventions.py`, which exits 0 on a clean tree;
+`nextseek_api/CLAUDE.md` "Test command" runs it with its test pair.
 
 ## Depends on / depended on by
 
@@ -138,13 +136,15 @@ modules and splitting module-scope imports from in-function ones:
   `nextseek_api/services/users.py:39`, `nextseek_api/services/context_catalog.py:24`,
   `nextseek_api/services/template_catalog.py:20`, `nextseek_api/services/project_connections.py:28`
   and `nextseek_api/services/sample_workbook.py:26`.
-- `chat_nextseek/`, the vendored assistant, imported at module scope by exactly two of the 25
-  modules: `nextseek_api/services/assistant.py:102-103`, and
-  `nextseek_api/services/cc_assistant.py:56` with two more at
-  `nextseek_api/services/cc_assistant.py:75` and `nextseek_api/services/cc_assistant.py:77`.
-- `nextseek_api/cc_assistant/`, the sibling engine package, imported by name across
-  `nextseek_api/services/cc_assistant.py:58-69` and again at
-  `nextseek_api/services/cc_assistant.py:76`.
+- The NS engine in `NessieAI/chat_nextseek/` (import name `chat_nextseek`), imported at
+  module scope by exactly two of the 25 modules: `nextseek_api/services/assistant.py:104-105`,
+  and `nextseek_api/services/cc_assistant.py:60` with two more at
+  `nextseek_api/services/cc_assistant.py:79` and `nextseek_api/services/cc_assistant.py:81`.
+- The Container-CC engine and the top-level router, `NessieAI.cc` and `NessieAI.router`,
+  imported across `nextseek_api/services/cc_assistant.py:62-75` and again at
+  `nextseek_api/services/cc_assistant.py:80` and `nextseek_api/services/cc_assistant.py:82`;
+  the Django shell `nextseek_api/cc_assistant/` only lazily, inside two functions
+  (`nextseek_api/services/cc_assistant.py:892`, `nextseek_api/services/cc_assistant.py:989`).
 - The `neo4j` driver, at module scope in four modules and constructed per request at seven
   call sites, of which `nextseek_api/services/entity_tree.py:302` and
   `nextseek_api/services/sample_workbook.py:285-290` are two.
@@ -158,7 +158,7 @@ modules and splitting module-scope imports from in-function ones:
 - Django settings read at module import rather than per request:
   `nextseek_api/services/assistant.py:39-40` binds two, and
   `nextseek_api/services/entity_tree.py:48-49` binds the two database aliases.
-- Exactly one module-scope import in this directory is guarded against failure —
+- Exactly one module-scope import in this directory is guarded against failure:
   `nextseek_api/services/samples.py:35-38`, which falls back to `None`. A grep for `except
   ImportError` and for a `try:` at column zero across all 25 modules returns that block and the
   in-function one at `nextseek_api/services/seek_rails_runner.py:52`, and nothing else.
@@ -167,8 +167,8 @@ Depended on by. Derived from a repo-wide grep for `nextseek_api.services` and `f
 over every `.py` file, then a second pass for the string `nextseek_api/services/` in
 non-Python and non-import contexts, then grouped. Test modules are omitted:
 
-- `nextseek_api/views.py:43-66` aliases 21 names from here — 20 ViewSet classes and one
-  helper function at `nextseek_api/views.py:58` — into the module `nextseek_api/urls.py:5`
+- `nextseek_api/views.py:43-66` aliases 21 names from here (20 ViewSet classes and one
+  helper function at `nextseek_api/views.py:58`) into the module `nextseek_api/urls.py:5`
   imports, which is how everything routed here reaches HTTP.
 - `seek/`, in the reverse direction, and this is the edge most likely to surprise: the legacy
   app imports this directory's library half at `seek/sample/download.py:17`,
@@ -189,14 +189,14 @@ non-Python and non-import contexts, then grouped. Test modules are omitted:
   grandfather table pins three method names in two modules here, at
   `scripts/validate_viewset_conventions.py:139-156`.
 - `ci/routes.py` declares the HTTP routes this directory serves and annotates them with source
-  locations as prose, not imports — `ci/routes.py:800` and `ci/routes.py:629` are two.
+  locations as prose, not imports: `ci/routes.py:800` and `ci/routes.py:629` are two.
 
 What a hit here is NOT. Four groups were excluded deliberately, each for a different reason.
 `nextseek_api/tests.py` imports service ViewSets on more than 40 lines, `nextseek_api/tests.py:875`
 among them, and none of them run; see `nextseek_api/CLAUDE.md` for why that module is
-unreachable. `chat_nextseek/e2e/playwright/poll.py:11` and `nessie_tests/manifest.py:169` name
+unreachable. `NessieAI/tests/e2e/playwright/poll.py:11` and `NessieAI/tests/nessie_tests/manifest.py:169` name
 modules here inside docstrings, which is documentation and not a dependency.
 `seek/timeline/services/` is a different `services` package entirely, imported at
 `nextseek_api/views.py:27-28`, and has nothing to do with this directory. And
 `nextseek_api/services/schema_rag.py:27` is an import *into* this directory from the
-`nextseek_api/schema_rag/` package, not the reverse — the ViewSet is here, the engine is there.
+`NessieAI/schema_rag/` package, not the reverse: the ViewSet is here, the engine is there.

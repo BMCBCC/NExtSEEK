@@ -9,8 +9,9 @@ type (`nextseek_api/apps.py:4-6`).
 
 Almost none of the behaviour lives here. This directory is the **aggregation shell**: a
 DRF router, one shared SEEK HTTP client, one permission class, one pydantic schema
-module, and four legacy ViewSets. Everything else is a subpackage, and five of those
-carry their own README/CLAUDE pair. This file routes to them and does not repeat them.
+module, and four legacy ViewSets. Everything else is a subpackage, and three of those
+(`assistant/`, `attributes/`, `batch_upload/`) carry their own README/CLAUDE pair. This
+file routes to them and does not repeat them.
 
 Two structural facts explain most of what is surprising here.
 
@@ -41,7 +42,7 @@ registration block that follows runs from `nextseek_api/urls.py:14` to
 `nextseek_api/urls.py:42`: 25 active `router.register(...)` calls and 2 more commented out
 (`nextseek_api/urls.py:15-16`), counted 2026-09-03. The router is included last, under a
 bare `^` prefix, at `nextseek_api/urls.py:80`. Ahead of it sit the three drf-spectacular
-serve routes — schema, Swagger UI and ReDoc — each with an explicitly declared permission
+serve routes (schema, Swagger UI and ReDoc), each with an explicitly declared permission
 class (`nextseek_api/urls.py:65`, `nextseek_api/urls.py:72-76`, `nextseek_api/urls.py:77`).
 The Swagger route overrides the stock template to add an effective-identity banner, for
 the reason set out at `nextseek_api/urls.py:66-71`. `app_name` is set at
@@ -62,12 +63,12 @@ the reason set out at `nextseek_api/urls.py:66-71`. `app_name` is set at
 | `nextseek_api/apps.py`, `nextseek_api/admin.py` | the app config; an admin module that registers nothing (`nextseek_api/admin.py:1-3`) |
 | `nextseek_api/conftest.py` | DRF client and mock-SEEK fixtures shared by every test below this directory |
 | `nextseek_api/seek_api.py`, `nextseek_api/seek_api_helpers.py`, `nextseek_api/example.py` | superseded SEEK-call sketches; see CLAUDE.md for why they are not live |
-| `nextseek_api/tests.py`, `nextseek_api/tests/` | see CLAUDE.md — only one of these two is reachable |
+| `nextseek_api/tests.py`, `nextseek_api/tests/` | see CLAUDE.md: only one of these two is reachable |
 
 Two facts about the description module, both established 2026-09-03: it holds 73
 constants assigned at column zero, running from `nextseek_api/endpoint_descriptions.py:14`
 to `nextseek_api/endpoint_descriptions.py:1190`, and it contains no import statement at
-all — a grep for a line beginning with `import` or `from` over that one file returns
+all: a grep for a line beginning with `import` or `from` over that one file returns
 nothing, which is why a description edit can never break an import cycle.
 
 **The four ViewSets defined here.** `SampleTreeViewSet` (`nextseek_api/views.py:180`) and
@@ -75,49 +76,36 @@ nothing, which is why a description edit can never break an import cycle.
 (`nextseek_api/views.py:395`) and `SampleQueryViewSet` (`nextseek_api/views.py:549`) are
 not: their registrations are the two commented-out lines at `nextseek_api/urls.py:15-16`.
 Both live ViewSets scope data per caller rather than by Django role, and each says so
-where it decides — `nextseek_api/views.py:268-274` for the tree, and
+where it decides: `nextseek_api/views.py:268-274` for the tree, and
 `nextseek_api/views.py:749-756` for the export.
 
-**The subpackages.** Each is documented in its own directory; one clause each, no more:
+**The subpackages.** Each is documented in its own directory; one row each.
 
-- [`cc_assistant/`](cc_assistant/README.md) — the per-turn route decision and the
-  sandboxed agent that serves the `container_cc` route, and the only child installed as a
-  Django app in its own right (`dmac/settings.py:179`).
-- [`assistant/`](assistant/README.md) — the deterministic NExtSEEK chat engine's Django
-  side: its ORM models, its progress websocket (`dmac/asgi.py:23`), and the granular ops
-  contract at `nextseek_api/assistant/CONTRACT.md:1`.
-- [`attributes/`](attributes/README.md) — the native Attribute API package
-  (`nextseek_api/attributes/__init__.py:1`).
-- [`batch_upload/`](batch_upload/README.md) — the batch sample upload pipeline
-  (`nextseek_api/batch_upload/__init__.py:1`).
-- [`eval/`](eval/README.md) — the judgment, disposition and conservation machinery for
-  routing evaluation (`nextseek_api/eval/__init__.py:1`).
+<!-- BEGIN DOCS-MAP:folders -->
+| Folder | What it does | Docs |
+|---|---|---|
+| `assay_registration/` | batch registration of samples as SEEK assay members: three superuser-gated routes, a job row, a drain loop, a Neo4j label recompute | `nextseek_api/assay_registration/README.md` |
+| `assistant/` | the API half of the assistant: ORM models (including the `eval_*` tables), wire models, the progress WebSocket consumer, session and pipeline adapters, OpenAPI descriptions, `excel_export.py`, and the granular-op HTTP contract `CONTRACT.md` | `nextseek_api/assistant/README.md` |
+| `attributes/` | the native attribute API: a catalog plus plan-then-execute mutations | `nextseek_api/attributes/README.md` |
+| `batch_delete/` | pydantic models for delete eligibility; no views, no ORM | this row |
+| `batch_upload/` | bulk sample ingest from a workbook or JSON rows, stages 0 to 7; owns the shared Celery app | `nextseek_api/batch_upload/README.md` |
+| `cc_assistant/` | Django shell for Container-CC; engine at `NessieAI/cc/`. Never rename the app label or the Celery tasks `cc_assistant.upload` and `cc_assistant.sweep_cc_summaries` | `NessieAI/cc/README.md` |
+| `management/` | management commands, including the three loops the app entrypoint starts by name (`dispatch_attribute_outbox`, `recover_attribute_sync_jobs`, `run_assay_registration_jobs`), the harness entry point `nessie` and the staging-sweep recovery `cc_sweep_staging`; deleting a loop's shim removes a command the entrypoint calls | this row |
+| `migrations/` | the one migration chain for the app and every subpackage; it forks, so check the heads first | `nextseek_api/CLAUDE.md` |
+| `services/` | the ViewSet and service layer; a new ViewSet module goes here | `nextseek_api/services/README.md` |
+| `tests/` | the app's tests, including `repo_guards/` (repo infrastructure guards: compose, the app entrypoint, the settings env, the build context and the issue conventions) | this row |
+<!-- END DOCS-MAP:folders -->
 
-Four more subdirectories have no pair of their own and are described only here.
-`nextseek_api/services/` holds 25 Python modules, counted 2026-09-03, and is the
-directory a new ViewSet module belongs in
-(`.claude/skills/nextseek-viewset/SKILL.md:102`). `nextseek_api/assay_registration/`
-is the batch assay-registration job, whose ViewSet
-(`nextseek_api/assay_registration/views.py:121`) is superuser-gated
-(`nextseek_api/assay_registration/views.py:123`). `nextseek_api/schema_rag/` ingests the
-OpenAPI document into a per-session DuckDB and, as a side effect of being imported,
-resolves forward references back in this package's schema module
-(`nextseek_api/schema_rag/__init__.py:1-11`). `nextseek_api/batch_delete/` is pydantic
-only: a find over that directory returns three files — an empty `__init__.py`, a
-`models.py` whose classes all subclass `BaseModel` (`nextseek_api/batch_delete/models.py:17`),
-and one test module — with no `views.py` among them, and a grep for `django.db` or
-`models.Model` over the same directory returns nothing.
+The AI engine that `assistant/` and `cc_assistant/` serve is in `NessieAI/`: see `NessieAI/README.md`.
 
 ## Running and testing
 
-There is no lane scoped to the shell alone. The app's tests live in `nextseek_api/tests/`
-— 71 `test_*.py` modules, counted 2026-09-03 — and cover this directory and `services/`
-together.
+There is no lane scoped to the shell alone. The app's test modules live in
+`nextseek_api/tests/` and cover this directory and `services/` together.
 
-**The lane I ran, 2026-09-03.** A throwaway container from the stack image, with this
-worktree bind-mounted read-only, copied to a writable path inside the container, run
-under `dmac.test_settings` (SQLite in memory, `dmac/test_settings.py:20-30`) and with no
-network:
+Run them in a throwaway container from the stack image, with the checkout bind-mounted
+read-only, copied to a writable path inside the container, run under `dmac.test_settings`
+(SQLite in memory, `dmac/test_settings.py:20-30`) and with no network:
 
 ```
 docker run --rm --network none -v "$PWD":/src:ro -e DJANGO_SETTINGS_MODULE=dmac.test_settings \
@@ -125,11 +113,10 @@ docker run --rm --network none -v "$PWD":/src:ro -e DJANGO_SETTINGS_MODULE=dmac.
   'cp -a /src /build && cd /build && /app/.venv/bin/python -m pytest nextseek_api/tests/ -q'
 ```
 
-Result: 80 failed, 2066 passed, 2 skipped, 3 errors, 10 subtests passed in 40.29s. The
-copy step is what makes a read-only checkout usable at all: `dmac/settings.py:497-498`
+The copy step is what makes a read-only checkout usable at all: `dmac/settings.py:507-508`
 creates two directories beside the settings file at import time, so a plain read-only
-mount raises `OSError` before Django finishes loading. Not every failure is
-environmental; the two families I reproduced are written up in CLAUDE.md.
+mount raises `OSError` before Django finishes loading. The suite is not green, and not
+every failure is environmental; the known failure families are written up in CLAUDE.md.
 
 `scripts/run_tests.sh:44-47` is the supported wrapper for the same idea, and is what to
 use once you have the two things it needs: a `dmac/local_settings.py` inside the checkout
@@ -174,22 +161,23 @@ this one's:
   one of which is `nextseek_api/endpoint_descriptions.py`, and
   `scripts/validate_viewset_conventions.py:157-183` pins five function names in
   `nextseek_api/views.py` as grandfathered.
-- `ci/routes.py:1-14` is the CI route registry — 86 of its lines name a path under this
-  prefix, counted 2026-09-03 — and `ci/gate/test_route_registry.py:29-39` blocks CI when
-  Django resolves a route the registry does not declare.
+- `ci/routes.py:1-14` is the CI route registry, which declares every path under this
+  prefix, and `ci/gate/test_route_registry.py:29-39` blocks CI when Django resolves a
+  route the registry does not declare.
 - `.coveragerc:2` sets this package as the sole coverage source, and `.coveragerc:4-9`
   names the files excluded from it.
 - Two consumers reach this app over HTTP and not by import:
-  `chat_frontend/src/lib/services/chatApi.ts:78` builds request URLs against the prefix,
+  `NessieAI/chat_frontend/src/lib/services/chatApi.ts:78` builds request URLs against the prefix,
   and the CC agent's plugin catalog stores endpoint paths as data at
-  `docker/cc-runtime/build_context/plugins/nextseek/context/ops.json:1`.
-- `chat_nextseek/src/chat_nextseek/context/nextseek_api.yaml:1-5` is a captured copy of
+  `NessieAI/docker/cc-runtime/build_context/plugins/nextseek/context/ops.json:1`.
+- `NessieAI/chat_nextseek/src/chat_nextseek/context/nextseek_api.yaml:1-5` is a captured copy of
   the document this app's schema route generates, not a live read of it, so it drifts.
 
 What a hit here is NOT. A grep for this package name returns far more than the list
-above, and three groups were excluded deliberately. Everything under `build_tools/` and
-`nessie_tests/` imports `nextseek_api.cc_assistant.*` or `nextseek_api.assistant.*` and
-never a module of this shell. `chat_nextseek/src/chat_nextseek/helpers/tools/nextseek_api.py`
+above, and three groups were excluded deliberately. Everything under `NessieAI/` reaches this
+shell only through the back-edges named in `NessieAI/CLAUDE.md`: `nextseek_api.models` (from
+`NessieAI/schema_rag/`) and `nextseek_api.conftest` (from the harness container tests). All
+other edges go into child packages. `NessieAI/chat_nextseek/src/chat_nextseek/helpers/tools/nextseek_api.py`
 is named after this app but is a chat-side HTTP tool that imports nothing from it.
 `dmac/asgi.py:23` and `dmac/attribute_performance_settings.py:36` reach into
 `nextseek_api.assistant` and `nextseek_api.attributes` respectively, which are their

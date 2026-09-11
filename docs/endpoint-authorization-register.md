@@ -76,9 +76,10 @@ The codebase already states this in two places. `nextseek_api/permissions.py:8-1
 > therefore equivalent to `IsAuthenticated` in this project. `is_superuser` is never assigned
 > by any live application code path, so it is the only trustworthy admin signal.
 
-And the explicit comment at `nextseek_api/views.py:628-641`, which opens:
+And the explicit comment at `nextseek_api/views.py:628-641`, which opens (its em-dash
+rendered here as a comma, per this document's style):
 
-> `# SECURITY, known gap — still open, deliberately. Read before touching this line.`
+> `# SECURITY, known gap, still open, deliberately. Read before touching this line.`
 
 and closes (quoted verbatim except that the source's two em-dashes are rendered here as commas,
 per this document's style):
@@ -130,9 +131,9 @@ they all take the unfiltered branch today, and they would all become project-sco
 | # | Consumer | Entry point | Identity it authenticates as |
 |---|---|---|---|
 | 1 | Browser sample-download controls | `static/js/ns_sample_download.js:10` sets `ENDPOINT = "/nextseek_api/admin/samples/retrieve/"`; loaded by `seek/templates/newSearch.html:3`, `seek/templates/searchAdvanced.html:3`, `seek/templates/pages/samples.embed.html:1` | Django session cookie + CSRF, i.e. the logged-in user |
-| 2 | NExtSEEK assistant (`chat_nextseek` engine, in-process) | endpoint allowlisted at `chat_nextseek/src/chat_nextseek/helpers/tools/nextseek_api.py:39`; outbound Basic auth built at `:132` from `config.API_USER/API_PASS`; report path at `chat_nextseek/src/chat_nextseek/reports/metadata.py:66` | The caller. `nextseek_api/services/assistant.py:287-302` and `:761-766` overwrite `API_USER`/`API_PASS` on a per-request `ChatConfig` copy with the credentials `resolve_seek_auth` returned |
-| 3 | Container-CC agent, via the ns-sidecar | sidecar forwards ops to `/nextseek_api/assistant/{op}/` (`docker/ns-sidecar/app/ns_client.py:97`); the `api-read` op reaches this path because it is allowlisted at `nextseek_api/assistant/read_safe_endpoints.json:39` and gated by `nextseek_api/assistant/write_gate.py:94` | The caller. The sidecar holds no credentials of its own; per-request Basic auth is built from the `ns_login` frame at `docker/ns-sidecar/app/server.py:40-47` |
-| 4 | LLM endpoint catalogs that steer both engines toward it | `chat_nextseek/src/chat_nextseek/context/min_api_endpoints.json:3`, `.../min_api_endpoints_enriched.json:3,71`, and the image copies under `docker/cc-runtime/build_context/plugins/nextseek/context/` | n/a, prompt context |
+| 2 | NExtSEEK assistant (`chat_nextseek` engine, in-process) | endpoint allowlisted at `NessieAI/chat_nextseek/src/chat_nextseek/helpers/tools/nextseek_api.py:39`; outbound Basic auth built at `:132` from `config.API_USER/API_PASS`; report path at `NessieAI/chat_nextseek/src/chat_nextseek/reports/metadata.py:66` | The caller. `nextseek_api/services/assistant.py:287-302` and `:761-766` overwrite `API_USER`/`API_PASS` on a per-request `ChatConfig` copy with the credentials `resolve_seek_auth` returned |
+| 3 | Container-CC agent, via the ns-sidecar | sidecar forwards ops to `/nextseek_api/assistant/{op}/` (`NessieAI/docker/ns-sidecar/app/ns_client.py:97`); the `api-read` op reaches this path because it is allowlisted at `NessieAI/ns/read_safe_endpoints.json:39` and gated by `NessieAI/ns/write_gate.py:94` | The caller. The sidecar holds no credentials of its own; per-request Basic auth is built from the `ns_login` frame at `NessieAI/docker/ns-sidecar/app/server.py:40-47` |
+| 4 | LLM endpoint catalogs that steer both engines toward it | `NessieAI/chat_nextseek/src/chat_nextseek/context/min_api_endpoints.json:3`, `.../min_api_endpoints_enriched.json:3,71`, and the image copies under `NessieAI/docker/cc-runtime/build_context/plugins/nextseek/context/` | n/a, prompt context |
 
 The **one** exception to "always the end user" is the admin-only PROD toggle: when a turn routes
 to the PROD `ChatConfig`, `nextseek_api/services/assistant.py:293-297` and `:775-779` substitute
@@ -140,7 +141,7 @@ the configured `API_USER`/`API_PASS` instead. That is a genuine service identity
 would be whatever that account's SEEK projects are.
 
 `/nextseek_api/entity_tree/lineage/` is also allowlisted for both engines
-(`nextseek_api/assistant/read_safe_endpoints.json:51`) and recommended to the model by
+(`NessieAI/ns/read_safe_endpoints.json:51`) and recommended to the model by
 `nextseek_api/endpoint_descriptions.py:18`, but it has no project predicate at all today, so
 tightening `admin/samples` does not touch it. `entity_tree/nodes`, `edges` and `edge_attributes`
 have **no consumer anywhere in the worktree**.
@@ -325,7 +326,7 @@ Worth a separate issue.
 
 **A2. Silent row-dropping here is a data-integrity bug, not a visibility change.** The
 container-CC batch-upload client calls this endpoint to recover the pre-update state of samples
-(`docker/cc-runtime/build_context/plugins/nextseek/bin/_batch_upload_client.py:179`,
+(`NessieAI/docker/cc-runtime/build_context/plugins/nextseek/bin/_batch_upload_client.py:179`,
 `search_samples_by_uid`). If scoping silently drops a row, the runner sees the UID as absent and
 takes the **create** branch instead of **update**. `nextseek_api/batch_upload/views.py` performs
 no project-membership check of its own, so a curator operating outside their SEEK project
@@ -458,14 +459,14 @@ SESSION or TOKEN. Neither touches NExtSEEK samples, projects or files: `ingest`
 (`services/schema_rag.py:103`) fetches a caller-supplied OpenAPI URL and stores parsed endpoint
 descriptions in a per-session DuckDB file, and `retrieve` (`services/schema_rag.py:304`) runs
 semantic search over one of those files -- but `retrieve` also AUTO-INGESTS at
-`nextseek_api/schema_rag/service.py:747` when no live session exists, and
+`NessieAI/schema_rag/service.py:747` when no live session exists, and
 `RetrieveRequest` accepts `schema_url` with no `session_id`, so that is its
 first-call path rather than an edge case. It therefore carries every side effect
 listed for `ingest`, and is classified WRITE for the CC agent (#86). There is nothing to apply a project predicate to,
 hence `public-to-authenticated`.
 
 Two things the user may still want to note, both out of scope for a project-scoping register:
-sessions carry no owner (`nextseek_api/schema_rag/session.py:88-116` stores no user, and
+sessions carry no owner (`NessieAI/schema_rag/session.py:88-116` stores no user, and
 `retrieve` resolves by `session_id` or `schema_url` with no ownership check), and `ingest`
 fetches an arbitrary caller-supplied URL from the Django container.
 
@@ -551,5 +552,7 @@ Facts in this document were established as follows. Anything not verifiable is m
   `drf_spectacular/settings.py:59` in the container). So `/schema/`, `/swagger/` and `/redoc/`
   are reachable **unauthenticated**. They expose the API surface description, not data.
 - **Consumer inventory** for `admin/samples/retrieve` and `entity_tree`: whole-worktree grep
-  across `chat_nextseek/`, `dmac_assistant/`, `docker/ns-sidecar/`, `docker/cc-runtime/`,
-  `chat_frontend/`, `nessie_tests/`, `seek/templates/`, `templates/` and `static/js/`.
+  across `NessieAI/chat_nextseek/`, `NessieAI/dmac_assistant/`, `NessieAI/docker/ns-sidecar/`,
+  `NessieAI/docker/cc-runtime/`, `NessieAI/chat_frontend/`, `NessieAI/tests/nessie_tests/`,
+  `seek/templates/`, `templates/` and `static/js/` (the AI trees at their homes after the
+  NessieAI move).

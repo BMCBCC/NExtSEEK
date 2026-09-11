@@ -21,7 +21,7 @@ Measured 2026-09-03 with `find` and `wc -l` over this directory: 24 Python files
 SEEK auth and home view module (333 lines), `dmac/__init__.py` is empty, and the
 remaining twelve are the legacy layer (4,364 lines).
 
-Two files here are compiled Python 2.7 bytecode — `dmac/conversion.pyc` and
+Two files here are compiled Python 2.7 bytecode: `dmac/conversion.pyc` and
 `dmac/__init__.pyc`, whose first four bytes are the 2.7 magic number `03 f3 0d 0a`,
 read with `od`. A `find` for `*.pyc` outside any `__pycache__` across the whole worktree
 returns exactly those two.
@@ -70,7 +70,7 @@ MySQL-only `CHARACTER SET` DDL that SQLite cannot parse, which its docstring rec
 (`dmac/attribute_performance_settings.py:6-10`) and points both aliases at real MariaDB
 (`dmac/attribute_performance_settings.py:27-30`).
 
-`dmac/local_settings.example.py` is a five-name sample — participating projects, test
+`dmac/local_settings.example.py` is a five-name sample: participating projects, test
 cases, publish URL, publish stats file and smart-search URL
 (`dmac/local_settings.example.py:3-25`). It is the surface the `seek/views/` package needs at
 import, which is why two test modules reproduce exactly those names by hand rather than
@@ -92,8 +92,8 @@ delegated out of this package entirely, to `seek.dbrouters.CustomRouter`
 ### URL root
 
 `dmac/settings.py:103` computes `ROOT_URLCONF` from the package name, which resolves to
-`dmac.urls`. Three blocks register patterns — `dmac/urls.py:21-30`, `dmac/urls.py:38-40`
-and `dmac/urls.py:47-58` — for eleven top-level entries, counted 2026-09-03 off Django's
+`dmac.urls`. Three blocks register patterns (`dmac/urls.py:21-30`, `dmac/urls.py:38-40`
+and `dmac/urls.py:47-58`) for eleven top-level entries, counted 2026-09-03 off Django's
 own resolver inside the application image. A fourth block at `dmac/urls.py:42-45` adds a
 language-switch route only when `USE_MODELTRANSLATION` is on, and it is off here, so it
 contributes none of the eleven. Because
@@ -137,7 +137,7 @@ The deployment picks between them at run time. `docker/scripts/entrypoint.sh:61-
 defaults to `daphne` on `dmac.asgi:application` and falls back to `gunicorn dmac.wsgi`
 when `NEXTSEEK_SERVER=gunicorn`; the comment at `docker/scripts/entrypoint.sh:55-60`
 records that the WSGI path loses the assistant WebSocket and the frontend then polls.
-Gunicorn's own settings — four workers, a 1200-second timeout — are in `gunicorn.conf.py:1-6`.
+Gunicorn's own settings (four workers, a 1200-second timeout) are in `gunicorn.conf.py:1-6`.
 
 ### The legacy data-access layer
 
@@ -229,8 +229,8 @@ happens without it.
 
 Depends on, outside this directory:
 
-- Mezzanine, at import in three entry points, for `real_project_name` —
-  `manage.py:7`, `dmac/wsgi.py:4`, `dmac/asgi.py:10` — and for the dynamic-settings pass
+- Mezzanine, at import in three entry points, for `real_project_name`
+  (`manage.py:7`, `dmac/wsgi.py:4`, `dmac/asgi.py:10`) and for the dynamic-settings pass
   at `dmac/settings.py:265-270` that rewrites `INSTALLED_APPS` and `MIDDLEWARE`.
 - `seek/`, which this package imports at module scope in both directions of the
   legacy layer: `dmac/views.py:25-26` for the SEEK login client and the `People` model,
@@ -256,8 +256,8 @@ Depended on by. Derived 2026-09-03 by grepping every `*.py` in the worktree for 
 beginning with an import of `dmac`, then removing this directory's own 27 internal hits
 with a pattern anchored at `dmac/` with no leading `./`. That detail matters: this host's
 `grep -rn` emits paths without a leading `./`, so the same exclusion written with one
-removes zero lines — measured the same day, 87 hits before any filter, 87 after the `./`
-form, 60 after the anchored one. Those 60 lines sit in 30 files, 7 of the lines in test
+removes zero lines (measured the same day: 87 hits before any filter, 87 after the `./`
+form, 60 after the anchored one). Those 60 lines sit in 30 files, 7 of the lines in test
 modules.
 
 - `seek/` is the overwhelming consumer: 24 of the 25 non-test importer files.
@@ -275,7 +275,7 @@ modules.
 - The settings module names are configuration, not imports, and appear in
   `pyproject.toml:147`, `.github/workflows/ci-pytest.yml:50`, `scripts/run_tests.sh:46`,
   `ci/gate/live_routes.py:18`, `scripts/dump_routes.py:20`,
-  `nextseek_api/batch_upload/celery_app.py:12` and `nessie_tests/sources.py:249`.
+  `nextseek_api/batch_upload/celery_app.py:12` and `NessieAI/tests/nessie_tests/sources.py:249`.
 - `dmac/local_settings.py`, which this directory never contains, is bind-mounted by path
   into the `nextseek` service (`docker-compose.yml`), the only service that runs the app
   image. It is written by
@@ -284,7 +284,7 @@ modules.
 
 Three kinds of hit are excluded and are worth naming. `api_app/dbconn_mysql.py:13` defines
 its own `DBconn_mysql` class and is a separate copy, not a consumer of
-`dmac/dbconn_mysql.py`. `nextseek_api/eval/task6_settings.py` is a fifth settings module
+`dmac/dbconn_mysql.py`. `NessieAI/hibayes/task6_settings.py` is a fifth settings module
 in this repo and does not live here. And `nextseek_api/permissions.py:10` names
 `dmac.views.userSynchronization` inside a comment explaining a security gate, not in code.
 

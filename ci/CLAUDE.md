@@ -1,4 +1,4 @@
-# ci/ — what will bite you
+# ci/: what will bite you
 
 ## Invariants
 
@@ -21,7 +21,7 @@
 - A route's `expect` records the status the route returns when it works, never
   the status it returns while broken (`ci/routes.py:44-49`). Declare today's
   broken status instead and the `xfail` reports green while the defect stands and
-  red on the day somebody fixes it — both signals inverted.
+  red on the day somebody fixes it, both signals inverted.
 - An absent `CI_BOX_PROFILE` resolves to `prod`, the most restrictive profile,
   and `--profile` can only narrow from there (`ci/smoke/conftest.py:142-145`,
   `ci/smoke/conftest.py:162-170`). Change that default to anything else and an
@@ -39,36 +39,23 @@
 - The read-only mount in the gate recipe works ONLY because the recipe's first
   line pre-creates two directories on the host (`ci/gate/live_routes.py:16`).
   Skip that `mkdir` and Django dies during settings import, before a single test
-  is collected: `dmac/settings.py:498` calls `os.makedirs` on a path inside the
+  is collected: `dmac/settings.py:507` calls `os.makedirs` on a path inside the
   mount. Measured 2026-09-03 by mounting an empty directory over
   `/src/schema_rag`: `OSError: [Errno 30] Read-only file system:
   '/src/schema_rag/duckdb'`. Pre-creating them is what makes the read-only mount
   work at all, because `os.makedirs(..., exist_ok=True)` swallows the read-only
   failure once the directory it wanted is already there.
-- `ci/pytest-baseline.txt` is STALE against this branch. Measured 2026-09-03 by
-  running the six lane directories its own header declares
-  (`ci/pytest-baseline.txt:7-11`) inside the application image over a writable
-  copy of this worktree, then diffing with `ci/diff_baseline.py`: 57 ids
-  failed that the baseline does not list, and 12 ids it lists now pass. A second
-  run under a different mount path reproduced 55 of the 57 exactly (the other two
-  are outside the two directories that run covered), so they are not an artifact
-  of where the tree was mounted. The 57 are 35 under `seek/` and 20 under
-  `nextseek_api/`, plus one each under `scripts/` and `startup/`; the file records
-  only 2 `seek/` entries in total. Anyone reading a red pytest job on this branch
-  triages all 57 by hand; the repo-root session-report index carries the only
-  line in the tree matching "Of the 57", found by grepping every file outside
-  `.git`, and it records that just 3 of them are real.
+- `ci/pytest-baseline.txt` was regenerated for the NessieAI move in the gate lane
+  (the application image, the tree mounted read-only, `--network none`), not on a
+  CI runner, and its header says so (`ci/pytest-baseline.txt:22-30`). That lane
+  cannot generate the BAML client, so the first GitHub run after the move, which
+  does generate it, reports the entries the missing client broke as fixed and the
+  tests that lane could not collect, but that fail anyway, as new. Regenerate the
+  file from that run's output with `ci/diff_baseline.py <run output> --emit-baseline`
+  (`ci/diff_baseline.py:77-80`), never by editing entries by hand.
 - The baseline is valid for one exact command and one tree state, and says so
-  (`ci/pytest-baseline.txt:3-5`). Its header still names the measurement it was
-  taken from (`ci/pytest-baseline.txt:19-21`), which is what tells you it has not
-  been regenerated since. Diff a run of any other lane set against it and every
-  difference is noise.
-- It is nonetheless still accurate for two boundaries: the 2026-09-03 diff
-  produced zero new failures under `build_tools/` and zero under `chat_nextseek/`.
-  A sibling document citing `ci/pytest-baseline.txt:27` for a known
-  `build_tools` failure is right, and that entry still failed in this run.
-  Reading either result as a verdict on the whole file misleads you in one
-  direction or the other, so diff the run yourself and read only your own rows.
+  (`ci/pytest-baseline.txt:3-5`). Diff a run of any other lane set against it and
+  every difference is noise, so diff the run yourself and read only your own rows.
 - `uv sync` cannot build this project on a host without MySQL client headers.
   `uv.lock:1754-1757` lists exactly two `mysqlclient` wheels, both `win_amd64`,
   so every Linux install builds from the sdist at `uv.lock:1753`. Measured
@@ -91,7 +78,7 @@
   that normally arrives from the gitignored `dmac/local_settings.py`.
 - `ci/diff_baseline.py` always exits 0, by decision (`ci/diff_baseline.py:8-9`,
   `ci/diff_baseline.py:131-132`). A wrapper that treats its exit code as a
-  verdict will call every run a pass, including one that reports 57 new failures.
+  verdict will call every run a pass, including one that reports new failures.
   Only the gate step, and a lanes step whose pytest did not run at all, can fail
   that job (the comment above the gate step in `.github/workflows/ci-pytest.yml`).
 - `OWNED_ROUTE_COUNT` in `ci/smoke/test_registry_contents.py` is a
@@ -108,11 +95,10 @@
 ## Test command
 
 The gate is the lane that blocks, and the no-stack smoke lane is the one that
-needs nothing at all; both are in `ci/README.md` with their commands and their
-2026-09-03 numbers. The lane whose result is the headline is the baseline lane,
-which was reproduced on 2026-09-03 inside the application image over a writable
-copy of this worktree, after generating the BAML client the way
-`.github/workflows/ci-pytest.yml:45-46` does:
+needs nothing at all; both are in `ci/README.md` with their commands. The lane
+whose result is the headline is the baseline lane. To reproduce it inside the
+application image, mount a writable copy of this worktree and generate the BAML
+client first, the way `.github/workflows/ci-pytest.yml:45-46` does:
 
 ```bash
 docker run --rm -i -e DJANGO_SETTINGS_MODULE=dmac.test_settings \
@@ -124,9 +110,8 @@ docker run --rm -i -e DJANGO_SETTINGS_MODULE=dmac.test_settings \
   --continue-on-collection-errors -q -p no:cacheprovider
 ```
 
-2026-09-03: **273 failed, 8195 passed, 80 skipped, 8 xfailed, 73 errors in
-194.94s**, which `ci/diff_baseline.py` scored as 57 new and 12 fixed against
-`ci/pytest-baseline.txt`. Mount a writable COPY rather than the worktree: the
+Score the run with `ci/diff_baseline.py` against `ci/pytest-baseline.txt`. Mount
+a writable COPY rather than the worktree: the
 run has to generate the gitignored BAML client into the tree first
 (`.github/workflows/ci-pytest.yml:45-46`), and a fresh checkout has none: a
 `ls -d` for `NessieAI/dmac_assistant/src/dmac_assistant/router/baml_client` and

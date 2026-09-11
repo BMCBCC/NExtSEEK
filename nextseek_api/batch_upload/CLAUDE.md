@@ -3,19 +3,19 @@
 ## Invariants
 
 Each of these is load-bearing. Breaking one corrupts data, leaks access, or silently loses
-lineage — none of them fails loudly.
+lineage, and none of them fails loudly.
 
 - **UID minting is serialized by a MySQL named lock, and only for as long as it takes to
   read the maximum.** `nextseek_api/batch_upload/uid_gen.py:159-166` takes one lock per UID
   prefix with a ten-second timeout, and `nextseek_api/batch_upload/uid_gen.py:175` releases
-  it before any row is inserted — the INSERT is stage 5, in a later connection
+  it before any row is inserted: the INSERT is stage 5, in a later connection
   (`nextseek_api/batch_upload/orchestrator.py:375-381` closes stage 1.5's). Two jobs whose
   UID_GEN both finish before either commits therefore read the same maximum
   (`nextseek_api/batch_upload/uid_gen.py:168`) and mint the same identifiers. Widening or
   removing that lock turns a rare collision into the normal case.
 - **Every key in `json_metadata` must already exist as an attribute of the row's
   SampleType.** There is no skip list, not even for the SEEK-conventional UID, Parent and
-  Protocol keys — `nextseek_api/batch_upload/transform.py:75-88` rejects the row on the
+  Protocol keys: `nextseek_api/batch_upload/transform.py:75-88` rejects the row on the
   first undeclared key. Adding a column to a curator's sheet before adding the attribute to
   the sample type fails every row that carries it.
 - **New sample policies are created private and access is granted separately.**
@@ -76,7 +76,7 @@ lineage — none of them fails loudly.
   `nextseek_api/batch_upload/views.py:241` reads it, `nextseek_api/batch_upload/views.py:306`
   forwards it, and `nextseek_api/batch_upload/tasks.py:40` splats it into the constructor,
   so any authenticated caller can set any tunable the constructor pulls out of `overrides`
-  (`nextseek_api/batch_upload/config.py:20-59`) — the permission switch and its access type
+  (`nextseek_api/batch_upload/config.py:20-59`): the permission switch and its access type
   among them. Both of those consult an environment variable first
   (`nextseek_api/batch_upload/config.py:35-40`), so an instance that sets those variables is
   covered and one that leaves them unset is not. Adding a tunable here adds a request
@@ -93,7 +93,7 @@ lineage — none of them fails loudly.
   `nextseek_api/batch_upload/neo4j_sync.py:220` names the culprits, but nothing repairs
   them: treat a nonzero drop count as data loss, not noise.
 - **Nothing under `MEDIA_ROOT` survives a container rebuild.**
-  `dmac/settings.py:95` puts it at a path the `nextseek` service never mounts — a
+  `dmac/settings.py:95` puts it at a path the `nextseek` service never mounts: a
   case-insensitive grep for `media` over the whole of `docker-compose.yml` matched nothing on
   2026-09-03, and the service's mount list at `docker-compose.yml:25-53` is nine entries
   covering other paths.
@@ -179,15 +179,15 @@ docker exec -e DJANGO_SETTINGS_MODULE=dmac.test_settings nextseek sh -c \
 
 Ran 2026-09-03: 1223 passed, 26 skipped, 3.82s. Drop the `--ignore` only when a reachable
 Neo4j is configured; see the landmine above for what happens otherwise. Never widen the path
-to the whole `nextseek_api/` tree in one go — that pulls in hundreds of unrelated
+to the whole `nextseek_api/` tree in one go: that pulls in hundreds of unrelated
 environmental failures that are not regressions.
 
 ## See also
 
 - See `nextseek_api/batch_upload/README.md` for the stage table, the HTTP actions, the table
   set written, and the dependency map in both directions.
-- See `nextseek_api/cc_assistant/CLAUDE.md` for the other subsystem that registers tasks on
-  this package's Celery application.
+- See `NessieAI/cc/CLAUDE.md` for the other subsystem that registers tasks on this
+  package's Celery application, through its Django shell `nextseek_api/cc_assistant/`.
 - See the repo-root `CLAUDE.md` for the stack layout, the rebuild commands, and the
   in-container test recipe this command specializes.
 - See `docker/scripts/entrypoint.sh:67-70` for how the worker that runs these tasks is

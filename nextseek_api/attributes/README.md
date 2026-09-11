@@ -13,7 +13,7 @@ It is a plain Python package, not a Django app. Its two durable models declare
 schema: `nextseek_api/migrations/0010_attribute_mutation_job.py:1` creates the job
 and partition tables and `nextseek_api/migrations/0011_attribute_async_orchestration.py:11`
 depends on it to add the heartbeat. There is no `migrations` package inside this
-boundary — a find for a directory named `migrations`, or for any file matching
+boundary: a find for a directory named `migrations`, or for any file matching
 `0*.py`, anywhere beneath `nextseek_api/attributes` returns nothing. It registers no
 URLs either; the single HTTP surface is routed from outside, at
 `nextseek_api/urls.py:25`.
@@ -47,7 +47,7 @@ and the modules behind them. It also ships three long-running processes as manag
 commands and one Celery task, and those are entered by name rather than by import.
 
 **HTTP.** `AttributeViewSet` (`nextseek_api/attributes/views.py:115`) is the only
-request handler — list, retrieve, `search`, `batch-create`, `batch-patch`,
+request handler: list, retrieve, `search`, `batch-create`, `batch-patch`,
 `batch-delete`, plus job status (`nextseek_api/attributes/views.py:294`) and job
 cancellation (`nextseek_api/attributes/views.py:316`). Each view body is a few lines
 around `nextseek_api/attributes/views.py:37`, which builds a fresh composition facade
@@ -95,7 +95,7 @@ container's healthcheck.
 **Django cannot see these commands where they live.** Its per-app command scan walks
 only each `INSTALLED_APPS` entry's own path, and this is a subpackage rather than an
 app, so each command is re-exported by a same-named shim in the directory Django does
-scan — `nextseek_api/management/commands/dispatch_attribute_outbox.py:9`,
+scan: `nextseek_api/management/commands/dispatch_attribute_outbox.py:9`,
 `nextseek_api/management/commands/check_attribute_outbox_heartbeat.py:5`, and
 `nextseek_api/management/commands/recover_attribute_sync_jobs.py:5`. The reasoning is
 set out at
@@ -134,7 +134,7 @@ lanes, and they are not the same lane with a flag.
 I ran the whole directory in the live container on 2026-09-03 with none of those
 variables set. 856 cases collect in 1.23s. 484 passed and 12 failed; the remaining 360
 errored in fixture setup, every one on the same missing host variable. Four of those 12
-failures trace to a single line — the kernel writes
+failures trace to a single line: the kernel writes
 `outcome["counts"]["updated_samples"]` at `nextseek_api/attributes/executor.py:155-157`
 while the unit suite's own service double returns an outcome with no `counts` key
 (`nextseek_api/attributes/tests/test_executor.py:99`). See
@@ -215,7 +215,7 @@ edges made of service definitions and names in string form.
   `tests/` package that does not exist anywhere in the worktree.
 
 Omitted from the list above: the 39 Python files under this boundary's `tests/`, which
-import their own siblings freely. Also excluded as a false match, `chat_nextseek/src/chat_nextseek/context/min_api_endpoints.json:145`
+import their own siblings freely. Also excluded as a false match, `NessieAI/chat_nextseek/src/chat_nextseek/context/min_api_endpoints.json:145`
 contains the word "attributes" in SEEK sample-creation prose and has no relationship to
 this package.
 

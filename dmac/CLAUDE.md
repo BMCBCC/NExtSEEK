@@ -7,7 +7,7 @@ not fail locally; it fails somewhere else.
 ## Invariants
 
 - **Changing `dmac/settings.py` changes all four settings modules at once.** The other
-  three star-import it — `dmac/test_settings.py:18` and
+  three star-import it: `dmac/test_settings.py:18` and
   `dmac/test_settings_realstack.py:26` directly, and
   `dmac/attribute_performance_settings.py:3` through the test module. A name that raises
   during its import takes out CI, every container lane and the running site together.
@@ -49,8 +49,8 @@ not fail locally; it fails somewhere else.
   directory over `/src/schema_rag` in the application image: `OSError: [Errno 30]
   Read-only file system: '/src/schema_rag/duckdb'`, raised from `dmac/settings.py:498`
   inside the star-import at `dmac/test_settings.py:18`. The workaround is to create both
-  directories on the host first, which is why the gate recipe opens with a `mkdir` —
-  `ci/gate/live_routes.py:16` — and `exist_ok=True` then swallows the read-only failure.
+  directories on the host first, which is why the gate recipe opens with a `mkdir`,
+  `ci/gate/live_routes.py:16`, and `exist_ok=True` then swallows the read-only failure.
   With that `mkdir` done the identical command passed: 5 passed in 8.28s, same day.
 - **`dmac/settings.py:303-304` does the same thing to `LOG_DIR`, defaulting it to
   `/app/logs`.** That path exists only inside the image, so a GitHub runner or a bare host
@@ -81,7 +81,7 @@ not fail locally; it fails somewhere else.
   `dmac/dbtable_clades.py:10` is representative, and `dmac/dbtable_clades.py:19-20` binds
   the database dicts at import. Under `dmac.test_settings`, measured 2026-09-03,
   `django.conf.settings.DATABASES['default']['ENGINE']` is `django.db.backends.sqlite3`
-  while that module's own copy is `django.db.backends.mysql` — so
+  while that module's own copy is `django.db.backends.mysql`, so
   `dmac/dbtable_clades.py:42-46` opens a raw MySQLdb socket to the real server from inside
   a suite that believes it is hermetic. `override_settings` cannot reach these four
   either. The siblings are `dmac/dbtable_internalassays.py:12`,
@@ -90,12 +90,12 @@ not fail locally; it fails somewhere else.
   `dmac/views.py:17-22` calls `logging.basicConfig` with the relative filename
   `dmac.logs`, outside the `LOGGING` dict at `dmac/settings.py:306-366`. It is a no-op
   only when something has already attached a handler to the root logger, which pytest
-  does — which is why the gate lane survives a read-only mount and a plain
+  does, which is why the gate lane survives a read-only mount and a plain
   `python -c 'import dmac.views'` from that same mount does not. Both measured 2026-09-03;
   the second raised `OSError: [Errno 30] Read-only file system: '/src/dmac.logs'`, and
   from a writable directory it left a `dmac.logs` behind.
 - **`GET /logout` raises `NameError` on every request.** `dmac/views.py:174` calls
-  `reverse`, and a grep for that name over `dmac/views.py` matches only that line — it is
+  `reverse`, and a grep for that name over `dmac/views.py` matches only that line: it is
   never imported. Confirmed 2026-09-03 by calling `logout_seek` with a stub session in the
   application image: `NameError: name 'reverse' is not defined`. There is also no URL named
   `index` to reverse: grepping every `*.py` in the worktree for `name="index"` and
@@ -111,7 +111,7 @@ not fail locally; it fails somewhere else.
   `dmac/urls.py:56` registers that name last, so reversing it wins there, but the pattern
   sits after the catch-all and never resolves. Measured 2026-09-03: the name reverses to
   `/accounts/login/`, which resolves to `mezzanine.accounts.views.login`, while the working
-  view is at `/login`. Latent for now — a grep over every `*.html` and `*.py` in the
+  view is at `/login`. Latent for now: a grep over every `*.html` and `*.py` in the
   worktree finds no template reversing `login_seek`, and only
   `themes/NextSeek/templates/login.html:328` reverses `signup_seek`, which was fixed by
   registering it at `dmac/urls.py:54`.
@@ -145,13 +145,13 @@ not fail locally; it fails somewhere else.
   lazy import at `dmac/dbconnection.py:20`, taken only on the branch at
   `dmac/dbconnection.py:19`. Grepping every `*.py` in the worktree for the quoted string
   `"MYSQL"` or `'MYSQL'` returns two lines: that branch, and an unrelated assertion at
-  `chat_nextseek/tests/test_e2e_playwright_trio.py:38`. No call site passes it. Its module scope
+  `NessieAI/tests/chat_nextseek/test_e2e_playwright_trio.py:38`. No call site passes it. Its module scope
   still reads settings at `dmac/dbconn_mysql.py:10-11`, so it costs an import without ever
   serving a query. `api_app/dbconn_mysql.py:13` is a different class in a different
   package; do not treat the two as one.
 - **The SEEK password is written into the Django session.** `dmac/views.py:128` stores it
-  alongside the username. Sessions are database-backed — `django.contrib.sessions` is
-  installed at `dmac/settings.py:152` and no `SESSION_ENGINE` overrides the default — and
+  alongside the username. Sessions are database-backed (`django.contrib.sessions` is
+  installed at `dmac/settings.py:152` and no `SESSION_ENGINE` overrides the default) and
   `seek/dbrouters.py:3-7` sends any model without a `_DATABASE` attribute to the `default`
   alias, which is MySQL (`dmac/settings.py:28-37`). A dump of that table, or any code path
   that logs a session, carries plaintext SEEK credentials for every logged-in user.

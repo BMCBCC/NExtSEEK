@@ -6,7 +6,7 @@ description: >-
   gate fields, optional hand-authored server enforcement, plugin tree,
   ops.json export, mechanical surface regeneration, then Audit A / no-write
   checks / focused tests / Task 12 gate. Use when adding, registering, or
-  wiring a new nextseek-* bin, plugin op, or CC tool — not a one-place edit.
+  wiring a new nextseek-* bin, plugin op, or CC tool, not a one-place edit.
 ---
 
 # Add a Container-CC operation
@@ -50,14 +50,19 @@ Do not invent a parallel catalog or a magic op count.
 ## 4. Hand-authored server enforcement (only if the transport requires it)
 
 Viewset, sidecar contract/handler/gate, or write-confirm policy changes are
-**not** mechanical. Edit `_ws_contract.py` `SIDECAR_OPS`,
-`NessieAI/ns/granular.py` `_HANDLERS`, and `write_gate.py` only
-when that transport needs them, and pause for separate review. A new
+**not** mechanical. Edit `SIDECAR_OPS` in
+`NessieAI/docker/cc-runtime/build_context/plugins/nextseek/bin/_ws_contract.py`,
+`_HANDLERS` in `NessieAI/ns/granular.py`, and `NessieAI/ns/write_gate.py` only
+when that transport needs them, and pause for separate review. For a sidecar
+op, also edit `SIDECAR_OPS` in `NessieAI/docker/ns-sidecar/app/contract.py`
+and the handler table in `NessieAI/docker/ns-sidecar/app/ops.py`, and update
+their digests in `NessieAI/tests/cc/test_step7_sidecar_port.py` in the same
+commit: the sidecar rejects any op missing from its own copy. A new
 viewset op also updates Audit A's viewset membership expectation.
 
 ## 5. New plugin: add its manifest-bearing tree
 
-A new plugin needs `.claude-plugin/plugin.json` (identity only — no op
+A new plugin needs `.claude-plugin/plugin.json` (identity only, no op
 inventory), `bin/` shims, and Dockerfile COPY/PATH membership via the
 install oracle. Do not treat `plugin.json` as the op list.
 

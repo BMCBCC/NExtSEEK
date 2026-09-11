@@ -4,7 +4,7 @@
 
 Batch registration of samples as members of SEEK assays: three HTTP routes, a durable job
 row, a drain worker, and a Neo4j label recompute. It is a plain subpackage of the
-`nextseek_api` app rather than a Django app of its own — its single ORM model declares
+`nextseek_api` app rather than a Django app of its own: its single ORM model declares
 `app_label = "nextseek_api"` (`nextseek_api/assay_registration/models_db.py:45-46`) and its
 table is created by a migration in the parent
 (`nextseek_api/migrations/0020_assayregistrationjob.py:13-15`) that chains onto the parent's
@@ -103,16 +103,16 @@ other.
   status code (`nextseek_api/assay_registration/service.py:29`), and runs the recompute
   outside the MySQL transaction on purpose
   (`nextseek_api/assay_registration/service.py:153-154`).
-- `schemas.py` holds every request and response contract, plus the error vocabulary — 16
+- `schemas.py` holds every request and response contract, plus the error vocabulary: 16
   codes, counted by importing `ERROR_CODES` on 2026-09-03 and taking its length
   (`nextseek_api/assay_registration/schemas.py:31-70`).
 
 **The job path.** A batch larger than `settings.ASSAY_REGISTRATION_SYNC_ROW_THRESHOLD`
 (default 5000, `dmac/settings.py:454-456`) is not executed inline: `service.register` creates
 a row and answers 202 with a `status_url` reversed from the route name
-(`nextseek_api/assay_registration/service.py:131-137`). `jobs.py` is the store —
+(`nextseek_api/assay_registration/service.py:131-137`). `jobs.py` is the store,
 create, claim, heartbeat, record progress, finish, cancel and read
-(`nextseek_api/assay_registration/jobs.py:45-212`) — over the model at
+(`nextseek_api/assay_registration/jobs.py:45-212`), over the model at
 `nextseek_api/assay_registration/models_db.py:16`. `runner.py` turns an accepted job into a
 receipt: claim, check cancellation once, execute, record, finish
 (`nextseek_api/assay_registration/runner.py:117-202`), draining oldest-first with an explicit
@@ -219,15 +219,15 @@ which constrains the prose constants that live in the parent rather than anythin
   `ci/smoke/test_write_lane.py:81-104` posts a real `dry_run` and asserts the write-side
   identifiers are absent from the reply.
 - Convention and drift gates. `scripts/validate_viewset_conventions.py:34` names this
-  ViewSet module, and `nextseek_api/cc_assistant/tests/test_cc_context_drift_guard.py:403`
+  ViewSet module, and `NessieAI/tests/cc/test_cc_context_drift_guard.py:403`
   classifies the POST route as a write rather than a read-shaped POST.
 - Deployment. `docker/scripts/entrypoint.sh` starts the drain loop inside the `nextseek`
   container, so `./startup.sh rebuild` restarts it with the app
   (`BASE_APP_RUNTIME_SERVICES` in `startup/lib/rebuild_policy.py`), and `DEPLOYMENT.md` §0
   is the operator-facing row.
-- The Container-CC agent, as data. `docker/cc-runtime/build_context/plugins/nextseek/context/min_api_endpoints.json:8-10`
+- The Container-CC agent, as data. `NessieAI/docker/cc-runtime/build_context/plugins/nextseek/context/min_api_endpoints.json:8-10`
   publishes the POST route to the agent, and the sibling entry at
-  `docker/cc-runtime/build_context/plugins/nextseek/context/min_api_endpoints.json:30`
+  `NessieAI/docker/cc-runtime/build_context/plugins/nextseek/context/min_api_endpoints.json:30`
   redirects "add samples to an assay" here away from a PATCH that would replace the whole
   list.
 

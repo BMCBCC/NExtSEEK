@@ -12,7 +12,7 @@ It is shaped like a Django app and is not one. The package holds no `apps.py`, n
 `migrations/` directory, no `urls.py` and no `admin.py`: a `find` over
 `nextseek_api/batch_upload` for those four names returns nothing at all. Its `models.py`
 is a Pydantic module (`nextseek_api/batch_upload/models.py:116` is the input row), and no
-module in the package subclasses `models.Model` or touches `django.db` outside `tests/` —
+module in the package subclasses `models.Model` or touches `django.db` outside `tests/`:
 grep for both strings over every `*.py` under the package matches four lines in all, and all
 four sit inside `nextseek_api/batch_upload/tests/test_migration_name_identity.py:356-359`. The
 code rides inside the `nextseek_api` app installed at `dmac/settings.py:178`, and its one
@@ -36,7 +36,7 @@ Derived 2026-09-03 by `find` over the package: 87 Python files, 51 of them under
 
 Three surfaces of different shapes: HTTP actions DRF registers, a stage pipeline of plain
 functions, and the table set plus graph labels the pipeline writes. The dependency edges in
-the last section are correspondingly mixed — imports in one direction, a fetch-by-URL and a
+the last section are correspondingly mixed: imports in one direction, a fetch-by-URL and a
 fixture read by path in the other.
 
 ### HTTP
@@ -75,7 +75,7 @@ both the upload and the validate entry points; the stage order is spelled out at
 
 | Stage | Module | Entry point |
 |---|---|---|
-| 0 CONVERT — format detect, merge, ontology | `nextseek_api/batch_upload/convert.py:75` | `nextseek_api/batch_upload/extract.py:58` streams the sheet |
+| 0 CONVERT: format detect, merge, ontology | `nextseek_api/batch_upload/convert.py:75` | `nextseek_api/batch_upload/extract.py:58` streams the sheet |
 | 1.25 NAME_CHECK | `nextseek_api/batch_upload/uid_gen.py:453` | matches existing samples by identity |
 | 1.5 UID_GEN | `nextseek_api/batch_upload/uid_gen.py:552` | mints UIDs, resolves parent tokens |
 | 2 DAG | `nextseek_api/batch_upload/dag.py:78` | assay direction per parent/child pair |
@@ -101,8 +101,8 @@ error.
 
 Two rules live here as single definitions that several stages read. Protocol-to-SOP
 resolution is stated once, with its provenance and the three stored value shapes, at
-`nextseek_api/batch_upload/helpers.py:53-74`. Non-UID sample identity — which metadata field
-stands in for a name, and its hash — is `nextseek_api/batch_upload/identity.py:79` and
+`nextseek_api/batch_upload/helpers.py:53-74`. Non-UID sample identity (which metadata field
+stands in for a name, and its hash) is `nextseek_api/batch_upload/identity.py:79` and
 `nextseek_api/batch_upload/identity.py:129`.
 
 ### What it writes
@@ -127,11 +127,11 @@ Read only: `sample_types` (`nextseek_api/batch_upload/prefetch.py:47`), `assays`
 tables in that schema at all: they are an in-memory DuckDB registration and a CTE inside
 `nextseek_api/batch_upload/dag.py:201-205`.
 
-In Neo4j it merges four node labels — `Sample`
+In Neo4j it merges four node labels, `Sample`
 (`nextseek_api/batch_upload/neo4j_sync.py:99`), `SampleType`
 (`nextseek_api/batch_upload/neo4j_sync.py:134`), `Study`
 (`nextseek_api/batch_upload/neo4j_sync.py:453`) and `Investigation`
-(`nextseek_api/batch_upload/neo4j_sync.py:477`) — and four edge types: `DERIVED_FROM`
+(`nextseek_api/batch_upload/neo4j_sync.py:477`), and four edge types: `DERIVED_FROM`
 (`nextseek_api/batch_upload/neo4j_sync.py:161`), `OF_TYPE`
 (`nextseek_api/batch_upload/neo4j_sync.py:260`), `IN_STUDY`
 (`nextseek_api/batch_upload/neo4j_sync.py:287`) and `IN_INVESTIGATION`
@@ -157,7 +157,7 @@ from SQL and is the only one with a dry-run gate
 ## Running and testing
 
 The suite is self-contained under `tests/`, and there is no `conftest.py` anywhere beneath
-the package — a `find` for that name under `nextseek_api/batch_upload` returns nothing, so
+the package: a `find` for that name under `nextseek_api/batch_upload` returns nothing, so
 the fixtures these tests get come from `nextseek_api/conftest.py:7-10`. Run it inside the
 live container, which is where the dependency set and the DB grant are:
 
@@ -214,14 +214,14 @@ Depends on, outside this directory:
   `nextseek_api/helpers.py:89`, the three routes by which
   `nextseek_api/batch_upload/views.py:674` turns a Django session into a SEEK person id.
 - `nextseek_api/assay_registration/graph.py`, imported by
-  `nextseek_api/batch_upload/scripts/backfill_shared_assays.py:56-60` — the reverse of the
+  `nextseek_api/batch_upload/scripts/backfill_shared_assays.py:56-60`: the reverse of the
   edge below, and the only place the dependency runs this way.
 - Optional accelerators, each with a live fallback: `orjson`
   (`nextseek_api/batch_upload/dag.py:10-16`) and `duckdb`, which falls back to pandas above
   the 250,000-row threshold (`nextseek_api/batch_upload/dag.py:189-193`). `polars`
   (`pyproject.toml:77`) and `psutil` (`pyproject.toml:79`) are imported unguarded at module
-  scope instead — `nextseek_api/batch_upload/convert.py:10` and
-  `nextseek_api/batch_upload/insert.py:10` are two of the five such lines — and `openpyxl`
+  scope instead (`nextseek_api/batch_upload/convert.py:10` and
+  `nextseek_api/batch_upload/insert.py:10` are two of the five such lines) and `openpyxl`
   (`pyproject.toml:71`) unguarded inside a function
   (`nextseek_api/batch_upload/convert.py:66`).
 
@@ -243,7 +243,7 @@ remaining 13 import sites in 10 files, plus the three edges that are not imports
 - SQL and helper reuse. `nextseek_api/assay_registration/service.py:10` and
   `nextseek_api/assay_registration/runner.py:43` take the engine;
   `nextseek_api/assay_registration/executor.py:26` takes the assay-asset writer;
-  `nextseek_api/assistant/reingest_qa.py:13` and `nextseek_api/services/samples.py:17` take
+  `NessieAI/ns/reingest_qa.py:13` and `nextseek_api/services/samples.py:17` take
   parsing helpers.
 - One standalone program, `scripts/test_batch_upload_e2e.py`, which borrows the engine at
   `scripts/test_batch_upload_e2e.py:44` and the graph config at
@@ -255,13 +255,13 @@ remaining 13 import sites in 10 files, plus the three edges that are not imports
 - CI. `ci/routes.py:786-791` declares `start` as a route it deliberately leaves unprobed,
   and `ci/smoke/test_flows.py:220-223` opens a fixture from inside this boundary by path.
 - The container agent's `_batch_upload_*` modules are NOT this package.
-  `docker/cc-runtime/build_context/plugins/nextseek/bin/_batch_upload_runner.py:18-21` names
+  `NessieAI/docker/cc-runtime/build_context/plugins/nextseek/bin/_batch_upload_runner.py:18-21` names
   four sibling files that ship inside the agent image; they reach this code only over HTTP,
   by posting to the validate URL at
-  `docker/cc-runtime/build_context/plugins/nextseek/bin/_batch_upload_client.py:217`. The
+  `NessieAI/docker/cc-runtime/build_context/plugins/nextseek/bin/_batch_upload_client.py:217`. The
   `batch_upload_preparation` label that turns up in the same searches is a router task
   family, not a reference to this directory either
-  (`dmac_assistant/build_context/route_capabilities.json:319`).
+  (`NessieAI/dmac_assistant/build_context/route_capabilities.json:319`).
 
 See `nextseek_api/batch_upload/CLAUDE.md` for the invariants, the traps, and the one command
 to run.

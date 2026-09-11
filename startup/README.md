@@ -12,7 +12,7 @@ is deliberate and is recorded in the root project's own dependency file
 
 Measured 2026-09-03 with `find startup -type f` excluding the generated `.venv/` and
 `.pytest_cache/`: 89 files, 60 of them Python, and 28 of those Python files are test
-modules matching `tests/test_*.py`. Two files carry most of the weight —
+modules matching `tests/test_*.py`. Two files carry most of the weight:
 `startup/cli.py` is 810 lines and `startup/steps/schema_fixups.py` is 1014.
 
 It is not a library. Nothing in the running Django application imports it; the only
@@ -40,18 +40,17 @@ by*.
 | `dump-db` | `startup/cli.py:781` | maintainer-only seed regeneration |
 
 **The nine install phases** are printed by nine `ui.step(n, 9, …)` calls in
-`_install_impl`: prerequisites (`startup/cli.py:114`), vendored-`chat_nextseek`
-verification (`startup/cli.py:125`), instance and port resolution
-(`startup/cli.py:133`), config rendering (`startup/cli.py:221`), volume creation
-(`startup/cli.py:241`), seed import (`startup/cli.py:251`), image build and stack
-start (`startup/cli.py:308`), test-user verification (`startup/cli.py:354`) and health
-checks (`startup/cli.py:362`). Three unnumbered steps run between phases 6 and 7:
-schema fixups (`startup/cli.py:288`), SEEK's `site_base_host`
-(`startup/cli.py:300-302`) and, after phase 7, stale-chat cleanup
-(`startup/cli.py:349`).
+`_install_impl`: prerequisites (`startup/cli.py:171`), in-tree
+`NessieAI/chat_nextseek` verification (`startup/cli.py:196`), instance and port
+resolution (`startup/cli.py:204`), config rendering (`startup/cli.py:292`), volume
+creation (`startup/cli.py:312`), seed import (`startup/cli.py:322`), image build and
+stack start (`startup/cli.py:379`), test-user verification (`startup/cli.py:425`) and
+health checks (`startup/cli.py:433`). Unnumbered steps run around them: schema fixups
+(`startup/cli.py:359`) and SEEK's `site_base_host` (`startup/cli.py:371-373`) between
+phases 6 and 7, and, after phase 7, stale-chat cleanup (`startup/cli.py:420`).
 
 **Three layers.** `cli.py` holds argument parsing and phase ordering and nothing else.
-`steps/` holds one module per phase — 14 of them, each a pure-ish function over
+`steps/` holds one module per phase: 14 of them, each a pure-ish function over
 `(repo_root, compose_env)`. `lib/` holds 7 primitives: subprocess wrappers around
 docker (`startup/lib/docker_ops.py:1`), `.env` read/write that preserves comments and
 key order (`startup/lib/env.py:1`), per-instance state
@@ -89,10 +88,10 @@ each seed is skipped independently when its target already holds tables
 (`startup/cli.py:262-273`). Ports are not merely checked: `allocate_ports` walks forward
 from each default until it finds a free one, up to 200 attempts
 (`startup/lib/ports.py:28-42`), so a busy 8000 produces a working install on a different
-port rather than an error. `--seek-public-url` resolves in a never-clobber order —
+port rather than an error. `--seek-public-url` resolves in a never-clobber order:
 explicit flag, then the value already rendered into `docker/nextseek.env`, then the
 stored instance value, then `http://localhost:<seek port>`
-(`startup/steps/config.py:78-101`) — and one resolved value feeds both the app's link
+(`startup/steps/config.py:78-101`). One resolved value feeds both the app's link
 building and SEEK's own DB-backed identity (`startup/cli.py:145-156`). That second layer
 is set only when the row is absent; an existing row is reported as an admin decision and
 left alone (`startup/steps/seek_settings.py:171-198`). An unknown `--ci-profile` exits 2
@@ -112,7 +111,7 @@ suite with the readiness gate on, and skips that step automatically after
 and exits with the suite's own code, and the rebuild is deliberately not undone
 (`startup/cli.py:646-656`).
 
-`ci` prints what is about to run first — profile and where it came from, the stack URL,
+`ci` prints what is about to run first: profile and where it came from, the stack URL,
 the credential file as a path only, and the exact argv (`startup/cli.py:660-681`).
 Widening past the box's declaration needs an answered terminal prompt, and the
 acknowledgement is set for that one subprocess and never written back
@@ -176,8 +175,8 @@ cd startup && uv run --project . --group test python -m pytest tests/ -q \
 The full-coverage lane needs mysqlclient and a disposable MySQL server, which is what
 `scripts/attribute_api_test.sh schema` provisions; the lane driven by
 `startup/dev/run_full_test_lane.sh:106-108` additionally needs an exact pinned app
-image and a provisioned embedding-model cache. (not run) — both need infrastructure
-this host does not have: a MySQL server and the pinned
+image and a provisioned embedding-model cache. Neither was run, because both need
+infrastructure this host does not have: a MySQL server and the pinned
 `ghcr.io/biomicrocenter/nextseek:baseline-20260805` image.
 
 ### When bring-up misbehaves
@@ -193,8 +192,8 @@ symptom:
   placeholders (`startup/templates/nextseek.env.template:37-39`), and the Bedrock path
   additionally warns at install time when its own env file has no token
   (`startup/cli.py:50-55`).
-- A cloned tree with no `chat_nextseek/` aborts phase 2 with the remediation printed
-  (`startup/cli.py:126-129`).
+- A cloned tree with no `NessieAI/chat_nextseek/pyproject.toml` aborts phase 2 with the
+  remediation printed (`startup/cli.py:197-200`).
 
 `startup/pytest.ini:2` sets `pythonpath = ..`, which is what makes both `startup.*` and
 `nextseek_api.*` importable from inside `startup/tests/`.
@@ -222,8 +221,8 @@ in any `.py` file under `startup/cli.py`, `startup/lib/`, `startup/steps/` or
 - Seven external named volumes it creates by name (`startup/steps/volumes.py:6-16`);
   all seven are declared `external: true` in the top-level `volumes:` block of
   `docker-compose.yml`, so Compose fails rather than creating them itself.
-- The vendored `chat_nextseek/pyproject.toml`, whose absence aborts install phase 2
-  (`startup/cli.py:126-129`).
+- The in-tree `NessieAI/chat_nextseek/pyproject.toml` (`CHAT_NEXTSEEK_DIR` in
+  `startup/lib/layout.py`), whose absence aborts install phase 2 (`startup/cli.py:197-200`).
 - `ci/smoke/` by path string, launched as a subprocess and never imported, precisely so
   requests and playwright stay out of this project (`startup/ci/runner.py:1-5` and
   `startup/ci/runner.py:38`).
@@ -236,10 +235,10 @@ in any `.py` file under `startup/cli.py`, `startup/lib/`, `startup/steps/` or
 
 Depended on by. Non-test and cross-boundary consumers, derived by grepping the tree for
 `^\s*(from|import)\s+startup(\.|\s|$)` and for the literal strings `startup.sh`,
-`startup/.instance.json` and `startup/seed`. This package's own 28 test modules are
-omitted, and so are the two files under `docs/superpowers/plans/` whose `from startup…`
-lines sit inside quoted code samples in a plan document rather than being imports that
-file performs.
+`startup/.instance.json` and `startup/seed`. This package's own test modules are omitted, and so is the archived CI
+plan `docs/archive/2026-09/2026-09-01-ci-increment-1-skeleton-and-safety.md`, whose
+`from startup…` lines sit inside quoted code samples rather than being imports that file
+performs.
 
 - `.github/workflows/ci-smoke.yml:60` reads `startup/.instance.json` by path to learn
   the box-declared profile, deliberately rather than naming one itself.
@@ -247,16 +246,17 @@ file performs.
   and reads three DDL files out of it at `seek/tests/test_context_seed_tables.py:19`,
   then asserts against `KNOWN_TABLE_FIXUPS` at
   `seek/tests/test_context_seed_tables.py:45`.
-- `nextseek_api/cc_assistant/tests/validate_step7_compose_deploy.py:57` imports
+- `NessieAI/tests/cc/validate_step7_compose_deploy.py:57` imports
   `REQUIRED_VOLUMES` as the authoritative volume list, behind a defensive `except
   ImportError` fallback at
-  `nextseek_api/cc_assistant/tests/validate_step7_compose_deploy.py:58-62`.
-- `scripts/plan018_v4_9_task8_deploy.py:914-915` imports the instance-state and config
-  modules, and `scripts/plan018_v4_9_task8_deploy.py:1104` imports the registry push.
+  `NessieAI/tests/cc/validate_step7_compose_deploy.py:58-62`.
+- The archived Plan 018 deploy verifier,
+  `NessieAI/history/plan018/scripts/plan018_v4_9_task8_deploy.py`, imports the
+  instance-state, config and registry-push modules; it is frozen history and nothing runs it.
 - `scripts/attribute_api_test.sh:356` is not an import that file performs: it is Python
   source inside a heredoc opened at `scripts/attribute_api_test.sh:353` and executed
   inside a container.
-- `chat_nextseek/README.md:172` documents `startup/dev/lane_local_settings.py` as the
+- `NessieAI/chat_nextseek/README.md:149` documents `startup/dev/lane_local_settings.py` as the
   file that constructs the Django-wide assistant config at settings-import time.
 - `.gitignore` reserves the runtime paths this CLI writes or downloads
   (`startup/.instance.json`, `startup/.ghcr-push-state.json`, `startup/.ci-last-run.xml`,

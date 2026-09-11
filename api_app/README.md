@@ -9,7 +9,7 @@ moved to `nextseek_api`. It is 20 tracked files totalling 6,660 lines, all Pytho
 Its central fact is a single commented-out line. The app is still installed at
 `dmac/settings.py:173`, and `dmac/urls.py:13` still imports its URLconf at module scope,
 but the `include()` that would mount that URLconf under `/api/` is commented out at
-`dmac/urls.py:28` — while the replacement app is mounted live one line below, at
+`dmac/urls.py:28`, while the replacement app is mounted live one line below, at
 `dmac/urls.py:29`. So `api_app/urls.py` is executed on every boot and its seven patterns
 are built and then discarded: **no HTTP request reaches any code in this directory.**
 Measured against the running local stack on 2026-09-03, `/api/samples/` and
@@ -17,11 +17,11 @@ Measured against the running local stack on 2026-09-03, `/api/samples/` and
 
 The directory holds three groups that have almost nothing to do with each other:
 
-1. **The Django/DRF app** — `urls.py`, `views.py`, `serializers.py`, plus empty
+1. **The Django/DRF app**: `urls.py`, `views.py`, `serializers.py`, plus empty
    `models.py`, `admin.py` and `tests.py` scaffolding. Imported at boot, never routed.
 2. **Seven standalone command-line utilities** written against Python 2: four HTTP
    clients of group 1, two checksum tools, and one schema reporter.
-3. **A sample-lineage batch job** — `dbconn_mysql.py` and `updateTrees.py` — that talks
+3. **A sample-lineage batch job** (`dbconn_mysql.py` and `updateTrees.py`) that talks
    raw MySQL and rewrites the `seek_sample_tree` table, plus an older duplicate of both
    under `remoteJob/`.
 
@@ -35,8 +35,8 @@ they are listed separately rather than merged into one module table.
 
 ### The routed surface: empty
 
-`api_app/urls.py:12-20` declares seven patterns — two sample routes, two data-file
-routes, a `dj_rest_auth` mount, and two upload endpoints — wrapped by
+`api_app/urls.py:12-20` declares seven patterns (two sample routes, two data-file
+routes, a `dj_rest_auth` mount, and two upload endpoints) wrapped by
 `format_suffix_patterns` at `api_app/urls.py:22`. None of them is registered anywhere.
 Nothing else in the tree mounts them: an exhaustive `/usr/bin/grep -rn "api_app"` over
 the worktree, excluding `.git/`, this session's `.superpowers/` scratch and this pair's
@@ -68,7 +68,7 @@ Ten classes are defined in `api_app/views.py`, and the URLconf names six of them
 are dead even by this directory's standards, unreferenced by any line in the repo outside
 their own definitions: `api_app/views.py:90`, `api_app/views.py:103`,
 `api_app/views.py:128` and `api_app/views.py:141`. Of the six that are named, the two
-hand-written ones do the real work — `SamplesViews` at `api_app/views.py:45` accepts an
+hand-written ones do the real work: `SamplesViews` at `api_app/views.py:45` accepts an
 xlsx upload or a JSON body and calls into SEEK's sample writer, and `DatafileViews` at
 `api_app/views.py:183` matches an uploaded file to an existing sample before storing it.
 The other four are plain DRF generics over the mirrored SEEK tables
@@ -80,29 +80,29 @@ Each is invoked as `python <file> …`; none is importable from Django code, and
 referenced by any config, script or compose file in the tree (searched with
 `/usr/bin/grep -rn` for each module basename over the worktree, excluding `.git/`,
 `.superpowers/` and this pair; the only outside hits are prose in
-`docker/cc-runtime/docs/nextseek/09-nextseek.md:142` and a commented-out line at
+`NessieAI/docker/cc-runtime/docs/nextseek/09-nextseek.md:142` and a commented-out line at
 `seek/sample/upload.py:527`).
 
-**The `/api/` client scripts** — `api_app/api_calls.py:416-417`,
+**The `/api/` client scripts**: `api_app/api_calls.py:416-417`,
 `api_app/api_fileSubmit.py:519-520`, `api_app/api_sampleSubmit.py:523-524` and
-`api_app/api_sampleParser.py:1298-1299`. Each hardcodes the same placeholder base URL —
-`api_app/api_calls.py:14`, `api_app/api_fileSubmit.py:14`,
-`api_app/api_sampleSubmit.py:13`, `api_app/api_sampleParser.py:15` — and each logs in
+`api_app/api_sampleParser.py:1298-1299`. Each hardcodes the same placeholder base URL
+(`api_app/api_calls.py:14`, `api_app/api_fileSubmit.py:14`,
+`api_app/api_sampleSubmit.py:13`, `api_app/api_sampleParser.py:15`) and each logs in
 against the same route under the unmounted prefix: `api_app/api_calls.py:18`,
 `api_app/api_fileSubmit.py:18`, `api_app/api_sampleSubmit.py:17`,
 `api_app/api_sampleParser.py:19`. They read and post sample and data-file records; the largest,
 `api_app/api_sampleParser.py`, additionally parses BMC assay spreadsheets and sequencing
 infosites into an upload sheet (`api_app/api_sampleParser.py:1220`).
 
-**The checksum utilities** — `api_app/cal_checksum.py:132-133` takes a file, a file list
+**The checksum utilities**: `api_app/cal_checksum.py:132-133` takes a file, a file list
 or an SRA accession and prints MD5/SHA1; `api_app/api_calls_pride.py:89-90` downloads a
 PRIDE file by name and verifies its size and SHA1 against the PRIDE API.
 
-**The schema/graph reporters** — `api_app/db_network_calls.py:275-276` prints a
+**The schema/graph reporters**: `api_app/db_network_calls.py:275-276` prints a
 sample-type adjacency table derived from live SEEK metadata
 (`api_app/db_network_calls.py:226-249`).
 
-**The lineage rebuilder** — `api_app/updateTrees.py:1186-1187` dispatches four
+**The lineage rebuilder**: `api_app/updateTrees.py:1186-1187` dispatches four
 subcommands (`api_app/updateTrees.py:1161-1172`): `update` fills gaps,
 `renew` and `generate` rebuild, and `cronjob` exports then wipes and regenerates the
 whole `seek_sample_tree` table (`api_app/updateTrees.py:1142-1150`). Its sibling
@@ -113,7 +113,7 @@ whole `seek_sample_tree` table (`api_app/updateTrees.py:1142-1150`). Its sibling
 Two filenames appear twice in this boundary, and reading them settles which copy wins.
 
 - `api_app/remoteJob/dbconn_mysql.py` is imported by nothing. Both lineage scripts import
-  the top-level class instead — `api_app/updateTrees.py:18` and
+  the top-level class instead: `api_app/updateTrees.py:18` and
   `api_app/remoteJob/updateTrees.py:19` name the identical module path. An exhaustive
   `/usr/bin/grep -rnE "^[[:space:]]*(from|import)[[:space:]]+api_app"` over the worktree,
   excluding `.git/` and `.superpowers/`, returns exactly three lines: those two plus
@@ -158,7 +158,7 @@ What *does* exercise part of this code is a fork living elsewhere. Lines 1-61 of
 `nextseek_api/tests/test_serializers.py:42` covers that copy. Nothing covers this one.
 
 The only way to observe this directory's own behaviour is to run one of the nine scripts
-by hand. Five of them cannot be imported at all — see the other file of the pair for
+by hand. Five of them cannot be imported at all: see the other file of the pair for
 which, and for what happens when you run the lineage rebuilder.
 
 ## Depends on / depended on by
@@ -167,34 +167,34 @@ This is a Python package, so both edges are import edges; they were derived by g
 the worktree rather than recalled, with `.git/` and `.superpowers/` excluded and every
 surviving hit checked against `git ls-files`.
 
-**Depended on by — the complete inbound list is one line.**
+**Depended on by: the complete inbound list is one line.**
 
 - `dmac/urls.py:13` imports `api_app.urls` at module scope, which is why this dead code
   still costs import time and still breaks the boot if it raises.
 - `dmac/settings.py:173` lists the app, which is config rather than an import, and is
   what makes Django load `api_app/models.py` and `api_app/apps.py` as well.
 - Nothing else: that same `/usr/bin/grep -rnE` import search over the worktree returns
-  three lines in total, and the other two — `api_app/updateTrees.py:18` and
-  `api_app/remoteJob/updateTrees.py:19` — are internal to this boundary.
+  three lines in total, and the other two (`api_app/updateTrees.py:18` and
+  `api_app/remoteJob/updateTrees.py:19`) are internal to this boundary.
 
 Three hits look like inbound edges and are not, so they are excluded rather than listed:
 
 - `nextseek_api/attributes/tests/test_physical_safeguards_db.py:38` matches the string
   `api_app` only because its function name ends `..._nextseek_api_app`.
-- `docker/cc-runtime/docs/nextseek/09-nextseek.md:141-142` documents a `CRONJOBS` entry
+- `NessieAI/docker/cc-runtime/docs/nextseek/09-nextseek.md:141-142` documents a `CRONJOBS` entry
   calling `api_app.updateTrees.renewTreesCronjob`; that is prose baked into an agent's
-  reference docs, and no `CRONJOBS` setting exists in this repo — outside `.git/`,
+  reference docs, and no `CRONJOBS` setting exists in this repo: outside `.git/`,
   `.superpowers/` and this pair, that identifier occurs on that markdown line alone.
 - `seek/sample/upload.py:527` names `updateTrees` inside a comment, and that file imports
   no such symbol (`seek/sample/upload.py:3-17`).
 
-**Depends on — SEEK application code, several third-party libraries, and MySQL directly.**
+**Depends on: SEEK application code, several third-party libraries, and MySQL directly.**
 
 - `api_app/views.py:11-14` imports four `seek` entry points, so the Django group cannot
   load unless `seek` does; `seek/dbtable_sample.py:2` is itself a re-export shim onto
   `seek/sample/table.py:31`.
 - `seek/sample/api.py:1` states that its mixin exists for the `api_app` and
-  `nextseek_api` packages, but three of its methods are called only from here —
+  `nextseek_api` packages, but three of its methods are called only from here:
   `apiUploadSamples` (`seek/sample/api.py:244`), `searchFileInSample`
   (`seek/sample/api.py:38`) and `getSampleUIDInfo` (`seek/sample/api.py:280`) each have
   exactly one call site outside their own definition, all in `api_app/views.py`, found by

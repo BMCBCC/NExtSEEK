@@ -1,7 +1,8 @@
 # Working in `nextseek_api/`
 
-Everything below concerns the shell itself. Each child package carries its own pair; work
-inside one of those from its own CLAUDE.md, not from this file.
+Everything below concerns the shell itself. The children with a pair of their own are
+listed in `nextseek_api/README.md`; work inside one of those from its own CLAUDE.md, not
+from this file.
 
 ## Invariants
 
@@ -9,14 +10,14 @@ inside one of those from its own CLAUDE.md, not from this file.
   `nextseek_api/urls.py:31` puts the advanced-search prefix ahead of the bare samples
   prefix at `nextseek_api/urls.py:34`, whose detail lookup accepts any segment containing
   no slash (`nextseek_api/services/samples.py:79`). Swap those two lines and the search
-  URL resolves into the sample-detail action with the literal word as its lookup value —
+  URL resolves into the sample-detail action with the literal word as its lookup value:
   the same swallowing that a bare prefix already demonstrates today for a registration
   publishing no list route, measured with Django's resolver on 2026-09-03.
 - **The three documentation routes must each keep an explicit `permission_classes`.**
   drf-spectacular assigns that attribute inside its own serve-view class bodies from a
   package default of `AllowAny`, so this project's `DEFAULT_PERMISSION_CLASSES` never
   reaches them. Register any of the three plainly and every path, parameter, request body
-  and model becomes readable by anyone who can reach the host — the reasoning is at
+  and model becomes readable by anyone who can reach the host: the reasoning is at
   `nextseek_api/tests/test_api_docs_authentication.py:1-9`, which pins all three routes
   using an account that is neither staff nor superuser.
 - **The re-export lines in `nextseek_api/models.py` are what registers this app's ORM
@@ -27,7 +28,7 @@ inside one of those from its own CLAUDE.md, not from this file.
   place and a migration is left managing a table whose class the app registry never loads.
 - **A caller's project list resolves to empty on any failure, and empty means "sees
   nothing".** Both scope helpers say exactly that in their own docstrings and return an
-  empty container from a bare `except` — `nextseek_api/views.py:115-116` and
+  empty container from a bare `except`: `nextseek_api/views.py:115-116` and
   `nextseek_api/views.py:133-134`. Reading an empty list as "unscoped" hands every row to
   a caller whose SEEK lookup merely timed out.
 - **Superuser gates key on `is_superuser`, never on `is_staff`.** `dmac/views.py:80` sets
@@ -38,9 +39,10 @@ inside one of those from its own CLAUDE.md, not from this file.
   `nextseek_api/permissions.py:21-27` implements the predicate that does work.
 - **`nextseek_api/views.py` imports every routed ViewSet unguarded**, in one block at
   `nextseek_api/views.py:43-66`, and a grep for `ImportError` over the 15 modules sitting
-  directly in this directory returns exactly one hit, the schema-RAG forward-reference
-  rebuild at `nextseek_api/models.py:2192`. No route import is defensive, so a failure
-  inside any single service module takes down the whole URL prefix rather than one route.
+  directly in this directory finds only the schema-RAG forward-reference rebuild,
+  `_rebuild_schema_rag_models` (`nextseek_api/models.py:2295-2299`), which re-raises. No
+  route import is defensive, so a failure inside any single service module takes down the
+  whole URL prefix rather than one route.
 - **A new route has to be declared in the CI registry in the same change.**
   `ci/gate/test_route_registry.py:29-39` diffs Django's live patterns against
   `ci/routes.py`, and `ci/gate/test_route_registry.py:1-3` calls that job otherwise
@@ -65,17 +67,15 @@ inside one of those from its own CLAUDE.md, not from this file.
   died inside that conftest twice: first on a missing `django`, then, with Django
   installed, on `ImproperlyConfigured`. Budget the container, or expect a collection error
   instead of a test result.
-- **The convention validator does not exit 0 on this branch.** Run on 2026-09-03 it
-  reported 6 violations, every one of them in `nextseek_api/services/cc_assistant.py` or
-  `nextseek_api/services/project_export.py`, and `nextseek_api/tests/test_viewset_conventions.py:304-306`
-  asserts an empty list, so that test fails with it. Treat those six as the baseline you
-  diff against; a clean exit is not available to compare with.
+- **The convention validator and its test fail together.**
+  `nextseek_api/tests/test_viewset_conventions.py:304-306` asserts that
+  `scripts/validate_viewset_conventions.py` reports an empty list, so any violation the
+  validator prints also turns that test red. The tree validates clean, so a violation is
+  yours to fix rather than a baseline to diff against.
 - **A green unit test does not prove the OpenAPI document builds.** Tests call ViewSet
   methods directly, so a decorator emitting no `content` block is invisible to them and
   fatal to the schema route; `nextseek_api/tests/test_viewset_conventions_schema.py:1`
-  exists as the only local signal because it generates the whole document. On 2026-09-03
-  it failed on three operations missing examples rather than on a build error, so the
-  document itself does still generate.
+  exists as the only local signal because it generates the whole document.
 - **`SeekAPIClient` is held as a class attribute, so one `requests.Session` is shared by
   every caller of a proxy ViewSet.** The instance is built once when the class body is
   evaluated; walking the AST of every non-test module under `nextseek_api/` on 2026-09-03
@@ -105,7 +105,7 @@ inside one of those from its own CLAUDE.md, not from this file.
   methods are pinned by name in the grandfather list at
   `scripts/validate_viewset_conventions.py:157-183`. Rename one of those methods and the
   validator goes red over an endpoint no request can reach.
-- **`nextseek_api/views.py:12` imports `IsAdminUser` and no line uses it** — a grep for
+- **`nextseek_api/views.py:12` imports `IsAdminUser` and no line uses it**: a grep for
   that name over this one module returns the import and nothing else. It is a standing
   invitation to a gate that admits every logged-in SEEK user; see the invariant above for
   why that gate is worthless here.
@@ -116,8 +116,8 @@ inside one of those from its own CLAUDE.md, not from this file.
   pointer sends you hunting for a hole that was closed.
 - **The migration sequence forks three times and is stitched by two merge migrations.**
   Listing `nextseek_api/migrations/` on 2026-09-03 shows two files each for the prefixes
-  0005, 0010 and 0011 — `nextseek_api/migrations/0010_attribute_mutation_job.py:1` and
-  `nextseek_api/migrations/0010_turn_ledger.py:1` are one such pair — closed by
+  0005, 0010 and 0011 (`nextseek_api/migrations/0010_attribute_mutation_job.py:1` and
+  `nextseek_api/migrations/0010_turn_ledger.py:1` are one such pair), closed by
   `nextseek_api/migrations/0006_merge_extra_state_guards.py:1` and by
   `nextseek_api/migrations/0019_merge_attribute_async_turn_ledger.py:6-11`, the latter an
   empty migration whose only job is to depend on both heads. Add a migration without
@@ -136,18 +136,19 @@ docker run --rm --network none -v "$PWD":/src:ro \
     nextseek_api/tests/test_viewset_conventions_schema.py -q'
 ```
 
-Ran 2026-09-03: 4 failed, 41 passed, 96 warnings in 9.36s. All four failures are the
-baseline described above, not something you broke. The pure-AST half needs no container
-and finishes in under a fifth of a second — `/usr/bin/python3 scripts/validate_viewset_conventions.py`,
-which printed 6 violations and exited 1 on the same date.
+Both files are expected to pass. The pure-AST half needs no container:
+`python3 scripts/validate_viewset_conventions.py` exits 0 and prints its clean-run line
+when nothing is wrong.
 
 ## See also
 
 - See `nextseek_api/README.md` for what each module holds, the router surface, the wider
-  test lane with its numbers, and the dependency edges in both directions.
-- See `nextseek_api/cc_assistant/CLAUDE.md`, `nextseek_api/assistant/CLAUDE.md`,
-  `nextseek_api/attributes/CLAUDE.md`, `nextseek_api/batch_upload/CLAUDE.md` and
-  `nextseek_api/eval/CLAUDE.md` for the traps inside each child.
+  test lane, and the dependency edges in both directions.
+- See `nextseek_api/assistant/CLAUDE.md`, `nextseek_api/attributes/CLAUDE.md` and
+  `nextseek_api/batch_upload/CLAUDE.md` for the traps inside each child. The Container-CC
+  Django shell in `nextseek_api/cc_assistant/` is covered by `NessieAI/cc/CLAUDE.md`. The
+  evaluation package `nextseek_api/eval/` no longer exists: it is `NessieAI/hibayes/` now
+  (`NessieAI/hibayes/CLAUDE.md`).
 - See `.claude/skills/nextseek-viewset/references/patterns.md:65-83` for the decorator and
   auth recipes a new ViewSet copies.
 - See `docs/endpoint-authorization-register.md:1` for the per-endpoint authorization
