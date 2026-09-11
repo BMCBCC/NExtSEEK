@@ -11,7 +11,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: path.resolve(__dirname, "../static/js/chat_assistant"),
+    outDir: path.resolve(__dirname, "../../static/js/chat_assistant"),
     emptyOutDir: true,
     manifest: true,
     rollupOptions: {
@@ -19,4 +19,8 @@ export default defineConfig({
     },
   },
   base: "/static/js/chat_assistant/",
+  // Pin the project root to this package so the build, its env files and the
+  // outDir above resolve the same way whatever directory vite is launched from.
+  // Kept below `base` so the line numbers the unit docs cite stay valid.
+  root: __dirname,
 });
