@@ -1,12 +1,20 @@
-"""Comparative posterior route selector (V4-6 / Task 12)."""
+"""Comparative posterior route selector (V4-6 / Task 12).
+
+HiBayes is imported lazily, inside ``get_active_snapshot``, so importing the
+router does not load ``NessieAI.hibayes`` (whose generation store needs the
+ORM at module scope). ``GenerationSnapshot`` is an annotation only.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from django.conf import settings
 
 from NessieAI.router.family_labels import corpus_snapshot
-from NessieAI.hibayes.generation_store import GenerationSnapshot, get_active_snapshot
+
+if TYPE_CHECKING:
+    from NessieAI.hibayes.generation_store import GenerationSnapshot
 
 __all__ = ["SelectorResult", "posterior_routing_enabled", "select_route"]
 
@@ -36,6 +44,13 @@ class SelectorResult:
 
 def posterior_routing_enabled() -> bool:
     return bool(getattr(settings, "NEXTSEEK_POSTERIOR_ROUTING_ENABLED", False))
+
+
+def get_active_snapshot() -> GenerationSnapshot | None:
+    """The active HiBayes generation, from the generation store (lazy import)."""
+    from NessieAI.hibayes.generation_store import get_active_snapshot as _active_snapshot
+
+    return _active_snapshot()
 
 
 def select_route(task_family: str, *, snapshot: GenerationSnapshot | None = None) -> SelectorResult | None:

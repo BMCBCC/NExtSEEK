@@ -248,7 +248,8 @@ Read by path rather than imported, which is a different kind of edge:
 Depended on by:
 
 - Production code: exactly three modules, all in the router:
-  `NessieAI/router/posterior_selector.py:9`,
+  `NessieAI/router/posterior_selector.py` (lazily, inside `get_active_snapshot`, so
+  importing the router does not load this package),
   `NessieAI/router/risk_overlay.py:25` and
   `NessieAI/router/route_monitoring.py:9`. No other non-test module outside this
   directory imports this package.
