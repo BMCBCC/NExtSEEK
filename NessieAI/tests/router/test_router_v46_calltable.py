@@ -157,7 +157,7 @@ def test_flag_on_posttransport_failure_one_classify_one_route(settings):
 
 def test_sticky_override_records_attempted_vs_actual(settings):
     from NessieAI.router import router_context
-    from nextseek_api.services import cc_assistant as svc
+    from NessieAI.router import policy
 
     history = [
         router_context.HistoryTurn(
@@ -172,7 +172,7 @@ def test_sticky_override_records_attempted_vs_actual(settings):
     user = mock.Mock(is_staff=False, is_superuser=False)
     req = mock.Mock(query="find mice", force_route=None)
     with mock.patch.object(cc_router, "decide", return_value=attempted):
-        final = svc._decide_route(user, req, force_cc=False, history=history)
+        final = policy._decide_route(user, req, force_cc=False, history=history)
     assert final.route == cc_router.ROUTE_CC
     assert final.source == "sticky"
     assert final.attempted_route == cc_router.ROUTE_NS

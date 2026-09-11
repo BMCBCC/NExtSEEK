@@ -54,7 +54,7 @@ Both engines write the same `QueryTask` rows and stream over one websocket, so t
 
 | To change | Edit | Tests |
 |---|---|---|
-| Routing precedence (`force_route`, `pipeline_agent`, sticky CC) | `_decide_route` in `nextseek_api/services/cc_assistant.py` | `NessieAI/tests/router/` |
+| Routing precedence (`force_route`, `pipeline_agent`, sticky CC) | `_decide_route` in `NessieAI/router/policy.py` | `NessieAI/tests/router/` |
 | Router strategies, fallbacks, telemetry | `NessieAI/router/` | `NessieAI/tests/router/` |
 | Classifier labels | `NessieAI/dmac_assistant/baml_src/classifier.baml`; family names come from `NessieAI/tests/nessie_tests/corpus.json` | `NessieAI/tests/router/` |
 | Posterior routing (off by default) | `NessieAI/router/posterior_selector.py`, `NessieAI/hibayes/` | `NessieAI/tests/router/`, `NessieAI/tests/hibayes/` |

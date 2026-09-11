@@ -288,7 +288,7 @@ Thirteen model classes live in this module across four `assistant_*` tables and 
 | `TurnLedger` | `assistant_turn_ledger` | `nextseek_api/assistant/models_db.py:90` |
 | `CCSessionTranscript` | `assistant_cc_transcript` | `nextseek_api/assistant/models_db.py:341` |
 
-`CCAssistantViewSet` also exposes ownership-checked endpoints for file upload (`nextseek_api/services/cc_assistant.py:848`), upload status (`nextseek_api/services/cc_assistant.py:895`) and listing (`nextseek_api/services/cc_assistant.py:914`), artifact download (`nextseek_api/services/cc_assistant.py:929`) and transcript streaming (`nextseek_api/services/cc_assistant.py:974`).
+`CCAssistantViewSet` also exposes ownership-checked endpoints for file upload (`nextseek_api/services/cc_assistant.py:730`), upload status (`nextseek_api/services/cc_assistant.py:777`) and listing (`nextseek_api/services/cc_assistant.py:797`), artifact download (`nextseek_api/services/cc_assistant.py:812`) and transcript streaming (`nextseek_api/services/cc_assistant.py:860`).
 
 ### Agent image (`NessieAI/docker/cc-runtime/Dockerfile`)
 

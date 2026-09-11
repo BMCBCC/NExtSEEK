@@ -10,7 +10,7 @@ import pytest
 
 from nextseek_api.assistant.models_api import QueryRequest
 from NessieAI.router import router as cc_router
-from nextseek_api.services import cc_assistant as svc
+from NessieAI.router import policy
 
 
 # --- the request field (hermetic, pydantic only) ---
@@ -53,13 +53,13 @@ def _req(force_route=None):
 
 
 def test_admin_forces_ns():
-    d = svc._decide_route(ADMIN, _req("ns"), force_cc=False)
+    d = policy._decide_route(ADMIN, _req("ns"), force_cc=False)
     assert d.route == cc_router.ROUTE_NS
     assert d.source == "forced"
 
 
 def test_admin_forces_cc():
-    d = svc._decide_route(SUPER, _req("cc"), force_cc=False)
+    d = policy._decide_route(SUPER, _req("cc"), force_cc=False)
     assert d.route == cc_router.ROUTE_CC
     assert d.source == "forced"
     assert d.model_class == "opus" and d.model_id == "model-x"
@@ -67,18 +67,18 @@ def test_admin_forces_cc():
 
 def test_nonadmin_force_route_is_ignored():
     # non-admin's force_route dropped -> falls back to the BAML router sentinel
-    d = svc._decide_route(USER, _req("cc"), force_cc=False)
+    d = policy._decide_route(USER, _req("cc"), force_cc=False)
     assert d.source == "baml"
 
 
 @pytest.mark.parametrize("val", [None, "auto"])
 def test_auto_or_none_uses_router(val):
-    d = svc._decide_route(ADMIN, _req(val), force_cc=False)
+    d = policy._decide_route(ADMIN, _req(val), force_cc=False)
     assert d.source == "baml"
 
 
 def test_cc_endpoint_still_forces_cc_for_anyone():
     # the dedicated cc/query/async endpoint (force_cc=True) is unchanged
-    d = svc._decide_route(USER, _req(None), force_cc=True)
+    d = policy._decide_route(USER, _req(None), force_cc=True)
     assert d.route == cc_router.ROUTE_CC
     assert d.source == "forced"

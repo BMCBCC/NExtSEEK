@@ -101,43 +101,81 @@ def test_route_query_surfaces_real_reasoning(monkeypatch):
 
 
 def test_thread_through_call_site_ast():
-    """§12.8 gate, comment-proof: the LIVE decide() call in services/cc_assistant.py
-    binds history= to a name assigned from router_context.build_history(...),
-    and the route_decided dict literal carries a reasoning key bound to
-    decision.reasoning."""
-    src = (
-        Path(__file__).resolve().parents[3]
-        / "nextseek_api"
-        / "services"
-        / "cc_assistant.py"
-    ).read_text()
-    tree = ast.parse(src)
+    """§12.8 gate, comment-proof: the LIVE decide() call binds history= to a
+    name assigned from router_context.build_history(...), and the
+    route_decided dict literal carries a reasoning key bound to
+    decision.reasoning.
+
+    Phase B split the chain across two files: the CC turn in
+    services/cc_assistant.py builds the history and passes it to
+    _decide_route(history=...), which now lives in NessieAI/router/policy.py
+    and passes it on to cc_router.decide(history=...). Each assertion reads
+    the file that holds its code, and the hand-off between the two files is
+    checked too, so dropping history= at either hop fails."""
+    call_site = ast.parse(
+        (_REPO / "nextseek_api" / "services" / "cc_assistant.py").read_text()
+    )
+    policy = ast.parse((_REPO / "NessieAI" / "router" / "policy.py").read_text())
+
+    decide_route_defs = [
+        n
+        for n in ast.walk(policy)
+        if isinstance(n, ast.FunctionDef) and n.name == "_decide_route"
+    ]
+    assert decide_route_defs, "no _decide_route in NessieAI/router/policy.py"
+    decide_route = decide_route_defs[0]
+    assert "history" in [a.arg for a in decide_route.args.kwonlyargs], (
+        "_decide_route no longer takes history="
+    )
 
     decide_calls = [
         n
-        for n in ast.walk(tree)
+        for n in ast.walk(decide_route)
         if isinstance(n, ast.Call)
         and isinstance(n.func, ast.Attribute)
         and n.func.attr == "decide"
     ]
     assert decide_calls, "no cc_router.decide(...) call found"
     assert any(
-        kw.arg == "history" for c in decide_calls for kw in c.keywords
+        kw.arg == "history"
+        and isinstance(kw.value, ast.Name)
+        and kw.value.id == "history"
+        for c in decide_calls
+        for kw in c.keywords
     ), "decide() is called without history= — Component F plumbing dropped"
 
     bh_assigns = [
         n
-        for n in ast.walk(tree)
+        for n in ast.walk(call_site)
         if isinstance(n, ast.Assign)
         and isinstance(n.value, ast.Call)
         and isinstance(n.value.func, ast.Attribute)
         and n.value.func.attr == "build_history"
     ]
     assert bh_assigns, "router_context.build_history(...) is never assigned"
+    bh_names = {
+        t.id for a in bh_assigns for t in a.targets if isinstance(t, ast.Name)
+    }
+
+    decide_route_calls = [
+        n
+        for n in ast.walk(call_site)
+        if isinstance(n, ast.Call)
+        and isinstance(n.func, ast.Name)
+        and n.func.id == "_decide_route"
+    ]
+    assert decide_route_calls, "the CC turn no longer calls _decide_route(...)"
+    assert any(
+        kw.arg == "history"
+        and isinstance(kw.value, ast.Name)
+        and kw.value.id in bh_names
+        for c in decide_route_calls
+        for kw in c.keywords
+    ), "_decide_route() is called without the built history: plumbing dropped"
 
     reasoning_keys = [
         n
-        for n in ast.walk(tree)
+        for n in ast.walk(call_site)
         if isinstance(n, ast.Dict)
         and any(
             isinstance(k, ast.Constant) and k.value == "reasoning" for k in n.keys

@@ -36,8 +36,8 @@ Break one of these and the failure is silent: a page that renders, returns HTTP
   overrides are withheld from non-admins in the shell
   (`NessieAI/chat_frontend/src/EmbeddedApp.tsx:194-196`) and the controls refuse to render
   (`NessieAI/chat_frontend/src/components/Layout/RouteOverrideSelect.tsx:17`), but the
-  authority is `nextseek_api/services/cc_assistant.py:372-374` for the route
-  override and `nextseek_api/services/cc_assistant.py:518-519` for the turn
+  authority is `NessieAI/router/policy.py:104-112` for the route
+  override and `nextseek_api/services/cc_assistant.py:391-392` for the turn
   clock. Never move a gate from the server into a component.
 - **The progress transport must keep its fallback.** The WebSocket attempt is
   wrapped so that a failure to open drops to the two-second poll

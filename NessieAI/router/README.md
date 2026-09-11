@@ -14,6 +14,7 @@ stays in `nextseek_api/`.
 | `router_context.py`, `baml_introspect.py`, `transport_trace.py` | the context fed to BAML and the traces of each call |
 | `risk_overlay.py`, `route_monitoring.py` | telemetry overlays: they observe the outcome and never change it |
 | `turn_ledger.py` | writes one routing row per turn, through `nextseek_api.assistant.models_db` |
+| `policy.py` | `_decide_route`, the override precedence around `decide()` (see Overrides), and `_record_ledger_row`, which writes the turn's row through `turn_ledger.py` |
 
 ## How a route is chosen
 
@@ -29,7 +30,7 @@ in the Debug panel shows `source` (`baml`, `heuristic`, `posterior`, `forced`, `
 
 ## Overrides
 
-Applied by `_decide_route` in `nextseek_api/services/cc_assistant.py`, in this order:
+Applied by `_decide_route` in `policy.py`, in this order:
 
 `force_route` > `pipeline_agent` > sticky CC > the router.
 
@@ -54,6 +55,6 @@ Tests are in `NessieAI/tests/router/`; commands are in `NessieAI/tests/README.md
 
 ## Depends on / depended on by
 
-- Depends on `NessieAI/dmac_assistant/` (lazily), `NessieAI/hibayes/` (posterior leg), `nextseek_api.assistant.models_db` (ledger).
+- Depends on `NessieAI/dmac_assistant/` (lazily), `NessieAI/hibayes/` (posterior leg), `nextseek_api.assistant.models_db` (ledger), and `chat_nextseek`'s pipeline agent (`policy.py` asks it whether a wizard is open).
 - `NessieAI/hibayes/` imports `family_labels` back. That loop has no load-time cycle.
 - Called by `nextseek_api/services/cc_assistant.py`.

@@ -139,13 +139,13 @@ modules and splitting module-scope imports from in-function ones:
   and `nextseek_api/services/sample_workbook.py:26`.
 - The NS engine in `NessieAI/chat_nextseek/` (import name `chat_nextseek`), imported at
   module scope by exactly two of the 25 modules: `nextseek_api/services/assistant.py:104-105`,
-  and `nextseek_api/services/cc_assistant.py:60` with two more at
-  `nextseek_api/services/cc_assistant.py:79` and `nextseek_api/services/cc_assistant.py:81`.
+  and `nextseek_api/services/cc_assistant.py:60` with one more at
+  `nextseek_api/services/cc_assistant.py:81`.
 - The Container-CC engine and the top-level router, `NessieAI.cc` and `NessieAI.router`,
-  imported across `nextseek_api/services/cc_assistant.py:62-75` and again at
+  imported across `nextseek_api/services/cc_assistant.py:62-76` and again at
   `nextseek_api/services/cc_assistant.py:80` and `nextseek_api/services/cc_assistant.py:82`;
   the Django shell `nextseek_api/cc_assistant/` only lazily, inside two functions
-  (`nextseek_api/services/cc_assistant.py:892`, `nextseek_api/services/cc_assistant.py:989`).
+  (`nextseek_api/services/cc_assistant.py:737`, `nextseek_api/services/cc_assistant.py:834`).
 - The `neo4j` driver, at module scope in four modules and constructed per request at seven
   call sites, of which `nextseek_api/services/entity_tree.py:302` and
   `nextseek_api/services/sample_workbook.py:285-290` are two.

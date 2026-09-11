@@ -1,4 +1,4 @@
-import nextseek_api.services.cc_assistant as cc_svc
+from NessieAI.router import policy
 from NessieAI.router import router as cc_router
 
 
@@ -28,7 +28,7 @@ def test_active_pipeline_forces_ns(monkeypatch):
                                        model_id=None, reasoning="r", source="baml")
     monkeypatch.setattr(cc_router, "decide", _router_says_ns)
     session = {"pipeline_agent": {"active": True}}
-    d = cc_svc._decide_route(_User(), _Req("anything at all"), force_cc=False, session=session)
+    d = policy._decide_route(_User(), _Req("anything at all"), force_cc=False, session=session)
     assert called, "the router must be consulted before the pipeline gate"
     assert d.route == cc_router.ROUTE_NS
     assert d.source == "pipeline"
@@ -40,7 +40,7 @@ def test_inactive_pipeline_falls_through(monkeypatch):
     seen = {}
     monkeypatch.setattr(cc_router, "decide",
                         lambda q, history=None: (seen.update(q=q, history=history), sentinel)[1])
-    d = cc_svc._decide_route(_User(), _Req("write me code"), force_cc=False,
+    d = policy._decide_route(_User(), _Req("write me code"), force_cc=False,
                              session={"pipeline_agent": {}}, history="prior turns")
     assert d is sentinel
     assert seen == {"q": "write me code", "history": "prior turns"}  # history threaded through
@@ -51,12 +51,12 @@ def test_active_pipeline_does_not_hijack_a_cc_turn(monkeypatch):
     sentinel = cc_router.RouteDecision(route=cc_router.ROUTE_CC, model_class="opus",
                                        model_id=None, reasoning="x", source="baml")
     monkeypatch.setattr(cc_router, "decide", lambda q, history=None: sentinel)
-    d = cc_svc._decide_route(_User(), _Req("find me all D.SEQ samples"),
+    d = policy._decide_route(_User(), _Req("find me all D.SEQ samples"),
                              force_cc=False, session={"pipeline_agent": {"active": True}})
     assert d is sentinel
 
 
 def test_force_cc_beats_active_pipeline():
     session = {"pipeline_agent": {"active": True}}
-    d = cc_svc._decide_route(_User(), _Req("x"), force_cc=True, session=session)
+    d = policy._decide_route(_User(), _Req("x"), force_cc=True, session=session)
     assert d.route == cc_router.ROUTE_CC

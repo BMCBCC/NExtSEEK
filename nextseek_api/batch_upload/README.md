@@ -237,8 +237,8 @@ remaining 13 import sites in 10 files, plus the three edges that are not imports
   attribute-mutation task to it, `nextseek_api/cc_assistant/cc_upload_tasks.py:18` binds the
   CC upload task, and `docker/scripts/entrypoint.sh` runs a second worker process off the
   same app for the `attribute_mutations` queue. Renaming or moving `celery_app` breaks all three.
-- Job ownership. `nextseek_api/services/cc_assistant.py:888` registers a CC upload in this
-  package's index and `nextseek_api/services/cc_assistant.py:900` gates the status endpoint
+- Job ownership. `nextseek_api/services/cc_assistant.py:772` registers a CC upload in this
+  package's index and `nextseek_api/services/cc_assistant.py:783` gates the status endpoint
   on it, so the CC upload flow inherits this package's ownership model wholesale.
 - SQL and helper reuse. `nextseek_api/assay_registration/service.py:10` and
   `nextseek_api/assay_registration/runner.py:43` take the engine;

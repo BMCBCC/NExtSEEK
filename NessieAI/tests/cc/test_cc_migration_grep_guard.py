@@ -11,6 +11,8 @@ RUNTIME_FILES = [
     ROOT / "cc_engine.py",
     paths.REPO_ROOT / "nextseek_api" / "cc_assistant" / "cc_sweep.py",
     SERVICE,
+    # Routing policy moved out of SERVICE in Phase B; it is still runtime code.
+    paths.ROUTER_DIR / "policy.py",
 ]
 
 

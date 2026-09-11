@@ -40,7 +40,7 @@ def test_mutation_swallowed_classification_failure_still_has_no_family(settings)
 def test_mutation_sticky_without_attempted_fields_is_detectable():
     """Unrecorded override: sticky must carry attempted_route/source."""
     from NessieAI.router import router_context
-    from nextseek_api.services import cc_assistant as svc
+    from NessieAI.router import policy
 
     history = [
         router_context.HistoryTurn(
@@ -61,7 +61,7 @@ def test_mutation_sticky_without_attempted_fields_is_detectable():
     user = mock.Mock(is_staff=False, is_superuser=False)
     req = mock.Mock(query="list samples", force_route=None)
     with mock.patch.object(cc_router, "decide", return_value=attempted):
-        final = svc._decide_route(user, req, force_cc=False, history=history)
+        final = policy._decide_route(user, req, force_cc=False, history=history)
     assert final.attempted_route is not None
     assert final.attempted_source is not None
 

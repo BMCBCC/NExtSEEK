@@ -12,7 +12,7 @@ designed, measured and rejected as over-complex; do not reintroduce it.
 """
 import pytest
 
-import nextseek_api.services.cc_assistant as cc_svc
+from NessieAI.router import policy
 from NessieAI.router import router as cc_router
 from NessieAI.router import router_context
 
@@ -57,7 +57,7 @@ def router_says_ns(monkeypatch):
 # --------------------------------------------------------------- the rule
 def test_completed_cc_turn_makes_the_next_ns_decision_sticky(monkeypatch, router_says_ns):
     monkeypatch.setattr(cc_router, "_resolve_cc_model_id", lambda: "opus-id")
-    d = cc_svc._decide_route(_User(), _Req("Just the 4 week ones."), force_cc=False,
+    d = policy._decide_route(_User(), _Req("Just the 4 week ones."), force_cc=False,
                              history=[_turn(cc_router.ROUTE_CC)])
     assert d.route == cc_router.ROUTE_CC
     assert d.source == "sticky"          # exact literal: a probe + a test corpus reference it
@@ -68,30 +68,30 @@ def test_completed_cc_turn_makes_the_next_ns_decision_sticky(monkeypatch, router
 
 
 def test_a_failed_cc_turn_does_not_trap_the_chat(router_says_ns):
-    d = cc_svc._decide_route(_User(), _Req("how many mice"), force_cc=False,
+    d = policy._decide_route(_User(), _Req("how many mice"), force_cc=False,
                              history=[_turn(cc_router.ROUTE_CC, status="error")])
     assert d is router_says_ns
 
 
 def test_empty_history_leaves_the_router_alone(router_says_ns):
-    d = cc_svc._decide_route(_User(), _Req("how many mice"), force_cc=False, history=[])
+    d = policy._decide_route(_User(), _Req("how many mice"), force_cc=False, history=[])
     assert d is router_says_ns
 
 
 def test_none_history_leaves_the_router_alone(router_says_ns):
-    d = cc_svc._decide_route(_User(), _Req("how many mice"), force_cc=False, history=None)
+    d = policy._decide_route(_User(), _Req("how many mice"), force_cc=False, history=None)
     assert d is router_says_ns
 
 
 def test_prior_ns_turn_leaves_the_router_alone(router_says_ns):
-    d = cc_svc._decide_route(_User(), _Req("how many mice"), force_cc=False,
+    d = policy._decide_route(_User(), _Req("how many mice"), force_cc=False,
                              history=[_turn(cc_router.ROUTE_NS)])
     assert d is router_says_ns
 
 
 def test_only_the_last_turn_matters(router_says_ns):
     """Pins history[-1], not "any turn in this chat was CC"."""
-    d = cc_svc._decide_route(
+    d = policy._decide_route(
         _User(), _Req("how many mice"), force_cc=False,
         history=[_turn(cc_router.ROUTE_CC, position=1),
                  _turn(cc_router.ROUTE_NS, position=2)])
@@ -103,7 +103,7 @@ def test_a_cc_decision_is_returned_untouched(monkeypatch):
     sentinel = cc_router.RouteDecision(route=cc_router.ROUTE_CC, model_class="opus",
                                        model_id=None, reasoning="agentic", source="baml")
     monkeypatch.setattr(cc_router, "decide", lambda q, history=None: sentinel)
-    d = cc_svc._decide_route(_User(), _Req("write me a script"), force_cc=False,
+    d = policy._decide_route(_User(), _Req("write me a script"), force_cc=False,
                              history=[_turn(cc_router.ROUTE_CC)])
     assert d is sentinel
     assert d.source == "baml"          # not relabelled "sticky"
@@ -119,7 +119,7 @@ def test_unrelated_is_never_converted_to_cc(monkeypatch):
                                        model_id=None, reasoning="out of scope",
                                        source="baml")
     monkeypatch.setattr(cc_router, "decide", lambda q, history=None: sentinel)
-    d = cc_svc._decide_route(_User(), _Req("what's the weather in Boston"), force_cc=False,
+    d = policy._decide_route(_User(), _Req("what's the weather in Boston"), force_cc=False,
                              history=[_turn(cc_router.ROUTE_CC)])
     assert d is sentinel
     assert d.route == cc_router.ROUTE_UNRELATED
@@ -127,7 +127,7 @@ def test_unrelated_is_never_converted_to_cc(monkeypatch):
 
 # ------------------------------------------------------------ precedence
 def test_force_route_cc_beats_sticky(router_says_ns):
-    d = cc_svc._decide_route(_Admin(), _Req("x", force_route="cc"), force_cc=False,
+    d = policy._decide_route(_Admin(), _Req("x", force_route="cc"), force_cc=False,
                              history=[_turn(cc_router.ROUTE_CC)])
     assert d.route == cc_router.ROUTE_CC
     assert d.source == "forced"
@@ -135,7 +135,7 @@ def test_force_route_cc_beats_sticky(router_says_ns):
 
 def test_force_route_ns_beats_sticky(router_says_ns):
     """The admin escape hatch out of a sticky chat -- the only one there is."""
-    d = cc_svc._decide_route(_Admin(), _Req("x", force_route="ns"), force_cc=False,
+    d = policy._decide_route(_Admin(), _Req("x", force_route="ns"), force_cc=False,
                              history=[_turn(cc_router.ROUTE_CC)])
     assert d.route == cc_router.ROUTE_NS
     assert d.source == "forced"
@@ -143,7 +143,7 @@ def test_force_route_ns_beats_sticky(router_says_ns):
 
 def test_active_pipeline_beats_sticky(router_says_ns):
     """A mid-flow samplesheet build keeps its confirm/tweak turns on NS."""
-    d = cc_svc._decide_route(_User(), _Req("yes, launch it"), force_cc=False,
+    d = policy._decide_route(_User(), _Req("yes, launch it"), force_cc=False,
                              session={"pipeline_agent": {"active": True}},
                              history=[_turn(cc_router.ROUTE_CC)])
     assert d.route == cc_router.ROUTE_NS
@@ -162,7 +162,7 @@ def test_broken_history_falls_through_to_the_router(router_says_ns):
         def status(self):
             raise RuntimeError("boom")
 
-    d = cc_svc._decide_route(_User(), _Req("how many mice"), force_cc=False,
+    d = policy._decide_route(_User(), _Req("how many mice"), force_cc=False,
                              history=[_Exploding()])
     assert d is router_says_ns
 
@@ -175,7 +175,7 @@ def test_an_unrelated_aside_does_not_end_stickiness(router_says_ns):
     router_choice would drop the chat back to NS and the follow-up would then
     fail for want of an NS bundle to refine.
     """
-    d = cc_svc._decide_route(
+    d = policy._decide_route(
         _User(), _Req("now group those by genotype"), force_cc=False,
         history=[_turn(cc_router.ROUTE_CC, position=1),
                  _turn(cc_router.ROUTE_UNRELATED, position=2)])
@@ -194,7 +194,7 @@ def test_the_scan_stops_at_a_failed_cc_turn_it_does_not_look_past_it(router_says
     An [errored CC, unrelated] history does NOT distinguish the two — both
     implementations return False — which is why this test does not use it.
     """
-    d = cc_svc._decide_route(
+    d = policy._decide_route(
         _User(), _Req("how many mice"), force_cc=False,
         history=[_turn(cc_router.ROUTE_CC, position=1),
                  _turn(cc_router.ROUTE_CC, status="error", position=2)])
@@ -202,7 +202,7 @@ def test_the_scan_stops_at_a_failed_cc_turn_it_does_not_look_past_it(router_says
 
 
 def test_a_failed_cc_turn_behind_an_unrelated_aside_is_still_not_sticky(router_says_ns):
-    d = cc_svc._decide_route(
+    d = policy._decide_route(
         _User(), _Req("how many mice"), force_cc=False,
         history=[_turn(cc_router.ROUTE_CC, status="error", position=1),
                  _turn(cc_router.ROUTE_UNRELATED, position=2)])
@@ -210,7 +210,7 @@ def test_a_failed_cc_turn_behind_an_unrelated_aside_is_still_not_sticky(router_s
 
 
 def test_an_unrelated_turn_after_ns_is_still_not_sticky(router_says_ns):
-    d = cc_svc._decide_route(
+    d = policy._decide_route(
         _User(), _Req("how many mice"), force_cc=False,
         history=[_turn(cc_router.ROUTE_NS, position=1),
                  _turn(cc_router.ROUTE_UNRELATED, position=2)])
@@ -218,7 +218,7 @@ def test_an_unrelated_turn_after_ns_is_still_not_sticky(router_says_ns):
 
 
 def test_history_of_only_unrelated_turns_is_not_sticky(router_says_ns):
-    d = cc_svc._decide_route(
+    d = policy._decide_route(
         _User(), _Req("how many mice"), force_cc=False,
         history=[_turn(cc_router.ROUTE_UNRELATED, position=1),
                  _turn(cc_router.ROUTE_UNRELATED, position=2)])

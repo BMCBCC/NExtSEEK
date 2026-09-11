@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 
 from nextseek_api.assistant.models_db import ChatSession, TurnLedger
 from NessieAI.router import router as cc_router
-from nextseek_api.services import cc_assistant as svc
+from NessieAI.router import policy
 
 pytestmark = pytest.mark.django_db
 
@@ -32,7 +32,7 @@ def test_record_ledger_row_persists_generation_id():
         generation_id=42,
         generation_hash="c" * 64,
     )
-    svc._record_ledger_row(session, decision)
+    policy._record_ledger_row(session, decision)
     row = TurnLedger.objects.get(session=session, turn_number=1)
     assert row.route_source == "posterior"
     assert row.pinned_generation_id == 42
@@ -48,8 +48,8 @@ def test_ledger_collision_does_not_raise():
         reasoning="baml",
         source="baml",
     )
-    svc._record_ledger_row(session, decision)
-    svc._record_ledger_row(session, decision)  # duplicate turn_number — swallowed
+    policy._record_ledger_row(session, decision)
+    policy._record_ledger_row(session, decision)  # duplicate turn_number — swallowed
 
 
 def test_sticky_override_persists_attempted_route_and_source():
@@ -77,8 +77,8 @@ def test_sticky_override_persists_attempted_route_and_source():
     user = mock.Mock(is_staff=False, is_superuser=False)
     req = mock.Mock(query="find mice", force_route=None)
     with mock.patch.object(cc_router, "decide", return_value=attempted):
-        final = svc._decide_route(user, req, force_cc=False, history=history)
-        svc._record_ledger_row(session, final)
+        final = policy._decide_route(user, req, force_cc=False, history=history)
+        policy._record_ledger_row(session, final)
     row = TurnLedger.objects.get(session=session, turn_number=1)
     assert row.route == cc_router.ROUTE_CC
     assert row.route_source == "sticky"

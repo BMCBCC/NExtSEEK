@@ -146,7 +146,10 @@ class StaffAdminWideningIsConfinedToCapabilities(SimpleTestCase):
 
         pattern = re.compile(r"is_staff\s+or\s+.*is_superuser|is_superuser\s+or\s+.*is_staff")
         found = []
-        for rel in ("nextseek_api", "seek", "dmac"):
+        # NessieAI/router holds the force_route admin gate (_decide_route in
+        # policy.py), moved out of nextseek_api/services/cc_assistant.py in
+        # Phase B; scanning it keeps that gate inside this inventory.
+        for rel in ("nextseek_api", "seek", "dmac", "NessieAI/router"):
             for path in (REPO / rel).rglob("*.py"):
                 if "test" in path.parts or path.name.startswith("test_"):
                     continue
