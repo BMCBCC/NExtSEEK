@@ -2279,14 +2279,25 @@ class RetrieveResponse(BaseModel):
     model_config = ConfigDict(extra='forbid', validate_default=True)
 
 
-# Rebuild models with forward references when schema_rag package is available
+# Rebuild models with forward references once the schema_rag package is loaded
 def _rebuild_schema_rag_models():
-    """Call this after schema_rag.models is imported to resolve forward references."""
+    """Resolve RetrieveResponse's forward references to the schema_rag models.
+
+    Called by ``NessieAI/schema_rag/__init__.py`` after its models import. A
+    failure here used to be swallowed, which left RetrieveResponse undefined
+    until the first /schema_rag/retrieve/ call failed far from the cause. It
+    now raises, so a moved or broken ``NessieAI.schema_rag.models`` fails at
+    import time. The two names must stay local: model_rebuild() resolves the
+    forward references from this frame's namespace.
+    """
     try:
-        from NessieAI.schema_rag.models import MinimalAPIEndpoint, FullAPIEndpoint
-        RetrieveResponse.model_rebuild()
-    except ImportError:
-        pass  # schema_rag package not yet available
+        from NessieAI.schema_rag.models import MinimalAPIEndpoint, FullAPIEndpoint  # noqa: F401
+    except ImportError as exc:
+        raise ImportError(
+            "RetrieveResponse cannot resolve its forward references: "
+            f"NessieAI.schema_rag.models did not import ({exc})"
+        ) from exc
+    RetrieveResponse.model_rebuild()
 
 
 # -----------------------------

@@ -473,13 +473,23 @@ class TestRebuildSchemaRagModels:
         # Should not raise
         _rebuild_schema_rag_models()
 
-    @patch("nextseek_api.models.RetrieveResponse.model_rebuild", side_effect=ImportError("no module"))
-    def test_rebuild_handles_import_error(self, mock_rebuild):
-        """Test that ImportError in _rebuild_schema_rag_models is handled."""
-        from nextseek_api.models import _rebuild_schema_rag_models
-        # The function catches ImportError internally; this test covers the except branch
-        # by patching at a different level
+    def test_rebuild_resolves_retrieve_response(self):
+        """After the rebuild, RetrieveResponse validates schema_rag endpoints."""
+        from nextseek_api.models import RetrieveResponse, _rebuild_schema_rag_models
         _rebuild_schema_rag_models()
+        resp = RetrieveResponse(session_id="s", mode="minimal", endpoints_minimal=[])
+        assert resp.endpoints_minimal == []
+
+    def test_rebuild_raises_when_schema_rag_models_missing(self):
+        """A missing NessieAI.schema_rag.models is loud, not swallowed.
+
+        It used to be swallowed, which left RetrieveResponse unusable until
+        the first retrieve call.
+        """
+        from nextseek_api.models import _rebuild_schema_rag_models
+        with patch.dict("sys.modules", {"NessieAI.schema_rag.models": None}):
+            with pytest.raises(ImportError, match="NessieAI.schema_rag.models"):
+                _rebuild_schema_rag_models()
 
 
 # ---------------------------------------------------------------------------
