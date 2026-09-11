@@ -92,6 +92,9 @@ def render_nessie_section(summary: dict) -> list[str]:
         lines.append(f"- **Kept session:** `{kept['session_id']}`; debug: {kept['debug_url']}")
     if summary.get("evidence_dir"):
         lines.append(f"- **Evidence:** `{summary['evidence_dir']}`")
+    if summary.get("cleanup_error"):
+        # A passing lane deletes its chat; this is the DELETE that did not work.
+        lines.append(f"- **Cleanup failed:** {summary['cleanup_error']}; delete it by hand.")
     return lines + [""]
 
 

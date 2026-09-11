@@ -103,12 +103,18 @@ def test_the_nessie_switch_is_not_a_mark_expression():
     )
 
 
+import json
+
 from ci.smoke.test_nessie import (
     CHAT_PATH, MAX_CHAT_POSTS, QUESTIONS, SPEND_CEILING_USD, ChatBudget, TurnRecord,
-    bundle_path, cc_model_id, classify_request, is_terminal, normalize, observed_path,
-    plain_prefix, query_error, reported_cost, require_write_creds, route_decision,
-    summary_payload,
+    bundle_path, cc_model_id, classify_request, finish_chat, is_terminal, normalize,
+    observed_path, plain_prefix, query_error, reported_cost, require_write_creds,
+    route_decision, summary_payload,
 )
+
+# pytester runs the lane's real chat_run fixture in a throwaway session, to pin
+# which failures keep the chat (the cleanup tests at the end of this file).
+pytest_plugins = ["pytester"]
 
 BASE = "http://127.0.0.1:8000"
 
@@ -249,3 +255,188 @@ def test_no_nessie_fixture_or_test_takes_the_skipping_write_creds_fixture():
                 for a in node.args.posonlyargs + node.args.args + node.args.kwonlyargs)
     )
     assert takers == [], f"these request write_creds, which skips: {takers}"
+
+
+# --------------------------------------------------------------------------- #
+# cleanup (spec 3.1, decision 8): delete the chat on a pass, keep it otherwise
+# --------------------------------------------------------------------------- #
+
+class _Answer:
+    def __init__(self, status_code: int, text: str = ""):
+        self.status_code, self.text = status_code, text
+
+
+class _Api:
+    def __init__(self, delete_answer: _Answer | None = None,
+                 delete_raises: Exception | None = None):
+        self.calls: list[tuple[str, str]] = []
+        self._delete_answer = delete_answer or _Answer(204)
+        self._delete_raises = delete_raises
+
+    def get(self, url, **kw):
+        self.calls.append(("GET", url))
+        return _Answer(200, '{"resolved_as": "session"}')
+
+    def delete(self, url, **kw):
+        self.calls.append(("DELETE", url))
+        if self._delete_raises is not None:
+            raise self._delete_raises
+        return self._delete_answer
+
+
+def test_finish_chat_deletes_a_passing_lane_s_chat(tmp_path):
+    api = _Api()
+    assert finish_chat(api, BASE, "s1", failed=False, evidence_dir=tmp_path) == (None, None)
+    assert api.calls == [("DELETE", f"{BASE}/nextseek_api/assistant/sessions/s1/")]
+    assert not (tmp_path / "debug.json").exists()
+
+
+@pytest.mark.parametrize("delete_answer, delete_raises, expected", [
+    (_Answer(500, "server   error"), None, "DELETE answered 500: server error"),
+    (_Answer(404), None, "DELETE answered 404"),
+    (None, ConnectionError("refused"), "ConnectionError: refused"),
+])
+def test_finish_chat_reports_a_chat_it_could_not_delete(delete_answer, delete_raises,
+                                                        expected, tmp_path):
+    """A failed DELETE leaves the chat behind. It must say so, not pass in silence."""
+    api = _Api(delete_answer=delete_answer, delete_raises=delete_raises)
+    kept, error = finish_chat(api, BASE, "s1", failed=False, evidence_dir=tmp_path)
+    assert kept is None
+    assert error is not None, "a chat that was not deleted must be reported"
+    assert "s1" in error, f"the report does not name the chat: {error}"
+    assert expected in error, f"the report does not say why: {error}"
+
+
+def test_finish_chat_keeps_a_failing_lane_s_chat_and_its_debug_answer(tmp_path):
+    api = _Api()
+    kept, error = finish_chat(api, BASE, "s1", failed=True, evidence_dir=tmp_path)
+    assert error is None
+    assert kept == {"session_id": "s1",
+                    "debug_url": f"{BASE}/nextseek_api/nessie/sessions/s1/debug/"}
+    assert [method for method, _ in api.calls] == ["GET"], (
+        f"a failing lane must keep its chat: {api.calls}")
+    assert (tmp_path / "debug.json").read_text() == '{"resolved_as": "session"}'
+
+
+def test_finish_chat_with_no_chat_does_nothing(tmp_path):
+    api = _Api()
+    assert finish_chat(api, BASE, None, failed=True, evidence_dir=tmp_path) == (None, None)
+    assert api.calls == []
+
+
+def test_summary_payload_carries_the_cleanup_error():
+    out = summary_payload([], ChatBudget(), None, None, cleanup_error="the chat s was not deleted")
+    assert out["cleanup_error"] == "the chat s was not deleted"
+    assert summary_payload([], ChatBudget(), None, None)["cleanup_error"] is None
+
+
+# The lane's own chat_run fixture, run in a pytester session with a fake page and
+# a fake API. Every other fixture it takes is the real one.
+_LANE_CONFTEST = '''
+def pytest_addoption(parser):
+    parser.addoption("--nessie-no-turns", action="store_true")
+'''
+
+_LANE_MODULE = '''
+import json
+from types import SimpleNamespace
+
+import pytest
+
+from ci.smoke.test_nessie import chat_run, nessie_budget, nessie_failures_before
+
+CALLS = {calls!r}
+
+
+class Answer:
+    def __init__(self, status_code, text=""):
+        self.status_code, self.text = status_code, text
+
+
+class Api:
+    def get(self, url, **kw):
+        self._log("GET", url)
+        return Answer(200, "{{}}")
+
+    def delete(self, url, **kw):
+        self._log("DELETE", url)
+        return Answer(204)
+
+    def _log(self, method, url):
+        with open(CALLS, "a") as f:
+            f.write(json.dumps([method, url]) + "\\n")
+
+
+@pytest.fixture(scope="module")
+def nessie_admin_api():
+    return Api()
+
+
+@pytest.fixture(scope="module")
+def base_url():
+    return "http://stack"
+
+
+@pytest.fixture(scope="module")
+def nessie_evidence_dir(tmp_path_factory):
+    return tmp_path_factory.mktemp("evidence")
+
+
+@pytest.fixture(scope="module")
+def nessie_page():
+    button = SimpleNamespace(click=lambda: None)
+    return SimpleNamespace(get_by_test_id=lambda test_id: button)
+
+
+def test_a_stage_1_check():
+    assert {stage_1_passes}
+
+
+def test_a_turn_check(chat_run):
+    assert [r.status for r in chat_run] == ["completed"] * len(chat_run)
+'''
+
+
+def _fake_ask(page, q, rec, index, **_):
+    rec.task_id, rec.session_id, rec.status = f"t{index}", "s1", "completed"
+
+
+def _run_lane(pytester, monkeypatch, tmp_path, *, stage_1_passes: bool):
+    """Run a stage 1 test and a turn test through the real chat_run; return the
+    pytester result, the summary chat_run wrote and the HTTP methods it sent."""
+    import ci.smoke.test_nessie as lane
+    monkeypatch.setattr(lane, "_ask", _fake_ask)
+    summary, calls = tmp_path / "summary.json", tmp_path / "calls.ndjson"
+    monkeypatch.setenv("CI_NESSIE_SUMMARY", str(summary))
+    pytester.makeconftest(_LANE_CONFTEST)
+    pytester.makepyfile(test_lane=_LANE_MODULE.format(
+        calls=str(calls), stage_1_passes=stage_1_passes))
+    result = pytester.runpytest_inprocess("-p", "no:cacheprovider")
+    methods = ([json.loads(line)[0] for line in calls.read_text().splitlines()]
+               if calls.exists() else [])
+    return result, json.loads(summary.read_text()), methods
+
+
+def test_a_stage_1_failure_keeps_the_chat_even_when_every_turn_test_passes(
+        pytester, monkeypatch, tmp_path):
+    """Spec 3.1 and decision 8: the chat is deleted only when every test passed.
+    A stage 1 failure runs before chat_run is first requested, so a failure
+    count taken in chat_run's own setup would miss it and delete the chat."""
+    result, summary, methods = _run_lane(pytester, monkeypatch, tmp_path,
+                                         stage_1_passes=False)
+    result.assert_outcomes(passed=1, failed=1)
+    assert summary["kept_session"] is not None, f"the chat was not kept: {summary}"
+    assert summary["kept_session"]["session_id"] == "s1"
+    assert summary["evidence_dir"], f"a red lane names no evidence folder: {summary}"
+    assert "DELETE" not in methods, f"a red lane deleted its chat: {methods}"
+
+
+def test_a_green_lane_deletes_its_chat_and_reports_no_cleanup_error(
+        pytester, monkeypatch, tmp_path):
+    result, summary, methods = _run_lane(pytester, monkeypatch, tmp_path,
+                                         stage_1_passes=True)
+    result.assert_outcomes(passed=2)
+    assert summary["kept_session"] is None, f"a green lane kept its chat: {summary}"
+    assert summary["evidence_dir"] is None
+    assert summary["cleanup_error"] is None
+    assert methods == ["DELETE"], f"expected one DELETE, got {methods}"

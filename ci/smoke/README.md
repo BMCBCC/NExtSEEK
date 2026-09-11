@@ -94,7 +94,11 @@ It works in three stages, all in that one file:
    ledger the page showed. After a reload the chat reopens with every turn. The
    reported spend stayed under the ceiling.
 
-On a pass the chat is deleted. On a failure it is kept, so that it can be read.
+On a pass the chat is deleted. On a failure it is kept, so that it can be read:
+any failed test in the module counts, stage 1 included, because the failure count
+is taken before the lane's first test. A passing lane whose DELETE does not answer
+204 names the leftover chat as "Cleanup failed" in the CI record's Nessie section,
+and in pytest's warnings summary on a direct run.
 
 ### When it runs
 

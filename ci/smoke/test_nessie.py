@@ -16,6 +16,7 @@ import os
 import re
 import sys
 import time
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -217,8 +218,9 @@ _SUMMARY_FIELDS = ("key", "text", "expected_route", "route", "source", "path", "
 
 
 def summary_payload(records: list, budget: ChatBudget, kept_session: dict | None,
-                    evidence_dir: str | None) -> dict:
-    """What the lane reports to the CI record (startup/ci/runner.py renders it)."""
+                    evidence_dir: str | None, *, cleanup_error: str | None = None) -> dict:
+    """What the lane reports to the CI record (startup/ci/runner.py renders it).
+    cleanup_error says why a passing lane's chat was not deleted (finish_chat)."""
     return {
         "questions": [{k: getattr(r, k) for k in _SUMMARY_FIELDS} for r in records],
         "posts": budget.posts,
@@ -227,6 +229,7 @@ def summary_payload(records: list, budget: ChatBudget, kept_session: dict | None
         "ceiling_usd": budget.ceiling_usd,
         "kept_session": kept_session,
         "evidence_dir": evidence_dir,
+        "cleanup_error": cleanup_error,
     }
 
 
@@ -284,19 +287,34 @@ def nessie_evidence_dir(tmp_path_factory) -> Path:
     return path
 
 
-def _module_failures(request) -> int:
+@pytest.fixture(scope="module", autouse=True)
+def nessie_failures_before(request) -> int:
+    """How many tests had failed in this session before the lane's first test.
+
+    Autouse and module-scoped, so it is taken at the setup of this module's first
+    test, before any of stage 1. Every teardown that keeps evidence compares
+    against this one count, so a stage 1 failure keeps the chat, the trace and
+    the screenshot even when every turn test passes (spec 3.1, decision 8). A
+    count taken in chat_run's own setup would run after the whole of stage 1 and
+    miss it.
+    """
     return request.session.testsfailed
+
+
+def lane_failed(request, failures_before: int) -> bool:
+    """Has any test failed since the lane started? Failures in modules that ran
+    earlier in the same session are not the lane's."""
+    return request.session.testsfailed > failures_before
 
 
 @pytest.fixture(scope="module")
 def nessie_context(request, browser, profile, base_url, nessie_write_creds, tmp_path_factory,
-                   nessie_budget, nessie_evidence_dir):
+                   nessie_budget, nessie_evidence_dir, nessie_failures_before):
     """A browser context logged in as the write account.
 
     Its network guard admits at most MAX_CHAT_POSTS chat POSTs (a further one is
     aborted and fails the lane) and aborts any other paid POST outright.
     """
-    failed_before = _module_failures(request)
     state = login_storage_state(browser, profile, base_url, nessie_write_creds,
                                 tmp_path_factory.mktemp("nessie-auth") / "state.json")
     ctx = browser.new_context(viewport={"width": 1440, "height": 900},
@@ -313,7 +331,7 @@ def nessie_context(request, browser, profile, base_url, nessie_write_creds, tmp_
     ctx.route("**/nextseek_api/**", _guard)
     ctx.tracing.start(screenshots=True, snapshots=True)
     yield ctx
-    if _module_failures(request) > failed_before:
+    if lane_failed(request, nessie_failures_before):
         ctx.tracing.stop(path=str(nessie_evidence_dir / "trace.zip"))
     else:
         ctx.tracing.stop()
@@ -321,13 +339,12 @@ def nessie_context(request, browser, profile, base_url, nessie_write_creds, tmp_
 
 
 @pytest.fixture(scope="module")
-def nessie_page(request, nessie_context, base_url, nessie_evidence_dir):
-    failed_before = _module_failures(request)
+def nessie_page(request, nessie_context, base_url, nessie_evidence_dir, nessie_failures_before):
     page = nessie_context.new_page()
     page.goto(f"{base_url}/seek/assistant/", wait_until="domcontentloaded", timeout=120_000)
     page.get_by_test_id("chat-input").wait_for(state="visible", timeout=60_000)
     yield page
-    if _module_failures(request) > failed_before:
+    if lane_failed(request, nessie_failures_before):
         page.screenshot(path=str(nessie_evidence_dir / "page.png"), full_page=True)
 
 
@@ -487,6 +504,37 @@ def _describe(exc: BaseException) -> str:
     return f"{type(exc).__name__}: " + " ".join(str(exc).split())[:600]
 
 
+def finish_chat(api, base_url: str, session_id: str | None, *, failed: bool,
+                evidence_dir: Path) -> tuple[dict | None, str | None]:
+    """Decision 8: keep the chat when the lane failed, delete it when it passed.
+
+    Returns (kept, cleanup_error). `kept` names the kept chat and its /debug/
+    URL, whose answer is saved as evidence_dir/debug.json. `cleanup_error` says
+    why a passing lane's chat was not deleted, so a leftover chat is reported
+    rather than silent. Never raises: chat_run writes the summary after this.
+    """
+    if not session_id:
+        return None, None
+    if failed:
+        kept = {"session_id": session_id,
+                "debug_url": f"{base_url}/nextseek_api/nessie/sessions/{session_id}/debug/"}
+        try:
+            r = api.get(f"{kept['debug_url']}?include=all", timeout=60)
+            (evidence_dir / "debug.json").write_text(r.text)
+        except Exception as exc:
+            (evidence_dir / "debug.json").write_text(json.dumps({"error": _describe(exc)}))
+        return kept, None
+    try:
+        r = api.delete(f"{base_url}/nextseek_api/assistant/sessions/{session_id}/", timeout=60)
+    except Exception as exc:
+        return None, f"the chat {session_id} was not deleted: {_describe(exc)}"
+    if r.status_code != 204:
+        body = " ".join((r.text or "").split())[:200]
+        return None, (f"the chat {session_id} was not deleted: DELETE answered "
+                      f"{r.status_code}" + (f": {body}" if body else ""))
+    return None, None
+
+
 def _ask(page, q: Question, rec: TurnRecord, index: int, *, api, base_url: str,
          budget: ChatBudget, downloads: Path) -> None:
     """Type one question in the page, follow its turn through the API, then read
@@ -551,10 +599,9 @@ def _ask(page, q: Question, rec: TurnRecord, index: int, *, api, base_url: str,
 
 @pytest.fixture(scope="module")
 def chat_run(request, nessie_page, nessie_admin_api, base_url, nessie_budget,
-             nessie_evidence_dir, tmp_path_factory):
+             nessie_evidence_dir, tmp_path_factory, nessie_failures_before):
     if request.config.getoption("--nessie-no-turns"):
         pytest.skip("chat turns skipped by --nessie-no-turns")
-    failed_before = _module_failures(request)
     page = nessie_page
     downloads = tmp_path_factory.mktemp("nessie-downloads")
     records: list[TurnRecord] = []
@@ -581,26 +628,22 @@ def chat_run(request, nessie_page, nessie_admin_api, base_url, nessie_budget,
 
     yield records
 
-    failed = _module_failures(request) > failed_before
+    # Against the count taken before stage 1, not at this fixture's setup: a
+    # stage 1 failure must keep the chat too (nessie_failures_before).
+    failed = lane_failed(request, nessie_failures_before)
     session_id = next((r.session_id for r in records if r.session_id), None)
-    kept = None
-    if failed and session_id:
-        kept = {"session_id": session_id,
-                "debug_url": f"{base_url}/nextseek_api/nessie/sessions/{session_id}/debug/"}
-        try:
-            r = nessie_admin_api.get(f"{kept['debug_url']}?include=all", timeout=60)
-            (nessie_evidence_dir / "debug.json").write_text(r.text)
-        except Exception as exc:             # the summary below must still be written
-            (nessie_evidence_dir / "debug.json").write_text(
-                json.dumps({"error": _describe(exc)}))
-    elif session_id:
-        nessie_admin_api.delete(
-            f"{base_url}/nextseek_api/assistant/sessions/{session_id}/", timeout=60)
+    kept, cleanup_error = finish_chat(nessie_admin_api, base_url, session_id,
+                                      failed=failed, evidence_dir=nessie_evidence_dir)
+    if cleanup_error:
+        # The CI record carries it through the summary; a direct pytest run has
+        # no record, so it also lands in the warnings summary.
+        warnings.warn(f"Nessie lane cleanup: {cleanup_error}", stacklevel=1)
     target = os.environ.get("CI_NESSIE_SUMMARY")
     if target:
         Path(target).write_text(json.dumps(
             summary_payload(records, nessie_budget, kept,
-                            str(nessie_evidence_dir) if failed else None),
+                            str(nessie_evidence_dir) if failed else None,
+                            cleanup_error=cleanup_error),
             indent=2))
 
 

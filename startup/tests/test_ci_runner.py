@@ -310,6 +310,18 @@ def test_render_nessie_section_carries_a_question_s_error_and_a_turn_never_asked
     assert "Kept session" not in text
 
 
+def test_render_nessie_section_names_a_chat_the_lane_could_not_delete():
+    """Decision 8 deletes the chat on a pass. A DELETE that did not answer 204
+    leaves it behind, and the record says so instead of staying silent."""
+    error = "the chat s was not deleted: DELETE answered 500: boom"
+    text = "\n".join(runner.render_nessie_section(
+        dict(SUMMARY, kept_session=None, cleanup_error=error)))
+    assert f"- **Cleanup failed:** {error}; delete it by hand." in text
+    # A summary with no cleanup_error key (every lane before this field) renders
+    # no cleanup line.
+    assert "Cleanup failed" not in "\n".join(runner.render_nessie_section(SUMMARY))
+
+
 def test_write_report_includes_the_nessie_section_and_moves_the_evidence(tmp_path):
     runner.junit_path(tmp_path).parent.mkdir(parents=True, exist_ok=True)
     runner.junit_path(tmp_path).write_text(
