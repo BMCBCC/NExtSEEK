@@ -96,7 +96,7 @@ is a spend, evidence or routing regression, not a refactor.
   into nothing. Wiring either in ships a hardcoded path and an unowned contract into the
   request path.
 - **The paid-seam sweep reads the router by path, not by import.**
-  `NessieAI/hibayes/seam_inventory.py:23` takes `router.py` from `NessieAI/paths.py`,
+  `NessieAI/hibayes/seam_inventory.py:24` takes `router.py` from `NessieAI/paths.py`,
   and a missing router or package raises `FileNotFoundError` rather than scanning
   nothing (`NessieAI/hibayes/seam_inventory.py:130-133`). Rename `router.py` and only
   this sweep notices.

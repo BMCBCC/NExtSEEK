@@ -55,16 +55,16 @@ the result back into (a) guidance for the container agent and (b) a risk overlay
 | Container-only trace object: 11 structural fields, **no** success/validity/judgment field | `NessieAI/cc/cc_trace.py:32-44` |
 | Session id is a real UUID primary key | `nextseek_api/assistant/models_db.py:8` |
 | The product's turn number lives **only inside a JSON blob**, computed in Python | `NessieAI/chat_nextseek/src/chat_nextseek/chat_memory.py:49-71` |
-| A column named `turn_id` exists but holds a task run UUID, not the chat turn number | `nextseek_api/assistant/models_db.py:83`; stated at `NessieAI/cc/cc_turn_complete.py:22-24` |
-| Chat log FIFO-evicts at 50 entries | `chat_nextseek/src/chat_nextseek/chat_memory.py:25,246-247` |
+| A column named `turn_id` exists but holds a task run UUID, not the chat turn number | `nextseek_api/assistant/models_db.py:335`; stated at `NessieAI/cc/cc_turn_complete.py:27-29` |
+| Chat log FIFO-evicts at 50 entries | `NessieAI/chat_nextseek/src/chat_nextseek/chat_memory.py:25,246-247` |
 | Celery beat exists, with one periodic entry today | `nextseek_api/batch_upload/celery_app.py` |
 | The Stage C judge's BAML contract **is already vendored**, in two byte-identical copies | `NessieAI/dmac_assistant/baml_src/functional_evaluator.baml`, `NessieAI/docker/cc-runtime/baml_src/functional_evaluator.baml` |
 | …and it carries a locked reuse rule pointing at `tools/hibayes/exporter.py`, **which does not exist in this tree** | `NessieAI/dmac_assistant/baml_src/functional_evaluator.baml:27` |
 | The Python evaluation packages, the eval Dockerfile, its shell wrappers and its Make targets are **all absent** | none |
 | NExtSEEK already vendors `dmac_assistant` as an editable path dependency | `pyproject.toml:139` |
-| Exactly **one** test pins the capabilities file by hash | `nextseek_api/cc_assistant/tests/test_f_constraint_pins.py:12,17` |
+| Exactly **one** test pinned the capabilities file by hash; it has since been deleted, and a note where it stood says why and names the behavioural tests that replace it | `NessieAI/tests/router/test_f_constraint_pins.py:13-20` |
 
-> A second test's docstring claims it also pins that file. It does not: the file contains no such
+> Another test's docstring claims it pins that file. It does not: the file contains no such
 > assertion and its hashing import is unused. Treat the docstring as inaccurate.
 
 ## 5. Architecture

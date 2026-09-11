@@ -44,7 +44,7 @@ The question set is forked from the E2E catalog, not shared with it. The
 harness reads its own `corpus.json`, adopted from `NessieAI/tests/e2e/catalog.json`
 on 2026-08-04 and hand-curated since; the upstream catalog is unchanged and
 still serves its own readers, and a drift test fails if that file moves
-(`NessieAI/tests/nessie_tests/corpus.py:10`, `NessieAI/tests/nessie_tests/tests/test_catalog_drift.py:1`), so
+(`NessieAI/tests/nessie_tests/corpus.py:11`, `NessieAI/tests/nessie_tests/tests/test_catalog_drift.py:1`), so
 the divergence is never silent and adopting an upstream change stays a
 deliberate edit.
 
@@ -611,5 +611,5 @@ probe source injected into a container, not an import this file performs. Test
 modules that import the package from elsewhere in the tree are omitted from the
 inbound list on the grounds that they are tests of it rather than consumers of
 it; they are in `NessieAI/tests/router/test_route_capabilities.py:27-29`,
-`NessieAI/tests/cc/test_paired_evidence.py:14-15` and
+`NessieAI/tests/cc/test_paired_evidence.py:15-16` and
 `NessieAI/tests/hibayes/test_task2_coverage_edges.py:11`.

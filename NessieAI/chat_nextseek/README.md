@@ -147,7 +147,7 @@ it is fixture source inside the string literal opened at
 - `NessieAI/cc/step7_llm_cost_ledger.py:88` reads provider token usage out of this package's LLM clients.
 - `nextseek_api/services/evaluator.py:395` imports the orchestrator inside a function body.
 - `startup/dev/lane_local_settings.py:19` constructs the Django-wide config singleton at settings-import time, and `startup/dev/lane_local_settings.py:69` optionally builds a second one for the production toggle.
-- `NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:34-39` reads the capabilities document as generator input, not as an import.
+- `NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:35` reads the capabilities document as generator input, not as an import.
 - See `NessieAI/chat_nextseek/CLAUDE.md` for what breaks when any of these edges moves.
 
 Not a dependency, despite appearances: `NessieAI/dmac_assistant/` does **not** import this

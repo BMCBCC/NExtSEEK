@@ -22,7 +22,7 @@ Plan 005 generates this file and drift-checks it.
 
 *Teaching the generator to honour `route_policy`* was rejected because the
 decoupling is deliberate and pinned by
-`nextseek_api/assistant/tests/test_route_capabilities.py::test_route_policy_and_plugin_json_do_not_move_families`,
+`NessieAI/tests/router/test_route_capabilities.py::test_route_policy_and_plugin_json_do_not_move_families`,
 which mutates a `route_policy` entry and asserts the generated families do
 not move. Changing that is a design reversal, not a bugfix, and belongs with
 the taxonomy owner.

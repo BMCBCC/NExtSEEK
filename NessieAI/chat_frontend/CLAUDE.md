@@ -93,9 +93,9 @@ Break one of these and the failure is silent: a page that renders, returns HTTP
   assets.** It is named at `static/js/chat_assistant/.vite/manifest.json:2-3`.
   Grepping `NessieAI/chat_frontend/src` and `NessieAI/chat_frontend/e2e` for an `xlsx`
   import finds one, the dynamic call at
-  `NessieAI/chat_frontend/src/lib/services/chatApi.ts:373`, and it sits inside a method
+  `NessieAI/chat_frontend/src/lib/services/chatApi.ts:380`, and it sits inside a method
   nothing invokes: the same grep for `downloadSearchAsExcel` returns a single hit, the
-  definition itself at `NessieAI/chat_frontend/src/lib/services/chatApi.ts:369`. The
+  definition itself at `NessieAI/chat_frontend/src/lib/services/chatApi.ts:376`. The
   spreadsheet button users can actually see asks the server instead
   (`NessieAI/chat_frontend/src/components/ChatPanel/ReportArtifacts.tsx:232-243`).
 - **The Basic-auth client is compiled into the embedded bundle even though the

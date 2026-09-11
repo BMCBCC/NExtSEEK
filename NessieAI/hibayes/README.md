@@ -183,7 +183,7 @@ telling apart:
 
 The Bayesian fit needs an image the app image is not. `NessieAI/docker/eval/Dockerfile:13-15`
 installs the JAX, NumPyro and ArviZ stack and copies only this package in
-(`NessieAI/docker/eval/Dockerfile:10`); the archived
+(`NessieAI/docker/eval/Dockerfile:10-11`); the archived
 `NessieAI/history/plan018/docker/eval-task6/Dockerfile:11-14` grafted the app image's
 Django into it for the replay harness. Neither image is named in `docker-compose.yml`,
 which is why both are built by hand.
@@ -238,7 +238,7 @@ Depends on, outside this directory:
 Read by path rather than imported, which is a different kind of edge:
 
 - `NessieAI/router/router.py`, bound through `NessieAI/paths.py` as a module-scope
-  constant at `NessieAI/hibayes/seam_inventory.py:23` and rebased at
+  constant at `NessieAI/hibayes/seam_inventory.py:24` and rebased at
   `NessieAI/hibayes/seam_inventory.py:128`, then parsed as AST. Nothing is imported from
   it, so a rename of that file breaks the scan without any import error.
 

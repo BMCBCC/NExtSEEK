@@ -78,7 +78,7 @@ NessieAI/chat_frontend/src/
 The embedded build writes three asset files plus a manifest. Two of them are
 named in that manifest (`static/js/chat_assistant/.vite/manifest.json:7-16`); the
 third, a 429 kB SheetJS chunk, exists only because of the dynamic import at
-`NessieAI/chat_frontend/src/lib/services/chatApi.ts:373` and is fetched at call time from
+`NessieAI/chat_frontend/src/lib/services/chatApi.ts:380` and is fetched at call time from
 the `base` prefix set at `NessieAI/chat_frontend/vite.config.embedded.ts:21`.
 
 ### Host page contract
@@ -112,9 +112,9 @@ session strategy above, the Basic-auth one at
 | Submit a turn, then stream or poll | `NessieAI/chat_frontend/src/lib/services/chatApi.ts:39` |
 | Progress WebSocket | `NessieAI/chat_frontend/src/lib/services/chatApi.ts:110` |
 | Two-second HTTP poll fallback | `NessieAI/chat_frontend/src/lib/services/chatApi.ts:169-215` |
-| Session list, rename, delete, rehydrate | `NessieAI/chat_frontend/src/lib/services/chatApi.ts:312-367` |
-| Bundle and artifact downloads | `NessieAI/chat_frontend/src/lib/services/chatApi.ts:235-293` |
-| Agent file upload and its job poll | `NessieAI/chat_frontend/src/lib/services/chatApi.ts:381-403` |
+| Session list, rename, delete, rehydrate | `NessieAI/chat_frontend/src/lib/services/chatApi.ts:319-374` |
+| Bundle and artifact downloads | `NessieAI/chat_frontend/src/lib/services/chatApi.ts:235-300` |
+| Agent file upload and its job poll | `NessieAI/chat_frontend/src/lib/services/chatApi.ts:388-410` |
 
 Eight hooks plus a barrel live in `NessieAI/chat_frontend/src/hooks/`. The load-bearing
 ones are `useProcessingState` (`NessieAI/chat_frontend/src/hooks/useProcessingState.ts:164`),

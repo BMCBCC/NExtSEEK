@@ -5,7 +5,7 @@
 Three independent command-line tool groups that produce or check
 **committed-but-generated** files elsewhere in the repo. It is not a library: only
 tests import it from outside this directory
-(`NessieAI/tests/router/test_route_capabilities.py:16`,
+(`NessieAI/tests/router/test_route_capabilities.py:17`,
 `NessieAI/tests/cc/test_future_op_dropin.py`,
 `NessieAI/tests/cc/test_plugin_container_claude_md.py`), so no production code path
 runs any of this. The tools are run by hand, by a documented skill, or by the pytest
@@ -30,7 +30,7 @@ module `build_tools.ingest_nextseek_docs` as the upstream entry point it invoked
 from that clone (`NessieAI/docker/cc-runtime/PORT-EVIDENCE.json:20-22`); the same commit pins
 the image port (`NessieAI/docker/cc-runtime/Dockerfile:4-7`). The copy here carries
 NExtSEEK-specific default output paths
-(`NessieAI/build_tools/ingest_nextseek_docs/constants.py:16-17`) and two helpers for GitBook's
+(`NessieAI/build_tools/ingest_nextseek_docs/constants.py:18-21`) and two helpers for GitBook's
 2026-07 export format, one for a leading llms.txt banner
 (`NessieAI/build_tools/ingest_nextseek_docs/fetch.py:94-95`) and one for a repeated trailing
 agent-instructions block (`NessieAI/build_tools/ingest_nextseek_docs/fetch.py:114-115`).
@@ -195,7 +195,7 @@ tools read by path:
 
 **Depended on by:**
 
-- Python imports: tests only. `NessieAI/tests/router/test_route_capabilities.py:16` and
+- Python imports: tests only. `NessieAI/tests/router/test_route_capabilities.py:17` and
   `NessieAI/tests/router/test_route_capabilities.py:22` import the constants
   and the route-capabilities generator directly; two `NessieAI/tests/cc/` modules import
   the generators too.
