@@ -1,4 +1,4 @@
-# Reference: dev box, data sources, field mapping
+# Reference: instances, data sources, field mapping
 
 Everything needed to triage a nessie_tests run. Read the **field alias table**
 before interpreting any criterion; it is the single most common source of wrong
@@ -6,12 +6,18 @@ conclusions.
 
 ---
 
-## 1. Dev box access
+## 1. Instance access
 
-```bash
-ssh fairdata-dev sudo -n -u service-account <cmd>
-```
+| Instance | Shell | Repo on the host |
+|---|---|---|
+| local | `docker exec ...` directly | the workstation checkout |
+| dev | `ssh fairdata-dev sudo -n -u service-account <cmd>` | `/home/service-account/Documents/Programs/NExtSEEK` |
+| prod | `ssh fairdata <cmd>` (key login as service-account, no sudo) | `/home/service-account/Documents/Programs/NExtSEEK` |
 
+`fetch_run.py --instance {local,dev,prod}` picks the transport. Dev and prod need
+the MIT VPN. Production is read-only for this skill: pull, never run.
+
+The rows below describe the dev box; prod has the same containers and schema.
 Works unattended from the maintainer's host. Always append `< /dev/null` to the
 ssh invocation so it cannot block on stdin.
 
@@ -186,6 +192,15 @@ not a per-turn trace. The per-turn evidence is the timestamped files:
 
 Map a `graph_debug_<ts>.json` onto a turn by comparing its timestamp to
 `created_at`/`updated_at`. The correspondence is 1:1 with graph turns.
+
+Every NS turn names its run root in an `ns_run_root` progress event, which
+`fetch_run.py` carries as `run_root`; `--outputs` copies those folders and matches
+files to turns by mtime into `outputs_index.json`. Folder names, file stamps and
+`created_at` all use the app container's clock (UTC on dev and prod); only the
+host shell is local time, so give `docker logs --since` a `Z`. The user in a folder name is whoever's
+request started the process, not the owner of the turns inside it. Container-CC turns
+write no run root; their files are under the user's CC scratch area and their
+transcripts are rows in `assistant_cc_transcript`.
 
 You rarely need these files: `fetch_run.py` already pulls the same plans and
 result metadata out of the event streams, which is faster and survives log

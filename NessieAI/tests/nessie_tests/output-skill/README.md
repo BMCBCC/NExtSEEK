@@ -9,10 +9,11 @@ Hand this directory to an agent and point it at **`SKILL.md`**.
 ```
 output-skill/
 ├── SKILL.md                    START HERE. Workflow + the gotchas that cause wrong calls.
-├── REFERENCE.md                Dev box access, SQL patterns, the criterion field-alias
+├── REFERENCE.md                Instance access, SQL patterns, the criterion field-alias
 │                               table, run-root layout, routing, known state.
 ├── scripts/
-│   ├── fetch_run.py            Read-only pull of manifest + per-turn evidence off the dev box.
+│   ├── fetch_run.py            Read-only pull of per-turn evidence (+ manifest, raw rows,
+│   │                           output files) off any instance: --instance local|dev|prod.
 │   └── build_report.py         Join run data + your triage.json -> report.html
 ├── templates/
 │   └── report.html.tpl         The page. Fully data-driven; no run specifics baked in.
