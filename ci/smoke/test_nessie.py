@@ -427,3 +427,371 @@ def test_a_scratch_session_is_created_renamed_and_deleted(nessie_admin_api, base
         r = nessie_admin_api.delete(f"{root}{sid}/", timeout=60)
     assert r.status_code == 204, f"delete: {r.status_code}"
     assert nessie_admin_api.get(f"{root}{sid}/", timeout=60).status_code == 404
+
+
+# --------------------------------------------------------------------------- #
+# stages 2 and 3: the questions, asked in the page and checked through the API
+# --------------------------------------------------------------------------- #
+
+def _poll(api, base_url: str, rec: TurnRecord, timeout_s: int) -> None:
+    deadline = time.monotonic() + timeout_s
+    url = f"{base_url}/nextseek_api/nessie/tasks/{rec.task_id}/progress/"
+    while True:
+        r = api.get(url, timeout=60)
+        assert r.status_code == 200, f"{rec.key}: progress answered {r.status_code}"
+        body = r.json()
+        rec.status, rec.progress, rec.result = body["status"], body["progress"], body.get("result")
+        if is_terminal(rec.status):
+            return
+        if time.monotonic() > deadline:
+            rec.error = f"no terminal status after {timeout_s} s (last: {rec.status})"
+            return
+        time.sleep(POLL_INTERVAL_S)
+
+
+def _open_debug(page) -> None:
+    if not page.get_by_test_id("debug-panel").is_visible():
+        page.get_by_label("Toggle debug panel").click()
+        page.get_by_test_id("debug-panel").wait_for(state="visible", timeout=30_000)
+
+
+def _page_download(page, test_id: str, directory: Path) -> str:
+    from playwright.sync_api import expect
+
+    button = page.get_by_test_id(test_id)
+    # Waiting, not instant: the button enables on the render after query_complete.
+    expect(button, f"{test_id} is still disabled after a bundle turn").to_be_enabled(
+        timeout=30_000)
+    with page.expect_download(timeout=60_000) as got:
+        button.click()
+    target = directory / got.value.suggested_filename
+    got.value.save_as(str(target))
+    json.loads(target.read_text())          # it must be JSON
+    return got.value.suggested_filename
+
+
+def _describe(exc: BaseException) -> str:
+    return f"{type(exc).__name__}: " + " ".join(str(exc).split())[:600]
+
+
+def _ask(page, q: Question, rec: TurnRecord, index: int, *, api, base_url: str,
+         budget: ChatBudget, downloads: Path) -> None:
+    """Type one question in the page, follow its turn through the API, then read
+    what the page rendered. Raises on a page or network failure; chat_run records
+    that on the turn."""
+    from playwright.sync_api import TimeoutError as PlaywrightTimeout
+
+    page.get_by_test_id("chat-input").fill(q.text)
+    with page.expect_response(
+        lambda r: urlsplit(r.url).path == CHAT_PATH and r.request.method == "POST",
+        timeout=60_000,
+    ) as got:
+        page.get_by_test_id("send-button").click()
+    assert got.value.status == 202, f"{q.key}: the chat POST answered {got.value.status}"
+    body = got.value.json()
+    rec.task_id, rec.session_id = body["task_id"], body["session_id"]
+
+    t0 = time.monotonic()
+    _poll(api, base_url, rec, TURN_TIMEOUT_S[q.route])
+    rec.seconds = round(time.monotonic() - t0, 1)
+    rec.route, rec.source = route_decision(rec.progress)
+    rec.model_id = cc_model_id(rec.progress)
+    rec.error = rec.error or query_error(rec.progress)
+    if isinstance(rec.result, dict):
+        rec.reply = rec.result.get("reply") or ""
+        rec.bundle_id = rec.result.get("bundle_id")
+    rec.cost_usd = reported_cost(rec.result)
+    budget.add_cost(rec.cost_usd)
+    if rec.error or rec.status != "completed":
+        return            # no reply to render; the per-question test names the cause
+
+    # The page must render the reply before the next question is typed.
+    bubble = page.locator('[data-testid="message-bubble"][data-role="assistant"]').nth(index)
+    bubble.wait_for(state="visible", timeout=60_000)
+    _open_debug(page)
+    # The page empties the Debug panel on every send (handleSendMessage in
+    # chat_frontend/src/EmbeddedApp.tsx), so these are this turn's entries only.
+    rec.debug_agents = [
+        e.get_attribute("data-agent")
+        for e in page.get_by_test_id("debug-entry").all()
+    ]
+    if q.bundle and rec.bundle_id is not None:
+        # CC turns carry no bundle, so these buttons are checked right after a
+        # bundle turn, before the next turn can disable them.
+        rec.page_downloads = {
+            "json": _page_download(page, "json-download", downloads),
+            "metadata": _page_download(page, "metadata-download", downloads),
+        }
+    page.keyboard.press("Escape")
+    if q.cc_artifact:
+        # Counted inside this turn's own bubble: the NS turns above it render
+        # artifact-download buttons of their own. The links arrive on the render
+        # after the reply (updateLastAssistantMessage runs in a microtask).
+        links = bubble.get_by_test_id("artifact-download")
+        try:
+            links.first.wait_for(state="visible", timeout=30_000)
+        except PlaywrightTimeout:
+            pass                             # none rendered: the CC test reports it
+        rec.page_artifacts = links.count()
+
+
+@pytest.fixture(scope="module")
+def chat_run(request, nessie_page, nessie_admin_api, base_url, nessie_budget,
+             nessie_evidence_dir, tmp_path_factory):
+    if request.config.getoption("--nessie-no-turns"):
+        pytest.skip("chat turns skipped by --nessie-no-turns")
+    failed_before = _module_failures(request)
+    page = nessie_page
+    downloads = tmp_path_factory.mktemp("nessie-downloads")
+    records: list[TurnRecord] = []
+    started = time.monotonic()
+
+    for index, q in enumerate(QUESTIONS):
+        rec = TurnRecord(key=q.key, text=q.text, expected_route=q.route)
+        records.append(rec)
+        if time.monotonic() - started >= LANE_DEADLINE_S:
+            rec.error = f"not asked: the lane passed its {LANE_DEADLINE_S} s deadline"
+            break
+        try:
+            if index == 0:
+                page.get_by_test_id("new-chat-button").click()   # one fresh chat for all four
+            _ask(page, q, rec, index, api=nessie_admin_api, base_url=base_url,
+                 budget=nessie_budget, downloads=downloads)
+        except Exception as exc:
+            # Recorded on its turn rather than raised: an exception here would error
+            # every test with the same traceback and skip the teardown below, which
+            # is what keeps the chat, the evidence and the summary.
+            rec.error = rec.error or _describe(exc)
+        if rec.error or rec.status != "completed":
+            break                            # later questions would only add noise
+
+    yield records
+
+    failed = _module_failures(request) > failed_before
+    session_id = next((r.session_id for r in records if r.session_id), None)
+    kept = None
+    if failed and session_id:
+        kept = {"session_id": session_id,
+                "debug_url": f"{base_url}/nextseek_api/nessie/sessions/{session_id}/debug/"}
+        try:
+            r = nessie_admin_api.get(f"{kept['debug_url']}?include=all", timeout=60)
+            (nessie_evidence_dir / "debug.json").write_text(r.text)
+        except Exception as exc:             # the summary below must still be written
+            (nessie_evidence_dir / "debug.json").write_text(
+                json.dumps({"error": _describe(exc)}))
+    elif session_id:
+        nessie_admin_api.delete(
+            f"{base_url}/nextseek_api/assistant/sessions/{session_id}/", timeout=60)
+    target = os.environ.get("CI_NESSIE_SUMMARY")
+    if target:
+        Path(target).write_text(json.dumps(
+            summary_payload(records, nessie_budget, kept,
+                            str(nessie_evidence_dir) if failed else None),
+            indent=2))
+
+
+def _rec(records: list, key: str) -> TurnRecord:
+    for rec in records:
+        if rec.key == key:
+            return rec
+    pytest.fail(f"{key} was never asked: an earlier question failed, see its test")
+
+
+def _completed(records: list, key: str) -> TurnRecord:
+    rec = _rec(records, key)
+    if rec.error or rec.status != "completed":
+        pytest.fail(f"{key} did not complete ({rec.error or rec.status}), see its test")
+    return rec
+
+
+turn = pytest.mark.nessie_turn
+BUNDLE_QUESTIONS = [q for q in QUESTIONS if q.bundle]
+CC_QUESTION = next(q for q in QUESTIONS if q.cc_artifact)
+#: The one warning a healthy mixed chat raises: session_debug._warnings compares
+#: bundles with chat_log entries, and the system answer and the CC turn write a
+#: chat_log entry but no bundle.
+BUNDLE_COUNT_WARNING = "bundle_chatlog_count_mismatch"
+
+
+@turn
+@pytest.mark.parametrize("q", QUESTIONS, ids=lambda q: q.key)
+def test_each_question_completes_on_its_engine_through_the_router(q, chat_run):
+    rec = _rec(chat_run, q.key)
+    assert rec.error is None, f"{q.key}: {rec.error}"
+    assert rec.status == "completed", f"{q.key}: status {rec.status}"
+    assert (rec.route, rec.source) == (q.route, "baml"), (
+        f"{q.key}: routed to {rec.route} by {rec.source}; expected {q.route} by baml. "
+        "A 'heuristic' source means the BAML router is not answering.")
+    assert rec.reply.strip(), f"{q.key}: empty reply"
+
+
+@turn
+def test_every_turn_rendered_its_reply_and_its_route_entry(chat_run, nessie_page):
+    bubbles = nessie_page.locator('[data-testid="message-bubble"][data-role="assistant"]')
+    assert bubbles.count() >= len(chat_run)
+    for i, rec in enumerate(chat_run):
+        _completed(chat_run, rec.key)
+        assert plain_prefix(rec.reply) in normalize(bubbles.nth(i).inner_text()), (
+            f"{rec.key}: the page does not show the reply the API returned")
+        assert rec.debug_agents.count(ROUTE_ENTRY_AGENT) >= 1, (
+            f"{rec.key}: the Debug panel has no route entry for this turn "
+            f"(entries: {rec.debug_agents})")
+
+
+@turn
+def test_the_system_answer_registers_no_bundle(chat_run):
+    assert _completed(chat_run, "capabilities").bundle_id is None
+
+
+@turn
+@pytest.mark.parametrize("q", BUNDLE_QUESTIONS, ids=lambda q: q.key)
+def test_bundle_turns_download_and_took_the_expected_path(q, chat_run, nessie_admin_api, base_url):
+    rec = _completed(chat_run, q.key)
+    assert isinstance(rec.bundle_id, int), f"{q.key}: no bundle registered"
+    root = f"{base_url}/nextseek_api/assistant/sessions/{rec.session_id}/bundles/{rec.bundle_id}/"
+    r = nessie_admin_api.get(root, timeout=60)
+    assert r.status_code == 200, f"bundle JSON: {r.status_code}"
+    bundle = r.json()
+    assert bundle_path(bundle.get("mode")) == q.path, (
+        f"{q.key}: the bundle was built by the {bundle_path(bundle.get('mode'))} path "
+        f"(mode {bundle.get('mode')!r}); expected {q.path}")
+    meta = nessie_admin_api.get(f"{root}?part=metadata", timeout=60)
+    assert meta.status_code == 200 and "omitted" in meta.json()
+    if q.path == "api":
+        assert "api_result_full" in bundle, "the API bundle lacks the full API result"
+        # A graph bundle offers no spreadsheet: search_results answers only a
+        # search mode and all_tables only a reporter bundle (download_artifact in
+        # nextseek_api/services/assistant.py), and build_artifacts gives a
+        # graph_query bundle no table.
+        xlsx = [nessie_admin_api.get(f"{root}artifacts/{key}/", timeout=120)
+                for key in ("search_results", "all_tables")]
+        assert any(x.status_code == 200 and "spreadsheet" in x.headers.get("Content-Type", "")
+                   and len(x.content) > 0 for x in xlsx), (
+            f"{q.key}: neither search_results nor all_tables downloaded as xlsx: "
+            f"{[x.status_code for x in xlsx]}")
+    # Every file the turn offered the page downloads through the same route.
+    for art in (rec.result or {}).get("artifacts") or []:
+        if art.get("artifact_type") != "file":
+            continue
+        key = art["key"]
+        assert re.fullmatch(r"\w+", key), (
+            f"{q.key}: artifact key {key!r} is not word characters, so its download "
+            "URL cannot resolve")
+        got = nessie_admin_api.get(f"{root}artifacts/{key}/", timeout=120)
+        assert got.status_code == 200 and len(got.content) > 0, (
+            f"{q.key}: artifact {key}: {got.status_code}")
+    assert set(rec.page_downloads) == {"json", "metadata"}, (
+        f"{q.key}: the page's JSON and Metadata downloads did not both work")
+
+
+@turn
+def test_the_cc_turn_has_a_model_artifacts_and_a_bounded_cost(chat_run, nessie_admin_api, base_url):
+    rec = _completed(chat_run, CC_QUESTION.key)
+    assert rec.model_id, "cc_turn_meta.model_id is null, so the proxy will answer 403"
+    assert rec.cost_usd is not None and 0 < rec.cost_usd <= CC_TURN_CAP_USD, (
+        f"reported CC cost {rec.cost_usd}")
+    # A turn that wrote one file lists that file; one that wrote several lists only
+    # their <turn_id>/artifacts.zip (_publish_artifacts in cc_engine.py). Either key
+    # names a real file under the turn's directory.
+    files = [a for a in (rec.result or {}).get("artifacts") or []
+             if a.get("artifact_type") == "file"]
+    assert files, "the CC turn left no artifact"
+    assert rec.page_artifacts >= 1, "the page rendered no artifact link for the CC turn"
+    key = files[0]["key"]
+    turn_id = key.split("/", 1)[0]
+    root = f"{base_url}/nextseek_api/cc-assistant/artifacts/{rec.session_id}/download/"
+    one = nessie_admin_api.get(root, params={"key": key}, timeout=120)
+    assert one.status_code == 200 and len(one.content) > 0, f"one file: {one.status_code}"
+    zipped = nessie_admin_api.get(root, params={"key": "all", "turn_id": turn_id}, timeout=120)
+    assert zipped.status_code == 200 and "zip" in zipped.headers.get("Content-Type", ""), (
+        f"the zip: {zipped.status_code} {zipped.headers.get('Content-Type')}")
+    alias = nessie_admin_api.get(
+        f"{base_url}/nextseek_api/nessie/sessions/{rec.session_id}/artifacts/",
+        params={"key": key}, timeout=120)
+    assert alias.status_code == 200, f"nessie artifacts alias: {alias.status_code}"
+
+
+@turn
+def test_the_session_detail_matches_the_page(chat_run, nessie_admin_api, base_url):
+    sid = chat_run[0].session_id
+    assert {r.session_id for r in chat_run} == {sid}, "the questions did not share one chat"
+    r = nessie_admin_api.get(f"{base_url}/nextseek_api/assistant/sessions/{sid}/",
+                             params={"include": "turns"}, timeout=60)
+    assert r.status_code == 200
+    turns = r.json()["turns"]
+    assert len(turns) == len(QUESTIONS), f"{len(turns)} turns, expected {len(QUESTIONS)}"
+    for t, rec in zip(turns, chat_run):
+        assert t["user_query"] == rec.text
+        # The NS writer stores the reply cut at its "**Debug info**" block
+        # (chat_memory._strip_debug_block); the CC writer stores it whole.
+        stored = t["reply"].strip()
+        assert stored and rec.reply.strip().startswith(stored), (
+            f"{rec.key}: the stored reply is not the reply the API returned")
+        if rec.bundle_id is not None:
+            assert t["bundle_id"] == rec.bundle_id
+
+
+@turn
+def test_the_debug_endpoint_reports_the_session_and_resolves_a_task(chat_run, nessie_admin_api, base_url):
+    sid = chat_run[0].session_id
+    r = nessie_admin_api.get(f"{base_url}/nextseek_api/nessie/sessions/{sid}/debug/",
+                             params={"include": "transcripts"}, timeout=60)
+    assert r.status_code == 200
+    d = r.json()
+    assert d["resolved_as"] == "session"
+    counts = d["session"]["counts"]
+    assert (counts["tasks"], counts["ledger_turns"], counts["chat_log_entries"]) == (
+        len(QUESTIONS),) * 3, counts
+    assert len(d["turns"]) == len(QUESTIONS) and len(d["tasks"]) == len(QUESTIONS)
+    assert [row["route"] for row in d["ledger"]] == [q.route for q in QUESTIONS]
+    assert all(row["route_source"] == "baml" for row in d["ledger"]), d["ledger"]
+    assert d["transcripts"], "no CC transcript recorded"
+    assert d["files"], "no files listed"
+    bundled = sum(1 for rec in chat_run if rec.bundle_id is not None)
+    expected = {BUNDLE_COUNT_WARNING} if counts["bundles"] == bundled < len(QUESTIONS) else set()
+    unexpected = [w for w in d["warnings"] if w.get("code") not in expected]
+    assert not unexpected, f"warnings: {unexpected}"
+    t = nessie_admin_api.get(
+        f"{base_url}/nextseek_api/nessie/sessions/{chat_run[-1].task_id}/debug/", timeout=60)
+    assert t.status_code == 200 and t.json()["resolved_as"] == "task"
+    transcript = d["transcripts"][0]
+    got = nessie_admin_api.get(f"{base_url}{transcript['url']}", timeout=60)
+    assert got.status_code == 200 and "ndjson" in got.headers.get("Content-Type", "")
+    alias = nessie_admin_api.get(
+        f"{base_url}/nextseek_api/nessie/sessions/{sid}/transcript/{transcript['turn_id']}/",
+        params={"cc_session_id": transcript["cc_session_id"]}, timeout=60)
+    assert alias.status_code == 200, f"nessie transcript alias: {alias.status_code}"
+
+
+@turn
+def test_the_reopened_chat_shows_every_turn(chat_run, nessie_page):
+    from playwright.sync_api import expect
+
+    sid = chat_run[0].session_id
+    page = nessie_page
+    page.reload(wait_until="domcontentloaded")
+    item = page.locator(f'[data-testid="session-item"][data-session-id="{sid}"]')
+    expect(item, "the chat is not in the saved-chats sidebar after a reload").to_be_visible(
+        timeout=60_000)
+    item.click()
+    bubbles = page.locator('[data-testid="message-bubble"][data-role="assistant"]')
+    bubbles.nth(len(QUESTIONS) - 1).wait_for(state="visible", timeout=60_000)
+    assert bubbles.count() == len(QUESTIONS)
+    # Each turn's debug detail is rebuilt from the server: NS bundle turns from the
+    # bundle's plans, the CC turn from its cc_traces (hydrateFromTurns in
+    # chat_frontend/src/hooks/useMessages.ts). The Debug panel itself shows only the
+    # newest turn (debugForTurns), and a CC turn legitimately has no entries there.
+    for i, q in enumerate(QUESTIONS):
+        if q.bundle or q.cc_artifact:
+            expect(bubbles.nth(i).get_by_role("button", name="Search Details"),
+                   f"{q.key}: the reopened turn has no Search Details").to_be_visible(
+                timeout=30_000)
+    _open_debug(page)
+    page.keyboard.press("Escape")
+
+
+@turn
+def test_spend_stayed_under_the_ceiling(chat_run, nessie_budget):
+    assert nessie_budget.refused == 0, "the page tried to send more chat POSTs than questions"
+    assert not nessie_budget.over_ceiling, (
+        f"reported spend ${nessie_budget.spent_usd:.2f} is over ${SPEND_CEILING_USD:.2f}")
