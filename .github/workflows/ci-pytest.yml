@@ -4,8 +4,11 @@ name: pytest (informational)
 # baseline and never blocks. The suite is not green and will not be; a
 # "must be green" gate fails on run one and is ignored by run five.
 #
-# Measured 2026-09-01 on ghcr.io/astral-sh/uv:debian, cold cache:
+# Measured 2026-09-01 on ghcr.io/astral-sh/uv:debian, cold cache, with the lane
+# list from before the NessieAI move:
 #   uv sync 45s, tests 4m10s, 228 failed / 7663 passed / 73 errors.
+# The current lane list was last measured in the gate lane; see the header of
+# ci/pytest-baseline.txt.
 
 on:
   push:
@@ -42,8 +45,10 @@ jobs:
       - name: Generate the BAML client
         run: uv run baml-cli generate --from ./NessieAI/dmac_assistant/baml_src --no-version-check
 
+      # Not continue-on-error: this step fails only when the lanes did not run at
+      # all (see the exit-code check at the end), never because tests failed.
       - name: Run the no-stack lanes
-        continue-on-error: true
+        id: lanes
         env:
           # SQLite in memory, and stubs for everything that normally comes from
           # dmac/local_settings.py, which is gitignored and absent here.
@@ -59,11 +64,29 @@ jobs:
           # --continue-on-collection-errors is likewise mandatory, for the same reason.
           # Never add -p no:logging: it removes the plugin providing caplog and
           # manufactures "fixture 'caplog' not found" errors.
+          # Name each NessieAI/tests/<unit> lane; never pass NessieAI/ wholesale.
+          # That would also collect NessieAI/history (frozen, never run), the
+          # cc-runtime suite under NessieAI/docker (its own uv env and pytest
+          # config) and the nessie_tests harness, which is not a CI lane yet.
           uv run pytest \
-            nextseek_api seek chat_nextseek startup build_tools scripts \
+            nextseek_api seek startup scripts \
+            NessieAI/tests/cc NessieAI/tests/router NessieAI/tests/hibayes \
+            NessieAI/tests/ns NessieAI/tests/api NessieAI/tests/schema_rag \
+            NessieAI/tests/chat_nextseek NessieAI/tests/build_tools \
             --continue-on-collection-errors -q \
             | tee pytest-run.txt
-          echo "pytest exit: ${PIPESTATUS[0]}"
+          rc=${PIPESTATUS[0]}
+          echo "pytest exit: $rc"
+          # Exit 0 or 1 means the lanes ran; failing tests are scored by the
+          # baseline diff below, not here. Any other exit means they did not run:
+          # 4 is what a lane path that no longer exists produces (a usage error,
+          # zero tests executed), 2 is an interrupt, 3 an internal error, 5 means
+          # nothing was collected. Passing that through as green would let the
+          # diff report every baseline entry as fixed, so fail the step instead.
+          if [ "$rc" -gt 1 ]; then
+            echo "::error::pytest exited $rc, so the lanes did not run (4 means a lane path is missing or an argument is wrong)"
+            exit "$rc"
+          fi
 
       - name: Diff against the baseline
         run: |
@@ -74,10 +97,13 @@ jobs:
       # The one blocking check in this otherwise informational job. Deterministic
       # and new, so it carries none of the "red on run one" risk that made the
       # rest of the job informational. It runs last so that a failing gate never
-      # suppresses the informational summary above it, and it is what decides the
-      # job's exit code: the pytest lane itself is continue-on-error, so once the
-      # setup steps are through, this is the only result that can fail the job.
+      # suppresses the informational summary above it. Once the setup steps are
+      # through, only two results can fail the job: this gate, and the lanes step
+      # when pytest did not run at all. Failing tests never fail it. The if: keeps
+      # the gate running after a lanes-step failure, and skips it only when setup
+      # failed before the lanes step was reached.
       - name: Route registry completeness gate
+        if: ${{ !cancelled() && steps.lanes.outcome != 'skipped' }}
         env:
           DJANGO_SETTINGS_MODULE: dmac.test_settings
           PYTHONDONTWRITEBYTECODE: "1"

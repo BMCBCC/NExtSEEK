@@ -1,5 +1,11 @@
 [run]
-source = nextseek_api
+# NessieAI holds the AI code that used to sit under nextseek_api (cc_assistant,
+# eval, schema_rag, the assistant engine), so it is measured too. chat_nextseek
+# and dmac_assistant are their own dists and were never in this report's scope;
+# docker/ holds image build contexts, history/ is frozen and never run.
+source =
+    nextseek_api
+    NessieAI
 omit =
     nextseek_api/tests.py
     nextseek_api/tests/*
@@ -8,6 +14,12 @@ omit =
     */conftest.py
     nextseek_api/example.py
     nextseek_api/batch_upload/scripts/*
+    NessieAI/tests/*
+    NessieAI/history/*
+    NessieAI/docker/*
+    NessieAI/chat_frontend/*
+    NessieAI/chat_nextseek/*
+    NessieAI/dmac_assistant/*
 
 [report]
 exclude_lines =
