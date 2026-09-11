@@ -46,7 +46,7 @@ but produces a loud banner and red doctor check. Do not bypass this with raw
 | Config-only change (env / local_settings) | DEPLOYMENT.md §4 |
 | Roll back a bad deploy | DEPLOYMENT.md §5 |
 | Verify a deploy | DEPLOYMENT.md §6 (always, after every deploy) |
-| Container-CC specifics / OI-3 checks | `nextseek_api/cc_assistant/DEPLOY.md` + DEPLOYMENT.md §9 |
+| Container-CC specifics / OI-3 checks | `NessieAI/cc/DEPLOY.md` + DEPLOYMENT.md §9 |
 
 ## Non-negotiable gates (apply to every deploy)
 

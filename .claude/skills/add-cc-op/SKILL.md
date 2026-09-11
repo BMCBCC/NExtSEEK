@@ -12,7 +12,7 @@ description: >-
 # Add a Container-CC operation
 
 Canonical registration is pydantic `OpSpec` in
-`nextseek_api/cc_assistant/op_registry/ops.py` plus a real shim and a real
+`NessieAI/cc/op_registry/ops.py` plus a real shim and a real
 runner table entry. `plugin.json` and `discover_ops` are **not** the
 registration source of truth.
 
@@ -23,9 +23,9 @@ the surfaces.
 
 Copy an existing shim of the same transport:
 
-- viewset / sidecar: `docker/cc-runtime/build_context/plugins/nextseek/bin/nextseek-query`
+- viewset / sidecar: `NessieAI/docker/cc-runtime/build_context/plugins/nextseek/bin/nextseek-query`
   (exec `_nextseek_runner.py --agent <runner_key> …`)
-- local_subcommand: `docker/cc-runtime/build_context/plugins/nextseek/bin/nextseek-sampletype-attrs`
+- local_subcommand: `NessieAI/docker/cc-runtime/build_context/plugins/nextseek/bin/nextseek-sampletype-attrs`
   (exec `_batch_upload_runner.py <runner_key> "$@"`)
 
 Name it `nextseek-<op>`. Forward required argv flags in OpSpec order. Mark
@@ -51,7 +51,7 @@ Do not invent a parallel catalog or a magic op count.
 
 Viewset, sidecar contract/handler/gate, or write-confirm policy changes are
 **not** mechanical. Edit `_ws_contract.py` `SIDECAR_OPS`,
-`nextseek_api/assistant/granular.py` `_HANDLERS`, and `write_gate.py` only
+`NessieAI/ns/granular.py` `_HANDLERS`, and `write_gate.py` only
 when that transport needs them, and pause for separate review. A new
 viewset op also updates Audit A's viewset membership expectation.
 
@@ -64,8 +64,8 @@ install oracle. Do not treat `plugin.json` as the op list.
 ## 6. Export `ops.json`
 
 ```
-python -m nextseek_api.cc_assistant.op_registry.export --write --root <repo>
-python -m nextseek_api.cc_assistant.op_registry.export --check --root <repo>
+python -m NessieAI.cc.op_registry.export --write --root <repo>
+python -m NessieAI.cc.op_registry.export --check --root <repo>
 ```
 
 This writes canonical `op_registry/ops.json` and every installed plugin
@@ -74,8 +74,8 @@ baked `context/ops.json`.
 ## 7. Regenerate mechanical surfaces
 
 ```
-python -m build_tools.gen_op_surfaces --write --root <repo>
-python -m build_tools.gen_op_surfaces --check --root <repo>
+python -m NessieAI.build_tools.gen_op_surfaces --write --root <repo>
+python -m NessieAI.build_tools.gen_op_surfaces --check --root <repo>
 ```
 
 Commands, SKILL matrices, container CLAUDE inventories, Dockerfile
@@ -84,7 +84,7 @@ COPY/PATH, Compose additional contexts, baked capabilities, and
 
 ## 8. Run Audit A, no-write checks, focused tests, and the Task 12 gate
 
-- Audit A: `pytest nextseek_api/cc_assistant/tests/test_op_registry_audit.py`
+- Audit A: `pytest NessieAI/tests/cc/test_op_registry_audit.py`
 - No-write: `export --check` and `gen_op_surfaces --check` with the repo
   mounted read-only
 - Focused tests for the new op

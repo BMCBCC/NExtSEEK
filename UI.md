@@ -77,7 +77,7 @@ chat_frontend/src/
 
 ### Commands
 ```bash
-cd chat_frontend
+cd NessieAI/chat_frontend
 npm install          # Install deps
 npm run dev          # Dev server (localhost:5173)
 npm run build        # Production build (tsc -b && vite build)
@@ -86,7 +86,7 @@ npm test             # Run tests (vitest run)
 npm run test:e2e     # Playwright E2E tests
 ```
 
-All seven are declared in `chat_frontend/package.json` under `scripts`.
+All seven are declared in `NessieAI/chat_frontend/package.json` under `scripts`.
 
 ### Key Components
 | Component | Path | Purpose |

@@ -45,7 +45,7 @@ dual-homed service. Per-turn agent containers are spawned from the
 2. **Fill the gitignored config.** Secrets live **only** in gitignored
    files: export `AWS_BEARER_TOKEN_BEDROCK` (and optionally `AWS_REGION`) in
    your shell before install so the installer renders
-   `docker/bedrock-proxy/proxy-secret.env` (mode 0600) itself — never copy
+   `NessieAI/docker/bedrock-proxy/proxy-secret.env` (mode 0600) itself — never copy
    the token out of a running container, and never commit it. The same token
    also belongs in `docker/nextseek.env` for the native (non-CC) chat path;
    see DEPLOYMENT.md §8.
@@ -72,7 +72,7 @@ the image has no bare `python` on PATH, so use `uv run --no-sync`, which
 executes in the app env `/app/.venv` without modifying it):
 
 ```bash
-docker exec nextseek uv run --no-sync python -c "from nextseek_api.cc_assistant import cc_engine; print(cc_engine.cc_runner_available())"
+docker exec nextseek uv run --no-sync python -c "from NessieAI.cc import cc_engine; print(cc_engine.cc_runner_available())"
 # -> (True, 'ok')
 ```
 
@@ -104,29 +104,29 @@ docker inspect dmac-bedrock-proxy --format '{{range .Config.Env}}{{println .}}{{
 The sidecar holds no credentials (only its base-URL/staging/port config); the
 proxy holds exactly the Bedrock token + region; the agent env is built solely
 by `cc_engine.build_agent_environment` and contains none of the 16 shared
-backend credentials (enumerated in `tests/validate_cc_acceptance.py`).
+backend credentials (enumerated in `NessieAI/tests/cc/validate_cc_acceptance.py`).
 
 ## Acceptance (paid, gated)
 
 ```bash
 # native 8/8 regression baseline
 docker exec -e RUN_REALSTACK=1 -e SEEK_TEST_USER=.. -e SEEK_TEST_PASS=.. nextseek sh -lc \
-  'cd /app && uv run python manage.py test nextseek_api.assistant.tests.test_granular_realstack \
+  'cd /app && uv run python manage.py test NessieAI.tests.ns.test_granular_realstack \
    --settings=dmac.test_settings_realstack --noinput --keepdb -v2'
 
 # the Container-CC route, end-to-end (router=baml -> real Opus via proxy -> publish)
 docker exec -e RUN_REALSTACK=1 -e SEEK_TEST_USER=.. -e SEEK_TEST_PASS=.. nextseek sh -lc \
-  'cd /app && uv run python manage.py test nextseek_api.cc_assistant.tests.test_cc_realstack \
+  'cd /app && uv run python manage.py test NessieAI.tests.cc.test_cc_realstack \
    --settings=dmac.test_settings_realstack --noinput -v2'
 
 # reproducible re-check of a committed evidence bundle (zero spend; use
 # `uv run --no-sync` — the image has no bare `python` on PATH)
-docker exec nextseek uv run --no-sync python -m nextseek_api.cc_assistant.tests.validate_cc_acceptance \
+docker exec nextseek uv run --no-sync python -m NessieAI.tests.cc.validate_cc_acceptance \
   outputs/cc_acceptance/<run_id>
 
 # full Step-7 compose-deploy evidence bundle re-validation (zero spend, 61
 # checks; runs on the HOST from the repo root — stdlib-only module)
-python3 -m nextseek_api.cc_assistant.tests.validate_step7_compose_deploy <run_dir> [repo_root]
+python3 -m NessieAI.tests.cc.validate_step7_compose_deploy <run_dir> [repo_root]
 ```
 
 Both live suites are skipped unless `RUN_REALSTACK=1` is set explicitly, and

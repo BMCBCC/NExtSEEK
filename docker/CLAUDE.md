@@ -200,7 +200,7 @@ security regression, a silent deployment failure, or a red suite — never a ref
 
 ## Test command
 
-The one lane this directory owns, run from `docker/cc-runtime/`:
+The one lane this directory owns, run from `NessieAI/docker/cc-runtime/`:
 
 ```
 uv run --no-project --with pytest --with polars --with fastexcel \

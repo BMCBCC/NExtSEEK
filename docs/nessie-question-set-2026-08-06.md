@@ -4,9 +4,9 @@
 Nothing here has been run. This document exists to be argued with BEFORE a single
 paid turn is spent.
 
-The corpus edit is staged in `nessie_tests/corpus.json` on this branch and the unit
+The corpus edit is staged in `NessieAI/tests/nessie_tests/corpus.json` on this branch and the unit
 suite is green (**1215 passed, 28 skipped**; baseline 1216/28 — see §9). Reverting is
-`git checkout nessie_tests/corpus.json`.
+`git checkout NessieAI/tests/nessie_tests/corpus.json`.
 
 ---
 
@@ -603,7 +603,7 @@ Suggested `--max-usd 45`.
 
 ```bash
 uv run --no-project --with pytest --with pydantic --with requests --with beautifulsoup4 \
-  python -m pytest nessie_tests/tests -q -p no:cacheprovider
+  python -m pytest NessieAI/tests/nessie_tests/tests -q -p no:cacheprovider
 ```
 
 **Before: 1216 passed, 28 skipped. After: 1215 passed, 28 skipped.**

@@ -132,8 +132,11 @@ copy of this worktree, after generating the BAML client the way
 ```bash
 docker run --rm -i -e DJANGO_SETTINGS_MODULE=dmac.test_settings \
   -e PYTHONDONTWRITEBYTECODE=1 -v "$COPY":/src -w /src nextseek-nextseek:latest \
-  /app/.venv/bin/python -m pytest nextseek_api seek chat_nextseek startup \
-  build_tools scripts --continue-on-collection-errors -q -p no:cacheprovider
+  /app/.venv/bin/python -m pytest nextseek_api seek startup scripts \
+  NessieAI/tests/cc NessieAI/tests/router NessieAI/tests/hibayes \
+  NessieAI/tests/ns NessieAI/tests/api NessieAI/tests/schema_rag \
+  NessieAI/tests/chat_nextseek NessieAI/tests/build_tools \
+  --continue-on-collection-errors -q -p no:cacheprovider
 ```
 
 2026-09-03: **273 failed, 8195 passed, 80 skipped, 8 xfailed, 73 errors in
@@ -141,8 +144,8 @@ docker run --rm -i -e DJANGO_SETTINGS_MODULE=dmac.test_settings \
 `ci/pytest-baseline.txt`. Mount a writable COPY rather than the worktree: the
 run has to generate the gitignored BAML client into the tree first
 (`.github/workflows/ci-pytest.yml:42-43`), and a fresh checkout has none — a
-`ls -d` for `dmac_assistant/src/dmac_assistant/router/baml_client` and
-`dmac_assistant/tools/e2e/baml_client`, the two directories that generator
+`ls -d` for `NessieAI/dmac_assistant/src/dmac_assistant/router/baml_client` and
+`NessieAI/dmac_assistant/tools/e2e/baml_client`, the two directories that generator
 writes, finds neither in this worktree.
 
 ## See also

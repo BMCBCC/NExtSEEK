@@ -190,7 +190,7 @@ and websockets supplied on the fly and the declared `addopts` overridden:
 `Coverage failure: total of 0 is less than fail-under=95`; see `docker/CLAUDE.md`.
 
 ```
-cd docker/cc-runtime && uv run --no-project \
+cd NessieAI/docker/cc-runtime && uv run --no-project \
   --with pytest --with polars --with fastexcel --with xlsxwriter \
   --with orjson --with pydantic --with httpx --with websockets \
   python -m pytest tests/unit -q -o addopts=""

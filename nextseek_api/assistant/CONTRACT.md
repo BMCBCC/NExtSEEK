@@ -191,11 +191,12 @@ Both commands run inside the `nextseek` container:
 ```bash
 # free suite (or use the cheaper throwaway-container lane in CLAUDE.md)
 docker exec nextseek sh -lc 'cd /app && uv run python manage.py test \
-  nextseek_api.assistant.tests --settings=dmac.test_settings_realstack --noinput --keepdb'
+  NessieAI.tests.api NessieAI.tests.ns NessieAI.tests.router.test_route_capabilities \
+  --settings=dmac.test_settings_realstack --noinput --keepdb'
 
 # paid real-stack acceptance (needs a local SEEK login for api-read/api-write)
 docker exec -e RUN_REALSTACK=1 -e SEEK_TEST_USER=<user> -e SEEK_TEST_PASS=<pass> nextseek sh -lc \
-  'cd /app && uv run python manage.py test nextseek_api.assistant.tests.test_granular_realstack \
+  'cd /app && uv run python manage.py test NessieAI.tests.ns.test_granular_realstack \
    --settings=dmac.test_settings_realstack --noinput --keepdb'
 ```
 

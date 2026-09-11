@@ -16,7 +16,7 @@ under another name: a `/usr/bin/grep -rn` for the alternation
 document, [../README.md](../README.md), and one `nessie_tests` note that is
 itself a restatement of these docs (`nessie_tests/FAMILIES.json:9897`, whose
 entry begins `docs:`). The retirement is recorded at
-`chat_nextseek/CITATIONS.txt:139-142`.
+`NessieAI/chat_nextseek/CITATIONS.txt:139-142`.
 
 So this runbook now documents the mechanism, not that particular corpus. Bring
 your own query file, in one of the three shapes
@@ -46,9 +46,9 @@ you put in it.
 ### 1. Verify credentials
 
 ```bash
-docker run --rm --network none -v <scratch-copy>:/app/chat_nextseek:z \
-  -w /app/chat_nextseek \
-  -e CATALOG_FILE=/app/chat_nextseek/agent_model_catalog.json -e GCP_API_KEY=... \
+docker run --rm --network none -v <scratch-copy>:/app/NessieAI/chat_nextseek:z \
+  -w /app/NessieAI/chat_nextseek \
+  -e CATALOG_FILE=/app/NessieAI/chat_nextseek/agent_model_catalog.json -e GCP_API_KEY=... \
   nextseek-nextseek:latest \
   /app/.venv/bin/python -c "import chat_nextseek.config as c; c.ChatConfig(); print('config OK')"
 ```
@@ -56,12 +56,12 @@ docker run --rm --network none -v <scratch-copy>:/app/chat_nextseek:z \
 This is a real gate, and it fires before any query runs. Observed 2026-09-03
 with the catalog and key set, `config OK`; with neither,
 `RuntimeError: GCP mode selected but GCP_API_KEY is not set.`
-(`chat_nextseek/src/chat_nextseek/config.py:490-493`); with the key but no
+(`NessieAI/chat_nextseek/src/chat_nextseek/config.py:490-493`); with the key but no
 catalog, `RuntimeError: Neither AGENT_MODEL_CATALOG nor CATALOG_FILE is set.`
-(`chat_nextseek/src/chat_nextseek/config.py:262-266`). Note that a bare
+(`NessieAI/chat_nextseek/src/chat_nextseek/config.py:262-266`). Note that a bare
 `ChatConfig()` checks the default `gcp` mode; the CLI's `--mode` overrides it
-(`chat_nextseek/src/chat_nextseek/evaluator/runner.py:163-169`, passed into the
-config at `chat_nextseek/src/chat_nextseek/evaluator/runner.py:179`), so re-run
+(`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/runner.py:163-169`, passed into the
+config at `NessieAI/chat_nextseek/src/chat_nextseek/evaluator/runner.py:179`), so re-run
 this check with the key that mode needs.
 
 Anything raised here is an `infra_failures` candidate; fix it before proceeding.
@@ -70,19 +70,19 @@ Anything raised here is an `infra_failures` candidate; fix it before proceeding.
 
 Older copies of this file said the first CLI call auto-regenerates
 `src/baml_client/` from `baml_src/`. It tries
-(`chat_nextseek/src/chat_nextseek/evaluator/__main__.py:15`) and it fails, in
+(`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/__main__.py:15`) and it fails, in
 this repo, with or without a network. Pass
 `CHAT_NEXTSEEK_SKIP_BAML_BOOTSTRAP=1`
-(`chat_nextseek/src/chat_nextseek/evaluator/bootstrap.py:51-52`). The evidence
+(`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/bootstrap.py:51-52`). The evidence
 and the consequence — judgments on supported paths still need a client that
 cannot be generated — are in [../README.md](../README.md).
 
 ### 3. Run the batch (async, resumable)
 
 ```bash
-docker run --rm -v <scratch-copy>:/app/chat_nextseek:z -w /app/chat_nextseek \
+docker run --rm -v <scratch-copy>:/app/NessieAI/chat_nextseek:z -w /app/NessieAI/chat_nextseek \
   -e CHAT_NEXTSEEK_SKIP_BAML_BOOTSTRAP=1 \
-  -e CATALOG_FILE=/app/chat_nextseek/agent_model_catalog.json \
+  -e CATALOG_FILE=/app/NessieAI/chat_nextseek/agent_model_catalog.json \
   -e GCP_API_KEY=... -e NEXTSEEK_BASE_URL=... -e API_USER=... -e API_PASS=... \
   nextseek-nextseek:latest \
   /app/.venv/bin/python -m chat_nextseek.evaluator \
@@ -93,14 +93,14 @@ docker run --rm -v <scratch-copy>:/app/chat_nextseek:z -w /app/chat_nextseek \
 ```
 
 On completion it prints five lines — `state:`, `json:`, `html:`, `status:`,
-`infra_failures:` (`chat_nextseek/src/chat_nextseek/evaluator/runner.py:375-379`)
+`infra_failures:` (`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/runner.py:375-379`)
 — and exits 0 only when `run_status` is `completed`
-(`chat_nextseek/src/chat_nextseek/evaluator/runner.py:380`). Three files land in
+(`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/runner.py:380`). Three files land in
 the output directory: the resume state `batch-<runid>.json`
-(`chat_nextseek/src/chat_nextseek/evaluator/reports.py:586-587`), the report
+(`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/reports.py:586-587`), the report
 `eval-<runid>-<UTC timestamp>.json`
-(`chat_nextseek/src/chat_nextseek/evaluator/reports.py:346-349`), and its
-sibling `.html` (`chat_nextseek/src/chat_nextseek/evaluator/runner.py:226-233`).
+(`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/reports.py:346-349`), and its
+sibling `.html` (`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/runner.py:226-233`).
 
 ### 4. If it gets interrupted, resume
 
@@ -112,7 +112,7 @@ sibling `.html` (`chat_nextseek/src/chat_nextseek/evaluator/runner.py:226-233`).
 
 `--eval-batch-async` is mandatory on a resume: without it the CLI prints
 `[evaluator] --eval-batch-resume requires --eval-batch-async.` and exits 2
-(`chat_nextseek/src/chat_nextseek/evaluator/runner.py:382-384`). Verified
+(`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/runner.py:382-384`). Verified
 2026-09-03 — both the exit 2 and, with the flag, a resume that reused the same
 run id and rewrote the same three artifact paths.
 
@@ -128,19 +128,19 @@ appear inside your scratch copy, owned by root.
 ## Reading the report
 
 Look at `run_status` first
-(`chat_nextseek/src/chat_nextseek/evaluator/reports.py:308-316`):
+(`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/reports.py:308-316`):
 
 - `completed` -> no query landed in `queries_failed`, `queries_unsupported`,
   `queries_with_errors`, `infra_failures` or `queries_exceptions`; this is also
   the only value that sets `success`
-  (`chat_nextseek/src/chat_nextseek/evaluator/reports.py:318`)
+  (`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/reports.py:318`)
 - `completed_with_failures` -> at least one of `queries_failed`,
   `queries_unsupported`, `queries_with_errors` or `infra_failures` is non-zero
 - `crashed` -> at least one `queries_exceptions` row; inspect those first
 
 See [operations.md#failure-buckets](operations.md#failure-buckets) for bucket
 semantics, and note that a report is assigned exactly one bucket
-(`chat_nextseek/src/chat_nextseek/evaluator/reports.py:264-292`).
+(`NessieAI/chat_nextseek/src/chat_nextseek/evaluator/reports.py:264-292`).
 
 ## Known shape
 

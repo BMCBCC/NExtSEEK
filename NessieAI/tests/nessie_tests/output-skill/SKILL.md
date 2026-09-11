@@ -68,7 +68,7 @@ one is the reason it exists.
 
 | Status | What the harness is telling you | Verdict to reach for |
 |---|---|---|
-| `error` **with `"outage": true`** | Every provider in an agent's fallback chain returned 503. The reply carries `All provider fallbacks exhausted` (`nessie_tests/outage.py`), so no parser ran, no query was issued, and no product behaviour was exercised. `gate_failed()` exempts it. | **`notrun`.** Not `real` — nothing was tested. Not `drift` — the assertion is fine. Ten of the eighteen reds in the 2026-08-03 seed-6 run were one Bedrock outage, and three reviewers spent time triaging that noise as product behaviour. Only a re-run can say anything. |
+| `error` **with `"outage": true`** | Every provider in an agent's fallback chain returned 503. The reply carries `All provider fallbacks exhausted` (`NessieAI/tests/nessie_tests/outage.py`), so no parser ran, no query was issued, and no product behaviour was exercised. `gate_failed()` exempts it. | **`notrun`.** Not `real` — nothing was tested. Not `drift` — the assertion is fine. Ten of the eighteen reds in the 2026-08-03 seed-6 run were one Bedrock outage, and three reviewers spent time triaging that noise as product behaviour. Only a re-run can say anything. |
 | `no_assertions` | The case evaluated **zero** criteria — every one it carried was recorded `skipped` as unobservable, or it carried none. Counted as a real failure (`runner._is_real_failure`). | **`drift`**, and act on it: a case that proves nothing is corpus drift. `known_fail` does NOT excuse it — the tag claims the case fails, and this case demonstrated neither that nor its absence. Fix the case; never re-file it as `pass`. |
 | `xpass` | A `known_fail` case or group passed every criterion. Counted as a real failure. | **`drift`.** The expectation is stale. Retire the tag, which flips the case into a live regression guard. |
 
@@ -87,7 +87,7 @@ a real one; it can only stop captioning an outage "real product defect" before y
 have looked. Override any of it per case in `triage.json`, or replace the tiles
 wholesale with your own `stats` block.
 
-`graph_limit` now comes from `nessie_tests/limits.py` (currently 5000). Set it in
+`graph_limit` now comes from `NessieAI/tests/nessie_tests/limits.py` (currently 5000). Set it in
 `triage.json` only to review an OLDER run that really was capped at 250.
 
 Copy `examples/triage.json` and edit. Each verdict entry takes:
@@ -115,7 +115,7 @@ python scripts/build_report.py --run ./run-<date> \
 ```
 
 It joins each manifest entry to its declared turns, their asserted criteria (from
-`nessie_tests/corpus.json`), each turn's task
+`NessieAI/tests/nessie_tests/corpus.json`), each turn's task
 and engine call, and your verdict. Coverage is computed automatically. It warns
 about non-passing cases you left unjudged.
 
@@ -216,7 +216,7 @@ re-derive rather than trusting this a third time.
   but you do have to explain every `xpass`, because it means the corpus asserts
   something that is no longer true.
 - **The graph LIMIT is 5000 now, and the sentinel check is a fallback, not the
-  signal.** `nessie_tests/limits.py` holds `GRAPH_LIMIT_SENTINELS = (250, 5000)`,
+  signal.** `NessieAI/tests/nessie_tests/limits.py` holds `GRAPH_LIMIT_SENTINELS = (250, 5000)`,
   covering the historical cap and the current one, but inferring truncation from a
   row count landing on a limit is only ever a guess — it went dead the moment the
   limit moved. The real signal is `graph_result.truncated`, which the Neo4j tool

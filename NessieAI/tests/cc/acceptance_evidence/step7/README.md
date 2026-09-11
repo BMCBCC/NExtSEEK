@@ -21,7 +21,7 @@ Every bundle under `<run_id>/` is checked by the zero-spend, reproducible
 validator:
 
 ```
-python -m nextseek_api.cc_assistant.tests.validate_step7_compose_deploy <run_dir> [repo_root]
+python -m NessieAI.tests.cc.validate_step7_compose_deploy <run_dir> [repo_root]
 ```
 
 See `validate_step7_compose_deploy.py`'s module docstring and its `CHECKS`

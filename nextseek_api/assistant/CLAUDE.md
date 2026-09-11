@@ -162,9 +162,10 @@ cp startup/dev/lane_local_settings.py dmac/local_settings.py
 docker run --rm --network none \
   -e LOG_DIR=/tmp/nextseek-logs -e DJANGO_SETTINGS_MODULE=dmac.test_settings \
   -e PYTHONDONTWRITEBYTECODE=1 -e GCP_API_KEY=dummy \
-  -e CATALOG_FILE=/src/chat_nextseek/agent_model_catalog.json \
+  -e CATALOG_FILE=/src/NessieAI/chat_nextseek/agent_model_catalog.json \
   -v "$PWD":/src -w /src nextseek-nextseek:latest \
-  /app/.venv/bin/python -m pytest nextseek_api/assistant/tests -q -p no:cacheprovider
+  /app/.venv/bin/python -m pytest NessieAI/tests/api NessieAI/tests/ns \
+  NessieAI/tests/router/test_route_capabilities.py -q -p no:cacheprovider
 ```
 
 Last run here, 2026-09-03: 288 passed and 6 failed, every failure inside one

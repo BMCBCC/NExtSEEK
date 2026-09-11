@@ -10,7 +10,7 @@ the area name rule, the seeded area list, the section schema, and the
 root-cause sentinel all live there as code — this document, the GitHub Issue
 Form (`.github/ISSUE_TEMPLATE/structured-issue.yml`), and the label seeder
 (`scripts/seed_issue_labels.sh`) are all drift-guarded against it (see
-`nextseek_api/cc_assistant/tests/test_issue_conventions_guard.py`). If this
+`nextseek_api/tests/repo_guards/test_issue_conventions_guard.py`). If this
 doc and the validator ever disagree, the validator wins — file a
 `type: docs` issue against this file.
 
@@ -77,7 +77,7 @@ touch-points in the same commit/session: (1) add its one-line "covers" entry
 to the table below, (2) add a matching `create "area: <name>" ...` line to
 `scripts/seed_issue_labels.sh`, and (3) actually run `gh label create` (or
 re-run the seeder) so the label exists on GitHub. The drift guard
-(`nextseek_api/cc_assistant/tests/test_issue_conventions_guard.py::TestSeedScript::test_area_labels_match_seeded`)
+(`nextseek_api/tests/repo_guards/test_issue_conventions_guard.py::TestSeedScript::test_area_labels_match_seeded`)
 diffs this table against the seeder script and goes red until they agree —
 the area list here, the seeder, and the labels actually in use must never
 drift apart.
@@ -245,7 +245,7 @@ each caller for later `results_history` access before deferring.
 ## Verification recipe
 Confirm-present: `grep -n 'order_by("-updated_at")' nextseek_api/services/{assistant,cc_assistant}.py`
 → three cited sites select all columns. Confirm-fixed: same grep shows defer/two-step at
-all three; `pytest nextseek_api/cc_assistant/tests/` green.
+all three; `pytest NessieAI/tests/cc/` green.
 
 ## Provenance
 outstanding-items id `chatsession-orderby-1038-sibling-sites` (2026-07-23); plan-010 D2

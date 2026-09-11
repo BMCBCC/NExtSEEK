@@ -9,7 +9,7 @@ when that decision is `container_cc`.
 It is a real Django app — installed as
 `nextseek_api.cc_assistant.apps.CcAssistantConfig` at `dmac/settings.py:179` — but an
 unusual one. It declares **no models and no migrations of its own**; the ORM row it
-writes is created at `nextseek_api/cc_assistant/turn_ledger.py:28`, from a model class
+writes is created at `NessieAI/router/turn_ledger.py:28`, from a model class
 defined in `nextseek_api/assistant/models_db.py`. Its `AppConfig.ready()` hook exists
 solely to arm the LLM cost ledger (`nextseek_api/cc_assistant/apps.py:9-11`). It
 registers **no URLs**: the single HTTP surface is a ViewSet registered from outside the
@@ -19,88 +19,88 @@ So the package is a library of engine parts, not a request handler. Two thirds o
 test code — 202 Python files, 143 of them under `tests/`.
 
 Three route constants define the whole decision space —
-`nextseek_api/cc_assistant/router.py:30-32` — `nextseek_query`, `container_cc`,
+`NessieAI/router/router.py:30-32` — `nextseek_query`, `container_cc`,
 `unrelated`.
 
 ## Surface
 
-**Routing.** `decide()` at `nextseek_api/cc_assistant/router.py:308` is the one public
+**Routing.** `decide()` at `NessieAI/router/router.py:308` is the one public
 entry point. Beneath it sit three route-choosing strategies, tried in order. A
 comparative-posterior selector goes first when its Django feature flag is on
-(`nextseek_api/cc_assistant/posterior_selector.py:38`); a returned selection
-short-circuits the rest at `nextseek_api/cc_assistant/router.py:285-286`, so the BAML
+(`NessieAI/router/posterior_selector.py:38`); a returned selection
+short-circuits the rest at `NessieAI/router/router.py:285-286`, so the BAML
 router is never consulted. Otherwise a BAML router picks a destination — fed by a
 classifier that assigns a task family rather than a route — and a keyword regex
-(`nextseek_api/cc_assistant/router.py:107`) is the last resort when BAML is unreachable.
+(`NessieAI/router/router.py:107`) is the last resort when BAML is unreachable.
 No `dmac_assistant` import sits at module scope in this package's non-test code — an
 absence no single line can show, established by searching the tree; some test modules do
 import it at module scope. Every non-test site is inside a function body, including the
-loader at `nextseek_api/cc_assistant/router.py:135-139`. Two
+loader at `NessieAI/router/router.py:135-139`. Two
 telemetry-only overlays observe the outcome without changing it:
-`nextseek_api/cc_assistant/risk_overlay.py:1` and
-`nextseek_api/cc_assistant/route_monitoring.py:1`. The classifier's label space is owned
+`NessieAI/router/risk_overlay.py:1` and
+`NessieAI/router/route_monitoring.py:1`. The classifier's label space is owned
 by the `nessie_tests` corpus, not by this package
-(`nextseek_api/cc_assistant/family_labels.py:21`).
+(`NessieAI/router/family_labels.py:21`).
 
-**The sandbox.** `run_cc_turn()` at `nextseek_api/cc_assistant/cc_engine.py:1005`
+**The sandbox.** `run_cc_turn()` at `NessieAI/cc/cc_engine.py:1005`
 is the turn driver, inside the largest file here
-(`nextseek_api/cc_assistant/cc_engine.py:1908` is its last line). Its pieces:
+(`NessieAI/cc/cc_engine.py:1908` is its last line). Its pieces:
 
 | Concern | Where |
 |---|---|
-| Complete agent env, single source of truth | `nextseek_api/cc_assistant/cc_engine.py:282` |
-| Mount payloads, one named volume, per-mount subpath | `nextseek_api/cc_assistant/cc_engine.py:932` |
-| Fail-closed check that each subpath dir exists | `nextseek_api/cc_assistant/cc_engine.py:988` |
-| Wall-clock clamp for a single turn | `nextseek_api/cc_assistant/cc_engine.py:103` |
-| Secret-scrub watermark for a stored transcript | `nextseek_api/cc_assistant/cc_engine.py:527` |
-| Agent image default | `nextseek_api/cc_assistant/cc_engine.py:49` |
-| Dedicated network default | `nextseek_api/cc_assistant/cc_engine.py:59` |
+| Complete agent env, single source of truth | `NessieAI/cc/cc_engine.py:282` |
+| Mount payloads, one named volume, per-mount subpath | `NessieAI/cc/cc_engine.py:932` |
+| Fail-closed check that each subpath dir exists | `NessieAI/cc/cc_engine.py:988` |
+| Wall-clock clamp for a single turn | `NessieAI/cc/cc_engine.py:103` |
+| Secret-scrub watermark for a stored transcript | `NessieAI/cc/cc_engine.py:527` |
+| Agent image default | `NessieAI/cc/cc_engine.py:49` |
+| Dedicated network default | `NessieAI/cc/cc_engine.py:59` |
 
-Around it: `nextseek_api/cc_assistant/attach.py:1-9` demultiplexes Docker's stdcopy
+Around it: `NessieAI/cc/attach.py:1-9` demultiplexes Docker's stdcopy
 framing (copied verbatim from upstream with attribution, because the upstream module
-drags in FastAPI); `nextseek_api/cc_assistant/translate.py:1-7` maps Claude Code
+drags in FastAPI); `NessieAI/cc/translate.py:1-7` maps Claude Code
 `stream-json` onto the six progress events the existing React frontend already renders;
-`nextseek_api/cc_assistant/cc_artifacts.py:3` decides what becomes a downloadable
-bundle; `nextseek_api/cc_assistant/cc_transcript_store.py:3-4` zstd-compresses the
+`NessieAI/cc/cc_artifacts.py:3` decides what becomes a downloadable
+bundle; `NessieAI/cc/cc_transcript_store.py:3-4` zstd-compresses the
 session `.jsonl` into a DB row.
 
-**Path layout.** `nextseek_api/cc_assistant/cc_config.py:23` names the external volume
-and its mount point, read from env at `nextseek_api/cc_assistant/cc_config.py:36`;
-`nextseek_api/cc_assistant/cc_config.py:54` holds the cross-session-memory knobs.
-`nextseek_api/cc_assistant/cc_provision.py:99-107` is the single source of truth for
-every directory a turn touches, and `nextseek_api/cc_assistant/cc_provision.py:156`
+**Path layout.** `NessieAI/cc/cc_config.py:23` names the external volume
+and its mount point, read from env at `NessieAI/cc/cc_config.py:36`;
+`NessieAI/cc/cc_config.py:54` holds the cross-session-memory knobs.
+`NessieAI/cc/cc_provision.py:99-107` is the single source of truth for
+every directory a turn touches, and `NessieAI/cc/cc_provision.py:156`
 resolves the caller's SEEK project with the caller's own credentials, failing closed
 rather than guessing.
 
 **Background work.** Two Celery tasks: an idle-session summarizer at
 `nextseek_api/cc_assistant/cc_sweep.py:91` and a file-upload task at
 `nextseek_api/cc_assistant/cc_upload_tasks.py:29`. A third sweep,
-`nextseek_api/cc_assistant/cc_staging.py:253`, moves sidecar-staged artifacts into the
+`NessieAI/cc/cc_staging.py:253`, moves sidecar-staged artifacts into the
 requesting user's own tree.
 
 **Operation registry.** `op_registry/` is the authoritative inventory of the plugin
-commands the agent may call. `nextseek_api/cc_assistant/op_registry/export.py:14`
-renders it to the committed `ops.json`; `nextseek_api/cc_assistant/bin_inventory.py:38`
+commands the agent may call. `NessieAI/cc/op_registry/export.py:14`
+renders it to the committed `ops.json`; `NessieAI/tests/cc/bin_inventory.py:38`
 discovers the executable shims from disk rather than a hardcoded list, rooted at
-`nextseek_api/cc_assistant/bin_inventory.py:19` — 20 `nextseek-*` shims as of
+`NessieAI/tests/cc/bin_inventory.py:19` — 20 `nextseek-*` shims as of
 2026-09-02.
 
-**Evidence and gates.** `nextseek_api/cc_assistant/step7_llm_cost_ledger.py:3` records
-real token spend, and `nextseek_api/cc_assistant/step7_per_op_evidence.py:7-9` keeps the
+**Evidence and gates.** `NessieAI/cc/step7_llm_cost_ledger.py:3` records
+real token spend, and `NessieAI/tests/cc/step7_per_op_evidence.py:7-9` keeps the
 per-op proof logic pure so it is testable without spending. The paid orchestration is
-`nextseek_api/cc_assistant/scripts/full_ui_e2e.py:2`; the zero-spend re-verifier that
+`NessieAI/tests/cc/scripts/full_ui_e2e.py:2`; the zero-spend re-verifier that
 trusts no artifact's own PASS is
-`nextseek_api/cc_assistant/scripts/verify_prod_readiness_manifest.py:2-5`.
+`NessieAI/tests/cc/scripts/verify_prod_readiness_manifest.py:2-5`.
 
 Three directories here are **load-bearing inputs the package reads**, not scratch it
 writes. `acceptance_evidence/` supplies the gate exercise catalog and the instance
-binding (`nextseek_api/cc_assistant/step7_gate_catalog.py:19` and
-`nextseek_api/cc_assistant/step7_gate_catalog.py:20`). `tests/acceptance_evidence/` is
+binding (`NessieAI/tests/cc/step7_gate_catalog.py:19` and
+`NessieAI/tests/cc/step7_gate_catalog.py:20`). `tests/acceptance_evidence/` is
 the home for generated run bundles, and its validator refuses any bundle whose files are
 only Markdown
-(`nextseek_api/cc_assistant/tests/acceptance_evidence/step7/README.md:13-16`).
+(`NessieAI/tests/cc/acceptance_evidence/step7/README.md:13-16`).
 `evidence/` holds a live probe script
-(`nextseek_api/cc_assistant/evidence/run_1c_claude_md_live_probe.py:2`).
+(`NessieAI/history/cc/evidence/run_1c_claude_md_live_probe.py:2`).
 
 ## Running and testing
 
@@ -114,7 +114,7 @@ Three lanes, not interchangeable.
 2. **In-container clean lane** — the canonical behavioural suite, needing the
    live container's secrets, DB grant and network. (not run)
 3. **Paid real-stack acceptance**, gated behind an env flag at
-   `nextseek_api/cc_assistant/tests/test_cc_realstack.py:55`, which spends real
+   `NessieAI/tests/cc/test_cc_realstack.py:55`, which spends real
    money on Opus turns through the auth proxy. (not run)
 
 The `host_only` marker declared at `pyproject.toml:148` splits source-tree hygiene tests
@@ -125,23 +125,23 @@ out of the in-container run; several test modules here carry it.
 Depends on, outside this directory:
 
 - `dmac_assistant/`, vendored: its BAML router, loaded at
-  `nextseek_api/cc_assistant/router.py:135-139` among other function bodies, and
-  `run_tracker.diff_files` at `nextseek_api/cc_assistant/cc_engine.py:1852`, which is
+  `NessieAI/router/router.py:135-139` among other function bodies, and
+  `run_tracker.diff_files` at `NessieAI/cc/cc_engine.py:1852`, which is
   not part of the router.
-- `nextseek_api/assistant/models_db.py`, imported at `nextseek_api/cc_assistant/turn_ledger.py:4`,
-  for the ORM model written at `nextseek_api/cc_assistant/turn_ledger.py:28`.
+- `nextseek_api/assistant/models_db.py`, imported at `NessieAI/router/turn_ledger.py:4`,
+  for the ORM model written at `NessieAI/router/turn_ledger.py:28`.
 - `nextseek_api/eval/` for the routing generation store, imported at
-  `nextseek_api/cc_assistant/posterior_selector.py:9`, used at
-  `nextseek_api/cc_assistant/posterior_selector.py:47`.
+  `NessieAI/router/posterior_selector.py:9`, used at
+  `NessieAI/router/posterior_selector.py:47`.
 - `nessie_tests/corpus.json` for the classifier label space, resolved at
-  `nextseek_api/cc_assistant/family_labels.py:21`.
+  `NessieAI/router/family_labels.py:21`.
 - `seek.seekdb`, used host-side only to resolve a project, imported lazily inside the
-  factory at `nextseek_api/cc_assistant/cc_provision.py:150-151`.
+  factory at `NessieAI/cc/cc_provision.py:150-151`.
 - `docker/cc-runtime/build_context/plugins/nextseek/bin/`, the shim directory the
-  registry scans — `nextseek_api/cc_assistant/bin_inventory.py:22`. Deleting it silently
+  registry scans — `NessieAI/tests/cc/bin_inventory.py:22`. Deleting it silently
   empties the op inventory.
 - `nextseek_api/assistant/read_safe_endpoints.json`, read eagerly at
-  `nextseek_api/cc_assistant/op_registry/ops.py:19-23`.
+  `NessieAI/cc/op_registry/ops.py:19-23`.
 
 Depended on by. Non-test consumers grouped by kind; the many test modules that import
 this package are omitted.
@@ -185,4 +185,4 @@ this package are omitted.
   probe source inside the `_CONTAINER_PY` string literal opened at
   `nessie_tests/sources.py:245`, executed inside the container.
 
-See `nextseek_api/cc_assistant/CLAUDE.md` for the invariants and traps.
+See `NessieAI/cc/CLAUDE.md` for the invariants and traps.

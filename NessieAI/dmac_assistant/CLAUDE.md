@@ -1,4 +1,4 @@
-# Working in `dmac_assistant/`
+# Working in `NessieAI/dmac_assistant/`
 
 Vendored upstream code. Most edits here belong upstream instead; the parts this
 repo depends on are narrow and the parts it does not are actively misleading.
@@ -9,8 +9,8 @@ repo depends on are narrow and the parts it does not are actively misleading.
   regenerated on every image build by the repo-root Dockerfile at lines 22-24, and
   excluded from git at `.gitignore:234`, so an edit made there is destroyed by the next
   `./startup.sh rebuild` and cannot be reviewed in a diff. Change
-  `dmac_assistant/baml_src/` instead.
-- **`dmac_assistant/baml_src/` and `docker/cc-runtime/baml_src/` must stay
+  `NessieAI/dmac_assistant/baml_src/` instead.
+- **`NessieAI/dmac_assistant/baml_src/` and `docker/cc-runtime/baml_src/` must stay
   byte-identical.** A deploy verifier hashes both `router.baml` copies
   (`scripts/plan018_v4_6_verifier.py:70-72`) and byte-compares both
   `classifier.baml` copies (`scripts/plan018_v4_6_verifier.py:74-77`); editing one
@@ -20,11 +20,11 @@ repo depends on are narrow and the parts it does not are actively misleading.
   surface target is re-rendered into a temp directory and byte-compared against the
   committed file, and a mismatch aborts with "stale bytes"
   (`build_tools/gen_op_surfaces/emit.py:291-295`), so a hand edit here fails the
-  generated-surface check rather than taking effect. See `dmac_assistant/README.md`
+  generated-surface check rather than taking effect. See `NessieAI/dmac_assistant/README.md`
   for which generator owns it and which registry is hand-maintained.
 - **The `<router_unavailable>` sentinel must keep being read as a failure.** This
   package's own error path returns a *valid-looking* decision routed to
-  Container-CC (`dmac_assistant/src/dmac_assistant/router/agent.py:92-97`); the
+  Container-CC (`NessieAI/dmac_assistant/src/dmac_assistant/router/agent.py:92-97`); the
   caller only avoids sending every turn to the expensive engine because it
   compares the reasoning string first
   (`nextseek_api/cc_assistant/router.py:173-174`). Change that string on either
@@ -32,7 +32,7 @@ repo depends on are narrow and the parts it does not are actively misleading.
 - **Model ids belong in `build_context/router_model_class_map.json` and nowhere
   else.** Each of the three enum members must have a value matching the
   `us.anthropic.` pattern or the loader raises before returning
-  (`dmac_assistant/src/dmac_assistant/router/models.py:44-57`), and the bedrock
+  (`NessieAI/dmac_assistant/src/dmac_assistant/router/models.py:44-57`), and the bedrock
   proxy's default allowlist is a one-element tuple holding the exact Opus id
   (`docker/bedrock-proxy/app/config.py:17-18`), so a model literal written anywhere
   else in the tree surfaces as a proxy rejection mid-turn rather than as a config
@@ -49,7 +49,7 @@ repo depends on are narrow and the parts it does not are actively misleading.
   the array at `pyproject.toml:7-126`, and `docker` is not among them; scanning every
   `[[package]]` block's own dependency array in `uv.lock` for an entry naming
   `docker` returns exactly one requester, the `dmac-assistant` block at
-  `uv.lock:868-873`, which declares it at `dmac_assistant/pyproject.toml:20`. Dropping
+  `uv.lock:868-873`, which declares it at `NessieAI/dmac_assistant/pyproject.toml:20`. Dropping
   that line as unused-by-vendored-code breaks the module-scope
   `import docker` at `nextseek_api/cc_assistant/cc_engine.py:37`, which takes the
   whole Container-CC engine down at import.
@@ -63,33 +63,33 @@ repo depends on are narrow and the parts it does not are actively misleading.
 - **`config.py` is 234 lines as of 2026-09-03, of which one symbol is
   reachable.** The only
   thing this repo takes from it is the exception class at
-  `dmac_assistant/src/dmac_assistant/config.py:37`, imported by two sibling modules
+  `NessieAI/dmac_assistant/src/dmac_assistant/config.py:37`, imported by two sibling modules
   — none of the 33 tree-wide `dmac_assistant` import hits names `config` at all.
   `load_config()` cannot succeed here either: it raises immediately
-  without `DMAC_USERS` (`dmac_assistant/src/dmac_assistant/config.py:196-198`), and
+  without `DMAC_USERS` (`NessieAI/dmac_assistant/src/dmac_assistant/config.py:196-198`), and
   grepping the whole tree for `DMAC_USERS`, `DMAC_CLAUDE_USERS_ROOT`,
   `DMAC_SCRATCH_ROOT`, `DMAC_DROPBOX_ROOT`, `DMAC_OUTPUT_ROOT`,
   `DMAC_CATALOG_FILE_HOST_PATH`, `DMAC_SIDECAR_STAGING_ROOT`, `DMAC_BRIDGE_PORT`
   and `DMAC_DEV_MODE` returns not one occurrence outside this directory. Treat any
   reasoning that starts from `BridgeConfig` as reasoning about upstream.
 - **The dev-mode catalog default points at a path that was not vendored.**
-  `dmac_assistant/src/dmac_assistant/config.py:32-34` resolves
+  `NessieAI/dmac_assistant/src/dmac_assistant/config.py:32-34` resolves
   `dmac_assistant/vendor/chat_nextseek/agent_model_catalog.json`, and a `find` for
-  a `vendor` directory anywhere under `dmac_assistant/` returns nothing, so the
+  a `vendor` directory anywhere under `NessieAI/dmac_assistant/` returns nothing, so the
   dev-mode branch fails validation rather than falling back.
 - **Every "see the design doc" pointer in this package is dangling.** A `find`
   across the repo for `dmac-assistant-sds.md`, `dmac-assistant-adrs.md`,
   `docs/bridge/README.md`, `docs/superpowers/specs/2026-05-13-llm-router-design.md`
   and `tools/e2e/run_router_e2e.py` — cited at
-  `dmac_assistant/src/dmac_assistant/__init__.py:3-4`,
-  `dmac_assistant/src/dmac_assistant/router/agent.py:136-138`,
-  `dmac_assistant/src/dmac_assistant/router/__init__.py:3` and
-  `dmac_assistant/baml_src/judge_router.baml:3` — finds none of the five. Chasing
+  `NessieAI/dmac_assistant/src/dmac_assistant/__init__.py:3-4`,
+  `NessieAI/dmac_assistant/src/dmac_assistant/router/agent.py:136-138`,
+  `NessieAI/dmac_assistant/src/dmac_assistant/router/__init__.py:3` and
+  `NessieAI/dmac_assistant/baml_src/judge_router.baml:3` — finds none of the five. Chasing
   them costs a round trip; the only surviving copies are in the upstream checkout
   a provenance record names at
   `nextseek_api/cc_assistant/acceptance_evidence/step7/catalog_provenance.json:10`.
 - **This directory's own `pyproject.toml` header is wrong about what is used.**
-  `dmac_assistant/pyproject.toml:8-9` names the stream-json parser as one of the
+  `NessieAI/dmac_assistant/pyproject.toml:8-9` names the stream-json parser as one of the
   two things the integration imports at runtime. Grepping the whole tree for
   `streamjson` and dropping this directory's own path prefix returns four matches
   and no import among them: an attribution comment in the adapter that actually
@@ -102,9 +102,9 @@ repo depends on are narrow and the parts it does not are actively misleading.
   spread in the first place.
 - **The model-class map is cached for the life of the process and never
   invalidated.** The cache is filled once at
-  `dmac_assistant/src/dmac_assistant/router/models.py:92-96` and the loader's own
+  `NessieAI/dmac_assistant/src/dmac_assistant/router/models.py:92-96` and the loader's own
   docstring says passing a path does not refresh it
-  (`dmac_assistant/src/dmac_assistant/router/models.py:67-68`), so editing the JSON
+  (`NessieAI/dmac_assistant/src/dmac_assistant/router/models.py:67-68`), so editing the JSON
   inside a running container changes nothing until the worker restarts.
 - **The two model-id resolvers do not read the file the same way.**
   `nextseek_api/cc_assistant/router.py:87-91` hands the loader an explicit path
@@ -117,21 +117,21 @@ repo depends on are narrow and the parts it does not are actively misleading.
   `nextseek_api/cc_assistant/router.py:219` and immediately calls the generated
   function itself so the transport hooks see it, explained inline at
   `nextseek_api/cc_assistant/router.py:220`. Its `route()` method
-  (`dmac_assistant/src/dmac_assistant/router/agent.py:108`) runs in no production
+  (`NessieAI/dmac_assistant/src/dmac_assistant/router/agent.py:108`) runs in no production
   path, so a fix applied there changes nothing live and only its structured
-  telemetry at `dmac_assistant/src/dmac_assistant/router/agent.py:139-147` is lost
+  telemetry at `NessieAI/dmac_assistant/src/dmac_assistant/router/agent.py:139-147` is lost
   by the bypass.
 - **A second, unused BAML client is built into the image on every rebuild.** The
-  `e2e_target` block at `dmac_assistant/baml_src/generators.baml:17-22` emits
-  `dmac_assistant/tools/e2e/baml_client/`, which nothing imports: grepping the tree
-  for `dmac_assistant/tools` and for `dmac_assistant.tools` returns only a gitignore
+  `e2e_target` block at `NessieAI/dmac_assistant/baml_src/generators.baml:17-22` emits
+  `NessieAI/dmac_assistant/tools/e2e/baml_client/`, which nothing imports: grepping the tree
+  for `NessieAI/dmac_assistant/tools` and for `dmac_assistant.tools` returns only a gitignore
   entry, mutation-testing bind mounts and a hash-manifest prefix, never an import.
   Deleting the block is not free: the same generator
   file is copied into the agent image, whose build pre-creates the router output
   directory for it (`docker/cc-runtime/Dockerfile:115-117`).
 - **`JudgeRouterAnswer` has no caller anywhere.** Grepping the whole tree for the
   name returns only its own declaration at
-  `dmac_assistant/baml_src/judge_router.baml:32`, the identical mirror declaration at
+  `NessieAI/dmac_assistant/baml_src/judge_router.baml:32`, the identical mirror declaration at
   `docker/cc-runtime/baml_src/judge_router.baml:32`, and the two comments above them
   naming an upstream caller that was not vendored. Editing that file changes an LLM
   contract nothing exercises, and no test will catch a mistake in it.
@@ -148,26 +148,26 @@ There is no in-package suite; the host lane below is the cheapest thing that
 touches this code directly, and it stops at the generated client.
 
 ```
-PYTHONPATH=dmac_assistant/src uv run --no-project --with pydantic \
+PYTHONPATH=NessieAI/dmac_assistant/src uv run --no-project --with pydantic \
   --with python-dotenv --with pytest --with django --python 3.12 \
-  python -m pytest nextseek_api/cc_assistant/tests/test_agent_history_conversion.py \
+  python -m pytest NessieAI/tests/router/test_agent_history_conversion.py \
   --noconftest -q
 ```
 
 Run 2026-09-03: **1 error, 0 tests collected, 0.07s** —
 `ModuleNotFoundError: No module named 'dmac_assistant.router.baml_client'`, raised
-out of `dmac_assistant/src/dmac_assistant/router/agent.py:8`. That is the expected
+out of `NessieAI/dmac_assistant/src/dmac_assistant/router/agent.py:8`. That is the expected
 outcome on a checkout, not a broken environment: the client is a build artifact.
 Without `--noconftest` the same command fails earlier and differently, in
 `nextseek_api/conftest.py:3`, which needs a configured Django. The two modules
 that import no third party at all —
-`dmac_assistant/src/dmac_assistant/run_tracker.py:12-16` and
-`dmac_assistant/src/dmac_assistant/copier.py:10-15` — do load under that
+`NessieAI/dmac_assistant/src/dmac_assistant/run_tracker.py:12-16` and
+`NessieAI/dmac_assistant/src/dmac_assistant/copier.py:10-15` — do load under that
 `PYTHONPATH` with no `--with` flags whatsoever.
 
 ## See also
 
-- See `dmac_assistant/README.md` for the three surfaces, the six BAML functions
+- See `NessieAI/dmac_assistant/README.md` for the three surfaces, the six BAML functions
   and both directions of the dependency edge.
 - See `nextseek_api/cc_assistant/CLAUDE.md` for the consumer's own invariants,
   including why its BAML imports are lazy.

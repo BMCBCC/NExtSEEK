@@ -258,9 +258,9 @@ git diff --name-only HEAD@{1} HEAD -- '*migrations*'
 #    rollback tags, then builds, recreates long-running targets with
 #    --no-deps --force-recreate, and attempts the §5.2 GHCR baseline:
 ./startup.sh rebuild                               # app cohort (common case)
-./startup.sh rebuild --component cc-agent          # docker/cc-runtime/**
-./startup.sh rebuild --component bedrock-proxy     # docker/bedrock-proxy/**
-./startup.sh rebuild --component nextseek-sidecar  # docker/ns-sidecar/**
+./startup.sh rebuild --component cc-agent          # NessieAI/docker/cc-runtime/**
+./startup.sh rebuild --component bedrock-proxy     # NessieAI/docker/bedrock-proxy/**
+./startup.sh rebuild --component nextseek-sidecar  # NessieAI/docker/ns-sidecar/**
 ./startup.sh rebuild --component custom-stack      # every first-party image
 #    cc-agent is build-only: the next chat turn uses the new image; there is no
 #    persistent agent container. The app cohort is nextseek + all three
@@ -291,13 +291,13 @@ exits non-zero rather than blocking on a question nobody can answer.
 
 | You changed | Required action |
 |---|---|
-| Python / templates / anything baked (`nextseek_api/`, `chat_nextseek/`, `seek/`, `dmac/` except `local_settings.py`) | `./startup.sh rebuild` — rebuild the shared app image and recreate `nextseek`, which carries every app-code runtime. No `COMPOSE_PROFILES` to remember: until 2026-09-02 four workers lived in their own profile-gated services, and a rebuild without the variable exported left them running old code under `restart: unless-stopped`, looking healthy |
+| Python / templates / anything baked (`nextseek_api/`, `NessieAI/chat_nextseek/`, `seek/`, `dmac/` except `local_settings.py`) | `./startup.sh rebuild` — rebuild the shared app image and recreate `nextseek`, which carries every app-code runtime. No `COMPOSE_PROFILES` to remember: until 2026-09-02 four workers lived in their own profile-gated services, and a rebuild without the variable exported left them running old code under `restart: unless-stopped`, looking healthy |
 | `static/` assets | rebuild + recreate, **then** `docker compose exec nextseek uv run manage.py collectstatic --noinput` |
-| `chat_frontend/` React source | `npm run build:embedded` in `chat_frontend/`, commit the emitted assets, then rebuild + recreate + collectstatic |
-| `docker/cc-runtime/**` (agent plugin/skills/CLAUDE.md/deps) | `./startup.sh rebuild --component cc-agent` — next turn uses it; no service restart. Also the recovery command when `dmac-assistant:poc` has been pruned: a first build with no rollback source is announced and allowed, not refused |
+| `NessieAI/chat_frontend/` React source | `npm run build:embedded` in `NessieAI/chat_frontend/`, commit the emitted assets, then rebuild + recreate + collectstatic |
+| `NessieAI/docker/cc-runtime/**` (agent plugin/skills/CLAUDE.md/deps) | `./startup.sh rebuild --component cc-agent` — next turn uses it; no service restart. Also the recovery command when `dmac-assistant:poc` has been pruned: a first build with no rollback source is announced and allowed, not refused |
 | `docker/nextseek.env` / `dmac/local_settings.py` (config only) | no build: `docker compose up -d --no-deps --force-recreate nextseek` |
-| `docker/bedrock-proxy/**` or its secret env | `./startup.sh rebuild --component bedrock-proxy` |
-| `docker/ns-sidecar/**` | `./startup.sh rebuild --component nextseek-sidecar` |
+| `NessieAI/docker/bedrock-proxy/**` or its secret env | `./startup.sh rebuild --component bedrock-proxy` |
+| `NessieAI/docker/ns-sidecar/**` | `./startup.sh rebuild --component nextseek-sidecar` |
 | More than one first-party image family | run each affected component, or `--component custom-stack` |
 | A Django migration (in the range) | mysqldump gate (§5.3) → rebuild + recreate (migrate runs at boot) → verify with `showmigrations` |
 
@@ -466,7 +466,7 @@ docker exec nextseek uv run manage.py showmigrations nextseek_api | tail -5
 #    Step 9 below now runs this same command for you, as doctor's "CC runner"
 #    check, and `./startup.sh rebuild` additionally fails when any first-party
 #    image is absent. Run it by hand when you want the answer on its own.
-docker exec nextseek uv run --no-sync python -c "from nextseek_api.cc_assistant import cc_engine; print(cc_engine.cc_runner_available())"
+docker exec nextseek uv run --no-sync python -c "from NessieAI.cc import cc_engine; print(cc_engine.cc_runner_available())"
 
 # 7. OI-3 peers untouched (app-only deploy) — expect: uptime/health
 #    unchanged from before the deploy
@@ -494,9 +494,9 @@ Free lanes (run before/after deploys as appropriate):
 
 | Lane | Command | Notes |
 |---|---|---|
-| Hermetic cc_assistant (no DB, no spend) | `PYTHONPATH="$PWD:$PWD/dmac_assistant/src" uv run --no-project --with pytest --with orjson --with 'pydantic>=2.13' --with 'baml-py==0.222.0' python -m pytest nextseek_api/cc_assistant/tests/ --noconftest -p no:cacheprovider -q --ignore=nextseek_api/cc_assistant/tests/test_cc_realstack.py` | from repo root |
-| In-container DB-backed **clean lane** | `docker exec -w /app nextseek uv run --no-sync python -m pytest nextseek_api/cc_assistant/tests/ --create-db -k 'not realstack' --ignore=nextseek_api/cc_assistant/tests/test_step7_compose_deploy.py --ignore=nextseek_api/cc_assistant/tests/test_cc_realstack.py` | the canonical behavioral suite; runs in the live container (has secrets, db network, `test_dmac` grant). Do **not** run the whole `nextseek_api/` tree in-container — it has ~407 known environmental harness errors that are not regressions |
-| Source-tree hygiene (`host_only`) | `docker run --rm -v <WRITABLE checkout copy>:/repo -w /repo -v /usr/bin/docker:/usr/local/bin/docker:ro -v /usr/libexec/docker/cli-plugins:/usr/local/lib/docker/cli-plugins:ro nextseek-nextseek:latest uv run --project /app --no-sync python -m pytest -m host_only nextseek_api/cc_assistant/tests/ -q` | needs a **writable** checkout (settings import mkdirs) and **both** the docker CLI and compose plugin mounted; asserts on the checkout, not the image (the image strips `.gitignore` by design). `--project /app` keeps uv on the image env (`/app/.venv`), not the mounted checkout's |
+| Hermetic cc_assistant (no DB, no spend) | `PYTHONPATH="$PWD:$PWD/NessieAI/dmac_assistant/src" uv run --no-project --with pytest --with orjson --with 'pydantic>=2.13' --with 'baml-py==0.222.0' python -m pytest NessieAI/tests/cc/ --noconftest -p no:cacheprovider -q --ignore=NessieAI/tests/cc/test_cc_realstack.py` | from repo root |
+| In-container DB-backed **clean lane** | `docker exec -w /app nextseek uv run --no-sync python -m pytest NessieAI/tests/cc/ --create-db -k 'not realstack' --ignore=NessieAI/tests/cc/test_step7_compose_deploy.py --ignore=NessieAI/tests/cc/test_cc_realstack.py` | the canonical behavioral suite; runs in the live container (has secrets, db network, `test_dmac` grant). Do **not** run the whole `nextseek_api/` tree in-container — it has ~407 known environmental harness errors that are not regressions |
+| Source-tree hygiene (`host_only`) | `docker run --rm -v <WRITABLE checkout copy>:/repo -w /repo -v /usr/bin/docker:/usr/local/bin/docker:ro -v /usr/libexec/docker/cli-plugins:/usr/local/lib/docker/cli-plugins:ro nextseek-nextseek:latest uv run --project /app --no-sync python -m pytest -m host_only NessieAI/tests/cc/ nextseek_api/tests/repo_guards/ -q` | needs a **writable** checkout (settings import mkdirs) and **both** the docker CLI and compose plugin mounted; asserts on the checkout, not the image (the image strips `.gitignore` by design). `--project /app` keeps uv on the image env (`/app/.venv`), not the mounted checkout's |
 | startup CLI | `uv run --project startup --group test pytest startup/tests -q` | isolated uv project |
 | Doc guards | included in the hermetic lane (`test_deploy_docs_guard.py`) | keeps this file and DEPLOY.md compose-native |
 
@@ -594,7 +594,7 @@ docker inspect dmac-bedrock-proxy --format '{{range .Config.Env}}{{println .}}{{
 
 Full zero-spend re-verification of a recorded acceptance run — on the host,
 from the repo root (`python3`; the module is stdlib-only):
-`python3 -m nextseek_api.cc_assistant.tests.validate_step7_compose_deploy <run_dir>`
+`python3 -m NessieAI.tests.cc.validate_step7_compose_deploy <run_dir>`
 (61 checks: topology, de-credentialing, closed-set network membership,
 cross-user isolation, plugin-ops matrix).
 
@@ -625,7 +625,7 @@ cross-user isolation, plugin-ops matrix).
 - **`docker/cc-runner/` is dead weight** (an unused lean proof image) — not
   part of the build graph; do not wire it anywhere.
 - **`docker/cc-runtime/container/CLAUDE.md` is generated.** Never hand-edit;
-  refresh via `python -m build_tools.ingest_nextseek_docs`.
+  refresh via `python -m NessieAI.build_tools.ingest_nextseek_docs`.
 
 ---
 
@@ -662,12 +662,12 @@ through the real stack") is paid and gated:
 ```bash
 # native assistant regression baseline (paid, gated):
 docker exec -e RUN_REALSTACK=1 -e SEEK_TEST_USER=<u> -e SEEK_TEST_PASS=<p> nextseek sh -lc \
-  'cd /app && uv run python manage.py test nextseek_api.assistant.tests.test_granular_realstack \
+  'cd /app && uv run python manage.py test NessieAI.tests.ns.test_granular_realstack \
    --settings=dmac.test_settings_realstack --noinput --keepdb -v2'
 
 # Container-CC route end-to-end (paid, gated):
 docker exec -e RUN_REALSTACK=1 -e SEEK_TEST_USER=<u> -e SEEK_TEST_PASS=<p> nextseek sh -lc \
-  'cd /app && uv run python manage.py test nextseek_api.cc_assistant.tests.test_cc_realstack \
+  'cd /app && uv run python manage.py test NessieAI.tests.cc.test_cc_realstack \
    --settings=dmac.test_settings_realstack --noinput -v2'
 ```
 
@@ -677,10 +677,10 @@ acceptance runs are re-verifiable forever at zero spend:
 ```bash
 # in-container (no bare `python` on the image PATH — use `uv run --no-sync`,
 # which executes in the app env /app/.venv):
-docker exec nextseek uv run --no-sync python -m nextseek_api.cc_assistant.tests.validate_cc_acceptance outputs/cc_acceptance/<run_id>
+docker exec nextseek uv run --no-sync python -m NessieAI.tests.cc.validate_cc_acceptance outputs/cc_acceptance/<run_id>
 # on the host, from the repo root (stdlib-only module):
-python3 -m nextseek_api.cc_assistant.tests.validate_step7_compose_deploy <run_dir> [repo_root]
+python3 -m NessieAI.tests.cc.validate_step7_compose_deploy <run_dir> [repo_root]
 ```
 
 Bundles are real artifacts from real runs — "markdown is never proof"
-(`nextseek_api/cc_assistant/tests/acceptance_evidence/step7/README.md`).
+(`NessieAI/tests/cc/acceptance_evidence/step7/README.md`).

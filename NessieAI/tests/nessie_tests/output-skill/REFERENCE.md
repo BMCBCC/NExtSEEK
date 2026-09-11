@@ -43,7 +43,7 @@ money, and needs the seeded v2 instance (project ids 2-14).
 
 **`route` is not free, and its printed cost is `unmeasured`, not `$0`.** It stops
 the *client* polling at `route_decided`; the server finishes and bills for every
-gate anyway. Read the Cadence section of `nessie_tests/README.md` before drawing
+gate anyway. Read the Cadence section of `NessieAI/tests/nessie_tests/README.md` before drawing
 any conclusion about what a run spent — a `$…` figure in a triage report is a
 floor, never a total.
 
@@ -52,7 +52,7 @@ served app:
 
 ```bash
 git pull
-docker cp nessie_tests nextseek:/app/
+docker cp NessieAI/tests/nessie_tests nextseek:/app/NessieAI/tests/
 docker cp nextseek_api/management/commands/nessie.py nextseek:/app/nextseek_api/management/commands/nessie.py
 ```
 
@@ -65,7 +65,7 @@ Unit suite:
 
 ```bash
 docker exec -w /app -e DJANGO_SETTINGS_MODULE=dmac.test_settings nextseek \
-    uv run pytest nessie_tests/tests/ nessie_tests/tests_container/ --no-migrations -q
+    uv run pytest NessieAI/tests/nessie_tests/tests/ NessieAI/tests/nessie_tests/tests_container/ --no-migrations -q
 ```
 
 ### Watching a run in progress
@@ -138,7 +138,7 @@ object. `chat_nextseek/e2e/criteria.py` resolves them:
 | `last_reply` | the reply text, HTML stripped |
 | `api_artifact.<file>` | in **e2e**, a filesystem check under `run_root/files/<file>`; in **nessie**, the turn's own artifact index (see below) |
 | `bundle.*` | injected by nessie's bundle reader |
-| `route`, `engine`, `route_source` | injected by `nessie_tests/evaluate.py` |
+| `route`, `engine`, `route_source` | injected by `NessieAI/tests/nessie_tests/evaluate.py` |
 | anything else | dot-notation walk of the debug dict |
 
 **`api_artifact.*` is no longer the trap it was.** This used to say the criteria
@@ -234,7 +234,7 @@ relying on any of it.
   and 737 (hijacked).
 - **Graph `LIMIT 250` cap.** 3 of 11 graph queries returned exactly 250. Invisible
   to the suite; one capped case passed all assertions.
-  **The cap is now 5000.** `nessie_tests/limits.py` keeps
+  **The cap is now 5000.** `NessieAI/tests/nessie_tests/limits.py` keeps
   `GRAPH_LIMIT_SENTINELS = (250, 5000)` so old evidence is still caught, but a
   count landing on a limit is only a guess at truncation. The real signal is
   `graph_result.truncated`, and the criterion to read is
