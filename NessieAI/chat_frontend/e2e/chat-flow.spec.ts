@@ -43,7 +43,9 @@ test.describe("Chat Flow", () => {
     await delay(50);
 
     // Should see stepper with entity step
-    await expect(page.getByTitle("Extracting entities")).toBeVisible();
+    // ProcessingStepper renders each step's label as text and puts step.detail in
+    // the title attribute, so the label is found by its exact text in the stepper.
+    await expect(page.getByTestId("stepper").getByText("Extracting entities", { exact: true })).toBeVisible();
   });
 
   test("displays assistant response after query complete", async ({

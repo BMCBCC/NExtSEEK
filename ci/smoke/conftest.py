@@ -95,6 +95,12 @@ def pytest_addoption(parser):
     g.addoption("--force-profile", default=None,
                 help="Widen the profile above what the box declares. Requires "
                      "CI_FORCE_PROFILE_CONFIRM=yes. Never use in a workflow file.")
+    g.addoption("--no-nessie", action="store_true",
+                help="Skip the Nessie lane (ci/smoke/test_nessie.py). Never use -m "
+                     "for this: any -m expression re-admits the write lane.")
+    g.addoption("--nessie-no-turns", action="store_true",
+                help="Skip the Nessie lane's chat turns, so only its stage 1 runs "
+                     "(no model spend). The rest of the suite is unaffected.")
 
 
 # --------------------------------------------------------------------------- #
@@ -187,6 +193,8 @@ def pytest_configure(config):
         "markers",
         "profiles(*names): only run under these box profiles; skipped under any other.",
     )
+    config.addinivalue_line("markers", "nessie: the Nessie lane.")
+    config.addinivalue_line("markers", "nessie_turn: needs a real chat turn.")
     # --help and --version reach _do_configure() from a caller that does not
     # catch Exit, so a refusal raised here surfaces as a traceback and rc=1
     # instead of the message. Printing the options must always work.
@@ -198,8 +206,25 @@ def pytest_configure(config):
     resolve_profile(config)
 
 
+def nessie_skip_reason(keywords, *, no_nessie: bool, no_turns: bool) -> str | None:
+    """Why a Nessie-lane item is skipped, or None when it runs.
+
+    Pure, so the no-stack lane can pin it. Applied before the -m early return in
+    pytest_collection_modifyitems, which is what keeps the write lane deselected:
+    a -m expression would switch that lane back on, so the Nessie switches are
+    options, never mark expressions.
+    """
+    if "nessie" not in keywords:
+        return None
+    if no_nessie:
+        return "Nessie lane skipped by --no-nessie"
+    if no_turns and "nessie_turn" in keywords:
+        return "chat turns skipped by --nessie-no-turns"
+    return None
+
+
 def pytest_collection_modifyitems(config, items):
-    """Two independent gates, in this order.
+    """Three independent gates, in this order.
 
     The PROFILE gate runs unconditionally. GuardedSession refuses a non-GET under
     prod before it is sent, which is the right answer for a requests client and the
@@ -207,6 +232,9 @@ def pytest_collection_modifyitems(config, items):
     and the test then waits out its own response timeout and fails red, five
     minutes later, for a rule the suite is enforcing correctly. A test whose SHAPE
     is a write declares the profiles it belongs to and is skipped elsewhere.
+
+    The NESSIE gate also runs unconditionally, before the -m early return, so
+    --no-nessie and --nessie-no-turns hold whatever -m says (see nessie_skip_reason).
 
     The WRITE-LANE gate is the pre-existing opt-in and stays subject to -m. The
     profile gate must not be: `-m write` on a prod box would otherwise re-admit
@@ -222,6 +250,13 @@ def pytest_collection_modifyitems(config, items):
                     f"this box declares {active!r}"
                 )
             ))
+
+    no_nessie = config.getoption("--no-nessie")
+    no_turns = config.getoption("--nessie-no-turns")
+    for item in items:
+        reason = nessie_skip_reason(item.keywords, no_nessie=no_nessie, no_turns=no_turns)
+        if reason:
+            item.add_marker(pytest.mark.skip(reason=reason))
 
     if config.getoption("-m"):
         return
@@ -494,12 +529,13 @@ def anon(profile, base_url) -> GuardedSession:
     return GuardedSession(profile=profile, base_url=base_url)
 
 
-@pytest.fixture(scope="session")
-def web(profile, base_url, smoke_creds) -> GuardedSession:
-    """Session-cookie client for /seek/* pages.
+def web_session(profile: str, base_url: str, creds: tuple[str, str]) -> GuardedSession:
+    """A session-cookie client logged in through /login/ as `creds`.
 
-    Those views read request.session['username'], which only the login view
-    writes, so Basic auth is not sufficient for them.
+    The /seek/* views read request.session['username'], which only the login view
+    writes, so Basic auth is not sufficient for them. Shared by the `web` fixture
+    below and by the Nessie lane, which needs the same login but must fail rather
+    than skip when its account is missing.
     """
     s = GuardedSession(profile=profile, base_url=base_url)
     # Not followed: send() guards every hop, so a /login/ that ever redirected
@@ -511,8 +547,8 @@ def web(profile, base_url, smoke_creds) -> GuardedSession:
     r = s.post(
         f"{base_url}/login/",
         data={
-            "username": smoke_creds[0],
-            "password": smoke_creds[1],
+            "username": creds[0],
+            "password": creds[1],
             "no-expire": "yes",
             "csrfmiddlewaretoken": token,
         },
@@ -521,12 +557,18 @@ def web(profile, base_url, smoke_creds) -> GuardedSession:
         timeout=90,   # login shells out to curl against SEEK Rails
     )
     assert r.status_code == 302, (
-        f"login as {smoke_creds[0]} returned {r.status_code}, expected 302. "
+        f"login as {creds[0]} returned {r.status_code}, expected 302. "
         "A 200 here means the credentials were rejected: this view re-renders "
         "the login page on failure rather than returning 4xx."
     )
     assert s.cookies.get("sessionid"), "login did not set a sessionid cookie"
     return s
+
+
+@pytest.fixture(scope="session")
+def web(profile, base_url, smoke_creds) -> GuardedSession:
+    """Session-cookie client for /seek/* pages, as the smoke account."""
+    return web_session(profile, base_url, smoke_creds)
 
 
 # --------------------------------------------------------------------------- #
@@ -762,6 +804,29 @@ def browser(pytestconfig):
         b.close()
 
 
+def login_storage_state(browser, profile: str, base_url: str,
+                        creds: tuple[str, str], path: Path) -> str:
+    """Log in once through /login/ in a real browser; save and return the cookies.
+
+    Session cookie only, never an HTTP Basic header on the context: see
+    storage_state below for why.
+    """
+    ctx = browser.new_context(viewport={"width": 1440, "height": 900})
+    _guard_context(ctx, profile)
+    page = ctx.new_page()
+    page.goto(f"{base_url}/login/", wait_until="domcontentloaded")
+    page.fill("input#username", creds[0])
+    page.fill("input#password", creds[1])
+    with page.expect_navigation(wait_until="domcontentloaded", timeout=120_000):
+        page.click("button[type=submit].auth-submit")
+    assert "/login" not in page.url, (
+        f"still on the login page after submitting as {creds[0]}: {page.url}"
+    )
+    ctx.storage_state(path=str(path))
+    ctx.close()
+    return str(path)
+
+
 @pytest.fixture(scope="session")
 def storage_state(browser, profile, base_url, smoke_creds, tmp_path_factory):
     """Log in once in a real browser and reuse the cookies for every flow.
@@ -770,21 +835,8 @@ def storage_state(browser, profile, base_url, smoke_creds, tmp_path_factory):
     onto the CDN font requests and triggers APPEND_SLASH redirects on /static/,
     which breaks the bundle. Session cookie only.
     """
-    ctx = browser.new_context(viewport={"width": 1440, "height": 900})
-    _guard_context(ctx, profile)
-    page = ctx.new_page()
-    page.goto(f"{base_url}/login/", wait_until="domcontentloaded")
-    page.fill("input#username", smoke_creds[0])
-    page.fill("input#password", smoke_creds[1])
-    with page.expect_navigation(wait_until="domcontentloaded", timeout=120_000):
-        page.click("button[type=submit].auth-submit")
-    assert "/login" not in page.url, (
-        f"still on the login page after submitting: {page.url}"
-    )
     path = tmp_path_factory.mktemp("auth") / "state.json"
-    ctx.storage_state(path=str(path))
-    ctx.close()
-    return str(path)
+    return login_storage_state(browser, profile, base_url, smoke_creds, path)
 
 
 @pytest.fixture

@@ -68,6 +68,7 @@ Both engines write the same `QueryTask` rows and stream over one websocket, so t
 | Generated CC surfaces or `route_capabilities.json` | `python -m NessieAI.build_tools.gen_op_surfaces --write --root .` | `NessieAI/tests/build_tools/` |
 | Schema retrieval | `NessieAI/schema_rag/` | `NessieAI/tests/schema_rag/` |
 | The agent image, proxy or sidecar | `NessieAI/docker/<name>/` | `NessieAI/tests/cc/` (port guards), `NessieAI/docker/cc-runtime/tests/` |
+| What post-deploy CI proves about Nessie | `QUESTIONS` in `ci/smoke/test_nessie.py`; `ci/smoke/README.md` "Nessie lane" | `ci/smoke/test_nessie_unit.py` |
 
 HiBayes is spread over several folders (router, hibayes, dmac_assistant, the bayes harness, the eval
 image, the `eval_*` tables). Its map is `NessieAI/hibayes/README.md` "HiBayes lives in these places".

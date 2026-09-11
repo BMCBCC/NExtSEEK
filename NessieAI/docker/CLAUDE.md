@@ -26,7 +26,7 @@ Each is enforced from outside this folder. Breaking one is a security regression
 - **`cc-runtime/build_context/docs/nextseek-api/` ships empty on purpose**: a placeholder keeps its `COPY` working.
 - **`ns-sidecar/app/contract.py` and the plugin's `cc-runtime/build_context/plugins/nextseek/bin/_ws_contract.py` are one contract in two copies.** Both name a parity test, `test_ws_contract_parity.py`, that does not exist. They are byte-identical today and nothing would say if they drifted.
 - **Each `PORT-EVIDENCE.json` records a named developer's home path, pinned by equality in three port tests.** You cannot scrub it without reddening them, and never copy it into a doc.
-- **`bedrock-proxy/proxy-secret.env` is ignored only by the `**/proxy-secret.env` rule.** On each box it is moved by hand; `stat` and `git check-ignore -v` it after the move.
+- **`bedrock-proxy/proxy-secret.env` is ignored only by the `**/proxy-secret.env` rule.** On each box it is moved by hand; `stat` and `git check-ignore -v` it after the move. While its `AWS_BEARER_TOKEN_BEDROCK` is empty, `./startup.sh rebuild` and `./startup.sh ci` stop before the Nessie CI lane on a box declaring local or dev, because the lane's CC turn cannot reach the model (`ci/smoke/README.md` "Nessie lane"); `--no-nessie` skips the lane.
 
 ## Test command
 

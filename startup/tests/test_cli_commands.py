@@ -630,7 +630,8 @@ def test_ci_passes_wait_ready_and_profile_through(
 
     assert result.exit_code == 0, result.output
     assert "--wait-ready" in calls[0].cmd
-    assert calls[0].cmd[-2:] == ["--profile", "prod"]
+    # Narrowed to prod, the run gets prod's rule: no Nessie lane.
+    assert calls[0].cmd[-3:] == ["--profile", "prod", "--no-nessie"]
     assert calls[0].env["CI_BOX_PROFILE"] == "dev"
 
 
@@ -668,7 +669,8 @@ def test_ci_force_profile_accepted_confirms_for_that_call_only(
     result = runner.invoke(cli.app, ["ci", "--force-profile", "local"], input="y\n")
 
     assert result.exit_code == 0, result.output
-    assert calls[0].cmd[-2:] == ["--force-profile", "local"]
+    # A box declaring prod never runs the Nessie lane, however far it is widened.
+    assert calls[0].cmd[-3:] == ["--force-profile", "local", "--no-nessie"]
     assert calls[0].env["CI_FORCE_PROFILE_CONFIRM"] == "yes"
     # The box's own declaration is untouched by a forced run.
     assert calls[0].env["CI_BOX_PROFILE"] == "prod"
@@ -717,6 +719,35 @@ def _the_stack_is_up(monkeypatch: pytest.MonkeyPatch) -> None:
     """No test here may ask a real docker daemon about a real stack. Tests about
     a down stack override this."""
     _stub_stack_health(monkeypatch)
+
+
+def _stub_nessie_prerequisites(
+    monkeypatch: pytest.MonkeyPatch, *results: tuple[str, bool, str],
+) -> list[tuple]:
+    """The Nessie lane's prerequisites, answered without asking docker. Returns
+    the calls, so a test can prove the check ran, or did not."""
+    from startup.steps import validate
+
+    answer = tuple(validate.HealthResult(n, ok, d) for n, ok, d in results) or (
+        validate.HealthResult("bedrock proxy token", True, "token present"),
+        validate.HealthResult("first-party images", True, "all 4 present"),
+        validate.HealthResult("cc services", True, "bedrock-proxy + nextseek-sidecar running"),
+        validate.HealthResult("CC runner", True, "(True, 'ok')"),
+    )
+    calls: list[tuple] = []
+    monkeypatch.setattr(
+        validate, "nessie_prerequisites",
+        lambda repo_root, env, compose_project_name:
+            calls.append((repo_root, compose_project_name)) or answer,
+    )
+    return calls
+
+
+@pytest.fixture(autouse=True)
+def _the_nessie_prerequisites_hold(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A local or dev box turns the Nessie lane on, which checks the CC stack
+    through docker. Tests about a missing prerequisite override this."""
+    _stub_nessie_prerequisites(monkeypatch)
 
 
 def _mock_rebuild(
@@ -772,7 +803,8 @@ def test_rebuild_runs_ci_with_the_readiness_gate(
     assert len(calls) == 1
     assert calls[0].repo_root == repo
     assert calls[0].state.ci_profile == "dev"
-    assert calls[0].kwargs == {"wait_ready": True}
+    # A bare rebuild is an app rebuild, and dev allows the Nessie lane.
+    assert calls[0].kwargs == {"wait_ready": True, "nessie": True}
     assert "CI passed" in result.output
 
 
@@ -847,7 +879,8 @@ def test_rebuild_of_an_image_only_component_still_runs_ci(
     result = runner.invoke(cli.app, ["rebuild", "--component", "cc-agent"])
 
     assert result.exit_code == 0, result.output
-    assert ran == [{"wait_ready": True}]
+    # A component rebuild runs the suite without the Nessie lane.
+    assert ran == [{"wait_ready": True, "nessie": False}]
     assert "CI skipped" not in result.output
 
 
@@ -1011,6 +1044,284 @@ def test_run_ci_reports_a_missing_uv_instead_of_a_traceback(
 
     assert rc == 127
     assert "'uv' is not on PATH" in capsys.readouterr().err
+
+
+# ---------------------------------------------------------------------------
+# the Nessie lane: on for app rebuilds and `ci` on local and dev, never on prod
+# ---------------------------------------------------------------------------
+
+def _spy_ci(monkeypatch: pytest.MonkeyPatch, rc: int = 0) -> SimpleNamespace:
+    """Record what build_command, run_ci and write_report were asked; run nothing.
+
+    build_command is the real one (its argv is what the banner prints); run_ci is
+    replaced, so no suite runs; running_image is stubbed, so no docker is asked.
+    """
+    seen = SimpleNamespace(build=[], run=[], report=[])
+    real_build = ci_runner.build_command
+
+    def build(*args, **kwargs):
+        seen.build.append(kwargs)
+        return real_build(*args, **kwargs)
+
+    monkeypatch.setattr(ci_runner, "build_command", build)
+    monkeypatch.setattr(ci_runner, "run_ci",
+                        lambda *a, **k: seen.run.append(k) or rc)
+    monkeypatch.setattr(ci_runner, "running_image", lambda *a, **k: (None, None))
+    monkeypatch.setattr(ci_runner, "write_report",
+                        lambda *a, **k: seen.report.append(k) or None)
+    return seen
+
+
+@pytest.mark.parametrize("profile", ["local", "dev"])
+def test_ci_runs_the_nessie_lane_on_a_local_or_dev_box(
+    repo: Path, monkeypatch: pytest.MonkeyPatch, profile: str,
+) -> None:
+    _saved_state(repo, ci_profile=profile)
+    checked = _stub_nessie_prerequisites(monkeypatch)
+    seen = _spy_ci(monkeypatch)
+
+    result = runner.invoke(cli.app, ["ci"])
+
+    assert result.exit_code == 0, result.output
+    assert [k["nessie"] for k in seen.build] == [True]
+    assert [k["nessie"] for k in seen.run] == [True]
+    assert checked == [(repo, "nextseek")]
+
+
+def test_ci_no_nessie_turns_the_lane_off_and_checks_nothing_for_it(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _saved_state(repo, ci_profile="local")
+    checked = _stub_nessie_prerequisites(monkeypatch)
+    seen = _spy_ci(monkeypatch)
+
+    result = runner.invoke(cli.app, ["ci", "--no-nessie"])
+
+    assert result.exit_code == 0, result.output
+    assert [k["nessie"] for k in seen.build] == [False]
+    assert [k["nessie"] for k in seen.run] == [False]
+    assert checked == []
+    assert seen.report[0]["nessie_summary"] is None
+    assert seen.report[0]["nessie_ran"] is False
+
+
+@pytest.mark.parametrize("profile", ["prod", ""])
+def test_ci_never_runs_the_nessie_lane_on_prod_or_an_undeclared_box(
+    repo: Path, monkeypatch: pytest.MonkeyPatch, profile: str,
+) -> None:
+    """An absent profile is prod (fail closed), and prod allows no model spend."""
+    _saved_state(repo, ci_profile=profile)
+    checked = _stub_nessie_prerequisites(monkeypatch)
+    seen = _spy_ci(monkeypatch)
+
+    result = runner.invoke(cli.app, ["ci"])
+
+    assert result.exit_code == 0, result.output
+    assert [k["nessie"] for k in seen.run] == [False]
+    assert checked == []
+
+
+def test_ci_narrowed_to_prod_runs_no_nessie_lane(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A dev box asked to run as prod gets prod's rule: the suite would skip the
+    lane by its profiles marker, so its prerequisites must not stop the run."""
+    _saved_state(repo, ci_profile="dev")
+    checked = _stub_nessie_prerequisites(monkeypatch)
+    seen = _spy_ci(monkeypatch)
+
+    result = runner.invoke(cli.app, ["ci", "--profile", "prod"])
+
+    assert result.exit_code == 0, result.output
+    assert [k["nessie"] for k in seen.run] == [False]
+    assert checked == []
+
+
+def test_ci_stops_before_the_suite_when_a_nessie_prerequisite_fails(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _saved_state(repo, ci_profile="local")
+    _stub_nessie_prerequisites(
+        monkeypatch,
+        ("bedrock proxy token", False, "EMPTY: CC model calls are disabled"),
+        ("first-party images", True, "all 4 present"),
+        ("cc services", True, "bedrock-proxy + nextseek-sidecar running"),
+        ("CC runner", True, "(True, 'ok')"),
+    )
+    seen = _spy_ci(monkeypatch)
+
+    result = runner.invoke(cli.app, ["ci"])
+
+    assert result.exit_code == 1
+    assert seen.run == []
+    flat = _squash(result.output)
+    assert "bedrockproxytoken" in flat
+    assert "TheNessielanecannotrun:bedrockproxytoken:EMPTY" in flat
+    assert "--no-nessie" in flat
+    assert "rebuilditselfsucceeded" not in flat
+
+
+def test_ci_hands_the_nessie_summary_to_the_ci_record(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _saved_state(repo, ci_profile="local")
+    seen = _spy_ci(monkeypatch)
+    summary = {"questions": [], "spent_usd": 0.0}
+    monkeypatch.setattr(ci_runner, "read_nessie_summary", lambda repo_root: summary)
+
+    result = runner.invoke(cli.app, ["ci"])
+
+    assert result.exit_code == 0, result.output
+    assert seen.report[0]["nessie_summary"] is summary
+    assert seen.report[0]["nessie_ran"] is True
+
+
+def test_ci_tells_the_ci_record_the_lane_ran_when_it_wrote_no_summary(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A lane that died before chat_run's teardown writes no summary but may leave a
+    trace. The record must still file that evidence (spec 3.4), so it is told the
+    lane ran even though there is no summary to render."""
+    _saved_state(repo, ci_profile="local")
+    seen = _spy_ci(monkeypatch, rc=1)
+    monkeypatch.setattr(ci_runner, "read_nessie_summary", lambda repo_root: None)
+
+    result = runner.invoke(cli.app, ["ci"])
+
+    assert result.exit_code == 1, result.output
+    assert seen.report[0]["nessie_ran"] is True
+    assert seen.report[0]["nessie_summary"] is None
+
+
+def test_rebuild_tells_the_ci_record_the_lane_ran_when_it_wrote_no_summary(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _saved_state(repo, ci_profile="dev")
+    _mock_rebuild(monkeypatch)
+    seen = _spy_ci(monkeypatch, rc=1)
+    monkeypatch.setattr(ci_runner, "read_nessie_summary", lambda repo_root: None)
+
+    result = runner.invoke(cli.app, ["rebuild"])
+
+    assert result.exit_code == 1, result.output
+    assert seen.report[0]["nessie_ran"] is True
+    assert seen.report[0]["nessie_summary"] is None
+
+
+def test_rebuild_of_the_app_runs_the_nessie_lane_on_a_local_box(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _saved_state(repo, ci_profile="local")
+    _mock_rebuild(monkeypatch)
+    checked = _stub_nessie_prerequisites(monkeypatch)
+    seen = _spy_ci(monkeypatch)
+    summary = {"questions": [], "spent_usd": 0.0}
+    monkeypatch.setattr(ci_runner, "read_nessie_summary", lambda repo_root: summary)
+
+    result = runner.invoke(cli.app, ["rebuild"])
+
+    assert result.exit_code == 0, result.output
+    assert [k["nessie"] for k in seen.build] == [True]
+    assert [k["nessie"] for k in seen.run] == [True]
+    assert checked == [(repo, "nextseek")]
+    assert seen.report[0]["nessie_summary"] is summary
+
+
+def test_rebuild_of_a_component_skips_the_nessie_lane(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Four component rebuilds must not pay for four runs (spec decision 2)."""
+    _saved_state(repo, ci_profile="local")
+    _mock_rebuild(monkeypatch)
+    checked = _stub_nessie_prerequisites(monkeypatch)
+    seen = _spy_ci(monkeypatch)
+
+    result = runner.invoke(cli.app, ["rebuild", "--component", "cc-agent"])
+
+    assert result.exit_code == 0, result.output
+    assert [k["nessie"] for k in seen.run] == [False]
+    assert checked == []
+    assert seen.report[0]["nessie_summary"] is None
+    assert seen.report[0]["nessie_ran"] is False
+
+
+def test_rebuild_no_nessie_turns_the_lane_off(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _saved_state(repo, ci_profile="dev")
+    _mock_rebuild(monkeypatch)
+    checked = _stub_nessie_prerequisites(monkeypatch)
+    seen = _spy_ci(monkeypatch)
+
+    result = runner.invoke(cli.app, ["rebuild", "--no-nessie"])
+
+    assert result.exit_code == 0, result.output
+    assert [k["nessie"] for k in seen.run] == [False]
+    assert checked == []
+
+
+def test_rebuild_on_prod_never_runs_the_nessie_lane(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _saved_state(repo, ci_profile="prod")
+    _mock_rebuild(monkeypatch)
+    checked = _stub_nessie_prerequisites(monkeypatch)
+    seen = _spy_ci(monkeypatch)
+
+    result = runner.invoke(cli.app, ["rebuild"])
+
+    assert result.exit_code == 0, result.output
+    assert [k["nessie"] for k in seen.run] == [False]
+    assert checked == []
+
+
+def test_rebuild_stops_before_the_suite_when_a_nessie_prerequisite_fails(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _saved_state(repo, ci_profile="dev")
+    _mock_rebuild(monkeypatch)
+    _stub_nessie_prerequisites(
+        monkeypatch,
+        ("bedrock proxy token", True, "token present"),
+        ("first-party images", True, "all 4 present"),
+        ("cc services", False, "not running: nextseek-sidecar"),
+        ("CC runner", True, "(True, 'ok')"),
+    )
+    seen = _spy_ci(monkeypatch)
+
+    result = runner.invoke(cli.app, ["rebuild"])
+
+    assert result.exit_code == 1
+    assert seen.run == []
+    flat = _squash(result.output)
+    assert "Therebuilditselfsucceeded,buttheNessielanecannotrun" in flat
+    assert "ccservices:notrunning:nextseek-sidecar" in flat
+    assert "--no-nessie" in flat
+
+
+@pytest.mark.parametrize("component, expected", [
+    ("app", True), ("nextseek", True),
+    ("cc-agent", False), ("agent", False),
+    ("bedrock-proxy", False), ("proxy", False),
+    ("nextseek-sidecar", False), ("sidecar", False),
+    ("custom-stack", False), ("all", False),
+])
+def test_only_an_app_rebuild_counts_as_one(component: str, expected: bool) -> None:
+    """A bare rebuild and --component app (or its alias) are app rebuilds; every
+    other component, custom-stack included, is not."""
+    from startup.lib.rebuild_policy import resolve_component
+
+    assert cli._is_app_rebuild(resolve_component(component, "nextseek")) is expected
+
+
+def test_a_bare_rebuild_is_an_app_rebuild() -> None:
+    """The option's own default, read from the command, not restated here."""
+    import inspect
+
+    from startup.lib.rebuild_policy import resolve_component
+
+    default = inspect.signature(cli.rebuild).parameters["component"].default.default
+    assert cli._is_app_rebuild(resolve_component(default, "nextseek")) is True
 
 
 # ---------------------------------------------------------------------------

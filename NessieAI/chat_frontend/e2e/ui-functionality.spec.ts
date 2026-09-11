@@ -44,32 +44,34 @@ test.describe("UI Functionality", () => {
     await delay(300);
 
     // Simulate the full new_search agent pipeline
+    // ProcessingStepper renders each step's label as text and puts step.detail in
+    // the title attribute, so the label is found by its exact text in the stepper.
     mock.simulateAgentStarted("entity", "");
     await delay(50);
-    await expect(page.getByTitle("Extracting entities")).toBeVisible();
+    await expect(page.getByTestId("stepper").getByText("Extracting entities", { exact: true })).toBeVisible();
 
     mock.simulateAgentComplete("entity", "Found: TIS");
     mock.simulateAgentStarted("parser", "");
     await delay(50);
-    await expect(page.getByTitle("Planning query")).toBeVisible();
+    await expect(page.getByTestId("stepper").getByText("Planning query", { exact: true })).toBeVisible();
 
     mock.simulateAgentComplete("parser", "mode=new_search");
     mock.simulateAgentStarted("api", "new_search");
     await delay(50);
-    await expect(page.getByTitle("Building request")).toBeVisible();
+    await expect(page.getByTestId("stepper").getByText("Building request", { exact: true })).toBeVisible();
 
     mock.simulateAgentComplete("api", "POST /samples/advanced_search/");
     mock.simulateAgentStarted("http", "new_search");
     await delay(50);
-    await expect(page.getByTitle("Executing search")).toBeVisible();
+    await expect(page.getByTestId("stepper").getByText("Executing search", { exact: true })).toBeVisible();
 
     mock.simulateAgentComplete("http", "200 OK, 42 results");
     mock.simulateAgentStarted("chatter", "new_search");
     await delay(50);
-    await expect(page.getByTitle("Summarizing results")).toBeVisible();
+    await expect(page.getByTestId("stepper").getByText("Summarizing results", { exact: true })).toBeVisible();
 
     // Verify entity step is still visible in the stepper
-    await expect(page.getByTitle("Extracting entities")).toBeVisible();
+    await expect(page.getByTestId("stepper").getByText("Extracting entities", { exact: true })).toBeVisible();
   });
 
   // --- 6. Processing stepper shows reporter mode steps ---
@@ -95,11 +97,11 @@ test.describe("UI Functionality", () => {
     mock.simulateAgentStarted("reporter", "reporter");
     await delay(100);
 
-    // Reporter step should be visible
-    await expect(page.getByTitle("Running report")).toBeVisible();
+    // Reporter step should be visible (label text, as above)
+    await expect(page.getByTestId("stepper").getByText("Running report", { exact: true })).toBeVisible();
 
     // Entity step should also still be visible
-    await expect(page.getByTitle("Extracting entities")).toBeVisible();
+    await expect(page.getByTestId("stepper").getByText("Extracting entities", { exact: true })).toBeVisible();
   });
 
   // --- 7. Message input auto-resizes ---

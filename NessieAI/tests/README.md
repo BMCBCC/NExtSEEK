@@ -157,4 +157,5 @@ These stay with the code they mostly test, and carry some AI checks:
 - `nextseek_api/tests/test_migration_0009_normalize_chat_log_turn_ids.py` (tests a migration; migrations stay)
 - in `nextseek_api/tests/`: `test_endpoint_descriptions_safety.py`, `test_final_coverage_sweep.py`, `test_models_coverage.py`, `test_migration_0007_structure.py`, `test_migration_0007_heal_db.py`, `test_is_staff_not_admin.py`, `test_project_export.py`, `test_cors.py`, `test_api_docs_authentication.py`, `test_viewset_conventions.py`
 - `ci/smoke/test_flows.py` (the Nessie checks in the post-deploy smoke lane)
+- `ci/smoke/test_nessie.py` (the Nessie CI lane: every Nessie route and chat control, then three NS questions and one CC question through the real chat page, run after an app rebuild on local and dev; PAID, so `./startup.sh rebuild --no-nessie` and `./startup.sh ci --no-nessie` skip it) and `ci/smoke/test_nessie_unit.py` (its no-stack pins); `ci/smoke/README.md` "Nessie lane" is its doc
 - in `seek/tests/`: `test_navbar.py`, `test_home_dashboard.py`, `test_context_seed_tables.py`

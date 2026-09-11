@@ -644,6 +644,11 @@ def rebuild(
         "--disk-floor",
         help="Override the per-profile free-space floor, in GB.",
     ),
+    nessie: bool = typer.Option(
+        True, "--nessie/--no-nessie",
+        help="Include the Nessie lane (three NS questions and one CC question, about "
+             "$0.30) in the post-rebuild CI. App rebuilds on local and dev only.",
+    ),
 ) -> None:
     """Safely rebuild a first-party component without touching volumes."""
     from startup.lib.docker_ops import compose_build, compose_up
@@ -790,10 +795,16 @@ def rebuild(
         else:
             from startup.ci import runner
 
+            # The Nessie lane pays for model turns, so it rides app rebuilds only,
+            # on a box that allows writes and spend (spec decision 2).
+            nessie_on = _nessie_active(state, nessie) and _is_app_rebuild(policy)
+            if nessie_on:
+                _nessie_prerequisites_or_exit(state, after_rebuild=True)
             ui.info("running CI after rebuild (--no-ci to skip)")
-            _ci_banner(state, runner.build_command(REPO_ROOT, state, wait_ready=True),
+            _ci_banner(state, runner.build_command(REPO_ROOT, state, wait_ready=True,
+                                                   nessie=nessie_on),
                        wait_ready=True)
-            rc = runner.run_ci(REPO_ROOT, state, wait_ready=True)
+            rc = runner.run_ci(REPO_ROOT, state, wait_ready=True, nessie=nessie_on)
             outcome = _ci_outcome(rc)
             # One markdown record per run, named for the rollback tag this deploy
             # created, so a CI result can be tied back to the exact deploy that
@@ -805,6 +816,10 @@ def rebuild(
                 image_ref=image_ref, image_id=image_id,
                 profile=state.ci_profile,
                 health=_health_rows(health),
+                # nessie_ran as well as the summary: a lane that died before its
+                # summary still left evidence for the record to file.
+                nessie_ran=nessie_on,
+                nessie_summary=runner.read_nessie_summary(REPO_ROOT) if nessie_on else None,
             )
             if record is not None:
                 ui.info(f"CI record: {record}")
@@ -835,6 +850,54 @@ def _report_health(health: "validate.StackHealth") -> None:
 def _health_rows(health: "validate.StackHealth") -> list[tuple[str, bool, str]]:
     """The health step as the plain tuples the CI record takes."""
     return [(r.name, r.ok, r.detail) for r in health.results]
+
+
+# The profiles the Nessie lane may run under. It writes (a chat) and pays for model
+# turns, and prod allows neither. Restated, like CI_PROFILE_CHOICES, because
+# startup/ never imports ci/.
+NESSIE_PROFILES = ("local", "dev")
+
+
+def _nessie_active(state: InstanceState, requested: bool, *,
+                   profile: str | None = None) -> bool:
+    """The Nessie lane runs only where writes and model spend are allowed.
+
+    The box's declared profile decides, failing closed to prod when it is absent.
+    A run narrowed with --profile to prod gets prod's rule as well: the suite would
+    skip the lane there by its profiles marker, so its prerequisites must not stop
+    the run.
+    """
+    return (requested
+            and (state.ci_profile or DEFAULT_CI_PROFILE) in NESSIE_PROFILES
+            and (profile is None or profile in NESSIE_PROFILES))
+
+
+def _is_app_rebuild(policy) -> bool:
+    """A bare rebuild, `--component app`, or its alias `nextseek`.
+
+    Every other component skips the lane, custom-stack included: the lane rides
+    the app component only (spec decision 2), so that a run of component rebuilds
+    does not pay for the same four questions again and again. After a custom-stack
+    rebuild, `./startup.sh ci` runs it.
+    """
+    return policy.name == "app"
+
+
+def _nessie_prerequisites_or_exit(state: InstanceState, *, after_rebuild: bool) -> None:
+    """Fail before the suite starts when the Nessie lane cannot pass: a CC turn
+    needs the proxy token, the cc-agent image and the two CC services. Named, so
+    the operator fixes the box rather than reading four red tests (decision 6)."""
+    results = validate.nessie_prerequisites(REPO_ROOT, state.compose_env(),
+                                            state.compose_project_name)
+    failing = [r for r in results if not r.ok]
+    for r in results:
+        (ui.ok if r.ok else ui.fail)(f"nessie prerequisite, {r.name}: {r.detail}")
+    if failing:
+        prefix = "The rebuild itself succeeded, but the " if after_rebuild else "The "
+        ui.fail(f"{prefix}Nessie lane cannot run: "
+                + "; ".join(f"{r.name}: {r.detail}" for r in failing)
+                + ". Fix it, or pass --no-nessie.")
+        raise typer.Exit(code=1)
 
 
 def _tilde(path: Path) -> str:
@@ -926,6 +989,8 @@ def ci(
                                        help="Narrow the profile. Cannot widen."),
     force_profile: str | None = typer.Option(None, "--force-profile",
                                              help="Widen past what the box declares. Deliberate only."),
+    nessie: bool = typer.Option(True, "--nessie/--no-nessie",
+                                help="Include the Nessie lane (local and dev only)."),
 ) -> None:
     """Run the CI smoke suite against this instance's running stack."""
     from startup.ci import runner
@@ -961,19 +1026,29 @@ def ci(
                 "what is down, then run this again.")
         raise typer.Exit(code=1)
 
+    # Step 2, with the Nessie lane on: its own prerequisites, which unlike the
+    # advisory CC checks above do stop the run (spec decision 6).
+    nessie_on = _nessie_active(state, nessie, profile=profile)
+    if nessie_on:
+        _nessie_prerequisites_or_exit(state, after_rebuild=False)
+
     cmd = runner.build_command(REPO_ROOT, state, wait_ready=wait_ready,
-                               profile=profile, force_profile=force_profile)
+                               profile=profile, force_profile=force_profile,
+                               nessie=nessie_on)
     _ci_banner(state, cmd, wait_ready=wait_ready)
     rc = runner.run_ci(REPO_ROOT, state, wait_ready=wait_ready,
                        profile=profile, force_profile=force_profile,
-                       confirm_force=confirm_force)
+                       confirm_force=confirm_force, nessie=nessie_on)
     outcome = _ci_outcome(rc)
     # No rollback tag here: this command does not build anything, so the record
     # is keyed on the image actually under test plus the time it was tested.
     image_ref, image_id = runner.running_image()
     record = runner.write_report(REPO_ROOT, image_ref=image_ref, image_id=image_id,
                                  profile=state.ci_profile, command=cmd,
-                                 health=_health_rows(health))
+                                 health=_health_rows(health),
+                                 nessie_ran=nessie_on,
+                                 nessie_summary=(runner.read_nessie_summary(REPO_ROOT)
+                                                 if nessie_on else None))
     if record is not None:
         ui.info(f"CI record: {record}")
     if rc != 0:

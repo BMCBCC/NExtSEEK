@@ -86,6 +86,18 @@ class SampleSearchMixin:
             filtersdic['tableField'] = SAMPLE_FILTER_MAPPING[field]
             filtersdic['sampletype_id'] = sampletype_id
         
+        # The sample types an API caller resolved (nextseek_api advanced_search passes
+        # SampleAdvancedSearchRequest.to_db_filters' sampletype_ids). The Advanced
+        # builder puts only the search text into its WHERE, so without this the query
+        # read every sample in the database and the endpoint dropped the other types
+        # afterwards: 166,235 rows read for 725 NHP rows, and two OOM-killed workers
+        # (Nessie CI lane, 2026-09-11). The UI passes request.GET, which has no such
+        # key, so its search is unchanged.
+        if searchType in ("Advanced", "UIDs"):
+            sampletype_ids = filters.get('sampletype_ids')
+            if isinstance(sampletype_ids, (list, tuple)) and sampletype_ids:
+                filtersdic['sampletype_ids'] = [int(i) for i in sampletype_ids]
+
         filtersdic['attribute'] = attribute
         filtersdic['filter_rule'] = filter_rule
         filtersdic['filter_valueFrom'] = filter_valueFrom
@@ -171,21 +183,27 @@ class SampleSearchMixin:
         # This call site wants only the keywords -- `query` is built and then
         # discarded here, never executed -- so its params are discarded with it.
         query, _params, terms = spi.designSearchPubmed(searchText, tableField, categoryField)
-        
+        # An empty search text parses to the one keyword ''. Every value contains the
+        # empty string, so every attribute was "highlighted", and _highlightKeyword's
+        # value.replace('', span) put the span between every character: the 725 NHP
+        # rows' 0.8 MB of metadata came back as 13.5 MB (Nessie CI lane, 2026-09-11).
+        # No keyword means nothing to highlight: keep every row, attributeValue empty.
+        terms = [t for t in terms if str(t).strip()]
+
         sampletype_id = 0
-        
+
         n = 0
         jdata_new = []
         for data in jdata:
             json_metadata = data['json_metadata']
             sample_type_id = data['sample_type_id']
             dici = self._getRecordFromJson(json_metadata)
-            
-            attributeValue = self._highlightKeyValues(dici, terms, matchType)
+
+            attributeValue = self._highlightKeyValues(dici, terms, matchType) if terms else ''
 
             data['json_metadata'] = json.loads(data['json_metadata'])
-            
-            if len(attributeValue)==0:
+
+            if terms and len(attributeValue)==0:
                 continue
     
             data['attributeValue'] = attributeValue

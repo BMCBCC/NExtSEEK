@@ -114,10 +114,11 @@ test.describe("Saved chats sidebar", () => {
     await page.goto("/");
     await page.waitForSelector('[aria-label="Saved chats"]', { timeout: 10_000 });
 
-    const row = page.locator('[aria-label="Saved chats"] >> .group').first();
+    // SessionListItem has its own Rename and Delete buttons on each row; there is
+    // no "More" menu.
+    const row = page.locator('[aria-label="Saved chats"]').getByTestId("session-item").first();
     await row.hover();
-    await row.getByRole("button", { name: "More" }).click();
-    await page.getByRole("menuitem", { name: /rename/i }).click();
+    await row.getByRole("button", { name: "Rename" }).click();
     const input = page.getByRole("textbox", { name: "Rename session" });
     await input.fill("Alpha Renamed");
     await input.press("Enter");
@@ -137,11 +138,13 @@ test.describe("Saved chats sidebar", () => {
     await page.goto("/");
     await page.waitForSelector('[aria-label="Saved chats"]', { timeout: 10_000 });
 
-    const row = page.locator('[aria-label="Saved chats"] >> .group').first();
+    // SessionListItem has its own Rename and Delete buttons on each row; there is
+    // no "More" menu.
+    const row = page.locator('[aria-label="Saved chats"]').getByTestId("session-item").first();
     await row.hover();
-    await row.getByRole("button", { name: "More" }).click();
-    await page.getByRole("menuitem", { name: /delete/i }).click();
-    await page.getByRole("button", { name: /^delete$/i }).click();
+    await row.getByRole("button", { name: "Delete" }).click();
+    // The confirm dialog is portalled out of the row; its Delete confirms.
+    await page.getByRole("dialog").getByRole("button", { name: /^delete$/i }).click();
     await delay(200);
 
     expect(mock.receivedDeletes).toContain(ALPHA);

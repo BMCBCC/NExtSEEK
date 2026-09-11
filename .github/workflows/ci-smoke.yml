@@ -30,6 +30,10 @@ on:
         description: "Also run the opt-in write lane (needs ci_write)."
         type: boolean
         default: false
+      nessie:
+        description: "Run the Nessie lane (three NS questions and one CC question, about $0.30)"
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -97,6 +101,13 @@ jobs:
           fi
           if [ "${{ inputs.strict_console }}" = "true" ]; then
             ARGS+=(--strict-console)
+          fi
+          # The Nessie lane is switched off only by the suite's own --no-nessie,
+          # never by a -m expression: any -m re-admits the write lane. A shell test,
+          # not an inline "inputs.nessie && '' || '--no-nessie'" expression: '' is
+          # falsy there, so that expression yields --no-nessie every time.
+          if [ "${{ inputs.nessie }}" != "true" ]; then
+            ARGS+=(--no-nessie)
           fi
           uv run --no-project \
             --with pytest --with requests --with playwright \

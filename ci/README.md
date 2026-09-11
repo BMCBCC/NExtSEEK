@@ -127,12 +127,13 @@ name is the summary: `pytest (informational)`
 
 **`.github/workflows/ci-smoke.yml`** runs by hand only (`workflow_dispatch` is
 its single trigger, `.github/workflows/ci-smoke.yml:11-12`) on a self-hosted
-runner labelled `fairdata-dev` (`.github/workflows/ci-smoke.yml:44`). It reads
+runner labelled `fairdata-dev` (`.github/workflows/ci-smoke.yml:48`). It reads
 the box's profile out of `startup/.instance.json` rather than naming one
-(`.github/workflows/ci-smoke.yml:55-68`), refuses the write lane outright on a
-box declaring `prod` (`.github/workflows/ci-smoke.yml:74-78`), runs
-`pytest ci/smoke/` (`.github/workflows/ci-smoke.yml:101-103`) and, only when
-asked for, `pytest ci/smoke/ -m write` (`.github/workflows/ci-smoke.yml:105-110`).
+(`.github/workflows/ci-smoke.yml:59-72`), refuses the write lane outright on a
+box declaring `prod` (`.github/workflows/ci-smoke.yml:78-82`), runs
+`pytest ci/smoke/` (`.github/workflows/ci-smoke.yml:112-114`), adding
+`--no-nessie` when its `nessie` input is off, and, only when asked for,
+`pytest ci/smoke/ -m write` (`.github/workflows/ci-smoke.yml:116-121`).
 The operator rebuilds and this workflow then tests; it never restarts anything
 (`.github/workflows/ci-smoke.yml:3-6`).
 
@@ -159,6 +160,19 @@ successful `./startup.sh rebuild` unless `--no-ci` is passed
 because the running containers would still carry the previous image
 (`startup/cli.py:633-639`).
 
+**The Nessie lane** (`ci/smoke/test_nessie.py`) rides both smoke callers. It
+proves a build did not break Nessie: every Nessie route and chat-page control
+exists, three NS questions and one CC question complete through the real chat
+page, and the sessions endpoints report what the page showed. It is the one part
+of `ci/smoke/` that sends chat turns (about $0.30 a run), so it runs only on a box
+declaring `local` or `dev`, after an app rebuild or on `./startup.sh ci`.
+`--no-nessie` skips it: a startup flag, a suite option, and the dispatch
+workflow's `nessie` input. It needs the write account in a participating project
+and a non-empty Bedrock proxy token, and with the lane on, startup checks its
+prerequisites after stack health; unlike the advisory checks above, those stop
+the run. See [Nessie lane](smoke/README.md#nessie-lane) for its stages,
+prerequisites, how to extend it and how to read a failure.
+
 ### What can fail a job, and what is only a report
 
 In `ci-pytest.yml` failing tests never fail the job. The lanes step fails only
@@ -182,15 +196,15 @@ names something that is declared but not yet built, it says so.
 
 | term | what it means |
 |---|---|
-| **tier** | How deep a check goes. Six are declared, T0 to T5 (`docs/superpowers/specs/2026-09-01-nextseek-ci-comprehensive-coverage-design.md:244-255`): T0 and T1 are parametrised from the registry and grow with it, T2 upward are hand-written because a browser interaction is not a table row. Only T0 is built; `ci/smoke/README.md:57-58` records that per-route body assertions are T1's job "and are not in this increment" |
+| **tier** | How deep a check goes. Six are declared, T0 to T5 (`docs/superpowers/specs/2026-09-01-nextseek-ci-comprehensive-coverage-design.md:244-255`): T0 and T1 are parametrised from the registry and grow with it, T2 upward are hand-written because a browser interaction is not a table row. Only T0 is built; `ci/smoke/README.md:62-63` records that per-route body assertions are T1's job "and are not in this increment" |
 | **T0 / reachability** | `ci/smoke/test_reachability.py`: one test per registry route, parametrised at collection, asserting a status, a live gateway and no silent bounce to `/login/` (`ci/smoke/test_reachability.py:1-10`). Deliberately shallow, which is why the hand-written tests exist beside it |
 | **flows** | `ci/smoke/test_flows.py`: the browser lane, marked `flow` (`ci/smoke/test_flows.py:19`), which drives the real UI through Playwright and with `--strict-console` fails on uncaught console errors. Nothing in it writes to the database (`ci/smoke/test_flows.py:1-9`) |
 | **route registry** | The `REGISTRY` list in `ci/routes.py`. Every application URL declared exactly once; an undeclared route is refused before the request is built (`ci/routes.py:10-13`) |
 | **completeness gate** | `ci/gate/`: the two tests that diff Django's live resolver against `REGISTRY` in both directions and fail with a paste-ready skeleton (`ci/gate/test_route_registry.py:29-49`) |
-| **profile** | Which box the suite believes it is on: `local`, `dev` or `prod` (`ci/routes.py:22`). Every route names the profiles it may be called under. An absent `CI_BOX_PROFILE` resolves to `prod`, the most restrictive, and `--profile` can only narrow from there (`ci/smoke/conftest.py:142-145`, `ci/smoke/conftest.py:162-170`) |
+| **profile** | Which box the suite believes it is on: `local`, `dev` or `prod` (`ci/routes.py:22`). Every route names the profiles it may be called under. An absent `CI_BOX_PROFILE` resolves to `prod`, the most restrictive, and `--profile` can only narrow from there (`ci/smoke/conftest.py:149-152`, `ci/smoke/conftest.py:168-177`) |
 | **auth level** | Which client calls a route: `anon`, `smoke`, `web` or `write` (`ci/routes.py:43`), pinned to exactly those four (`ci/smoke/test_registry_contents.py:110`). `anon` carries no credentials, `smoke` is Basic-authenticated for `/nextseek_api/*`, `web` holds the session cookie the `/seek/*` views read, and the sweep has no `write` client at all (`ci/smoke/test_reachability.py:102-109`) |
-| **write lane** | `ci/smoke/test_write_lane.py`, marked `write` (`ci/smoke/test_write_lane.py:33`) and deselected unless `-m` is passed (`ci/smoke/conftest.py:225-230`). It authenticates as the superuser account, proves the dry-run contracts by default, and puts a real INSERT behind a second opt-in, `CI_WRITE_DESTRUCTIVE=1` (`ci/smoke/test_write_lane.py:1-17`) |
-| **xfail / XPASS** | A route broken today carries an `xfail` reason and reports `xfailed`. Because `expect` names the status a *working* route returns, the day the defect is fixed that same entry reports **XPASS**, which is the signal to delete the pin rather than a new failure (`ci/routes.py:44-49`, `ci/smoke/README.md:130-133`) |
+| **write lane** | `ci/smoke/test_write_lane.py`, marked `write` (`ci/smoke/test_write_lane.py:33`) and deselected unless `-m` is passed (`ci/smoke/conftest.py:261-266`). It authenticates as the superuser account, proves the dry-run contracts by default, and puts a real INSERT behind a second opt-in, `CI_WRITE_DESTRUCTIVE=1` (`ci/smoke/test_write_lane.py:1-17`) |
+| **xfail / XPASS** | A route broken today carries an `xfail` reason and reports `xfailed`. Because `expect` names the status a *working* route returns, the day the defect is fixed that same entry reports **XPASS**, which is the signal to delete the pin rather than a new failure (`ci/routes.py:44-49`, `ci/smoke/README.md:274-277`) |
 | **shape** | A `Route` field naming one key that must exist in the JSON body (`ci/routes.py:50`). Declared and asserted by nothing: a grep for `.shape` across `ci/` finds no reader. It is T1's input, carried over from the body assertions that used to be hand-written (`ci/smoke/test_health.py:15-17`) |
 | **pytest baseline** | `ci/pytest-baseline.txt`: which tests were already failing, recorded so a run reports what is *new* rather than what is red. Valid for one exact command and one tree state, and it names that command in its own header (`ci/pytest-baseline.txt:3-11`). See `ci/CLAUDE.md` for how it was last regenerated and how to regenerate it |
 
@@ -292,7 +306,7 @@ grepping every `.py` file in the tree for `ci.routes`, `ci.gate`, `ci.smoke`,
 - The "Diff against the baseline" step of `.github/workflows/ci-pytest.yml` runs
   the differ, and its "Blocking gates (route registry, docs map)" step runs the
   gate, one of the two steps whose exit code can fail that job.
-- `.github/workflows/ci-smoke.yml:101-103` runs the smoke suite on a self-hosted
+- `.github/workflows/ci-smoke.yml:112-114` runs the smoke suite on a self-hosted
   runner in a deliberately isolated environment.
 - Not a consumer: `startup/cli.py:40-44` restates `("local", "dev", "prod")` as
   its own constant and says in the comment above it that `startup/` never imports

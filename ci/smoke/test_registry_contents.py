@@ -18,6 +18,8 @@ import re
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from ci.gate.live_routes import suggest_path
@@ -393,3 +395,31 @@ def test_the_browser_guard_installs_nothing_under_local():
     ctx = _FakeContext()
     _guard_context(ctx, "local")
     assert ctx.handlers == []
+
+
+# --------------------------------------------------------------------------- #
+# lanes: routes a named test module sends outside the sweep
+# --------------------------------------------------------------------------- #
+
+def test_exactly_one_route_is_sent_by_a_lane_and_it_is_the_chat_turn():
+    from ci.routes import lane_routes
+    tagged = [r for r in REGISTRY if r.lane]
+    assert [r.pattern for r in tagged] == [
+        r"^nextseek_api/^^cc-assistant/query/async/$"
+    ], f"lane-tagged routes: {[r.pattern for r in tagged]}"
+    assert lane_routes("nessie") == tagged
+
+
+def test_a_lane_route_stays_out_of_reach_of_the_sweep_and_the_guard():
+    """The lane's browser sends this route; T0 and GuardedSession never do."""
+    for route in REGISTRY:
+        if route.lane:
+            assert route.path is None and not route.profiles
+            assert route.exclude == "EXCLUDE_COST"
+
+
+def test_an_unknown_lane_is_refused():
+    from ci.routes import Route
+    with pytest.raises(ValueError, match="lane"):
+        Route(pattern=r"^x/$", path=None, methods=(), profiles="",
+              exclude="EXCLUDE_COST", lane="nightly")

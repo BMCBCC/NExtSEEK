@@ -62,6 +62,15 @@ Break one of these and the failure is silent: a page that renders, returns HTTP
 - **Never write a credential into a file here.** A committed script once carried a
   username and password; it was deleted, but the pair stays in public git history,
   so treat any such pair as compromised rather than as a fixture.
+- **The `data-testid` values are a contract with the Nessie CI lane.**
+  `ci/smoke/test_nessie.py` drives the built page by them (`chat-input`, `send-button`,
+  `new-chat-button`, `upload-control`, `debug-panel`, `debug-entry` with `data-agent`,
+  `json-download`, `metadata-download`, `message-bubble` with `data-role`,
+  `artifact-download`, `session-item` with `data-session-id`), plus the `#route-override`
+  id and the "Toggle debug panel" and "Saved chats" labels.
+  `NessieAI/chat_frontend/src/components/__tests__/testIds.test.tsx` pins the ones the
+  lane cannot reach without a bundle. Renaming one is a red lane on the next rebuild,
+  not a compile error.
 
 ## Landmines
 
@@ -136,11 +145,12 @@ Break one of these and the failure is silent: a page that renders, returns HTTP
   over everything and exits 1 on pre-existing errors across several files. Do not treat
   a clean lint as a merge gate here, and do not "fix" the whole file set inside a
   change that is meant to be small.
-- **The Playwright web-server ternary has identical branches**
-  (`NessieAI/chat_frontend/playwright.config.ts:54`), so the local dev server declared at
-  `NessieAI/chat_frontend/playwright.config.ts:5-9` is started and awaited on port 5173
-  even for the remote-target project at
-  `NessieAI/chat_frontend/playwright.config.ts:41-49`, which never visits it. A machine
+- **Both branches of the Playwright web-server ternary start the local dev
+  server** (`NessieAI/chat_frontend/playwright.config.ts:70`): the mock project gets it
+  with placeholder credentials and the real-backend projects get it plain. So
+  the dev server declared at `NessieAI/chat_frontend/playwright.config.ts:5-9` is started
+  and awaited on port 5173 even for the remote-target project at
+  `NessieAI/chat_frontend/playwright.config.ts:57-65`, which never visits it. A machine
   that cannot bring that server up cannot run the remote project either.
 - **The unit lane only sees `src/`.** The include glob is
   `NessieAI/chat_frontend/vitest.config.ts:16`; a test placed under `NessieAI/chat_frontend/e2e/`

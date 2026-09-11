@@ -56,6 +56,7 @@ export function RightSidebar({
             size="sm"
             disabled={!hasBundle}
             onClick={() => onDownload("json")}
+            data-testid="json-download"
           >
             <Download className="mr-1 h-3 w-3" />
             JSON
@@ -65,6 +66,7 @@ export function RightSidebar({
             size="sm"
             disabled={!hasBundle}
             onClick={() => onDownload("metadata")}
+            data-testid="metadata-download"
           >
             <Download className="mr-1 h-3 w-3" />
             Metadata

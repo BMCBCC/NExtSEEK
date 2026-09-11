@@ -77,8 +77,9 @@ export async function setupMocks(page: Page): Promise<MockController> {
     });
   });
 
-  // Mock POST /nextseek_api/assistant/query/async/ → return task_id
-  await page.route("**/nextseek_api/assistant/query/async/", async (route) => {
+  // Mock POST /nextseek_api/cc-assistant/query/async/ → return task_id
+  // (the URL src/lib/services/chatApi.ts posts every chat turn to)
+  await page.route("**/nextseek_api/cc-assistant/query/async/", async (route) => {
     const request = route.request();
     try {
       const body = request.postDataJSON();

@@ -175,12 +175,21 @@ and the build does not depend on it (`NessieAI/chat_frontend/CLAUDE.md`).
 **Browser lanes: Playwright.** `npm run test:e2e`
 (`NessieAI/chat_frontend/package.json:15`). The default `mock` project stubs the REST and
 WebSocket surfaces (`NessieAI/chat_frontend/e2e/fixtures/ws-mock.ts:1-6`) and excludes the
-real-backend directory (`NessieAI/chat_frontend/playwright.config.ts:26`); the two
+real-backend directory (`NessieAI/chat_frontend/playwright.config.ts:42`); the two
 real-backend projects appear only when an environment flag is set
-(`NessieAI/chat_frontend/playwright.config.ts:28-52`) and each spec self-skips otherwise
+(`NessieAI/chat_frontend/playwright.config.ts:44-68`) and each spec self-skips otherwise
 (`NessieAI/chat_frontend/e2e/real-backend/test-case-1-embedded.spec.ts:4`). The mock
 project needs Playwright's browser binaries downloaded, and the real-backend projects
 additionally need a reachable deployed instance with a login that works.
+
+The mock project needs no `.env`. The standalone shell keeps its chat input
+disabled until `VITE_API_BASE_URL`, `VITE_API_USER` and `VITE_API_PASS` are all
+set (`NessieAI/chat_frontend/src/hooks/useAuth.ts`), so
+`NessieAI/chat_frontend/playwright.config.ts` starts the dev server for it with
+placeholder values (`http://mock.invalid`, `mock`, `mock`). Every request is mocked, so
+no real value is needed, and these override a real `.env` for the run. A dev server
+already listening on port 5173 is reused as it was started, so stop yours first or give
+it the same three values. The two test-runner specs skip themselves under this project.
 
 **Coverage.** The merge recipe at `NessieAI/chat_frontend/Makefile:3-8` combines both
 Playwright and vitest output, so it has the same browser-binary requirement.

@@ -29,6 +29,12 @@ EXCLUDE_CODES = frozenset({
     "EXCLUDE_ADMIN",          # administrative surface, out of scope for CI
 })
 
+# A lane is a named test module that sends a route OUTSIDE the T0 sweep and the
+# requests-client guard: today only the Nessie lane's browser, which posts the one
+# chat turn a person would send. The route keeps path=None and its exclude code,
+# so nothing that iterates the registry can form a request for it.
+LANES = frozenset({"nessie"})
+
 # A '$' that ends the pattern and is not escaped, i.e. a real tail anchor rather
 # than a literal dollar in the path.
 _TAIL_ANCHOR = re.compile(r"(?<!\\)\$$")
@@ -52,6 +58,7 @@ class Route:
     exclude: str | None = None        # a CATEGORY CODE; see EXCLUDE_CODES
     resolver: bool = True             # Django's resolver reports it; the gate expects it
     prod_allows_non_get: bool = False  # prod otherwise refuses non-GET; this one is allowed
+    lane: str = ""                    # a lane that sends this route; see LANES
     note: str | None = None
 
     def __post_init__(self) -> None:
@@ -86,6 +93,10 @@ class Route:
             raise ValueError(
                 f"{self.pattern}: exclude must be a category code from "
                 f"{sorted(EXCLUDE_CODES)}, not a description. This repo is public."
+            )
+        if self.lane and self.lane not in LANES:
+            raise ValueError(
+                f"{self.pattern}: lane must be one of {sorted(LANES)}, not {self.lane!r}"
             )
         if self.prod_allows_non_get:
             if "prod" not in self.profiles:
@@ -542,12 +553,14 @@ REGISTRY: list[Route] = [
           path="/nextseek_api/assistant/sessions/",
           methods=("GET",), profiles="local,dev,prod", auth="smoke", expect=200,
           shape="sessions",
-          note="also accepts POST, which the write lane sends on local and dev"),
+          note="also accepts POST (PATCH and DELETE on a session), which the Nessie "
+               "lane sends on local and dev for its scratch session and its cleanup"),
     Route(pattern=r"^nextseek_api/^^assistant/sessions/(?P<session_id>[0-9a-f-]+)/$",
           path="/nextseek_api/assistant/sessions/" + _NO_SUCH_UUID + "/",
           methods=("GET",), profiles="local,dev", auth="smoke", expect=404,
           note="unknown id: proves the route resolves and denies. Also accepts PATCH "
-               "and DELETE, which only the destructive lane sends"),
+               "and DELETE, which the Nessie lane sends on local and dev for its "
+               "scratch session and its cleanup"),
     Route(pattern=r"^nextseek_api/^^assistant/sessions/(?P<session_id>[0-9a-f-]+)/bundles/(?P<bundle_id>\d+)/$",
           path="/nextseek_api/assistant/sessions/" + _NO_SUCH_UUID + "/bundles/1/",
           methods=("GET",), profiles="local,dev", auth="smoke", expect=404,
@@ -658,9 +671,9 @@ REGISTRY: list[Route] = [
           shape="data", note="also accepts PATCH, which the write lane sends on local and dev"),
     Route(pattern=r"^nextseek_api/^^nessie/sessions/(?P<session_id>[0-9a-fA-F-]+)/debug/$",
           path="/nextseek_api/nessie/sessions/" + _NO_SUCH_UUID + "/debug/",
-          methods=("GET",), profiles="local,dev", auth="write", expect=200,
-          note="admin session inspection; superuser only, so the expectation is by "
-               "inspection -- the sweep never holds those rights"),
+          methods=("GET",), profiles="local,dev", auth="write", expect=404,
+          note="unknown id: proves the route resolves and denies; superuser only, so "
+               "the Nessie lane requests it with the write account"),
     Route(pattern=r"^nextseek_api/^^nessie/sessions/(?P<session>[0-9a-f-]+)/artifacts/$",
           path="/nextseek_api/nessie/sessions/" + _NO_SUCH_UUID + "/artifacts/",
           methods=("GET",), profiles="local,dev", auth="smoke", expect=404,
@@ -921,8 +934,10 @@ REGISTRY: list[Route] = [
           methods=(), profiles="", auth="smoke", exclude="EXCLUDE_COST",
           note="the chat turn forced onto the Container-CC engine"),
     Route(pattern=r"^nextseek_api/^^cc-assistant/query/async/$", path=None,
-          methods=(), profiles="", auth="smoke", exclude="EXCLUDE_COST",
-          note="the router-dispatched chat turn; either engine may answer it"),
+          methods=(), profiles="", auth="smoke", exclude="EXCLUDE_COST", lane="nessie",
+          note="the router-dispatched chat turn; either engine may answer it. The "
+               "Nessie lane's browser sends it (ci/smoke/test_nessie.py), at most "
+               "four times per run; nothing else in CI does"),
     Route(pattern=r"^nextseek_api/^^evaluator/retry/$", path=None,
           methods=(), profiles="", auth="write", exclude="EXCLUDE_COST",
           note="re-runs a recorded query through the whole assistant pipeline"),
@@ -969,6 +984,11 @@ def match(url: str) -> Route | None:
     # the registry holds none, and identical ones are refused by
     # _check_unique_patterns.
     return max(hits, key=_specificity)
+
+
+def lane_routes(lane: str) -> list[Route]:
+    """The routes a named lane sends outside the sweep, in registry order."""
+    return [r for r in REGISTRY if r.lane == lane]
 
 
 _check_unique_patterns(REGISTRY)

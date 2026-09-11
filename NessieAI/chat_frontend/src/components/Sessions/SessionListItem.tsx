@@ -52,6 +52,8 @@ export function SessionListItem({
 
   return (
     <div
+      data-testid="session-item"
+      data-session-id={item.session_id}
       className={[
         "group relative flex w-full min-w-0 items-center gap-1 overflow-hidden rounded-md px-2 py-1.5 text-sm",
         active ? "bg-accent text-accent-foreground" : "hover:bg-accent/50",

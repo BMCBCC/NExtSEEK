@@ -253,3 +253,43 @@ class GenerateSearchXlsxTests(SimpleTestCase):
         bundle = {"api_result_full": {"data": []}}
         xlsx_bytes = generate_search_xlsx(bundle)
         self.assertIsInstance(xlsx_bytes, bytes)
+
+    # The advanced-search endpoint the NS search modes call answers a grid, not
+    # JSON:API. Looping over the grid dict yielded its key names, and the
+    # search_results download answered 500 (Nessie CI lane, 2026-09-11).
+    GRID = {
+        "data": {
+            "total": 2,
+            "rows": [
+                {"id": 7, "uid": "M.NDMA-1", "title": "Mouse 1", "json_metadata": {"dose": 1}},
+                {"id": 8, "uid": "M.NDMA-2", "title": "Mouse 2", "json_metadata": {"dose": 2}},
+            ],
+            "footer": [],
+            "sampleTypes": [],
+            "msg": "",
+            "status": "ok",
+        },
+    }
+
+    def test_search_grid_results_to_xlsx(self):
+        bundle = {"mode": "new_search", "api_result_full": self.GRID}
+        ws = openpyxl.load_workbook(io.BytesIO(generate_search_xlsx(bundle))).active
+        self.assertEqual([c.value for c in ws[1]], ["id", "uid", "title"])
+        self.assertEqual(ws.max_row, 3)
+        self.assertEqual(ws.cell(row=2, column=2).value, "M.NDMA-1")
+
+    def test_search_grid_read_from_disk_to_xlsx(self):
+        """Bundles written now keep only raw_result_path; the payload is on disk."""
+        import json
+        import os
+        import tempfile
+
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as fh:
+            json.dump(self.GRID, fh)
+        try:
+            bundle = {"mode": "new_search", "raw_result_path": fh.name}
+            ws = openpyxl.load_workbook(io.BytesIO(generate_search_xlsx(bundle))).active
+            self.assertEqual(ws.max_row, 3)
+            self.assertEqual(ws.cell(row=3, column=3).value, "Mouse 2")
+        finally:
+            os.unlink(fh.name)
