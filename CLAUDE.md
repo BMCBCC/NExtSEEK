@@ -105,7 +105,6 @@ A bare root `pytest` loads the real `dmac.settings` and walks the whole tree, so
 Live state comes from GitHub and git, never from spec headers or plan checkboxes.
 - Boards: [needs-ruling](https://github.com/BioMicroCenter/NExtSEEK/issues?q=is%3Aopen+label%3Aneeds-ruling), [priority: high](https://github.com/BioMicroCenter/NExtSEEK/issues?q=is%3Aopen+label%3A%22priority%3A+high%22), [area labels](https://github.com/BioMicroCenter/NExtSEEK/labels), [open PRs](https://github.com/BioMicroCenter/NExtSEEK/pulls).
 - Commands: `git branch -r --no-merged origin/dev` and `gh issue list --label needs-ruling`.
-- NessieAI consolidation: Phase B (thin `nextseek_api/services` into NessieAI callers) remains (#TBD).
 - SEEK OAuth consumer, `origin/feat/seek-oauth-consumer-c`; removes password login (#16).
 - CI coverage increments 2 to 5, and the prod cutover (#104).
 - Session reports are local and never committed.

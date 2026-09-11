@@ -434,8 +434,8 @@ away, on a CC gate a full Opus turn.
 
 **No route is free, `unrelated` included**: it is only the cheapest. The BAML
 router call (`_decide_route` → `cc_router.decide` → `_baml_decision`) is made on
-every turn, and `route_decided` is emitted at `cc_assistant.py:531` *before*
-the `ROUTE_UNRELATED` check at `:537`. `unrelated` skips the answering turn, not
+every turn, and `route_decided` is emitted at `NessieAI/cc/turn.py:315` *before*
+the `ROUTE_UNRELATED` check at `NessieAI/cc/turn.py:321`. `unrelated` skips the answering turn, not
 the router that decided to skip it.
 
 Cost is read off `query_complete`, which route-tier polling never reaches, so a

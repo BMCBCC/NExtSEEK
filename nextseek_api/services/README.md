@@ -2,12 +2,12 @@
 
 ## What this is
 
-The ViewSet and service layer: 25 Python modules and one JSON data file, 12,551 lines of
-Python counted with `wc -l` over `nextseek_api/services/*.py` on 2026-09-03. Summing the same
-count per directory over every `.py` file in the repo outside test directories on that date
-makes this the largest directory of non-test Python here, ahead of `scripts/` at 11,824 lines.
-Nearly a fifth of it is two modules: `nextseek_api/services/assistant.py` at 1,429 lines and
-`nextseek_api/services/cc_assistant.py` at 996.
+The ViewSet and service layer, plus one JSON data file. The chat ViewSets in
+`nextseek_api/services/assistant.py` and `nextseek_api/services/cc_assistant.py`, and the
+evaluator ViewSet in `nextseek_api/services/evaluator.py`, keep only the HTTP surface. The
+engine code they call is in `NessieAI/ns/turn.py`, `NessieAI/ns/artifacts.py`,
+`NessieAI/ns/retry.py`, `NessieAI/cc/turn.py` and `NessieAI/router/policy.py`
+(`NessieAI/README.md` "What stays in nextseek_api").
 
 It is **not a Python package**. There is no `__init__.py` here, so `nextseek_api.services`
 resolves as a PEP 420 namespace package: importing it inside the stack image on 2026-09-03
@@ -90,7 +90,7 @@ non-`.py` file in this directory, and it is the only file shipped with the repo 
 module here opens: a `grep` for `open(`, `read_text` and `Path(__file__)` across all 25
 modules returns `nextseek_api/services/sample_workbook.py:76` and
 `nextseek_api/services/sample_workbook.py:103` for this file, and otherwise only per-request
-artifact reads and writes such as `nextseek_api/services/assistant.py:972` and
+artifact reads and writes such as `nextseek_api/services/assistant.py:971` and
 `nextseek_api/services/cc_assistant.py:270`.
 
 ## Running and testing
@@ -139,7 +139,7 @@ modules and splitting module-scope imports from in-function ones:
   and `nextseek_api/services/sample_workbook.py:26`.
 - The NS engine in `NessieAI/chat_nextseek/` (import name `chat_nextseek`), imported at
   module scope by none of the 25 modules. `nextseek_api/services/assistant.py` reaches it
-  through `NessieAI/ns/turn.py` (`nextseek_api/services/assistant.py:96-106` imports the turn
+  through `NessieAI/ns/turn.py` (`nextseek_api/services/assistant.py:96-107` imports the turn
   and the artifact helpers; its own `ChatConfig` import is `TYPE_CHECKING`-only),
   `nextseek_api/services/cc_assistant.py` through `NessieAI/cc/turn.py`, and
   `nextseek_api/services/evaluator.py` only lazily, through `NessieAI/ns/retry.py` (`run_retry`).
@@ -159,7 +159,7 @@ modules and splitting module-scope imports from in-function ones:
   (`nextseek_api/services/seek_rails_runner.py:48-57`), so a runtime without the Docker socket
   degrades rather than failing to import.
 - Django settings read at module import rather than per request:
-  `nextseek_api/services/assistant.py:39-40` binds two, and
+  `nextseek_api/services/assistant.py:37-38` binds two, and
   `nextseek_api/services/entity_tree.py:48-49` binds the two database aliases.
 - Exactly one module-scope import in this directory is guarded against failure:
   `nextseek_api/services/samples.py:35-38`, which falls back to `None`. A grep for `except
@@ -181,10 +181,11 @@ non-Python and non-import contexts, then grouped. Test modules are omitted:
 - Three sibling packages import one class from `nextseek_api/services/assistant.py`:
   `nextseek_api/assay_registration/views.py:21`, `nextseek_api/attributes/auth.py:15` and
   `nextseek_api/batch_upload/views.py:21`.
-- `nextseek_api/cc_assistant/cc_sweep.py:38` imports two private helpers back out of
-  `nextseek_api/services/cc_assistant.py`, inside the Celery body rather than at module scope,
-  which is what keeps that package's import hermetic
-  (`nextseek_api/cc_assistant/cc_sweep.py:32`).
+- Nothing under `NessieAI/` imports this directory (`NessieAI/CLAUDE.md` "Boundary"). The
+  Celery sweep in `nextseek_api/cc_assistant/cc_sweep.py` takes its two summary helpers,
+  `_session_metas` and `_persist_summary_standalone`, from `NessieAI/cc/turn.py`, inside the
+  Celery body (`_run_sweep`) rather than at module scope, which is what keeps that package's
+  import hermetic.
 - `nextseek_api/management/commands/derive_sample_type_requirements.py:20-21` imports the
   requirement classifier and one workbook constant.
 - `scripts/validate_viewset_conventions.py:30` scans this directory by path and

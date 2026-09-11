@@ -131,12 +131,12 @@ they all take the unfiltered branch today, and they would all become project-sco
 | # | Consumer | Entry point | Identity it authenticates as |
 |---|---|---|---|
 | 1 | Browser sample-download controls | `static/js/ns_sample_download.js:10` sets `ENDPOINT = "/nextseek_api/admin/samples/retrieve/"`; loaded by `seek/templates/newSearch.html:3`, `seek/templates/searchAdvanced.html:3`, `seek/templates/pages/samples.embed.html:1` | Django session cookie + CSRF, i.e. the logged-in user |
-| 2 | NExtSEEK assistant (`chat_nextseek` engine, in-process) | endpoint allowlisted at `NessieAI/chat_nextseek/src/chat_nextseek/helpers/tools/nextseek_api.py:39`; outbound Basic auth built at `:132` from `config.API_USER/API_PASS`; report path at `NessieAI/chat_nextseek/src/chat_nextseek/reports/metadata.py:66` | The caller. `nextseek_api/services/assistant.py:287-302` and `:761-766` overwrite `API_USER`/`API_PASS` on a per-request `ChatConfig` copy with the credentials `resolve_seek_auth` returned |
+| 2 | NExtSEEK assistant (`chat_nextseek` engine, in-process) | endpoint allowlisted at `NessieAI/chat_nextseek/src/chat_nextseek/helpers/tools/nextseek_api.py:39`; outbound Basic auth built at `:132` from `config.API_USER/API_PASS`; report path at `NessieAI/chat_nextseek/src/chat_nextseek/reports/metadata.py:66` | The caller. `nextseek_api/services/assistant.py:235-250` and `:744-749` overwrite `API_USER`/`API_PASS` on a per-request `ChatConfig` copy with the credentials `resolve_seek_auth` returned |
 | 3 | Container-CC agent, via the ns-sidecar | sidecar forwards ops to `/nextseek_api/assistant/{op}/` (`NessieAI/docker/ns-sidecar/app/ns_client.py:97`); the `api-read` op reaches this path because it is allowlisted at `NessieAI/ns/read_safe_endpoints.json:39` and gated by `NessieAI/ns/write_gate.py:94` | The caller. The sidecar holds no credentials of its own; per-request Basic auth is built from the `ns_login` frame at `NessieAI/docker/ns-sidecar/app/server.py:40-47` |
 | 4 | LLM endpoint catalogs that steer both engines toward it | `NessieAI/chat_nextseek/src/chat_nextseek/context/min_api_endpoints.json:3`, `.../min_api_endpoints_enriched.json:3,71`, which the cc-agent image bakes into `/app/plugins/nextseek/context/` through the `chat_nextseek` named context | n/a, prompt context |
 
 The **one** exception to "always the end user" is the admin-only PROD toggle: when a turn routes
-to the PROD `ChatConfig`, `nextseek_api/services/assistant.py:293-297` and `:775-779` substitute
+to the PROD `ChatConfig`, `nextseek_api/services/assistant.py:639-643` and `:758-762` (and, for the routed endpoint, `NessieAI/cc/turn.py:285-288`) substitute
 the configured `API_USER`/`API_PASS` instead. That is a genuine service identity, and its scope
 would be whatever that account's SEEK projects are.
 
@@ -214,18 +214,18 @@ endpoints add a second inline auth gate inside the handler, which is noted where
 | `GET /nextseek_api/users/{uid}/` | `UsersViewSet.retrieve` | `IsAuthenticated, IsDjangoSuperuser` (same) | **None**, id lookup at `services/users.py:427` | admin-only |
 | `POST /nextseek_api/schema_rag/ingest/` | `SchemaRAGViewSet.ingest` | `IsAuthenticated` (`services/schema_rag.py:50`) | n/a, ingests a caller-supplied OpenAPI URL. No NExtSEEK data. See note G | public-to-authenticated |
 | `POST /nextseek_api/schema_rag/retrieve/` | `SchemaRAGViewSet.retrieve_endpoints` | `IsAuthenticated` (same) | n/a, but NOT read-only: it auto-ingests when no live session exists, so it inherits every side effect of `ingest`. Classified WRITE for the CC agent (#86). See note G | public-to-authenticated |
-| `GET /nextseek_api/assistant/me/` | `AssistantViewSet.me` | `IsAuthenticated, UserInParticipatingProject` (`services/assistant.py:411`) | n/a, echoes `request.user`. See note H | public-to-authenticated |
-| `GET /nextseek_api/assistant/sessions/` | `AssistantViewSet.list_sessions` | same (`services/assistant.py:411`) | Owner-scoped, not project: `filter(user=request.user)` at `services/assistant.py:494` | public-to-authenticated (owner-scoped) |
-| `GET /nextseek_api/assistant/sessions/{sid}/` | `AssistantViewSet.get_session` | same | Owner-scoped: `services/assistant.py:554` | public-to-authenticated (owner-scoped) |
-| `GET /nextseek_api/assistant/sessions/{sid}/bundles/{bid}/` | `AssistantViewSet.download_bundle` | same | Owner-scoped: `services/assistant.py:1007` | public-to-authenticated (owner-scoped) |
-| `GET /nextseek_api/assistant/sessions/{sid}/bundles/{bid}/artifacts/{key}/` | `AssistantViewSet.download_artifact` | same | Owner-scoped: `services/assistant.py:1051` | public-to-authenticated (owner-scoped) |
-| `GET /nextseek_api/assistant/tasks/{task_id}/progress/` | `AssistantViewSet.task_progress` | same | Owner-scoped: `get(task_id=..., user=request.user)` at `services/assistant.py:959-962` | public-to-authenticated (owner-scoped) |
-| `GET /nextseek_api/assistant/test-cases/` | `AssistantViewSet.test_cases` | same, plus inline `is_staff or is_superuser` at `services/assistant.py:1195` | n/a, static prompt catalog. The inline gate is `is_staff`, so effectively any account | public-to-authenticated |
-| `GET /nextseek_api/cc-assistant/tasks/{task_id}/progress/` | `CCAssistantViewSet.task_progress` | `IsAuthenticated` (`services/cc_assistant.py:355`) | Owner-scoped: `services/cc_assistant.py:744-745` | public-to-authenticated (owner-scoped) |
-| `GET /nextseek_api/cc-assistant/upload/status/{job_id}/` | `CCAssistantViewSet.upload_status` | same | Owner-scoped: `user_owns_job(request.user.pk, job_id)` at `services/cc_assistant.py:815-816` | public-to-authenticated (owner-scoped) |
-| `GET /nextseek_api/cc-assistant/upload/list/` | `CCAssistantViewSet.upload_list` | same | Owner-scoped by construction: dir built from caller creds + username at `services/cc_assistant.py:834-840` | public-to-authenticated (owner-scoped) |
-| `GET /nextseek_api/cc-assistant/artifacts/{session}/download/` | `CCAssistantViewSet.download_artifact` | same | Owner-scoped: `services/cc_assistant.py:849`, plus path guards at `:851, :862-864` | public-to-authenticated (owner-scoped) |
-| `GET /nextseek_api/cc-assistant/transcript/{session}/{turn}/` | `CCAssistantViewSet.recover_transcript` | same | Owner-scoped: `services/cc_assistant.py:894` then `:898` | public-to-authenticated (owner-scoped) |
+| `GET /nextseek_api/assistant/me/` | `AssistantViewSet.me` | `IsAuthenticated, UserInParticipatingProject` (`services/assistant.py:280`) | n/a, echoes `request.user`. See note H | public-to-authenticated |
+| `GET /nextseek_api/assistant/sessions/` | `AssistantViewSet.list_sessions` | same (`services/assistant.py:280`) | Owner-scoped, not project: `filter(user=request.user)` at `services/assistant.py:363` | public-to-authenticated (owner-scoped) |
+| `GET /nextseek_api/assistant/sessions/{sid}/` | `AssistantViewSet.get_session` | same | Owner-scoped: `services/assistant.py:421-423` | public-to-authenticated (owner-scoped) |
+| `GET /nextseek_api/assistant/sessions/{sid}/bundles/{bid}/` | `AssistantViewSet.download_bundle` | same | Owner-scoped: `services/assistant.py:853-855` | public-to-authenticated (owner-scoped) |
+| `GET /nextseek_api/assistant/sessions/{sid}/bundles/{bid}/artifacts/{key}/` | `AssistantViewSet.download_artifact` | same | Owner-scoped: `services/assistant.py:937-939` | public-to-authenticated (owner-scoped) |
+| `GET /nextseek_api/assistant/tasks/{task_id}/progress/` | `AssistantViewSet.task_progress` | same | Owner-scoped: `get(task_id=..., user=request.user)` at `services/assistant.py:805-809` | public-to-authenticated (owner-scoped) |
+| `GET /nextseek_api/assistant/test-cases/` | `AssistantViewSet.test_cases` | same, plus inline `is_staff or is_superuser` at `services/assistant.py:1109` | n/a, static prompt catalog. The inline gate is `is_staff`, so effectively any account | public-to-authenticated |
+| `GET /nextseek_api/cc-assistant/tasks/{task_id}/progress/` | `CCAssistantViewSet.task_progress` | `IsAuthenticated` (`services/cc_assistant.py:90`) | Owner-scoped: `services/cc_assistant.py:218-220` | public-to-authenticated (owner-scoped) |
+| `GET /nextseek_api/cc-assistant/upload/status/{job_id}/` | `CCAssistantViewSet.upload_status` | same | Owner-scoped: `user_owns_job(request.user.pk, job_id)` at `services/cc_assistant.py:289-290` | public-to-authenticated (owner-scoped) |
+| `GET /nextseek_api/cc-assistant/upload/list/` | `CCAssistantViewSet.upload_list` | same | Owner-scoped by construction: dir built from caller creds + username at `services/cc_assistant.py:309-314` | public-to-authenticated (owner-scoped) |
+| `GET /nextseek_api/cc-assistant/artifacts/{session}/download/` | `CCAssistantViewSet.download_artifact` | same | Owner-scoped: `services/cc_assistant.py:325-327`, plus path guards at `:331, :344, :358` | public-to-authenticated (owner-scoped) |
+| `GET /nextseek_api/cc-assistant/transcript/{session}/{turn}/` | `CCAssistantViewSet.recover_transcript` | same | Owner-scoped: `services/cc_assistant.py:375` then `:379` | public-to-authenticated (owner-scoped) |
 | `GET /nextseek_api/evaluator/tasks/{task_id}/retry-context/` | `EvaluatorViewSet.retry_context_by_task` | `IsAuthenticated, IsAdminUser` (`services/evaluator.py:91`) | **None, and no owner check**: `get(task_id=task_id)` at `services/evaluator.py:109-110`. See note I | admin-only |
 | `GET /nextseek_api/evaluator/sessions/{sid}/bundles/{bid}/retry-context/` | `EvaluatorViewSet.retry_context_by_bundle` | same | **None, and no owner check**: `services/evaluator.py:141` | admin-only |
 | `GET /nextseek_api/evaluator/runs/` | `EvaluatorViewSet.runs_list` | same | **None.** All users' tasks at `services/evaluator.py:188`; `user_id` at `:203-205` is an optional caller-supplied filter, not a predicate | admin-only |
@@ -472,16 +472,16 @@ fetches an arbitrary caller-supplied URL from the Django container.
 
 ### Note H: `UserInParticipatingProject` is a feature flag, not a data scope
 
-`services/assistant.py:411` adds `UserInParticipatingProject` to the assistant's
+`services/assistant.py:280` adds `UserInParticipatingProject` to the assistant's
 `permission_classes`. It is easy to mistake for project scoping. It is not.
 
-`UserInParticipatingProject.has_permission` (`services/assistant.py:108`) calls SEEK's
+`UserInParticipatingProject.has_permission` (`services/assistant.py:140`) calls SEEK's
 `/people/current`, extracts the caller's project ids, and tests
-`project_ids & ASSISTANT_PARTICIPATING_PROJECTS != set()` (`services/assistant.py:123-127`).
+`project_ids & ASSISTANT_PARTICIPATING_PROJECTS != set()` (`services/assistant.py:148-152`).
 `ASSISTANT_PARTICIPATING_PROJECTS` is a **static allowlist read from settings at import**
-(`services/assistant.py:39`; `set(["1"])` in `dmac/local_settings.example.py:3` and
+(`services/assistant.py:37`; `set(["1"])` in `dmac/local_settings.example.py:3` and
 `startup/templates/local_settings.py.template:7`). Positive results are cached for 60s per user
-(`services/assistant.py:116-120`).
+(`services/assistant.py:138`, `:157-158`).
 
 So it answers "is this caller a member of at least one project in the hard-coded pilot list",
 i.e. **may this account use the assistant at all**. It never touches a queryset, never returns
@@ -490,12 +490,12 @@ All actual data scoping on this viewset is per-user row ownership on `ChatSessio
 `QueryTask`.
 
 Minor defect worth recording but not fixing here: `has_object_permission`
-(`services/assistant.py:136-137`) has the wrong signature (no `obj`) and calls a non-existent
+(`services/assistant.py:161-162`) has the wrong signature (no `obj`) and calls a non-existent
 `self.has_permissions`. It would raise `AttributeError` if invoked. These ViewSet actions never
 invoke object permissions, so it is latent.
 
 `CCAssistantViewSet` does **not** carry `UserInParticipatingProject`
-(`services/cc_assistant.py:355` is `[IsAuthenticated]` alone), so the container-CC route is not
+(`services/cc_assistant.py:90` is `[IsAuthenticated]` alone), so the container-CC route is not
 behind the pilot allowlist while the NExtSEEK route is. Whether that asymmetry is intended is a
 secondary question for the user.
 

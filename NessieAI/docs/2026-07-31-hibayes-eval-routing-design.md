@@ -49,7 +49,7 @@ the result back into (a) guidance for the container agent and (b) a risk overlay
 | Fact | Where |
 |---|---|
 | Router returns route + model class + reasoning; **no** `task_family` | `NessieAI/dmac_assistant/baml_src/router.baml` |
-| Conversation-history contract already implemented | same file; call site in `nextseek_api/services/cc_assistant.py` |
+| Conversation-history contract already implemented | same file; call sites in `NessieAI/cc/turn.py` and `NessieAI/router/policy.py` |
 | A **shared per-turn envelope already spans both routes**: a documented contract naming both writers | `NessieAI/chat_nextseek/src/chat_nextseek/chat_memory.py:32-35` |
 | The query-path writer stamps route and status on every turn | `NessieAI/chat_nextseek/src/chat_nextseek/chat_memory.py:213-214` |
 | Container-only trace object: 11 structural fields, **no** success/validity/judgment field | `NessieAI/cc/cc_trace.py:32-44` |
@@ -253,7 +253,7 @@ wrappers and the Make targets are absent too, not only the packages.
 - **Container/DB-backed integration tests** for the migration, the FK and uniqueness constraint,
   concurrent turn-number collisions, and the Celery task's cap and pause behaviour.
 - **Paid live end-to-end is gated** behind an explicit opt-in and is never run automatically.
-- **Pinning tests:** the two BAML trees stay byte-identical; the capabilities hash pin is updated in
+- **Pinning tests:** the BAML tree stays single-source (`NessieAI/tests/router/test_baml_single_source.py`); the capabilities hash pin is updated in
   the same change that edits the file.
 - Vetting of the resulting plan is performed by the maintainer via an external review flow.
 
