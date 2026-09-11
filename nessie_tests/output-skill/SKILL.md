@@ -1,12 +1,30 @@
 ---
 name: nessie-run-review
-description: Use when triaging a nessie_tests run and producing a reviewable report - after `manage.py nessie --tier full` has run on the dev box, when someone asks "why did these tests fail", "are these real bugs or drift", or wants an HTML review of a test run. Recovers observed values from the database so failures can be judged without re-running paid turns.
+description: Use when reviewing what Nessie did on ANY instance (local, fairdata-dev, production) - a nessie_tests run ("why did these tests fail", "are these real bugs or drift", an HTML review of a run) or the questions real users asked ("who asked what, what broke, what needs fixing"). Pulls every turn read-only from the database plus the output files each turn wrote, so failures are judged without re-running paid turns.
 ---
 
-# Reviewing a nessie_tests run
+# Reviewing what Nessie did (any instance)
 
-Turns a nessie_tests run into a reviewable HTML report where every failure carries
-its **expected vs observed** values and a verdict.
+Two jobs, one pull:
+
+- **A nessie_tests run** becomes a reviewable HTML report where every failure carries
+  its **expected vs observed** values and a verdict (steps 1-4 below).
+- **Real users' questions** on any instance become a written report: who asked what,
+  what they got, what failed, and what to fix (see "Reviewing real users' questions").
+
+## 0. Pick the instance
+
+Every script takes `--instance`. Pulls are read-only everywhere.
+
+| `--instance` | Reaches | Transport |
+|---|---|---|
+| `local` | the workstation's own docker daemon | none (`--host ""` is the older spelling) |
+| `dev` (default) | fairdata-dev | `ssh fairdata-dev sudo -n -u service-account` |
+| `prod` | fairdata, production | `ssh fairdata` (key logs in as service-account, no sudo) |
+
+Container names (`nextseek`, `seek-mysql`) and the schema (`dmac`) are the same on
+all three. Needs the MIT VPN for dev and prod. Never RUN anything on production (no
+harness, no writes, no re-asked questions): testing goes local, then dev.
 
 ## The core insight
 
@@ -28,10 +46,21 @@ have. Query the database instead. Only re-run to verify a fix.
 ### 1. Pull the evidence (read-only)
 
 ```bash
+# a harness run (dev box is the default instance)
 python scripts/fetch_run.py --out ./run-<date> \
     --manifest /app/nessie_out_full/manifest.json \
     --since "2026-07-24 20:05:00" --until "2026-07-24 20:45:00"
+
+# every turn in a window on production, with raw rows and output files copied down
+python scripts/fetch_run.py --instance prod --out ./prod-<date> --raw --outputs \
+    --since "2026-08-28 00:00:00" --until "2026-09-10 23:59:59"
 ```
+
+`--raw` adds `tasks/<id>.json` (the full progress stream and result). `--outputs`
+copies every run root a turn wrote to into `outputs/` and writes
+`outputs_index.json` (task id -> the files it wrote). Each turn in `turns.json` also
+names `user`, `session`, `run_root` and `error`, the FIRST error in its progress
+stream, which is the specific cause; the final "Internal pipeline error" is generic.
 
 Writes `manifest.json` and `turns.json`. `turns.json` holds, per turn: the routing
 decision (route, source, and the router's own reasoning), the parser mode, and the
@@ -161,7 +190,40 @@ storage on `file://` pages. The code degrades gracefully (notes stay in memory a
 the export still works), but the autosave cannot be relied on there. The page's
 status line reads "saved to this browser" when storage is working.
 
+## Reviewing real users' questions (no harness run)
+
+Same pull, no manifest (the "no manifest" line is expected). There are no criteria,
+so each turn is judged by reading its reply against ground truth, and
+`build_report.py` does not apply: it joins manifest entries to corpus variants.
+
+1. Pull with `--raw --outputs` over the window. Store it OUTSIDE any git repo:
+   production output files carry human-subject metadata.
+2. Group `turns.json` by `user`. Separate real users from test accounts
+   (charlie-test-3, cdemurjian) before counting anything.
+3. For every turn decide: answered correctly, wrong or misleading, no answer, or a
+   capability the product does not have. `status=error` and a non-null `error` are the
+   no-answer turns; the wrong ones only show up by reading replies against each other
+   and against ground truth (same question, different numbers, is the usual tell).
+4. Write a report grouped by ISSUE, not by turn. Per issue: who and which turns, the
+   question, what they got, what failed, the local evidence files (from
+   `outputs_index.json` and `tasks/`), what to fix, and a candidate nessie_tests case.
+   Do not trace each failure to its root cause during the review; list it, point at the
+   evidence, and leave debugging to a separate pass.
+
 ## Gotchas that will mislead you
+
+- **The app side runs on the container's clock, which is UTC on dev and prod**:
+  `created_at`, run-root folder names, file-name stamps and file mtimes all agree
+  (verified on production 2026-09-10). The trap is the HOST: fairdata's shell is US
+  Eastern, and `docker logs --since 2026-09-07T18:16:00` without a `Z` is read as
+  host-local time, which puts you four hours away from the turn. Always append `Z`.
+  `pull.json` records the container's offset.
+- **Run-root folders are per gunicorn process, not per user or session.** The user in
+  `260904_132113_wesselr` is whoever's request started that process; later turns from
+  anyone land in it. Use each turn's `run_root` and `outputs_index.json`, never the
+  folder name.
+- **`docker logs` only reach back to the last container recreate.** On an instance
+  that was rebuilt since the turn, the progress stream (`--raw`) is the only record.
 
 Every one of these produced a wrong conclusion on the first pass. **Re-verified
 against the harness at `a85dde9` (2026-08-03).** The previous version of this list
@@ -263,6 +325,7 @@ re-derive rather than trusting this a third time.
 
 ## Do not
 
+- Run the harness, re-ask a question, or write anything on production. Pull only.
 - Re-run cases to triage them. Query the database.
 - Trust a prior handoff's failure interpretation without re-deriving it. Several
   claims in the 2026-07-27 handoff were wrong, including "writes hang" and "both

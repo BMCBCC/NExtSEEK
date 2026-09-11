@@ -321,3 +321,69 @@ def test_a_report_that_is_not_ours_is_rejected(tmp_path):
             rehydrate_report.main()
     finally:
         sys.argv = old
+
+
+# --- fetch_run.py: one pull for every instance ------------------------------
+#
+# It used to know one box. Production review needs the same pull with a different
+# transport (direct key login, no sudo), and the bayesian skill's `--host ""`
+# spelling of "local" has to keep working.
+
+fetch_run = _load("fetch_run")
+
+
+def test_every_instance_preset_resolves():
+    assert fetch_run.resolve_target("local") == ("", "")
+    assert fetch_run.resolve_target("dev") == ("fairdata-dev", "service-account")
+    assert fetch_run.resolve_target("prod") == ("fairdata", "")
+
+
+def test_an_explicit_empty_host_still_means_the_local_daemon():
+    host, user = fetch_run.resolve_target("dev", host="")
+    assert host == ""
+    assert fetch_run.remote_cmd(host, user, "true")[0] == "bash"
+
+
+def test_production_never_sudoes_and_dev_does():
+    assert "sudo" not in fetch_run.remote_cmd("fairdata", "", "true")
+    assert "sudo" in fetch_run.remote_cmd("fairdata-dev", "service-account", "true")
+
+
+def test_only_a_plain_outputs_folder_is_ever_handed_to_tar():
+    assert fetch_run.run_root_name("/app/outputs/260904_132113_wesselr") == "260904_132113_wesselr"
+    for bad in (None, "", "/app/outputs/../etc", "/etc/260904_132113_x",
+                "/app/outputs/260904_132113_x;rm -rf /", "/app/outputs/sub/260904_132113_x"):
+        assert fetch_run.run_root_name(bad) is None
+
+
+def test_the_utc_offset_parses_date_output():
+    assert fetch_run.tz_offset_minutes("-0400\n") == -240
+    assert fetch_run.tz_offset_minutes("+0530") == 330
+    assert fetch_run.tz_offset_minutes("UNKNOWN") is None
+
+
+def test_files_are_matched_to_the_turn_that_wrote_them_by_local_mtime(tmp_path):
+    import os
+    from datetime import datetime, timedelta, timezone
+
+    root = tmp_path / "260904_132113_u"
+    (root / "files" / "graph").mkdir(parents=True)
+    mine, later = root / "files" / "graph" / "a.json", root / "files" / "graph" / "b.json"
+    for p in (mine, later, root / "console.txt"):
+        p.write_text("{}")
+    eastern = timezone(timedelta(minutes=-240))
+
+    def at(s):
+        return datetime.fromisoformat(s).replace(tzinfo=eastern).timestamp()
+
+    os.utime(mine, (at("2026-09-04 13:53:20"),) * 2)
+    os.utime(later, (at("2026-09-04 14:30:00"),) * 2)
+    turns = [{"id": 463, "created": "2026-09-04 13:52:45.821854",
+              "updated": "2026-09-04 13:53:21.388284",
+              "run_root": "/app/outputs/260904_132113_u"}]
+
+    idx = fetch_run.index_outputs(turns, tmp_path, -240)
+
+    assert idx["463"]["files"] == ["260904_132113_u/files/graph/a.json"]
+    # console.txt is written by every turn in the process, so it is listed, never matched
+    assert idx["463"]["shared"] == ["260904_132113_u/console.txt"]
