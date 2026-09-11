@@ -68,7 +68,7 @@ not fail locally; it fails somewhere else.
   `nextseek_api/batch_upload/tests/test_identity_drift_integration.py:250-251` looks
   similar but adds an opt-in env gate and does skip.
 - **Neither the example overlay nor the test settings defines `NEXTSEEK_CHAT_CONFIG`,
-  and the assistant reads it bare.** `nextseek_api/services/assistant.py:243` returns
+  and the assistant reads it bare.** `NessieAI/ns/turn.py:62` (`_select_chat_config`) returns
   `settings.NEXTSEEK_CHAT_CONFIG` with no `getattr` default; grepping
   `dmac/local_settings.example.py` and `dmac/test_settings.py` for that name returns
   nothing in either file. Measured 2026-09-03 under `dmac.test_settings`: attribute access

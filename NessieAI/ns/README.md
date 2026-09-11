@@ -14,6 +14,7 @@ No Django models live here; the HTTP contract and the ORM stay in `nextseek_api/
 | `upload_workbook.py` | `render_upload_workbook` emits the four sheets the batch-upload parser reads |
 | `bundle_download.py` | serves the files of a stored NS bundle |
 | `debug_projection.py` | `bundle_debug_entries` rebuilds the Search Details panel from a stored bundle |
+| `turn.py` | chat-turn helpers both engines share: `_select_chat_config` (the admin-only `use_prod` ChatConfig switch) and `_auto_title_if_unset` (titles a chat from its first query) |
 
 The HTTP contract for these ops (op table, request and response models, auth, error envelope) is
 `nextseek_api/assistant/CONTRACT.md`. The ViewSet actions that call `run_op` are in
@@ -26,6 +27,6 @@ Tests are in `NessieAI/tests/ns/` (engine) and `NessieAI/tests/api/` (HTTP surfa
 ## Depends on / depended on by
 
 - Depends on `NessieAI/chat_nextseek/` (agents, lazily) and `nextseek_api.batch_upload.helpers` (from `reingest_qa.py`, an allowed back-edge).
-- Called by `nextseek_api/services/assistant.py`; `nextseek_api/assistant/session_debug.py` imports `bundle_download`.
+- Called by `nextseek_api/services/assistant.py`; `nextseek_api/assistant/session_debug.py` imports `bundle_download`; the Container-CC turn imports `turn`.
 - `NessieAI/cc/op_registry/ops.py` reads `read_safe_endpoints.json` at import.
 - `NessieAI/docker/ns-sidecar/` calls these ops over HTTP and keeps its own copy of the wire models.

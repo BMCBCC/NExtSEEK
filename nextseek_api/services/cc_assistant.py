@@ -51,11 +51,10 @@ from nextseek_api.helpers import resolve_seek_auth
 # Reuse the existing assistant's helpers (do NOT redefine its behavior).
 from nextseek_api.services.assistant import (
     CsrfExemptSessionAuthentication,
-    _auto_title_if_unset,
     _error_response,
     _most_recent_session,
-    _select_chat_config,
 )
+from NessieAI.ns.turn import _auto_title_if_unset, _select_chat_config
 
 from chat_nextseek.orchestrator import run_query, run_query_plan
 

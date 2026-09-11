@@ -148,8 +148,10 @@ class StaffAdminWideningIsConfinedToCapabilities(SimpleTestCase):
         found = []
         # NessieAI/router holds the force_route admin gate (_decide_route in
         # policy.py), moved out of nextseek_api/services/cc_assistant.py in
-        # Phase B; scanning it keeps that gate inside this inventory.
-        for rel in ("nextseek_api", "seek", "dmac", "NessieAI/router"):
+        # Phase B; scanning it keeps that gate inside this inventory. The
+        # use_prod gate (_select_chat_config) moved to NessieAI/ns/turn.py the
+        # same way, out of nextseek_api/services/assistant.py.
+        for rel in ("nextseek_api", "seek", "dmac", "NessieAI/router", "NessieAI/ns"):
             for path in (REPO / rel).rglob("*.py"):
                 if "test" in path.parts or path.name.startswith("test_"):
                     continue
