@@ -797,6 +797,29 @@ def browser(pytestconfig):
         b.close()
 
 
+def login_storage_state(browser, profile: str, base_url: str,
+                        creds: tuple[str, str], path: Path) -> str:
+    """Log in once through /login/ in a real browser; save and return the cookies.
+
+    Session cookie only, never an HTTP Basic header on the context: see
+    storage_state below for why.
+    """
+    ctx = browser.new_context(viewport={"width": 1440, "height": 900})
+    _guard_context(ctx, profile)
+    page = ctx.new_page()
+    page.goto(f"{base_url}/login/", wait_until="domcontentloaded")
+    page.fill("input#username", creds[0])
+    page.fill("input#password", creds[1])
+    with page.expect_navigation(wait_until="domcontentloaded", timeout=120_000):
+        page.click("button[type=submit].auth-submit")
+    assert "/login" not in page.url, (
+        f"still on the login page after submitting as {creds[0]}: {page.url}"
+    )
+    ctx.storage_state(path=str(path))
+    ctx.close()
+    return str(path)
+
+
 @pytest.fixture(scope="session")
 def storage_state(browser, profile, base_url, smoke_creds, tmp_path_factory):
     """Log in once in a real browser and reuse the cookies for every flow.
@@ -805,21 +828,8 @@ def storage_state(browser, profile, base_url, smoke_creds, tmp_path_factory):
     onto the CDN font requests and triggers APPEND_SLASH redirects on /static/,
     which breaks the bundle. Session cookie only.
     """
-    ctx = browser.new_context(viewport={"width": 1440, "height": 900})
-    _guard_context(ctx, profile)
-    page = ctx.new_page()
-    page.goto(f"{base_url}/login/", wait_until="domcontentloaded")
-    page.fill("input#username", smoke_creds[0])
-    page.fill("input#password", smoke_creds[1])
-    with page.expect_navigation(wait_until="domcontentloaded", timeout=120_000):
-        page.click("button[type=submit].auth-submit")
-    assert "/login" not in page.url, (
-        f"still on the login page after submitting: {page.url}"
-    )
     path = tmp_path_factory.mktemp("auth") / "state.json"
-    ctx.storage_state(path=str(path))
-    ctx.close()
-    return str(path)
+    return login_storage_state(browser, profile, base_url, smoke_creds, path)
 
 
 @pytest.fixture
