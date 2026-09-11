@@ -1,22 +1,24 @@
 # NExtSEEK deployment & operations runbook
 
 This is the **authoritative deployment-hygiene document** for NExtSEEK. It is
-written for *any* operator — a human or a coding agent — deploying or
+written for *any* operator (a human or a coding agent) deploying or
 operating the stack on *any* host: the current dev server, a production
-server, or a brand-new machine. It is deliberately procedural: it stands in
-for a CI/CD pipeline that does not exist yet (tracker Step 4). Until such a
-pipeline exists, **this document is the pipeline** — follow it exactly and in
-order.
+server, or a brand-new machine. It is deliberately procedural: CI runs on every
+push to `dev` and `main` and on every pull request
+([`ci/README.md`](ci/README.md)), but deploys are still manual, so **this
+document is the deploy pipeline**. Follow it exactly and in order.
 
-Related docs (each has a distinct job — don't cross-purpose them):
+Related docs (each has a distinct job; don't cross-purpose them):
 
 | Doc | Job |
 |---|---|
 | [`README.md`](README.md) | 5-minute localhost quick start |
 | [`NExtSTEPS.md`](NExtSTEPS.md) | production hardening: credential rotation, TLS, DEBUG, backups |
-| [`architecture.md`](architecture.md) | deep architecture reference (services, data flows, security model) |
+| [`NessieAI/docs/architecture.md`](NessieAI/docs/architecture.md) | deep reference for the assistant: services, data flows, security model |
 | [`NessieAI/cc/DEPLOY.md`](NessieAI/cc/DEPLOY.md) | Container-CC subsystem specifics + paid acceptance gates |
 | [`startup/README.md`](startup/README.md) | `./startup.sh` subcommand reference + known failure modes |
+| [`ci/README.md`](ci/README.md) | what CI runs, and what can fail a job |
+| [`NessieAI/tests/README.md`](NessieAI/tests/README.md) | every AI test lane, including the paid acceptance runs |
 
 ---
 
@@ -30,26 +32,26 @@ No service is profile-gated: `docker compose ps` shows the whole stack, and
 
 | Service | Image | Host port | Network(s) | Role |
 |---|---|---|---|---|
-| `nextseek` | built from root `Dockerfile` | — (internal :8000) | default | Django app, and every background runtime that runs app code: web server (daphne, or gunicorn via `NEXTSEEK_SERVER`), Celery worker for `batch_upload`, Celery worker for `attribute_mutations`, the outbox dispatcher, the sync-recovery loop, and the assay-registration drain loop. Six processes under one `wait -n`, so any of them exiting restarts the container. Healthchecked by `docker/scripts/attribute_runtime_healthcheck.py app` |
+| `nextseek` | built from root `Dockerfile` | none (internal :8000) | default | Django app, and every background runtime that runs app code: web server (daphne, or gunicorn via `NEXTSEEK_SERVER`), Celery worker for `batch_upload`, Celery worker for `attribute_mutations`, the outbox dispatcher, the sync-recovery loop, and the assay-registration drain loop. Six processes under one `wait -n`, so any of them exiting restarts the container. Healthchecked by `docker/scripts/attribute_runtime_healthcheck.py app` |
 | `nextseek_nginx` | `nginx:latest` | `127.0.0.1:${NEXTSEEK_PORT:-8000}` | default **+ dmac-cc-net** | static files + reverse proxy; the **only dual-homed** service |
 | `db` | `mysql:8.0` | `127.0.0.1:3306` | default | two schemas: `dmac` (NExtSEEK) + `seek_production` (SEEK) |
 | `neo4j` | `neo4j` | `127.0.0.1:7474` / `:7687` | default | sample/assay graph |
-| `seek` / `seek_workers` | `fairdom/seek:1.15.1` | `127.0.0.1:3000` / — | default | upstream SEEK Rails app + delayed-job workers |
-| `solr` | `fairdom/seek-solr:8.11` | — | default | SEEK search index |
-| `bedrock-proxy` | built from `docker/bedrock-proxy/` | — | dmac-cc-net | holds the Bedrock token; model-allowlist auth proxy (container name `dmac-bedrock-proxy`) |
-| `nextseek-sidecar` | built from `docker/ns-sidecar/` | — | dmac-cc-net | NS sidecar for the CC agent (healthchecked) |
-| `cc-agent` | built from `docker/cc-runtime/` → `dmac-assistant:poc` | — | none | **build-target only** — never runs as a service; per-turn agent containers are spawned from this image by the app via the docker socket |
+| `seek` / `seek_workers` | `fairdom/seek:1.15.1` | `127.0.0.1:3000` / none | default | upstream SEEK Rails app + delayed-job workers |
+| `solr` | `fairdom/seek-solr:8.11` | none | default | SEEK search index |
+| `bedrock-proxy` | built from `NessieAI/docker/bedrock-proxy/` | none | dmac-cc-net | holds the Bedrock token; model-allowlist auth proxy (container name `dmac-bedrock-proxy`) |
+| `nextseek-sidecar` | built from `NessieAI/docker/ns-sidecar/` | none | dmac-cc-net | NS sidecar for the CC agent (healthchecked) |
+| `cc-agent` | built from `NessieAI/docker/cc-runtime/` → `dmac-assistant:poc` | none | none | **build-target only**: never runs as a service; per-turn agent containers are spawned from this image by the app via the docker socket |
 
 Key facts every operator must internalize:
 
 - **App code is baked into the `nextseek` image** (`COPY . /app/`). Changing
-  `nextseek_api/`, `chat_nextseek/`, `seek/`, `dmac/`, templates, etc.
+  `nextseek_api/`, `NessieAI/`, `seek/`, `dmac/`, templates, etc.
   **requires an image rebuild**. Only these are bind-mounted at runtime and
   changeable without a rebuild: `themes/NextSeek/`, `dmac/local_settings.py`,
   `./outputs/`, `./logs/` (plus the docker socket and the `dmac-cc-users`
   volume).
 - Secrets **never** enter images: `.dockerignore` excludes `docker/db.env`,
-  `docker/nextseek.env`, `docker/bedrock-proxy/proxy-secret.env`,
+  `docker/nextseek.env`, `NessieAI/docker/bedrock-proxy/proxy-secret.env`,
   `dmac/local_settings.py`. They are injected at runtime via compose
   `env_file:` / bind mount.
 - The `nextseek` container's entrypoint (`docker/scripts/entrypoint.sh`) is
@@ -57,7 +59,7 @@ Key facts every operator must internalize:
   `migrate --noinput` each abort the container on failure (markers
   `[COLLECTSTATIC-FAILED]`, `[DB-UNREACHABLE]`, `[MIGRATE-FAILED]` in
   `docker logs nextseek`). A crash-looping container after a deploy means one
-  of those failed — **never** "fix" a migration wedge with `migrate --fake`.
+  of those failed. **Never** "fix" a migration wedge with `migrate --fake`.
 - `NEXTSEEK_SERVER` selects the web server: `gunicorn` (WSGI, **the deployed
   norm**) or `daphne` (ASGI/WebSocket, **the code default when unset**). Set
   `NEXTSEEK_SERVER=gunicorn` explicitly in `docker/nextseek.env` on every
@@ -75,8 +77,9 @@ Key facts every operator must internalize:
 
 ## 1. Golden rules (deployment hygiene)
 
-1. **Deploy only committed code from `origin/dev`.** Never hot-patch a
-   running container: `docker cp` into a container is **ephemeral** — it is
+1. **Deploy only committed code from `origin/dev` or `origin/main`** (§3 says
+   which). Never hot-patch a
+   running container: `docker cp` into a container is **ephemeral**; it is
    silently lost on the next recreate, and it makes the running system
    diverge from git. If you are testing an ephemeral patch, say so out loud,
    and rebuild the image before calling anything done.
@@ -86,7 +89,7 @@ Key facts every operator must internalize:
 3. **mysqldump gate:** before any deploy whose commit range includes a Django
    migration, dump the affected table(s) (or the `dmac` schema) first (§5.3).
 4. **Scope your recreation.** Recreate only the service(s) whose image or
-   config actually changed — normally `--no-deps nextseek`. Do not touch
+   config actually changed, normally `--no-deps nextseek`. Do not touch
    `bedrock-proxy` / `nextseek-sidecar` / databases on an app-only deploy;
    their uptime is part of the post-deploy verification.
 5. **Run the verification checklist (§6) after every deploy** and record the
@@ -97,7 +100,7 @@ Key facts every operator must internalize:
    never bake them into images, never echo their values into logs or docs.
 8. **Paid/live LLM lanes are approval-gated** (§7, Appendix). Never run them
    as a side effect of a deploy.
-9. **Pruning is not cleanup — it destroys backups.** Rollback tags and cached
+9. **Pruning is not cleanup: it destroys backups.** Rollback tags and cached
    layers on the deploy host are the rollback path. Get the owner's explicit
    approval per item before removing images, tags, or volumes.
 
@@ -107,13 +110,13 @@ Key facts every operator must internalize:
 
 ### 2.1 Prerequisites
 
-- **Docker Engine ≥ 26** (API 1.45+ — required for the volume *subpath*
+- **Docker Engine ≥ 26** (API 1.45+, required for the volume *subpath*
   mounts the sidecar uses) and **Compose plugin ≥ 2.26**. Check:
   `docker version` and `docker compose version`.
 - [`uv`](https://docs.astral.sh/uv/) on PATH (the startup CLI runs under it).
 - Disk: plan for **≥ 60 GB free** for a comfortable single instance
   (~19 GB of images, seed volumes, plus Docker build cache which grows into
-  tens of GB over repeated rebuilds — see §11).
+  tens of GB over repeated rebuilds; see §11).
 - RAM: ≥ 8 GB free. Do not co-host a second full instance on a small box.
 - Outbound network for: Docker Hub / GHCR pulls, the S3 filestore seed
   (~215 MB), and (first use only) Hugging Face model downloads (§2.4).
@@ -121,7 +124,7 @@ Key facts every operator must internalize:
 ### 2.2 Procedure
 
 ```bash
-# 1. Clone the deploy branch
+# 1. Clone the deploy branch (dev, or main where §3 says so)
 git clone -b dev https://github.com/BioMicroCenter/NExtSEEK.git
 cd NExtSEEK
 
@@ -137,7 +140,7 @@ export AWS_REGION=us-east-1        # optional; default us-east-1
 `./startup.sh install` runs 9 phases: prereq checks → vendored-tree check →
 instance/port resolution → **render config** (`docker/db.env`,
 `docker/nextseek.env`, `dmac/local_settings.py`,
-`docker/bedrock-proxy/proxy-secret.env`, root `.env`) → create the 7 external
+`NessieAI/docker/bedrock-proxy/proxy-secret.env`, root `.env`) → create the 7 external
 volumes → seed MySQL + Neo4j from committed dumps (idempotent; skipped if
 populated) → **build and start everything, including the CC services and the
 `dmac-assistant:poc` agent image** → verify demo users → health checks. The
@@ -147,7 +150,7 @@ SEEK filestore blobs (~215 MB) are fetched from S3 and streamed in.
 # 4. Hand-fill the rendered docker/nextseek.env (placeholders ship as
 #    SET_IN_LOCAL_ENV; chat/LLM features stay disabled until filled):
 #      GCP_API_KEY=...                  # Gemini (memory summarizer etc.)
-#      AWS_BEARER_TOKEN_BEDROCK=...    # ALSO here — separate consumer from
+#      AWS_BEARER_TOKEN_BEDROCK=...    # ALSO here: separate consumer from
 #                                       # the proxy's copy, see §8
 #      FDH_API=...                      # FAIRDOMHub, if used
 #    And pin the server mode to the deployed norm:
@@ -163,7 +166,7 @@ docker compose up -d --no-deps --force-recreate nextseek
 ```
 
 **7. Before exposing to anyone you don't trust:** work through
-[`NExtSTEPS.md`](NExtSTEPS.md) — rotate `demo`/`user` passwords, MySQL and
+[`NExtSTEPS.md`](NExtSTEPS.md): rotate `demo`/`user` passwords, MySQL and
 Neo4j credentials, ensure `DJANGO_DEBUG` stays **unset** (the code enables
 debug only for `1`, `true` or `yes`, case-insensitive and whitespace-stripped;
 anything else, including absent/empty/`false`, is debug-off), configure
@@ -177,11 +180,11 @@ Budget these as explicit post-install steps:
 
 - **Embedding models (two of them).** Nothing pre-downloads:
   1. schema_rag's `BAAI/bge-small-en-v1.5` (lazy-loaded into
-     `schema_rag/embedding_models/`, gitignored) — first schema ingest needs
+     `schema_rag/embedding_models/`, gitignored); first schema ingest needs
      Hugging Face egress, or pre-provision offline via
      `startup/dev/provision_embedding_model.sh`;
   2. chat_nextseek's catalog matcher `sentence-transformers/all-MiniLM-L6-v2`
-     — lazy-loaded on first NL-routing use.
+     is lazy-loaded on first NL-routing use.
   An air-gapped box fails on whichever path is exercised first.
 - **Solr index.** The `seek-solr-data` volume starts empty; this repo's CLI
   has no reindex step. If search returns nothing, reindex from the SEEK side
@@ -194,13 +197,13 @@ Budget these as explicit post-install steps:
 - **`--instance` multi-instance support does not cover the CC subsystem.**
   Core volumes/containers/ports are correctly prefixed per instance, but
   `dmac-cc-users` (volume), `dmac-bedrock-proxy` + `nextseek-sidecar`
-  (container names), and `dmac-cc-net` (network) are pinned literals — a
+  (container names), and `dmac-cc-net` (network) are pinned literals: a
   second instance on the same box will collide with (or silently share CC
   user data with) the first. One CC-enabled instance per box until this is
   fixed.
 - Re-running `install` re-renders `docker/nextseek.env` wholesale and
   **rotates `DJANGO_SECRET_KEY`**. Only `--seek-public-url` and the proxy
-  token have read-back preservation — hand-filled API keys, the
+  token have read-back preservation; hand-filled API keys, the
   **`NEXTSEEK_SERVER=gunicorn` pin** (its loss silently flips the next boot
   to daphne), and any hand-added CC-knob keys are all wiped. Re-apply every
   §2.2-step-4 edit after any re-install/reset **before** recreating
@@ -210,29 +213,33 @@ Budget these as explicit post-install steps:
 
 ## 3. Redeploying a code change (existing box)
 
-This is the routine "ship a change" procedure — the manual CI/CD stand-in.
+This is the routine "ship a change" procedure, the manual CI/CD stand-in.
+
+**Production deploys from:** `origin/dev` or `origin/main`. `dev` is the most up to date,
+and `main` is synced from `dev`. This line is the one record of it; other docs link here.
 
 ### 3.1 Standard procedure
 
 ```bash
 cd <deploy-clone>                      # the clone the images are built from
 
-# 1. Sync to the exact commit being deployed (fast-forward only):
-git fetch origin dev
-git log --oneline HEAD..origin/dev     # review what you are about to ship
-git merge --ff-only origin/dev
+# 1. Sync to the exact commit being deployed (fast-forward only). <branch> is
+#    dev or main ("Production deploys from", above):
+git fetch origin <branch>
+git log --oneline HEAD..origin/<branch>     # review what you are about to ship
+git merge --ff-only origin/<branch>
 
 # 2. Pre-deploy gate:
-#    a. Migration check — does the range add migrations?
+#    a. Migration check: does the range add migrations?
 git diff --name-only HEAD@{1} HEAD -- '*migrations*'
 #       If yes: mysqldump gate first (§5.3).
-#    b. CI check — `rebuild` runs the smoke suite afterwards and it needs three
+#    b. CI check: `rebuild` runs the smoke suite afterwards and it needs three
 #       things on the box. On an install predating them, add them by hand:
-#         · "ci_profile": "dev"  (or "prod") in startup/.instance.json — an absent
+#         · "ci_profile": "dev"  (or "prod") in startup/.instance.json. An absent
 #           key means prod, the most restrictive, so a dev box silently loses the
 #           routes only dev may call. A fresh `install --ci-profile dev` sets it.
 #         · ~/.config/nextseek/ci.env (mode 600) naming CI_SMOKE_USER and
-#           CI_SMOKE_PASS — without it the readiness gate exits 2 and the rebuild
+#           CI_SMOKE_PASS. Without it the readiness gate exits 2 and the rebuild
 #           reports failure after having succeeded.
 #         · DJANGO_CSRF_TRUSTED_ORIGINS in docker/nextseek.env must include the
 #           loopback origins the suite posts from, http://127.0.0.1:<nextseek port>
@@ -244,7 +251,7 @@ git diff --name-only HEAD@{1} HEAD -- '*migrations*'
 #           2026-09-02). An env change takes effect on recreate, which rebuild does.
 #       `./startup.sh doctor` reports the first two, read-only. Or skip CI:
 #       rebuild --no-ci.
-#    c. SEEK's config mount — docker/seek-nginx.conf is an untracked host file
+#    c. SEEK's config mount: docker/seek-nginx.conf is an untracked host file
 #       that SEEK's entrypoint (uid 33) rewrites on every start. It must exist as
 #       a FILE (chmod 666) before the seek service is ever recreated; if it is
 #       missing, Docker creates a directory there and SEEK crash-loops. Render it
@@ -263,8 +270,8 @@ git diff --name-only HEAD@{1} HEAD -- '*migrations*'
 ./startup.sh rebuild --component nextseek-sidecar  # NessieAI/docker/ns-sidecar/**
 ./startup.sh rebuild --component custom-stack      # every first-party image
 #    cc-agent is build-only: the next chat turn uses the new image; there is no
-#    persistent agent container. The app cohort is nextseek + all three
-#    attribute worker/dispatcher/recovery runtimes sharing its image.
+#    persistent agent container. The app cohort is the one nextseek service,
+#    which runs every app-code process (§0).
 #    The worker and dispatcher reattach the existing
 #    attribute_mutation_broker SQLite volume; rebuild does not remove or renew
 #    that volume.
@@ -291,10 +298,10 @@ exits non-zero rather than blocking on a question nobody can answer.
 
 | You changed | Required action |
 |---|---|
-| Python / templates / anything baked (`nextseek_api/`, `NessieAI/chat_nextseek/`, `seek/`, `dmac/` except `local_settings.py`) | `./startup.sh rebuild` — rebuild the shared app image and recreate `nextseek`, which carries every app-code runtime. No `COMPOSE_PROFILES` to remember: until 2026-09-02 four workers lived in their own profile-gated services, and a rebuild without the variable exported left them running old code under `restart: unless-stopped`, looking healthy |
+| Python / templates / anything baked (`nextseek_api/`, `NessieAI/chat_nextseek/`, `seek/`, `dmac/` except `local_settings.py`) | `./startup.sh rebuild`: rebuild the shared app image and recreate `nextseek`, which carries every app-code runtime. No `COMPOSE_PROFILES` to remember: until 2026-09-02 four workers lived in their own profile-gated services, and a rebuild without the variable exported left them running old code under `restart: unless-stopped`, looking healthy |
 | `static/` assets | rebuild + recreate, **then** `docker compose exec nextseek uv run manage.py collectstatic --noinput` |
 | `NessieAI/chat_frontend/` React source | `npm run build:embedded` in `NessieAI/chat_frontend/`, commit the emitted assets, then rebuild + recreate + collectstatic |
-| `NessieAI/docker/cc-runtime/**` (agent plugin/skills/CLAUDE.md/deps) | `./startup.sh rebuild --component cc-agent` — next turn uses it; no service restart. Also the recovery command when `dmac-assistant:poc` has been pruned: a first build with no rollback source is announced and allowed, not refused |
+| `NessieAI/docker/cc-runtime/**` (agent plugin/skills/CLAUDE.md/deps) | `./startup.sh rebuild --component cc-agent`: next turn uses it; no service restart. Also the recovery command when `dmac-assistant:poc` has been pruned: a first build with no rollback source is announced and allowed, not refused |
 | `docker/nextseek.env` / `dmac/local_settings.py` (config only) | no build: `docker compose up -d --no-deps --force-recreate nextseek` |
 | `NessieAI/docker/bedrock-proxy/**` or its secret env | `./startup.sh rebuild --component bedrock-proxy` |
 | `NessieAI/docker/ns-sidecar/**` | `./startup.sh rebuild --component nextseek-sidecar` |
@@ -305,9 +312,12 @@ exits non-zero rather than blocking on a question nobody can answer.
 
 On shared servers the installed runtime checkout may be owned by a service
 account or carry unrelated operator-owned files. Do not stash, discard, or
-bake those files. Fast-forward that checkout to the exact deployed
-`origin/dev`, create a separate clean detached worktree at the same SHA, and
-use it only as the image source:
+bake those files. Fast-forward that checkout to the exact deployed commit,
+create a separate clean detached worktree at the same SHA, and use it only as
+the image source. `--source-tree` accepts only the exact `origin/dev` commit
+(`startup/lib/deploy_source.py`), so a box deploying `origin/main` can use it
+only while `main` and `dev` point at the same commit, as they do right after a
+sync; otherwise use §3.1:
 
 ```bash
 git fetch origin dev
@@ -329,7 +339,7 @@ from that checkout.
 ## 4. Config-only changes
 
 `docker/nextseek.env`, `docker/db.env`, and `dmac/local_settings.py` are
-runtime-injected — **no rebuild**:
+runtime-injected, so **no rebuild**:
 
 ```bash
 docker compose -p nextseek up -d --no-deps --force-recreate nextseek
@@ -355,22 +365,22 @@ docker compose -p nextseek up -d --no-build --no-deps --force-recreate nextseek
 ```
 
 Then §6. If the bad deploy applied a **data** migration, rolling back the
-image does not roll back the data — that is what the §5.3 dump is for;
+image does not roll back the data; that is what the §5.3 dump is for;
 restoring it is a deliberate, owner-approved action, not part of routine
 rollback.
 
 ### 5.2 Tag conventions and their care
 
-- `<local-repository>:pre-<timestamp>-<sha>` — per-deploy safety tag created
+- `<local-repository>:pre-<timestamp>-<sha>`: per-deploy safety tag created
   and identity-verified automatically before the rebuild CLI replaces an app,
   agent, sidecar, or proxy image.
 - A long-lived known-good baseline tag (historically
   `nextseek-nextseek:dev-rollback`) should always exist on a deploy host.
-  **If you find a host with no baseline tag** (it has happened — tags have
+  **If you find a host with no baseline tag** (it has happened: tags have
   been lost to disk cleanups), create one immediately from the current
   known-good image before doing anything else:
   `docker tag nextseek-nextseek:latest nextseek-nextseek:baseline-<YYYYMMDD>`.
-- **Tags are backups. Verify they exist before you rely on them** —
+- **Tags are backups. Verify they exist before you rely on them**:
   `docker image list` tags have historically been lost to well-intentioned
   disk cleanups. Any rollback script must *fail loudly* (`set -e`) if its
   source tag is missing, otherwise it will silently "roll back" onto the
@@ -378,7 +388,7 @@ rollback.
 - **Off-box copies:** local tags die with the host (or with a prune). For
   retention, push tags to a **private** registry (e.g. GHCR) or `docker save`
   them to off-box storage. **Never push a `docker commit` snapshot of a
-  running container off the box** — such snapshots embed the container's
+  running container off the box**: such snapshots embed the container's
   runtime environment (i.e. real secrets) in the image config. Only push
   images produced by `docker build` / `docker compose build`, whose env is
   injected at runtime and never baked.
@@ -392,16 +402,16 @@ rollback.
   a registry error each print an unmissable banner with the fix, are recorded
   in `startup/.ghcr-push-state.json` (gitignored), and stay red in
   `./startup.sh doctor` until a push succeeds. Credential: a classic PAT with
-  `write:packages` — its owner must be a **BioMicroCenter org member** (repo
-  roles are not enough; this was learned the hard way) — stored per deploying
+  `write:packages`, whose owner must be a **BioMicroCenter org member** (repo
+  roles are not enough; this was learned the hard way), stored per deploying
   user at `~/.config/nextseek/ghcr.env` (`GHCR_USER=…`/`GHCR_TOKEN=…`, mode
   600, path overridable via `NEXTSEEK_GHCR_ENV`). When a token expires, any
-  org member can mint their own and drop it in their own home — no shared
+  org member can mint their own and drop it in their own home; no shared
   credential. The gate encodes one accepted deviation: `/app/.env` passes
   only if its sole key is `LURIAKEY` (a file path, verified non-credential,
   accepted 2026-08-05); any other key name fails the gate.
 - **Pre-push gate (mandatory before ANY off-box push):** even a
-  build-produced image can carry secrets if the build context was dirty —
+  build-produced image can carry secrets if the build context was dirty:
   ad-hoc copies of rendered env files (e.g. `docker/nextseek.env.bak.<date>`)
   have been swept into an image by `COPY . /app` on a real deploy host.
   Before any tag leaves the box, prove the image is free of baked
@@ -414,7 +424,7 @@ rollback.
 
   PASS = nothing printed except (at most) `docker/nextseek.env.example`.
   Anything else → do **not** push: clean the build context / fix
-  `.dockerignore` (env files are excluded by *pattern*, not exact name — see
+  `.dockerignore` (env files are excluded by *pattern*, not exact name; see
   `.dockerignore` and `test_build_context_env_guard.py`), rebuild, re-run
   the gate.
 
@@ -423,7 +433,7 @@ rollback.
 ```bash
 docker exec <mysql-container> mysqldump -u<user> -p<pass> dmac <affected-table> \
   > backup-<table>-pre-<migration>-<YYYYMMDD>.sql
-chmod 600 backup-*.sql     # contains real data — treat as a secret
+chmod 600 backup-*.sql     # contains real data: treat as a secret
 ```
 
 Dump the specific affected table(s) when known (faster, smaller), the whole
@@ -439,44 +449,44 @@ given as a fenced block so they copy correctly from the raw file:
 
 ```bash
 # 0. The published port lives in the root .env (compose interpolation), not
-#    your shell — source it first (default-port boxes may skip this):
+#    your shell. Source it first (default-port boxes may skip this):
 NEXTSEEK_PORT=$(grep '^NEXTSEEK_PORT=' .env | cut -d= -f2)
 
-# 1. Site up — expect: 200
+# 1. Site up. Expect: 200
 curl -s -o /dev/null -w '%{http_code}\n' "http://127.0.0.1:${NEXTSEEK_PORT:-8000}/"
 
-# 2. Server mode — expect: NEXTSEEK_SERVER=gunicorn; 'gunicorn dmac.wsgi'
+# 2. Server mode. Expect: NEXTSEEK_SERVER=gunicorn; 'gunicorn dmac.wsgi'
 #    workers + a 'celery … batch_upload' worker; ZERO daphne lines
 docker exec nextseek printenv NEXTSEEK_SERVER
 docker top nextseek | grep -c daphne          # expect: 0
 
-# 3. No crash-loop — expect: 0
+# 3. No crash-loop. Expect: 0
 docker inspect nextseek --format '{{.RestartCount}}'
 
-# 4. Boot clean — expect: no FAILED/UNREACHABLE markers; only expected
+# 4. Boot clean. Expect: no FAILED/UNREACHABLE markers; only expected
 #    'Applying <migration>... OK' lines
 docker logs nextseek 2>&1 | grep -E '(COLLECTSTATIC-FAILED|DB-UNREACHABLE|MIGRATE-FAILED|Applying)'
 
-# 5. Migrations — expect: all [X]
+# 5. Migrations. Expect: all [X]
 docker exec nextseek uv run manage.py showmigrations nextseek_api | tail -5
 
-# 6. CC route wired — expect: (True, 'ok')
-#    (the image has NO bare `python` on PATH — use `uv run --no-sync`, which
+# 6. CC route wired. Expect: (True, 'ok')
+#    (the image has NO bare `python` on PATH; use `uv run --no-sync`, which
 #    executes in the app env /app/.venv without modifying it)
 #    Step 9 below now runs this same command for you, as doctor's "CC runner"
 #    check, and `./startup.sh rebuild` additionally fails when any first-party
 #    image is absent. Run it by hand when you want the answer on its own.
 docker exec nextseek uv run --no-sync python -c "from NessieAI.cc import cc_engine; print(cc_engine.cc_runner_available())"
 
-# 7. OI-3 peers untouched (app-only deploy) — expect: uptime/health
+# 7. OI-3 peers untouched (app-only deploy). Expect: uptime/health
 #    unchanged from before the deploy
 docker ps --format 'table {{.Names}}\t{{.Status}}' | grep -e nextseek-sidecar -e dmac-bedrock-proxy
 
-# 8. Rollback tag present — expect: succeeds (prints an image ID)
+# 8. Rollback tag present. Expect: succeeds (prints an image ID)
 docker image inspect nextseek-nextseek:pre-<name> --format '{{.Id}}'
 
-# 9. Health suite — expect: exit 0. Run from a checkout with uv on PATH
-#    (NOT via the §3.3 docker:cli helper — it has no uv, and doctor's HTTP
+# 9. Health suite. Expect: exit 0. Run from a checkout with uv on PATH
+#    (NOT via the §3.3 docker:cli helper: it has no uv, and doctor's HTTP
 #    probes need host-loopback access). Includes "first-party images" (all four
 #    built images present on the host) and "CC runner" (step 6, run in the app
 #    container).
@@ -490,19 +500,22 @@ greenfield acceptance (all plugin ops live, paid), see the Appendix.
 
 ## 7. Test lanes
 
-Free lanes (run before/after deploys as appropriate):
+This runbook carries no test commands. Each lane has one owner.
 
-| Lane | Command | Notes |
-|---|---|---|
-| Hermetic cc_assistant (no DB, no spend) | `PYTHONPATH="$PWD:$PWD/NessieAI/dmac_assistant/src" uv run --no-project --with pytest --with orjson --with 'pydantic>=2.13' --with 'baml-py==0.222.0' python -m pytest NessieAI/tests/cc/ --noconftest -p no:cacheprovider -q --ignore=NessieAI/tests/cc/test_cc_realstack.py` | from repo root |
-| In-container DB-backed **clean lane** | `docker exec -w /app nextseek uv run --no-sync python -m pytest NessieAI/tests/cc/ --create-db -k 'not realstack' --ignore=NessieAI/tests/cc/test_step7_compose_deploy.py --ignore=NessieAI/tests/cc/test_cc_realstack.py` | the canonical behavioral suite; runs in the live container (has secrets, db network, `test_dmac` grant). Do **not** run the whole `nextseek_api/` tree in-container — it has ~407 known environmental harness errors that are not regressions |
-| Source-tree hygiene (`host_only`) | `docker run --rm -v <WRITABLE checkout copy>:/repo -w /repo -v /usr/bin/docker:/usr/local/bin/docker:ro -v /usr/libexec/docker/cli-plugins:/usr/local/lib/docker/cli-plugins:ro nextseek-nextseek:latest uv run --project /app --no-sync python -m pytest -m host_only NessieAI/tests/cc/ nextseek_api/tests/repo_guards/ -q` | needs a **writable** checkout (settings import mkdirs) and **both** the docker CLI and compose plugin mounted; asserts on the checkout, not the image (the image strips `.gitignore` by design). `--project /app` keeps uv on the image env (`/app/.venv`), not the mounted checkout's |
-| startup CLI | `uv run --project startup --group test pytest startup/tests -q` | isolated uv project |
-| Doc guards | included in the hermetic lane (`test_deploy_docs_guard.py`) | keeps this file and DEPLOY.md compose-native |
+`NessieAI/tests/cc/test_deploy_docs_guard.py` guards this file and
+`NessieAI/cc/DEPLOY.md`: keep `./startup.sh install` and the DEPLOY.md link, and
+never reintroduce the lettered phase names its "legacy phase marker" pattern forbids.
 
-Paid/live lanes (`RUN_REALSTACK=1`, `-k realstack`) are **approval-gated —
-never run them without the owner's explicit per-run sign-off** (they spend
-real LLM budget against the live stack). See the Appendix.
+| Lane | Owner |
+|---|---|
+| Django suites, the blocking gates (route registry, docs map), the pytest baseline | [`ci/README.md`](ci/README.md) |
+| startup CLI | [`startup/CLAUDE.md`](startup/CLAUDE.md), "Test command" |
+| Every AI lane, including the paid acceptance runs | [`NessieAI/tests/README.md`](NessieAI/tests/README.md) |
+| Post-deploy smoke (also run by `./startup.sh rebuild` unless `--no-ci`) | [`ci/smoke/README.md`](ci/smoke/README.md) |
+
+Paid/live lanes (`RUN_REALSTACK=1`, `-k realstack`, the harness `--tier full` and
+`--bayesian`) are **approval-gated: never run them without the owner's explicit
+per-run sign-off** (they spend real LLM budget against the live stack).
 
 ---
 
@@ -514,30 +527,31 @@ by `reset`):
 | File | Rendered from | Holds |
 |---|---|---|
 | `docker/db.env` | `startup/templates/db.env.template` | MySQL root + app credentials |
-| `docker/nextseek.env` | `startup/templates/nextseek.env.template` | Django secret, Neo4j password, SEEK URL, LLM keys (`GCP_API_KEY`, `AWS_BEARER_TOKEN_BEDROCK`, `FDH_API`); `NEXTSEEK_SERVER` + CC knobs are **hand-added** (not in the template — re-add after any re-render, §2.4) |
+| `docker/nextseek.env` | `startup/templates/nextseek.env.template` | Django secret, Neo4j password, SEEK URL, LLM keys (`GCP_API_KEY`, `AWS_BEARER_TOKEN_BEDROCK`, `FDH_API`); `NEXTSEEK_SERVER` + CC knobs are **hand-added** (not in the template; re-add after any re-render, §2.4) |
 | `dmac/local_settings.py` | `startup/templates/local_settings.py.template` | Django settings overlay (PROD ChatConfig block, etc.) |
-| `docker/bedrock-proxy/proxy-secret.env` | rendered programmatically (0600) | `AWS_BEARER_TOKEN_BEDROCK` + `AWS_REGION` **for the proxy** |
-| `.env` (repo root) | rendered | non-secret compose interpolation: `COMPOSE_PROJECT_NAME`, ports, `INSTANCE_PREFIX` |
+| `NessieAI/docker/bedrock-proxy/proxy-secret.env` | rendered programmatically (0600) | `AWS_BEARER_TOKEN_BEDROCK` + `AWS_REGION` **for the proxy** |
+| `.env` (repo root) | rendered (0600) | compose interpolation: `COMPOSE_PROJECT_NAME`, ports, `INSTANCE_PREFIX`, and `NEO4J_PASSWORD`, without which compose refuses every verb (see `.env.example`) |
 
 Sharp edges an operator must know:
 
 - **The Bedrock token is needed in TWO files** for two different code paths:
   `docker/nextseek.env` (native chat_nextseek direct-Bedrock path) **and**
-  `docker/bedrock-proxy/proxy-secret.env` (the sandboxed CC agent's only
+  `NessieAI/docker/bedrock-proxy/proxy-secret.env` (the sandboxed CC agent's only
   route). Filling only one leaves the other chat path dead, with no
   automated cross-check.
-- **Neo4j's password exists in two places with no interpolation binding
-  them:** the `NEO4J_AUTH` literal in `docker-compose.yml` and
-  `NEXTSEEK_NEO4J_PASSWORD` in `docker/nextseek.env`. Rotate both together
-  (and note Neo4j only applies AUTH on a fresh volume — see NExtSTEPS.md
-  §2b).
+- **Neo4j's password lives in three places.** `NEO4J_PASSWORD` in the root
+  `.env` seeds the credential when the `neo4j-data` volume is created;
+  `NEO4J_PASSWORD` and `NEXTSEEK_NEO4J_PASSWORD` in `docker/nextseek.env` are
+  what the app uses. After first start the credential lives in the volume, so
+  rotation is a cypher `ALTER` plus a recreate:
+  [`docs/neo4j-programmatic-access.md`](docs/neo4j-programmatic-access.md), "Passwords".
 - **`NEXTSEEK_INTERNAL_BASE_URL` vs `NEXTSEEK_BASE_URL`:** the internal URL
   is fixed `http://127.0.0.1:8000` (container-internal) and must **not**
   derive from the host-published port; the public URL derives from
   `NEXTSEEK_HOSTNAME`+port. Both templates carry the warning; `doctor`
   checks for a stale hand-maintained overlay missing the guard.
 - **Template gap (known drift, tracked as Step 7b):** ~16 Container-CC env
-  keys read by `nextseek_api/cc_assistant/` (e.g. `NEXTSEEK_CC_IMAGE`,
+  keys read by `NessieAI/cc/` (e.g. `NEXTSEEK_CC_IMAGE`,
   `NEXTSEEK_CC_NETWORK`, `DMAC_BEDROCK_PROXY_URL`,
   `NEXTSEEK_CC_MAX_BUDGET_USD`, `NEXTSEEK_CC_TIMEOUT_SECONDS`,
   `NEXTSEEK_SIDECAR_HOST/PORT`, `DMAC_CC_MEMORY_*`) are absent from the
@@ -552,7 +566,7 @@ Sharp edges an operator must know:
 
 ---
 
-## 9. Security invariants (Container-CC / OI-3) — never regress these
+## 9. Security invariants (Container-CC / OI-3): never regress these
 
 The per-turn CC agent container is sandboxed. These invariants are enforced
 by tests and were live-verified; any deploy that would weaken one is wrong by
@@ -562,8 +576,8 @@ definition:
    Bedrock-via-proxy pointers, per-request SEEK user credentials, sidecar
    host/port, non-secret path mappings. The 16 forbidden shared-cred keys
    (AWS/Bedrock token, Neo4j, MySQL, GCP, Anthropic) are enumerated in
-   `nextseek_api/cc_assistant/tests/validate_cc_acceptance.py`; the env
-   builder is `cc_engine.py` (`build_agent_environment`) — the single source
+   `NessieAI/tests/cc/validate_cc_acceptance.py`; the env
+   builder is `NessieAI/cc/cc_engine.py` (`build_agent_environment`), the single source
    of truth.
 2. **Bedrock only via the proxy.** The proxy holds the token, allowlists the
    model, and must never log the token.
@@ -571,7 +585,7 @@ definition:
    nginx (dual-homed), `dmac-bedrock-proxy`, `nextseek-sidecar`, and per-turn
    `dmac-cc-agent-<run_id>` containers. The `nextseek` service itself must
    **never** join `dmac-cc-net` (agents reach the app only through nginx).
-   Note: `dmac-cc-net` is a normal bridge (not Docker `--internal`) — the
+   Note: `dmac-cc-net` is a normal bridge (not Docker `--internal`): the
    isolation is credential-absence + the proxy allowlist, not egress
    blocking.
 4. **Scratch-only writes:** agent mounts are read-only except
@@ -592,11 +606,9 @@ docker inspect nextseek-sidecar --format '{{range .Config.Env}}{{println .}}{{en
 docker inspect dmac-bedrock-proxy --format '{{range .Config.Env}}{{println .}}{{end}}' | cut -d= -f1
 ```
 
-Full zero-spend re-verification of a recorded acceptance run — on the host,
-from the repo root (`python3`; the module is stdlib-only):
-`python3 -m NessieAI.tests.cc.validate_step7_compose_deploy <run_dir>`
-(61 checks: topology, de-credentialing, closed-set network membership,
-cross-user isolation, plugin-ops matrix).
+Zero-spend re-verification of a recorded acceptance run, and the paid
+acceptance runs: [`NessieAI/cc/DEPLOY.md`](NessieAI/cc/DEPLOY.md) and
+[`NessieAI/tests/README.md`](NessieAI/tests/README.md).
 
 ---
 
@@ -616,16 +628,15 @@ cross-user isolation, plugin-ops matrix).
   `seek_workers` starts (the startup CLI sequences this; if bringing services
   up by hand, start `seek` first).
 - **schema_rag ingest fetches caller-supplied URLs verbatim** (no rewrite to
-  the internal URL, no SSRF guard) — from inside the container, the app's own
+  the internal URL, no SSRF guard). From inside the container, the app's own
   *public* URL is typically unreachable (NAT hairpin); ingest against the
   internal URL. Tracked as GitHub #19.
 - **Two BAML clients** are generated at build time in two different images
-  (root Dockerfile: router client; cc-runtime: judge client) — do not assume
+  (root Dockerfile: router client; cc-runtime: judge client); do not assume
   one covers the other.
-- **`docker/cc-runner/` is dead weight** (an unused lean proof image) — not
-  part of the build graph; do not wire it anywhere.
-- **`docker/cc-runtime/container/CLAUDE.md` is generated.** Never hand-edit;
-  refresh via `python -m NessieAI.build_tools.ingest_nextseek_docs`.
+- **Only the marked blocks of `NessieAI/docker/cc-runtime/container/CLAUDE.md`
+  are generated** (see `NessieAI/build_tools/README.md`); hand-edit only
+  outside them. The file is a required image input.
 
 ---
 
@@ -638,7 +649,7 @@ cross-user isolation, plugin-ops matrix).
 - **Docker build cache** grows unbounded across rebuilds (tens of GB within
   weeks). `docker system df` shows it; reclaiming it (`docker builder prune`)
   is safe for *cache* (unlike images/volumes) but still coordinate with the
-  box owner — a cold cache makes the next build slow, and on shared boxes a
+  box owner: a cold cache makes the next build slow, and on shared boxes a
   running build may be using it.
 - **Container logs:** Docker's default `json-file` driver with **no rotation
   configured** grows without bound and is deleted on container recreate. For
@@ -649,38 +660,16 @@ cross-user isolation, plugin-ops matrix).
   clear deliberately.
 - **Database backups:** the §5.3 mysqldump gate covers deploys; scheduled
   backups (MySQL dumps, Neo4j exports, SEEK filestore) are the operator's
-  responsibility and should land on storage **off the deploy host** — see
+  responsibility and should land on storage **off the deploy host**; see
   NExtSTEPS.md's backup section for what to dump.
 
 ---
 
 ## Appendix: paid acceptance & evidence bundles
 
-The full greenfield acceptance bar ("every shipped plugin op works live
-through the real stack") is paid and gated:
-
-```bash
-# native assistant regression baseline (paid, gated):
-docker exec -e RUN_REALSTACK=1 -e SEEK_TEST_USER=<u> -e SEEK_TEST_PASS=<p> nextseek sh -lc \
-  'cd /app && uv run python manage.py test NessieAI.tests.ns.test_granular_realstack \
-   --settings=dmac.test_settings_realstack --noinput --keepdb -v2'
-
-# Container-CC route end-to-end (paid, gated):
-docker exec -e RUN_REALSTACK=1 -e SEEK_TEST_USER=<u> -e SEEK_TEST_PASS=<p> nextseek sh -lc \
-  'cd /app && uv run python manage.py test NessieAI.tests.cc.test_cc_realstack \
-   --settings=dmac.test_settings_realstack --noinput -v2'
-```
-
-Both are skipped unless `RUN_REALSTACK=1`. Evidence bundles produced by
-acceptance runs are re-verifiable forever at zero spend:
-
-```bash
-# in-container (no bare `python` on the image PATH — use `uv run --no-sync`,
-# which executes in the app env /app/.venv):
-docker exec nextseek uv run --no-sync python -m NessieAI.tests.cc.validate_cc_acceptance outputs/cc_acceptance/<run_id>
-# on the host, from the repo root (stdlib-only module):
-python3 -m NessieAI.tests.cc.validate_step7_compose_deploy <run_dir> [repo_root]
-```
-
-Bundles are real artifacts from real runs — "markdown is never proof"
-(`NessieAI/tests/cc/acceptance_evidence/step7/README.md`).
+The full greenfield acceptance bar ("every shipped plugin op works live through
+the real stack") is paid and gated. The commands, and the zero-spend re-checks of
+a recorded bundle, are in [`NessieAI/tests/README.md`](NessieAI/tests/README.md)
+("Paid acceptance", "Bundle re-check"); the CC acceptance procedure is
+[`NessieAI/cc/DEPLOY.md`](NessieAI/cc/DEPLOY.md). Bundles are real artifacts from
+real runs: markdown is never proof.

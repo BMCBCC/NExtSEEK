@@ -15,14 +15,14 @@ siblings: SEEK proxy [`nextseek_api/services/studies.py`](../../../nextseek_api/
 superuser-native [`nextseek_api/services/users.py`](../../../nextseek_api/services/users.py),
 native read [`nextseek_api/services/entity_tree.py`](../../../nextseek_api/services/entity_tree.py).
 
-Mechanical rules live in [`scripts/validate_viewset_conventions.py`](../../../scripts/validate_viewset_conventions.py) — run it before calling the work done.
+Mechanical rules live in [`scripts/validate_viewset_conventions.py`](../../../scripts/validate_viewset_conventions.py); run it before calling the work done.
 
 ## 1. Classify the endpoint
 
 | Question | If yes |
 |---|---|
-| Proxies SEEK JSON:API via `SeekAPIClient`? | **SEEK proxy** — project scope is free (SEEK filters by caller auth). |
-| Reads/writes MySQL, Neo4j, or dmac tables directly? | **Native** — project-scope queries manually. |
+| Proxies SEEK JSON:API via `SeekAPIClient`? | **SEEK proxy**: project scope is free (SEEK filters by caller auth). |
+| Reads/writes MySQL, Neo4j, or dmac tables directly? | **Native**: project-scope queries manually. |
 | Only Django superusers may call it? | Use `IsDjangoSuperuser` (see §3). |
 | Any authenticated lab user? | `IsAuthenticated` only. |
 
@@ -40,7 +40,7 @@ scoping, and error-envelope patterns. New actions still need full `*_DESC`,
 ## 3. Privilege gates
 
 - Default: `permission_classes = [IsAuthenticated]`.
-- Superuser-only: `[IsAuthenticated, IsDjangoSuperuser]` — import `IsDjangoSuperuser` from [`nextseek_api/services/users.py`](../../../nextseek_api/services/users.py). Gate on `is_superuser`, not `is_staff`.
+- Superuser-only: `[IsAuthenticated, IsDjangoSuperuser]`; import `IsDjangoSuperuser` from [`nextseek_api/services/users.py`](../../../nextseek_api/services/users.py). Gate on `is_superuser`, not `is_staff`.
 - **Do not use `IsAdminUser`.** SEEK-mirrored Django users are created with `is_staff=True`; `IsAdminUser` collapses to any authenticated user. Known live anti-patterns: [`AdminSampleViewSet`](../../../nextseek_api/views.py), [`EvaluatorViewSet`](../../../nextseek_api/services/evaluator.py).
 
 ## 4. Project-scoping
@@ -55,16 +55,16 @@ Superuser-only endpoints that are intentionally global (e.g. admin user mutation
 
 ## 5. Pydantic request/response models
 
-- Define models in [`nextseek_api/models.py`](../../../nextseek_api/models.py) (or a domain submodule such as `schema_rag/models.py`).
+- Define models in [`nextseek_api/models.py`](../../../nextseek_api/models.py) (the schema_rag request and response models live there too).
 - Validate with `Model.model_validate(...)`; map `ValidationError` → HTTP 422.
-- Reuse existing error envelopes — do not invent a third shape:
+- Reuse existing error envelopes; do not invent a third shape:
   - 401: `{"detail": "Authentication required"}`
   - JSON:API errors: `JsonApiErrorResponse` / `{"errors": [{"title": "...", "detail": "..."}]}`
   - Admin mutations: `AdminUserErrorResponse`
 
 ## 6. Pydantic v2 + drf-spectacular
 
-Pydantic v2 **works** with drf-spectacular in this repo (pydantic 2.x + drf-spectacular 0.29+, OAS 3.1). Pass pydantic classes directly to `@extend_schema(request=..., responses={...})` — see [`references/patterns.md`](references/patterns.md) for a full decorator block.
+Pydantic v2 **works** with drf-spectacular in this repo (pydantic 2.x + drf-spectacular 0.29+, OAS 3.1). Pass pydantic classes directly to `@extend_schema(request=..., responses={...})`; see [`references/patterns.md`](references/patterns.md) for a full decorator block.
 
 Do **not** add DRF serializers solely because pydantic “does not work with spectacular.” Proof: [`test_services_users.py`](../../../nextseek_api/tests/test_services_users.py) asserts pydantic models appear in `SchemaGenerator` output.
 
@@ -72,7 +72,7 @@ Set `tags=["MyResource"]` and a stable `operation_id` for each action (see [`ref
 
 ## 7. Endpoint descriptions
 
-Add a `*_DESC` constant to [`nextseek_api/endpoint_descriptions.py`](../../../nextseek_api/endpoint_descriptions.py) (or [`descriptions_evaluator.py`](../../../nextseek_api/assistant/descriptions_evaluator.py) / [`descriptions_cc.py`](../../../nextseek_api/assistant/descriptions_cc.py) when appropriate). The validator scans those three modules only — **not** [`assistant/descriptions.py`](../../../nextseek_api/assistant/descriptions.py) (legacy NS assistant prose, off spectacular). Required sections in order:
+Add a `*_DESC` constant to [`nextseek_api/endpoint_descriptions.py`](../../../nextseek_api/endpoint_descriptions.py) (or [`descriptions_evaluator.py`](../../../nextseek_api/assistant/descriptions_evaluator.py) / [`descriptions_cc.py`](../../../nextseek_api/assistant/descriptions_cc.py) when appropriate). The validator scans those three modules only, **not** [`assistant/descriptions.py`](../../../nextseek_api/assistant/descriptions.py) (legacy NS assistant prose, off spectacular). Required sections in order:
 
 1. **SUMMARY**
 2. **USE WHEN**
@@ -81,11 +81,11 @@ Add a `*_DESC` constant to [`nextseek_api/endpoint_descriptions.py`](../../../ne
 5. **RETURNS**
 6. *(optional extra sections, e.g. ERROR CODES)*
 7. **TRIGGER PHRASES**
-8. **EXAMPLES** — at least one `- ` bullet; prefer real UIDs/IDs (see [`references/examples.md`](references/examples.md))
+8. **EXAMPLES**: at least one `- ` bullet; prefer real UIDs/IDs (see [`references/examples.md`](references/examples.md))
 
 Import the constant into the ViewSet: `@extend_schema(description=MY_FETCH_DESC, ...)`.
 
-Pass `description=<CONST_NAME>` — a `*_DESC` import from the description modules. **Do not** use inline string descriptions on `@extend_schema`; the validator rejects them (legacy NHP/timeline ops in [`views.py`](../../../nextseek_api/views.py) are grandfathered only).
+Pass `description=<CONST_NAME>`, a `*_DESC` import from the description modules. **Do not** use inline string descriptions on `@extend_schema`; the validator rejects them (legacy NHP/timeline ops in [`views.py`](../../../nextseek_api/views.py) are grandfathered only).
 
 ## 8. OpenAPI examples
 
@@ -93,7 +93,7 @@ Every new `@extend_schema` must include a non-empty `examples=[OpenApiExample(..
 
 - GET/list: at least one `response_only=True` example.
 - POST/PATCH: request example plus success response example when applicable.
-- Use real sample UIDs, study `746`, project `2558`, assay `351`, etc. — see [`references/examples.md`](references/examples.md).
+- Use real sample UIDs, study `746`, project `2558`, assay `351`, etc.; see [`references/examples.md`](references/examples.md).
 
 ## 9. Wire-up checklist
 
@@ -102,12 +102,17 @@ Every new `@extend_schema` must include a non-empty `examples=[OpenApiExample(..
 3. ViewSet module under `nextseek_api/services/<name>.py`
 4. Import alias in [`nextseek_api/views.py`](../../../nextseek_api/views.py)
 5. `router.register(...)` in [`nextseek_api/urls.py`](../../../nextseek_api/urls.py)
-6. Tests per §10
-7. Validate:
+6. Declare the route in [`ci/routes.py`](../../../ci/routes.py) in the same change (the blocking gate in `ci/gate` fails otherwise), and bump `OWNED_ROUTE_COUNT` in [`ci/smoke/test_registry_contents.py`](../../../ci/smoke/test_registry_contents.py) (the smoke suite that `./startup.sh rebuild` runs fails otherwise)
+7. Tests per §10
+8. Validate. The validator needs only the standard library; the test pair runs in a throwaway container over a copy of the checkout (`nextseek_api/CLAUDE.md` "Test command"):
 
 ```bash
-uv run python scripts/validate_viewset_conventions.py
-uv run pytest nextseek_api/tests/test_viewset_conventions.py nextseek_api/tests/test_viewset_conventions_schema.py -q
+python3 scripts/validate_viewset_conventions.py
+docker run --rm --network none -v "$PWD":/src:ro \
+  -e DJANGO_SETTINGS_MODULE=dmac.test_settings -w / nextseek-nextseek:latest \
+  bash -lc 'cp -a /src /build && cd /build && /app/.venv/bin/python -m pytest \
+    nextseek_api/tests/test_viewset_conventions.py \
+    nextseek_api/tests/test_viewset_conventions_schema.py -q'
 ```
 
 **Do not** add entries to `GRANDFATHER_OPS` or the derived allowlists (`EXTEND_SCHEMA_EXAMPLES_ALLOWLIST`, `INLINE_DESCRIPTION_ALLOWLIST`, `SCHEMA_EXAMPLES_OPERATION_ID_ALLOWLIST`) in `validate_viewset_conventions.py`.
@@ -116,13 +121,13 @@ uv run pytest nextseek_api/tests/test_viewset_conventions.py nextseek_api/tests/
 
 Every new ViewSet needs:
 
-1. **Behavior tests** — auth gate (401 unauthenticated), privilege gate (403 non-superuser when applicable), happy path, and at least one validation/upstream-error path (422 or 502 as appropriate). Mirror [`test_services_studies.py`](../../../nextseek_api/tests/test_services_studies.py) or [`test_services_users.py`](../../../nextseek_api/tests/test_services_users.py).
-2. **SchemaGenerator assertion** — new paths appear in `SchemaGenerator().get_schema()` and pydantic models land under `components.schemas` (see users/studies tests).
-3. **Conventions CLI** — `uv run python scripts/validate_viewset_conventions.py` exits 0 before calling work done.
+1. **Behavior tests**: auth gate (401 unauthenticated), privilege gate (403 non-superuser when applicable), happy path, and at least one validation/upstream-error path (422 or 502 as appropriate). Mirror [`test_services_studies.py`](../../../nextseek_api/tests/test_services_studies.py) or [`test_services_users.py`](../../../nextseek_api/tests/test_services_users.py).
+2. **SchemaGenerator assertion**: new paths appear in `SchemaGenerator().get_schema()` and pydantic models land under `components.schemas` (see users/studies tests).
+3. **Conventions CLI**: `python3 scripts/validate_viewset_conventions.py` exits 0 before calling work done.
 
 Do not extend validator grandfather allowlists; fix the ViewSet instead.
 
 ## Additional resources
 
-- [`references/patterns.md`](references/patterns.md) — copy-paste recipes (auth, proxy skeleton, project SQL, errors).
-- [`references/examples.md`](references/examples.md) — real identifiers and full `OpenApiExample` blocks.
+- [`references/patterns.md`](references/patterns.md): copy-paste recipes (auth, proxy skeleton, project SQL, errors).
+- [`references/examples.md`](references/examples.md): real identifiers and full `OpenApiExample` blocks.

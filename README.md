@@ -1,13 +1,14 @@
 # NExtSEEK
 
-A Django/Mezzanine extension of the SEEK platform for active scientific data
-curation, with a graph-backed sample database (Neo4j) and an embedded AI
-assistant (chat_nextseek) for natural-language queries.
+A Django/Mezzanine extension of the FAIRDOM SEEK platform for active scientific data curation,
+with a graph-backed sample database (Neo4j) and an embedded AI assistant, Nessie, for
+natural-language questions about samples, assays and projects. This repo brings up the whole
+stack in Docker.
 
 ## Quick start
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/BioMicroCenter/NExtSEEK.git
 cd NExtSEEK
 ./startup.sh install
 ```
@@ -15,103 +16,26 @@ cd NExtSEEK
 Open http://localhost:8000 and log in with `demo / demopassword` (admin) or
 `user / userpassword` (regular).
 
-> **Going beyond localhost?** Read [`NExtSTEPS.md`](NExtSTEPS.md) — it lists
-> the credentials, env vars, and config files to change before exposing the
-> install to anyone you don't trust. Rotating the demo passwords is the
-> minimum.
+`./startup.sh doctor` runs every prerequisite and health check when something is wrong.
 
-> **Deploying or operating a real instance?** Read
-> [`DEPLOYMENT.md`](DEPLOYMENT.md) — the authoritative deployment-hygiene
-> runbook: greenfield install, shipping changes, rollback, and post-deploy
-> verification.
+Requirements: Docker Engine 26+ with the Compose plugin 2.26+, and [`uv`](https://docs.astral.sh/uv/).
+Disk, RAM and network needs are in [`DEPLOYMENT.md`](DEPLOYMENT.md) §2.1.
 
-## System requirements
+> **Going beyond localhost?** Read [`NExtSTEPS.md`](NExtSTEPS.md) first. Rotating the demo
+> passwords is the minimum.
 
-- Docker Engine 26+ (API 1.45+) and Docker Compose plugin 2.26+ (the
-  sidecar's volume-subpath mount requires both floors)
-- [`uv`](https://docs.astral.sh/uv/) (Python package manager)
-- Python 3.14 (uv will install it on first startup run)
-- ≥ 40 GB free disk (images alone total ~18 GB; 60 GB recommended once
-  build cache accumulates), 8 GB free RAM
+## Where to read next
 
-## What startup does
-
-`./startup.sh install` orchestrates the full local Docker stack: prereqs
-check, config generation, volume creation, MySQL and Neo4j seed import,
-container build, test-user verification, and health checks. For detail and
-all available subcommands (`reset`, `rebuild`, `doctor`, `seed-filestore`,
-`dump-db`), see [`startup/README.md`](startup/README.md).
-
-## Architecture
-
-- **NExtSEEK** (this repo) — Django app, REST API, embedded chat panel
-- **SEEK** — Upstream FAIRDOM SEEK Rails app, runs as a sibling container,
-  shares MySQL with NExtSEEK
-- **MySQL** — `dmac` schema (NExtSEEK) + `seek_production` schema (SEEK)
-- **Neo4j** — graph of sample/assay relationships
-- **Solr** — SEEK search index
-- **chat_nextseek** (vendored under `chat_nextseek/`) — multi-agent LLM
-  pipeline backing the chat panel. Standalone CLI and MCP server modes
-  available; see `chat_nextseek/README.md`.
-
-## Development workflow
-
-Common changes you'll make and how to apply them to a running stack:
-
-| What you changed | Command |
+| You want to | Read |
 |---|---|
-| Python views / models / settings (no static asset change) | `./startup.sh rebuild` |
-| Files under `static/` (CSS/JS/images, hand-edited) | `./startup.sh rebuild && docker compose exec nextseek uv run manage.py collectstatic --noinput` |
-| `chat_frontend/` React source | `npm run build:embedded` in `chat_frontend/` (emits to `static/js/chat_assistant/`), then `collectstatic` as above — plain `npm run build` outputs only the standalone app to `dist/`, which never ships |
-| `chat_nextseek/` source pulled in from canonical repo | `startup/scripts/sync_chat_nextseek.sh <source>`, commit, then `./startup.sh rebuild` |
-| New Django model field / migration | mysqldump gate, then `./startup.sh rebuild` (entrypoint runs `migrate` on startup) |
-| Full reset (wipe data, re-seed) | `./startup.sh reset` |
-
-The Python-only-rebuild path is the common one. The key gotcha: rebuilding
-does **not** automatically run `collectstatic` — if you changed CSS/JS in
-`static/`, you must run `collectstatic` after the rebuild or your changes
-won't be served.
-
-## Configuration
-
-After `./startup.sh install`, three config files are written and are then
-yours to edit:
-
-- `docker/db.env` — MySQL credentials (gitignored)
-- `docker/nextseek.env` — Django secret, Neo4j password, API keys (gitignored;
-  chat features stay disabled until you fill in real keys)
-- `dmac/local_settings.py` — Django settings overlay, including the optional
-  PROD ChatConfig block for the admin-only "PROD" toggle in the chat UI
-  (gitignored)
-
-All three are gitignored. Startup can re-render them via `./startup.sh reset`
-if you ever want a clean slate (**destructive**: reset first drops every data
-volume — MySQL, Neo4j, filestore — and re-seeds from scratch).
-
-## Troubleshooting
-
-Start with `./startup.sh doctor` — it runs every prereq + health check and
-reports failures with remediation hints.
-
-For deeper issues, see [`startup/README.md`](startup/README.md) → "Known
-failure modes".
-
-## Contributing
-
-Two repos to know about:
-
-- **This repo (NExtSEEK)** — Django app + vendored chat_nextseek snapshot
-- **chat_nextseek canonical repo** — `git@github.com:cdemurjian/chat_nextseek.git`
-
-Day-to-day chat_nextseek development happens in the canonical repo. To
-ship a new chat_nextseek snapshot into NExtSEEK, run:
-
-```bash
-startup/scripts/sync_chat_nextseek.sh /path/to/canonical/chat_nextseek
-```
-
-Then commit the changes in NExtSEEK and push.
+| Deploy, redeploy, roll back or verify a real instance | [`DEPLOYMENT.md`](DEPLOYMENT.md) |
+| Harden an install before exposing it | [`NExtSTEPS.md`](NExtSTEPS.md) |
+| Understand the repo: every folder, skill and sub-doc | [`CLAUDE.md`](CLAUDE.md) |
+| Understand the AI assistant | [`NessieAI/README.md`](NessieAI/README.md) |
+| Find a cross-cutting doc | [`docs/INDEX.md`](docs/INDEX.md) |
+| Report a bug or request a feature | [`docs/ISSUE-CONVENTIONS.md`](docs/ISSUE-CONVENTIONS.md) |
+| Look up a `./startup.sh` subcommand | [`startup/README.md`](startup/README.md) |
 
 ## License
 
-See `LICENSE`.
+MIT. See [`LICENSE`](LICENSE).
