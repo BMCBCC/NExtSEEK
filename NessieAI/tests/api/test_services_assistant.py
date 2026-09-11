@@ -378,7 +378,7 @@ class QuerySSEPipelineErrorTests(TestCase):
         self.addCleanup(patcher.stop)
 
     @patch("nextseek_api.services.assistant.DictSessionAdapter")
-    @patch("nextseek_api.services.assistant.run_query")
+    @patch("NessieAI.ns.turn.run_query")
     def test_query_pipeline_exception_sends_error_event(self, mock_run_query, mock_adapter_cls):
         """When run_query raises an exception, a query_error SSE event is sent."""
         mock_run_query.side_effect = RuntimeError("LLM timeout")
@@ -397,7 +397,7 @@ class QuerySSEPipelineErrorTests(TestCase):
         self.assertIn("Internal pipeline error", content)
 
     @patch("nextseek_api.services.assistant.DictSessionAdapter")
-    @patch("nextseek_api.services.assistant.run_query")
+    @patch("NessieAI.ns.turn.run_query")
     def test_query_pipeline_error_includes_session_id(self, mock_run_query, mock_adapter_cls):
         """query_error event includes session_id."""
         mock_run_query.side_effect = ValueError("bad input")
@@ -412,7 +412,7 @@ class QuerySSEPipelineErrorTests(TestCase):
         self.assertIn(str(session.session_id), content)
 
     @patch("nextseek_api.services.assistant.DictSessionAdapter")
-    @patch("nextseek_api.services.assistant.run_query")
+    @patch("NessieAI.ns.turn.run_query")
     def test_query_sse_cache_control_headers(self, mock_run_query, mock_adapter_cls):
         """SSE response has Cache-Control: no-cache and X-Accel-Buffering: no."""
         def fake_run(adapter, config, query, send_event, credentials=None):
@@ -429,7 +429,7 @@ class QuerySSEPipelineErrorTests(TestCase):
         self.assertEqual(resp["X-Accel-Buffering"], "no")
 
     @patch("nextseek_api.services.assistant.DictSessionAdapter")
-    @patch("nextseek_api.services.assistant.run_query")
+    @patch("NessieAI.ns.turn.run_query")
     def test_query_multiple_events_stream(self, mock_run_query, mock_adapter_cls):
         """Multiple SSE events are streamed in order."""
         def fake_run(adapter, config, query, send_event, credentials=None):
@@ -515,7 +515,7 @@ class QueryAsyncExtraTests(TestCase):
         self.assertEqual(resp.status_code, 404)
 
     @patch("nextseek_api.services.assistant.DictSessionAdapter")
-    @patch("nextseek_api.services.assistant.run_query")
+    @patch("NessieAI.ns.turn.run_query")
     def test_query_async_creates_query_task_with_running_status(self, mock_run_query, mock_adapter_cls):
         """Async query creates QueryTask with status='running'."""
         session = ChatSession.objects.create(user=self.user)
@@ -530,7 +530,7 @@ class QueryAsyncExtraTests(TestCase):
         self.assertEqual(task.query, "Find mice")
 
     @patch("nextseek_api.services.assistant.DictSessionAdapter")
-    @patch("nextseek_api.services.assistant.run_query")
+    @patch("NessieAI.ns.turn.run_query")
     def test_query_async_task_linked_to_session(self, mock_run_query, mock_adapter_cls):
         """QueryTask is linked to the correct session."""
         session = ChatSession.objects.create(user=self.user)

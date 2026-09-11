@@ -291,7 +291,7 @@ class ViewSetTests(TestCase):
         self.assertEqual(resp.status_code, 404)
 
     @patch("nextseek_api.services.assistant.DictSessionAdapter")
-    @patch("nextseek_api.services.assistant.run_query")
+    @patch("NessieAI.ns.turn.run_query")
     def test_query_returns_sse_content_type(self, mock_run_query, mock_adapter_cls):
         """Verify POST /assistant/query/ returns text/event-stream."""
         def fake_run_query(adapter, chat_config, query, send_event, credentials=None):
@@ -378,7 +378,7 @@ class ViewSetTests(TestCase):
         self.assertEqual(resp.status_code, 403)
 
     @patch("nextseek_api.services.assistant.DictSessionAdapter")
-    @patch("nextseek_api.services.assistant.run_query")
+    @patch("NessieAI.ns.turn.run_query")
     def test_query_sse_event_format(self, mock_run_query, mock_adapter_cls):
         """Verify SSE events are correctly formatted and include session_id."""
         def fake_run_query(adapter, chat_config, query, send_event, credentials=None):
@@ -403,7 +403,7 @@ class ViewSetTests(TestCase):
         self.assertIn(str(session.session_id), content)
 
     @patch("nextseek_api.services.assistant.DictSessionAdapter")
-    @patch("nextseek_api.services.assistant.run_query")
+    @patch("NessieAI.ns.turn.run_query")
     def test_query_auto_session_reuses_recent(self, mock_run_query, mock_adapter_cls):
         """POST /query/ without session_id reuses the most recent session."""
         def fake_run_query(adapter, chat_config, query, send_event, credentials=None):
@@ -431,7 +431,7 @@ class ViewSetTests(TestCase):
         self.assertEqual(ChatSession.objects.filter(user=self.user).count(), 1)
 
     @patch("nextseek_api.services.assistant.DictSessionAdapter")
-    @patch("nextseek_api.services.assistant.run_query")
+    @patch("NessieAI.ns.turn.run_query")
     def test_query_auto_session_creates_when_none(self, mock_run_query, mock_adapter_cls):
         """POST /query/ without session_id auto-creates when user has no sessions."""
         def fake_run_query(adapter, chat_config, query, send_event, credentials=None):
@@ -461,7 +461,7 @@ class ViewSetTests(TestCase):
         self.assertNotIn("event: query_error", content)
 
     @patch("nextseek_api.services.assistant.DictSessionAdapter")
-    @patch("nextseek_api.services.assistant.run_query")
+    @patch("NessieAI.ns.turn.run_query")
     def test_query_explicit_session_still_works(self, mock_run_query, mock_adapter_cls):
         """POST /query/ with explicit session_id still validates ownership."""
         def fake_run_query(adapter, chat_config, query, send_event, credentials=None):
@@ -613,7 +613,7 @@ class AsyncQueryViewSetTests(TestCase):
         self.addCleanup(patcher.stop)
 
     @patch("nextseek_api.services.assistant.DictSessionAdapter")
-    @patch("nextseek_api.services.assistant.run_query")
+    @patch("NessieAI.ns.turn.run_query")
     def test_query_async_returns_202_with_task_id(self, mock_run_query, mock_adapter_cls):
         """POST /query/async/ returns 202 with task_id and session_id."""
         self.client.force_authenticate(user=self.user)
@@ -631,7 +631,7 @@ class AsyncQueryViewSetTests(TestCase):
         self.assertEqual(QueryTask.objects.filter(user=self.user).count(), 1)
 
     @patch("nextseek_api.services.assistant.DictSessionAdapter")
-    @patch("nextseek_api.services.assistant.run_query")
+    @patch("NessieAI.ns.turn.run_query")
     def test_query_async_auto_session_creates(self, mock_run_query, mock_adapter_cls):
         """POST /query/async/ without session_id auto-creates a session."""
         self.client.force_authenticate(user=self.user)
@@ -647,7 +647,7 @@ class AsyncQueryViewSetTests(TestCase):
         self.assertEqual(resp.data["session_id"], str(auto_session.session_id))
 
     @patch("nextseek_api.services.assistant.DictSessionAdapter")
-    @patch("nextseek_api.services.assistant.run_query")
+    @patch("NessieAI.ns.turn.run_query")
     def test_query_async_reuses_recent_session(self, mock_run_query, mock_adapter_cls):
         """POST /query/async/ without session_id reuses most recent session."""
         self.client.force_authenticate(user=self.user)
@@ -663,7 +663,7 @@ class AsyncQueryViewSetTests(TestCase):
         self.assertEqual(ChatSession.objects.filter(user=self.user).count(), 1)
 
     @patch("nextseek_api.services.assistant.DictSessionAdapter")
-    @patch("nextseek_api.services.assistant.run_query")
+    @patch("NessieAI.ns.turn.run_query")
     def test_query_async_explicit_session(self, mock_run_query, mock_adapter_cls):
         """POST /query/async/ with explicit session_id validates ownership."""
         self.client.force_authenticate(user=self.user)
@@ -793,7 +793,7 @@ class CsrfExemptionTests(TestCase):
         self.addCleanup(patcher.stop)
 
     @patch("nextseek_api.services.assistant.DictSessionAdapter")
-    @patch("nextseek_api.services.assistant.run_query")
+    @patch("NessieAI.ns.turn.run_query")
     def test_post_query_async_no_csrf_token(self, mock_run_query, mock_adapter_cls):
         """POST /assistant/query/async/ must return 202, not 403, for a
         session-authenticated user who sends no X-CSRFToken header."""
@@ -806,7 +806,7 @@ class CsrfExemptionTests(TestCase):
         self.assertIn("task_id", resp.data)
 
     @patch("nextseek_api.services.assistant.DictSessionAdapter")
-    @patch("nextseek_api.services.assistant.run_query")
+    @patch("NessieAI.ns.turn.run_query")
     def test_post_query_sse_no_csrf_token(self, mock_run_query, mock_adapter_cls):
         """POST /assistant/query/ must return 200 (SSE), not 403."""
         def fake_run_query(adapter, chat_config, query, send_event, credentials=None):

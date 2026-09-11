@@ -12,12 +12,14 @@ These are covered by tests. Breaking one is a security or data regression.
 - **A rendered workbook's artifact key is word characters only.** The download route accepts nothing else.
 - **`build-upload-xlsx` never writes to NExtSEEK.** It returns a reviewable workbook; a hard-rejected sample type is skipped with its report.
 - **The upload workbook emits all four sheets**, even empty ones. A missing sheet makes the parser fall back to the flat format silently.
+- **An artifact is served only from inside an artifact root.** `_safe_artifact_path` in `artifacts.py` resolves symlinks and requires `Path.relative_to` containment in `<BASE_DIR>/outputs` or `NEXTSEEK_OUTPUTS_DIR`. A string-prefix check, or a wider root such as `BASE_DIR` or home, lets a stored path read source or secrets.
 - **`write_gate.py` and `read_safe_endpoints.json` stay side by side.** The loader resolves the JSON from the module's own directory, and `NessieAI/cc/op_registry/ops.py` reads it at import.
 
 ## Landmines
 
 - **The allowlist load sits outside the error handler meant to catch it**, in `nextseek_api/services/assistant.py`, so a missing allowlist escapes as a 500 instead of the documented CONFIG_ERROR envelope.
 - **The write gate knows seven labels; the dispatch table has nine.** `SIDECAR_OPS` in `write_gate.py` holds only the seven ported labels. `run-ls` and `build-upload-xlsx` pass only because they never call the gate (only the `api-read` and `api-write` handlers do; see `nextseek_api/assistant/CONTRACT.md`).
+- **Patch the orchestrator at `NessieAI.ns.turn`, not at `nextseek_api.services.assistant`.** The NS pipeline bodies look `run_query`, `run_query_plan` and `run_pipeline_launch` up in `turn.py`. The services module deliberately does not import them, so a stale patch there fails loudly; re-adding the import would make it pass while the real orchestrator runs.
 - **Nothing compares these wire models with the sidecar's copy** (`NessieAI/docker/ns-sidecar/app/granular_models.py`). Only a digest pin in `NessieAI/tests/cc/test_step7_sidecar_port.py` guards the sidecar file. A model change here drifts the sidecar silently.
 
 ## Test command

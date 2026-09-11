@@ -60,7 +60,7 @@ as a detail lookup (`nextseek_api/services/assays.py:41`).
 `nextseek_api/services/samples.py:357`, `nextseek_api/services/schema_rag.py:43`,
 `nextseek_api/services/users.py:359` and `nextseek_api/services/project_export.py:256`.
 
-*The chat pair*: `nextseek_api/services/assistant.py:417` with 18 actions, and
+*The chat pair*: `nextseek_api/services/assistant.py:276` with 18 actions, and
 `nextseek_api/services/cc_assistant.py:86` with 8. Their query endpoints share a shape
 (create a `QueryTask`, hand a callback to the engine, hand the work to a background thread,
 return 202) and their overlap is deliberate reuse rather than a fork, imported at
@@ -90,7 +90,7 @@ non-`.py` file in this directory, and it is the only file shipped with the repo 
 module here opens: a `grep` for `open(`, `read_text` and `Path(__file__)` across all 25
 modules returns `nextseek_api/services/sample_workbook.py:76` and
 `nextseek_api/services/sample_workbook.py:103` for this file, and otherwise only per-request
-artifact reads and writes such as `nextseek_api/services/assistant.py:1088` and
+artifact reads and writes such as `nextseek_api/services/assistant.py:972` and
 `nextseek_api/services/cc_assistant.py:270`.
 
 ## Running and testing
@@ -138,8 +138,10 @@ modules and splitting module-scope imports from in-function ones:
   `nextseek_api/services/template_catalog.py:20`, `nextseek_api/services/project_connections.py:28`
   and `nextseek_api/services/sample_workbook.py:26`.
 - The NS engine in `NessieAI/chat_nextseek/` (import name `chat_nextseek`), imported at
-  module scope by exactly one of the 25 modules: `nextseek_api/services/assistant.py:113-114`.
-  `nextseek_api/services/cc_assistant.py` reaches it only through `NessieAI/cc/turn.py`.
+  module scope by none of the 25 modules. `nextseek_api/services/assistant.py` reaches it
+  through `NessieAI/ns/turn.py` (`nextseek_api/services/assistant.py:96-106` imports the turn
+  and the artifact helpers; its own `ChatConfig` import is `TYPE_CHECKING`-only), and
+  `nextseek_api/services/cc_assistant.py` through `NessieAI/cc/turn.py`.
 - The Container-CC engine, `NessieAI.cc`: `nextseek_api/services/cc_assistant.py:62-63` imports the turn
   (`NessieAI/cc/turn.py`, which in turn imports `NessieAI.router` and the NS engine) and
   `cc_provision`, and four actions import further `NessieAI.cc` modules in-function;

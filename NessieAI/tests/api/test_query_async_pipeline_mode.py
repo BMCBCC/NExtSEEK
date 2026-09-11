@@ -34,8 +34,8 @@ class PipelineModeRoutingTests(TestCase):
             seen["query"] = query
             done.set()
 
-        with patch("nextseek_api.services.assistant.run_pipeline_launch", fake_launch), \
-             patch("nextseek_api.services.assistant.run_query") as run_query_mock:
+        with patch("NessieAI.ns.turn.run_pipeline_launch", fake_launch), \
+             patch("NessieAI.ns.turn.run_query") as run_query_mock:
             cs = ChatSession.objects.create(user=self.user)
             resp = self._post({
                 "query": "Launch scrnaseq on D.SEQ-1",
@@ -53,8 +53,8 @@ class PipelineModeRoutingTests(TestCase):
         def fake_query(adapter, config, query, send_event, credentials=None):
             done.set()
 
-        with patch("nextseek_api.services.assistant.run_query", fake_query), \
-             patch("nextseek_api.services.assistant.run_pipeline_launch") as launch_mock:
+        with patch("NessieAI.ns.turn.run_query", fake_query), \
+             patch("NessieAI.ns.turn.run_pipeline_launch") as launch_mock:
             cs = ChatSession.objects.create(user=self.user)
             resp = self._post({
                 "query": "Find mice", "mode": "standard", "session_id": str(cs.session_id),

@@ -22,10 +22,10 @@ class ForceNewFlagTests(TestCase):
         patcher_perm.start()
         self.addCleanup(patcher_perm.stop)
         # Don't actually run the pipeline.
-        patcher_pipe = patch('nextseek_api.services.assistant.run_query')
+        patcher_pipe = patch('NessieAI.ns.turn.run_query')
         patcher_pipe.start()
         self.addCleanup(patcher_pipe.stop)
-        patcher_plan = patch('nextseek_api.services.assistant.run_query_plan')
+        patcher_plan = patch('NessieAI.ns.turn.run_query_plan')
         patcher_plan.start()
         self.addCleanup(patcher_plan.stop)
 

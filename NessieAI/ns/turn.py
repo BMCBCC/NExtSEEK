@@ -1,20 +1,43 @@
-"""The NS-side helpers of a chat turn that both engines share.
+"""The NS chat turn, and the helpers of a turn that both engines share.
 
 ``_select_chat_config`` picks the ChatConfig for a request (the admin-only
 ``use_prod`` switch), and ``_auto_title_if_unset`` titles a chat from its first
-query. The NS endpoints in ``nextseek_api/services/assistant.py`` and the
-Container-CC turn both call them.
+query; the NS endpoints in ``nextseek_api/services/assistant.py`` and the
+Container-CC turn both call them. ``run_sse_pipeline`` and ``run_async_pipeline``
+are the pipeline bodies of the ``query`` (SSE) and ``query/async`` endpoints: they
+run the chat_nextseek orchestrator for the request's mode and then save the turn
+through ``_save_session_or_report``. ``make_sse_send_event`` builds the SSE
+endpoint's event callback. ``_granular_args`` projects a granular-op request into
+the args ``NessieAI.ns.granular.run_op`` takes.
 
 Moved verbatim from ``nextseek_api/services/assistant.py`` (Phase B of the
-NessieAI consolidation), which imports both back. Nothing here imports
-``nextseek_api``: ``ChatSession`` appears only in an annotation, which
-``from __future__ import annotations`` keeps a string.
+NessieAI consolidation); the two pipeline bodies and the event callback were
+closures inside the ViewSet actions and are lifted to module functions that
+take what they closed over as keyword arguments. The ViewSet keeps every HTTP
+and host seam and hands them in: session resolution, the ``QueryTask`` row,
+``make_db_event_callback``, the ``DictSessionAdapter``, credential resolution
+and the prod swap, the thread start and the SSE stream. Patch the orchestrator
+entry points here (``NessieAI.ns.turn.run_query``), where they are looked up.
+
+Nothing here imports ``nextseek_api.services``. The one host edge is
+``nextseek_api.assistant.session_adapter`` (``SessionSaveError``, which a failed
+save raises), allowed for this module by
+``NessieAI/tests/api/test_nessie_boundaries.py``. ``ChatSession`` appears only
+in annotations, which ``from __future__ import annotations`` keeps strings.
 """
 from __future__ import annotations
 
+import logging
+from typing import Any
+
 from django.conf import settings
 
+from nextseek_api.assistant.session_adapter import SessionSaveError
+
 from chat_nextseek.config import ChatConfig
+from chat_nextseek.orchestrator import run_query, run_query_plan, run_pipeline_launch
+
+logger = logging.getLogger(__name__)
 
 
 def _auto_title_if_unset(chat_session: ChatSession, fallback_query: str = "") -> None:
@@ -77,3 +100,119 @@ def _select_chat_config(request, req) -> ChatConfig:
     if prod_config is None:
         return settings.NEXTSEEK_CHAT_CONFIG
     return prod_config
+
+
+def _granular_args(op: str, req) -> dict:
+    """Project a validated request model into the op's chat_nextseek arg dict."""
+    if op in ("entity", "parse", "graph"):
+        return {"query": req.query}
+    if op == "api-read":
+        return {"parser_plan": req.parser_plan}
+    if op == "api-write":
+        return {"parser_plan": req.parser_plan, "confirmed_write": req.confirmed_write,
+                "query": req.query}
+    if op == "report":
+        return {"mode": req.mode, "project": req.project}
+    if op == "generate-submission":
+        return {"type": req.type, "uids": req.uids, "query": req.query}
+    if op == "run-ls":
+        return {"run_dir": req.run_dir}
+    if op == "build-upload-xlsx":
+        return {"rows": req.rows, "existing_parent_uids": req.existing_parent_uids}
+    return {}
+
+
+def _save_session_or_report(adapter, chat_session, send_event, session_id) -> None:
+    """Persist the turn, and TELL THE USER if it could not be persisted.
+
+    This used to be a bare ``adapter.save()`` in a ``finally:`` outside the
+    caller's own ``try/except``. When the write failed the exception killed the
+    background thread, ``_auto_title_if_unset`` never ran, and the user was left
+    with a chat that had streamed a correct answer and then emptied itself on
+    reload -- with no error anywhere they could see. A turn that cannot be saved
+    is a failed turn and has to look like one.
+    """
+    try:
+        adapter.save()
+    except SessionSaveError as exc:
+        logger.error("session %s: turn completed but was not saved", session_id)
+        if send_event:
+            send_event("query_error", {
+                "error": (
+                    "This answer was not saved to the conversation and will be "
+                    "gone if you reload. The result was too large to store."
+                ),
+                "agent": "session",
+                "session_id": session_id,
+            })
+        return
+    except Exception:
+        logger.exception("session %s: unexpected failure saving the turn", session_id)
+        return
+    _auto_title_if_unset(chat_session)
+
+
+def make_sse_send_event(event_queue, resolved_session_id):
+    """The ``query`` (SSE) endpoint's event callback: stamp the session id on
+    the terminal events and queue each event for the SSE stream."""
+    def send_event(event_type: str, data: dict[str, Any]) -> None:
+        if event_type in ("query_complete", "query_error"):
+            data.setdefault("session_id", resolved_session_id)
+        event_queue.put((event_type, data))
+
+    return send_event
+
+
+def run_sse_pipeline(*, adapter, chat_config, req, send_event, api_user, api_pass,
+                     chat_session, resolved_session_id, event_queue) -> None:
+    """Pipeline body of the ``query`` (SSE) endpoint, run on its daemon thread.
+
+    Runs the orchestrator for ``req.mode`` (``plan`` or standard), turns an
+    unhandled error into a ``query_error`` event, saves the turn, and always
+    ends the stream with the ``None`` sentinel on ``event_queue``.
+    """
+    try:
+        match getattr(req, "mode", "standard"):
+            case "plan":
+                run_query_plan(adapter, chat_config, req.query, send_event, credentials={"api_user": api_user, "api_pass": api_pass})
+            case _:
+                run_query(adapter, chat_config, req.query, send_event, credentials={"api_user": api_user, "api_pass": api_pass})
+    except Exception:
+        logger.exception("Unhandled pipeline error")
+        send_event("query_error", {
+            "error": "Internal pipeline error",
+            "agent": "unknown",
+            "session_id": resolved_session_id,
+        })
+    finally:
+        _save_session_or_report(
+            adapter, chat_session, send_event, resolved_session_id)
+        event_queue.put(None)  # sentinel
+
+
+def run_async_pipeline(*, adapter, chat_config, req, send_event, api_user, api_pass,
+                       chat_session, resolved_session_id) -> None:
+    """Pipeline body of the ``query/async`` endpoint, run on its daemon thread.
+
+    Runs the orchestrator for ``req.mode`` (``plan``, ``pipeline`` or
+    standard), turns an unhandled error into a ``query_error`` event, and
+    saves the turn. Progress reaches the client only through ``send_event``.
+    """
+    try:
+        match getattr(req, "mode", "standard"):
+            case "plan":
+                run_query_plan(adapter, chat_config, req.query, send_event, credentials={"api_user": api_user, "api_pass": api_pass})
+            case "pipeline":
+                run_pipeline_launch(adapter, chat_config, req.query, send_event, credentials={"api_user": api_user, "api_pass": api_pass})
+            case _:
+                run_query(adapter, chat_config, req.query, send_event, credentials={"api_user": api_user, "api_pass": api_pass})
+    except Exception:
+        logger.exception("Unhandled pipeline error (async)")
+        send_event("query_error", {
+            "error": "Internal pipeline error",
+            "agent": "unknown",
+            "session_id": resolved_session_id,
+        })
+    finally:
+        _save_session_or_report(
+            adapter, chat_session, send_event, resolved_session_id)

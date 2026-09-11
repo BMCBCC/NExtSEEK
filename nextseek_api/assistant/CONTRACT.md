@@ -120,7 +120,7 @@ call the gate with its own label is refused with `WRITE_BLOCKED` until the label
 `merged_report` (json), `geo_seq_workbooks` (xlsx), `sra_submission_workbooks`
 (xlsx), `sra_biosample_workbooks` (xlsx), `nfcore_*` samplesheets (csv/tsv),
 `pride_submission_px` (txt), `pride_sdrf` (tsv), plus reporter_result/metadata/
-protocols. **Path-traversal-hardened** (`_safe_artifact_path`): real `relative_to`
+protocols. **Path-traversal-hardened** (`_safe_artifact_path` in `NessieAI/ns/artifacts.py`): real `relative_to`
 containment (no string-prefix bypass) against a narrow root, `<BASE_DIR>/outputs`
 plus `NEXTSEEK_OUTPUTS_DIR` only, **not** `BASE_DIR`/home, with `Path.resolve`
 canonicalizing symlinks. (The `sample_counts_by_type` chart type from the original spec was

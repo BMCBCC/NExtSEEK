@@ -23,25 +23,25 @@ class SafeArtifactPathTests(SimpleTestCase):
     def test_prefix_sibling_is_not_contained(self):
         # The classic prefix-match bypass: a sibling dir that shares the string
         # prefix of the allowed root (<BASE_DIR>/outputs) must be REJECTED.
-        from nextseek_api.services.assistant import _safe_artifact_path
+        from NessieAI.ns.artifacts import _safe_artifact_path
         evil = str(Path(settings.BASE_DIR) / "outputs-evil" / "secret.txt")
         self.assertIsNone(_safe_artifact_path(evil))
 
     def test_absolute_outside_root_rejected(self):
-        from nextseek_api.services.assistant import _safe_artifact_path
+        from NessieAI.ns.artifacts import _safe_artifact_path
         self.assertIsNone(_safe_artifact_path("/etc/passwd"))
 
     def test_home_is_not_allowed(self):
-        from nextseek_api.services.assistant import _safe_artifact_path
+        from NessieAI.ns.artifacts import _safe_artifact_path
         self.assertIsNone(_safe_artifact_path(str(Path.home() / ".aws" / "credentials")))
 
     def test_none_and_empty_rejected(self):
-        from nextseek_api.services.assistant import _safe_artifact_path
+        from NessieAI.ns.artifacts import _safe_artifact_path
         self.assertIsNone(_safe_artifact_path(None))
         self.assertIsNone(_safe_artifact_path(""))
 
     def test_contained_path_accepted(self):
-        from nextseek_api.services.assistant import _safe_artifact_path
+        from NessieAI.ns.artifacts import _safe_artifact_path
         ok = str(Path(settings.BASE_DIR) / "outputs" / "sub" / "f.json")
         self.assertIsNotNone(_safe_artifact_path(ok))
 

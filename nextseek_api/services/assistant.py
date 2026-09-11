@@ -20,9 +20,7 @@ import logging
 import os
 import queue
 import threading
-import uuid
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import orjson
 from django.http import StreamingHttpResponse, HttpResponse
@@ -92,9 +90,21 @@ from nextseek_api.permissions import may_read_any_users_data
 from nextseek_api.assistant.models_db import ChatSession, QueryTask
 from NessieAI.ns.debug_projection import bundle_debug_entries
 from NessieAI.ns.bundle_download import bundle_metadata
-# Moved to NessieAI/ns/turn.py (NessieAI Phase B). The NS endpoints below still call
-# both; the Container-CC turn imports them from there directly.
-from NessieAI.ns.turn import _auto_title_if_unset, _select_chat_config
+# Moved to NessieAI/ns/ (NessieAI Phase B): the NS turn in turn.py, the on-disk
+# artifact helpers in artifacts.py. The endpoints below call them; the pipeline
+# bodies of query and query_async run in turn.py on the threads started here.
+from NessieAI.ns.turn import (
+    _granular_args,
+    _select_chat_config,
+    make_sse_send_event,
+    run_async_pipeline,
+    run_sse_pipeline,
+)
+from NessieAI.ns.artifacts import (
+    _granular_outputs_dir,
+    _resolve_saved_path,
+    _safe_artifact_path,
+)
 from nextseek_api.assistant.excel_export import build_artifacts
 from rest_framework.authentication import (
     BasicAuthentication,
@@ -110,9 +120,12 @@ from nextseek_api.authentication import (  # noqa: F401
 
 from nextseek_api.helpers import resolve_seek_auth, SeekAPIClient
 
-from chat_nextseek.orchestrator import run_query, run_query_plan, run_pipeline_launch
-from chat_nextseek.config import ChatConfig
-from nextseek_api.assistant.session_adapter import DictSessionAdapter, SessionSaveError
+# No module-scope chat_nextseek import: the orchestrator entry points are called from
+# NessieAI/ns/turn.py, so patch them there. Importing them here again would let a
+# stale patch of nextseek_api.services.assistant.run_query no-op silently.
+if TYPE_CHECKING:
+    from chat_nextseek.config import ChatConfig
+from nextseek_api.assistant.session_adapter import DictSessionAdapter
 from nextseek_api.assistant.pipeline_adapter import make_db_event_callback
 
 logger = logging.getLogger(__name__)
@@ -238,35 +251,6 @@ def _granular_chat_config(request, req) -> ChatConfig:
     return cfg
 
 
-def _granular_args(op: str, req) -> dict:
-    """Project a validated request model into the op's chat_nextseek arg dict."""
-    if op in ("entity", "parse", "graph"):
-        return {"query": req.query}
-    if op == "api-read":
-        return {"parser_plan": req.parser_plan}
-    if op == "api-write":
-        return {"parser_plan": req.parser_plan, "confirmed_write": req.confirmed_write,
-                "query": req.query}
-    if op == "report":
-        return {"mode": req.mode, "project": req.project}
-    if op == "generate-submission":
-        return {"type": req.type, "uids": req.uids, "query": req.query}
-    if op == "run-ls":
-        return {"run_dir": req.run_dir}
-    if op == "build-upload-xlsx":
-        return {"rows": req.rows, "existing_parent_uids": req.existing_parent_uids}
-    return {}
-
-
-def _granular_outputs_dir() -> str:
-    """A fresh writable run-root for a report op's saved_files."""
-    base = getattr(settings, "BASE_DIR", None)
-    root = os.path.join(str(base), "outputs", "granular") if base else "outputs/granular"
-    out = os.path.join(root, uuid.uuid4().hex)
-    os.makedirs(out, exist_ok=True)
-    return out
-
-
 # Content-type by file extension for report artifacts served from disk.
 _ARTIFACT_CONTENT_TYPES = {
     ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -286,87 +270,6 @@ _ARTIFACT_CONTENT_TYPES = {
 def _artifact_content_type(path) -> str:
     ext = os.path.splitext(str(path))[1].lower()
     return _ARTIFACT_CONTENT_TYPES.get(ext, "application/octet-stream")
-
-
-def _resolve_saved_path(value):
-    """A saved_files value is either a string path or a list of paths (multi-file
-    keys like geo_seq_workbooks / sra_*). Serve the first concrete path."""
-    if isinstance(value, str):
-        return value
-    if isinstance(value, (list, tuple)) and value:
-        first = value[0]
-        return first if isinstance(first, str) else None
-    return None
-
-
-def _artifact_roots() -> list[Path]:
-    """The narrowly-scoped directories report artifacts are written under. Both the
-    granular report op (``_granular_outputs_dir``) and the query pipeline
-    (``_ensure_query_log_dir``) write beneath ``<BASE_DIR>/outputs`` /
-    ``NEXTSEEK_OUTPUTS_DIR``. The whole BASE_DIR (contains source) and home (holds
-    secrets) are deliberately excluded."""
-    roots: list[Path] = []
-    base = getattr(settings, "BASE_DIR", None)
-    if base:
-        roots.append(Path(base, "outputs").resolve())
-    nod = os.environ.get("NEXTSEEK_OUTPUTS_DIR")
-    if nod:
-        try:
-            roots.append(Path(nod).resolve())
-        except (OSError, ValueError, RuntimeError):
-            pass
-    return roots
-
-
-def _safe_artifact_path(src) -> Path | None:
-    """Resolve ``src`` and require it to be *really contained* within an allowed
-    artifact root. Uses ``Path.relative_to`` (no string-prefix bypass like
-    ``/app-evil`` matching ``/app``) and ``Path.resolve`` (canonicalizes symlinks,
-    so a symlink that escapes the root is rejected). Returns the resolved Path when
-    safe, else None."""
-    if not isinstance(src, str) or not src:
-        return None
-    try:
-        filepath = Path(src).resolve()
-    except (OSError, ValueError, RuntimeError):
-        return None
-    for root in _artifact_roots():
-        try:
-            filepath.relative_to(root)
-            return filepath
-        except ValueError:
-            continue
-    return None
-
-
-def _save_session_or_report(adapter, chat_session, send_event, session_id) -> None:
-    """Persist the turn, and TELL THE USER if it could not be persisted.
-
-    This used to be a bare ``adapter.save()`` in a ``finally:`` outside the
-    caller's own ``try/except``. When the write failed the exception killed the
-    background thread, ``_auto_title_if_unset`` never ran, and the user was left
-    with a chat that had streamed a correct answer and then emptied itself on
-    reload -- with no error anywhere they could see. A turn that cannot be saved
-    is a failed turn and has to look like one.
-    """
-    try:
-        adapter.save()
-    except SessionSaveError as exc:
-        logger.error("session %s: turn completed but was not saved", session_id)
-        if send_event:
-            send_event("query_error", {
-                "error": (
-                    "This answer was not saved to the conversation and will be "
-                    "gone if you reload. The result was too large to store."
-                ),
-                "agent": "session",
-                "session_id": session_id,
-            })
-        return
-    except Exception:
-        logger.exception("session %s: unexpected failure saving the turn", session_id)
-        return
-    _auto_title_if_unset(chat_session)
 
 
 @extend_schema(tags=["Nessie"])
@@ -714,10 +617,7 @@ class AssistantViewSet(viewsets.ViewSet):
         event_queue: queue.Queue[tuple[str, dict[str, Any]] | None] = queue.Queue()
         resolved_session_id = str(chat_session.session_id)
 
-        def send_event(event_type: str, data: dict[str, Any]) -> None:
-            if event_type in ("query_complete", "query_error"):
-                data.setdefault("session_id", resolved_session_id)
-            event_queue.put((event_type, data))
+        send_event = make_sse_send_event(event_queue, resolved_session_id)
 
         adapter = DictSessionAdapter(chat_session)
 
@@ -742,26 +642,19 @@ class AssistantViewSet(viewsets.ViewSet):
                 api_user = chat_config.API_USER
                 api_pass = chat_config.API_PASS
 
-        def _run_pipeline() -> None:
-            try:
-                match getattr(req, "mode", "standard"):
-                    case "plan":
-                        run_query_plan(adapter, chat_config, req.query, send_event, credentials={"api_user": api_user, "api_pass": api_pass})
-                    case _:
-                        run_query(adapter, chat_config, req.query, send_event, credentials={"api_user": api_user, "api_pass": api_pass})
-            except Exception:
-                logger.exception("Unhandled pipeline error")
-                send_event("query_error", {
-                    "error": "Internal pipeline error",
-                    "agent": "unknown",
-                    "session_id": resolved_session_id,
-                })
-            finally:
-                _save_session_or_report(
-                    adapter, chat_session, send_event, resolved_session_id)
-                event_queue.put(None)  # sentinel
-
-        thread = threading.Thread(target=_run_pipeline, daemon=True)
+        # The pipeline body runs in NessieAI/ns/turn.py (run_sse_pipeline); the
+        # thread and the SSE stream stay here.
+        thread = threading.Thread(
+            target=run_sse_pipeline,
+            kwargs=dict(
+                adapter=adapter, chat_config=chat_config, req=req,
+                send_event=send_event, api_user=api_user, api_pass=api_pass,
+                chat_session=chat_session,
+                resolved_session_id=resolved_session_id,
+                event_queue=event_queue,
+            ),
+            daemon=True,
+        )
         thread.start()
 
         def event_stream():
@@ -868,27 +761,18 @@ class AssistantViewSet(viewsets.ViewSet):
                 api_user = chat_config.API_USER
                 api_pass = chat_config.API_PASS
 
-        def _run_pipeline() -> None:
-            try:
-                match getattr(req, "mode", "standard"):
-                    case "plan":
-                        run_query_plan(adapter, chat_config, req.query, send_event, credentials={"api_user": api_user, "api_pass": api_pass})
-                    case "pipeline":
-                        run_pipeline_launch(adapter, chat_config, req.query, send_event, credentials={"api_user": api_user, "api_pass": api_pass})
-                    case _:
-                        run_query(adapter, chat_config, req.query, send_event, credentials={"api_user": api_user, "api_pass": api_pass})
-            except Exception:
-                logger.exception("Unhandled pipeline error (async)")
-                send_event("query_error", {
-                    "error": "Internal pipeline error",
-                    "agent": "unknown",
-                    "session_id": resolved_session_id,
-                })
-            finally:
-                _save_session_or_report(
-                    adapter, chat_session, send_event, resolved_session_id)
-
-        thread = threading.Thread(target=_run_pipeline, daemon=True)
+        # The pipeline body runs in NessieAI/ns/turn.py (run_async_pipeline);
+        # the thread start stays here.
+        thread = threading.Thread(
+            target=run_async_pipeline,
+            kwargs=dict(
+                adapter=adapter, chat_config=chat_config, req=req,
+                send_event=send_event, api_user=api_user, api_pass=api_pass,
+                chat_session=chat_session,
+                resolved_session_id=resolved_session_id,
+            ),
+            daemon=True,
+        )
         thread.start()
 
         return Response(

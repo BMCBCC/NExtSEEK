@@ -143,7 +143,7 @@ it is fixture source inside the string literal opened at
 `startup/tests/test_validate.py:65`.
 
 - The stack image itself copies this directory in whole (`.dockerignore:1-3`) and installs it editable, so the container imports this source rather than a divergent site-packages copy (`pyproject.toml:134-136`) and the code is baked in rather than mounted (`DEPLOYMENT.md` §0).
-- `nextseek_api/services/assistant.py:113-114` is the classic assistant ViewSet path, importing both orchestrator entry points and the config class.
+- `NessieAI/ns/turn.py:37-38` imports the config class and the three orchestrator entry points for the classic assistant ViewSet path: the `query` and `query/async` endpoints in `nextseek_api/services/assistant.py` run them on their threads through `NessieAI/ns/turn.py`.
 - `NessieAI/cc/turn.py:30` imports the same two entry points for the router-dispatched endpoint's turn, plus a chat-log helper at `NessieAI/cc/turn.py:29`; the nf-core agent is imported by the routing policy at `NessieAI/router/policy.py:21`.
 - `NessieAI/ns/granular.py:62` and the other lazy call-time imports through `NessieAI/ns/granular.py:208` are the granular per-agent ops; they are deferred deliberately, for the reason given at `NessieAI/ns/granular.py:3-7`.
 - `NessieAI/cc/cc_turn_complete.py:11` shares this package's chat-log derivation so the two writers cannot diverge, argued at `NessieAI/cc/cc_turn_complete.py:7-10`.

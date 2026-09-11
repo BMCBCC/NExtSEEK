@@ -190,7 +190,7 @@ two that constrain it are kept.
 - `startup/dev/provision_embedding_model.sh:196` and
   `scripts/attribute_api_test.sh:215-221` both write the cache directory this package
   reads, the second after deleting a copy of it that the caller cannot write.
-- What a hit here is NOT. `nextseek_api/services/assistant.py:688` defines a `delete_session`
+- What a hit here is NOT. `nextseek_api/services/assistant.py:542` defines a `delete_session`
   that is a chat ViewSet action and has no relation to
   `NessieAI/schema_rag/session.py:172`. The `min_api_endpoints.json` catalog and
   `NessieAI/tests/nessie_tests/FAMILIES.json` carry this feature's URL paths as data for an agent, not as

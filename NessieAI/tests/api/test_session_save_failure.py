@@ -87,7 +87,7 @@ class TurnSurfacesTheFailureTests(TestCase):
         self.session = ChatSession.objects.create(user=self.user)
 
     def test_a_failed_save_emits_an_error_event_instead_of_killing_the_thread(self):
-        from nextseek_api.services.assistant import _save_session_or_report
+        from NessieAI.ns.turn import _save_session_or_report
 
         events = []
         adapter = DictSessionAdapter(self.session)
@@ -104,7 +104,7 @@ class TurnSurfacesTheFailureTests(TestCase):
         self.assertIn("not saved", events[0][1]["error"].lower())
 
     def test_a_successful_save_emits_nothing_and_titles_the_chat(self):
-        from nextseek_api.services.assistant import _save_session_or_report
+        from NessieAI.ns.turn import _save_session_or_report
 
         events = []
         adapter = DictSessionAdapter(self.session)
