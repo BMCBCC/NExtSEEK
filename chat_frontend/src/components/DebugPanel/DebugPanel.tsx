@@ -15,7 +15,7 @@ interface DebugPanelProps {
 export function DebugPanel({ debugData }: DebugPanelProps) {
   if (debugData.entries.length === 0) {
     return (
-      <div className="flex h-32 items-center justify-center">
+      <div data-testid="debug-panel" className="flex h-32 items-center justify-center">
         <p className="text-base text-muted-foreground">
           Send a query to see debug output
         </p>
@@ -24,9 +24,14 @@ export function DebugPanel({ debugData }: DebugPanelProps) {
   }
 
   return (
-    <Accordion type="multiple">
+    <Accordion type="multiple" data-testid="debug-panel">
       {debugData.entries.map((entry, i) => (
-        <AccordionItem key={`${entry.agent}-${i}`} value={`${entry.agent}-${i}`}>
+        <AccordionItem
+          key={`${entry.agent}-${i}`}
+          value={`${entry.agent}-${i}`}
+          data-testid="debug-entry"
+          data-agent={entry.agent}
+        >
           <AccordionTrigger className="text-base">
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-sm">
