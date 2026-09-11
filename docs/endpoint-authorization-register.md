@@ -226,9 +226,9 @@ endpoints add a second inline auth gate inside the handler, which is noted where
 | `GET /nextseek_api/cc-assistant/upload/list/` | `CCAssistantViewSet.upload_list` | same | Owner-scoped by construction: dir built from caller creds + username at `services/cc_assistant.py:834-840` | public-to-authenticated (owner-scoped) |
 | `GET /nextseek_api/cc-assistant/artifacts/{session}/download/` | `CCAssistantViewSet.download_artifact` | same | Owner-scoped: `services/cc_assistant.py:849`, plus path guards at `:851, :862-864` | public-to-authenticated (owner-scoped) |
 | `GET /nextseek_api/cc-assistant/transcript/{session}/{turn}/` | `CCAssistantViewSet.recover_transcript` | same | Owner-scoped: `services/cc_assistant.py:894` then `:898` | public-to-authenticated (owner-scoped) |
-| `GET /nextseek_api/evaluator/tasks/{task_id}/retry-context/` | `EvaluatorViewSet.retry_context_by_task` | `IsAuthenticated, IsAdminUser` (`services/evaluator.py:420`) | **None, and no owner check**: `get(task_id=task_id)` at `services/evaluator.py:438-440`. See note I | admin-only |
-| `GET /nextseek_api/evaluator/sessions/{sid}/bundles/{bid}/retry-context/` | `EvaluatorViewSet.retry_context_by_bundle` | same | **None, and no owner check**: `services/evaluator.py:470` | admin-only |
-| `GET /nextseek_api/evaluator/runs/` | `EvaluatorViewSet.runs_list` | same | **None.** All users' tasks at `services/evaluator.py:517`; `user_id` at `:530-533` is an optional caller-supplied filter, not a predicate | admin-only |
+| `GET /nextseek_api/evaluator/tasks/{task_id}/retry-context/` | `EvaluatorViewSet.retry_context_by_task` | `IsAuthenticated, IsAdminUser` (`services/evaluator.py:91`) | **None, and no owner check**: `get(task_id=task_id)` at `services/evaluator.py:109-110`. See note I | admin-only |
+| `GET /nextseek_api/evaluator/sessions/{sid}/bundles/{bid}/retry-context/` | `EvaluatorViewSet.retry_context_by_bundle` | same | **None, and no owner check**: `services/evaluator.py:141` | admin-only |
+| `GET /nextseek_api/evaluator/runs/` | `EvaluatorViewSet.runs_list` | same | **None.** All users' tasks at `services/evaluator.py:188`; `user_id` at `:203-205` is an optional caller-supplied filter, not a predicate | admin-only |
 | `GET /nextseek_api/batch-upload/` | `BatchUploadViewSet.list` | `IsAuthenticated` (`batch_upload/views.py:101`) | Owner-scoped: `list_jobs(user_id=request.user.pk, ...)` at `batch_upload/views.py:630-632` | public-to-authenticated (owner-scoped) |
 | `GET /nextseek_api/batch-upload/status/{job_id}/` | `BatchUploadViewSet.job_status` | same | Owner-scoped: `_check_ownership` at `batch_upload/views.py:538` | public-to-authenticated (owner-scoped) |
 | `GET /nextseek_api/batch-upload/summary/{job_id}/` | `BatchUploadViewSet.summary` | same | Owner-scoped: `_check_ownership` at `batch_upload/views.py:589` | public-to-authenticated (owner-scoped) |
@@ -501,15 +501,15 @@ secondary question for the user.
 
 ### Note I: `evaluator` reads every user's history under an `is_staff` gate
 
-`EvaluatorViewSet` declares `IsAuthenticated, IsAdminUser` (`services/evaluator.py:420`). Per
+`EvaluatorViewSet` declares `IsAuthenticated, IsAdminUser` (`services/evaluator.py:91`). Per
 `nextseek_api/permissions.py:8-16`, `IsAdminUser` checks `is_staff` and is therefore equivalent
 to `IsAuthenticated` in this project. All three read actions are deliberately cross-user, with
 no owner or project predicate:
 
-- `retry_context_by_task`: `QueryTask.objects...get(task_id=task_id)` (`services/evaluator.py:438-440`)
-- `retry_context_by_bundle`: `ChatSession.objects.get(session_id=session_id)` (`services/evaluator.py:470`)
+- `retry_context_by_task`: `QueryTask.objects...get(task_id=task_id)` (`services/evaluator.py:109-110`)
+- `retry_context_by_bundle`: `ChatSession.objects.get(session_id=session_id)` (`services/evaluator.py:141`)
 - `runs_list`: `QueryTask.objects.select_related("session").order_by("-created_at")`
-  (`services/evaluator.py:517`) over all users; the `user_id` query param at `:530-533` is an
+  (`services/evaluator.py:188`) over all users; the `user_id` query param at `:203-205` is an
   optional caller-supplied filter
 
 Net: any account can read any other user's assistant query history, prompts and result bundles.

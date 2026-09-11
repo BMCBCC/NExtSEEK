@@ -49,7 +49,8 @@ together: `NessieAI/dmac_assistant/baml_src/functional_evaluator.baml` and the h
 
 Not HiBayes, although it matches an "eval" grep: the retry-context evaluator in
 `NessieAI/chat_nextseek/src/chat_nextseek/evaluator/`, its ViewSet
-`nextseek_api/services/evaluator.py` and the `/nextseek_api/evaluator/` routes.
+`nextseek_api/services/evaluator.py`, the normalizers and retry body in `NessieAI/ns/retry.py`,
+and the `/nextseek_api/evaluator/` routes.
 
 ## Surface
 

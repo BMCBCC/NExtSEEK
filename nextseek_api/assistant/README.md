@@ -63,6 +63,10 @@ Depended on by (non-test importers):
 - NessieAI engine modules that persist, through `models_db.py`: `NessieAI/cc/cc_transcript_store.py`,
   `NessieAI/router/turn_ledger.py`, `NessieAI/router/risk_overlay.py` and the `NessieAI/hibayes/`
   ORM modules (the allowed back-edges in `NessieAI/CLAUDE.md` "Boundary").
+- The engine modules Phase B moved out of the services ViewSets: `NessieAI/cc/turn.py` (through
+  `models_db.py`), `NessieAI/ns/turn.py` (`SessionSaveError` from `session_adapter.py`) and
+  `NessieAI/ns/retry.py`, the evaluator's normalizers and retry body (through `models_evaluator.py`
+  and `models_db.py`).
 - `NessieAI/chat_nextseek/src/chat_nextseek/orchestrator.py`, which imports `excel_export.py` lazily
   and behind a guard.
 - The ns-sidecar, over HTTP: it calls the granular endpoints in `CONTRACT.md` and keeps a hand copy

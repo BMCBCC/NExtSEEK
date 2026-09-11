@@ -10,6 +10,7 @@ Test commands live only in `NessieAI/tests/README.md`.
   - `nextseek_api.assistant.models_db`, from engine modules that persist (for example `NessieAI/cc/cc_transcript_store.py`, `NessieAI/router/turn_ledger.py`, the `NessieAI/hibayes/` ORM modules)
   - `nextseek_api.batch_upload.helpers`, from `NessieAI/ns/reingest_qa.py`
   - `nextseek_api.assistant.session_adapter` (for `SessionSaveError`), from `NessieAI/ns/turn.py`
+  - `nextseek_api.assistant.models_evaluator` (the retry-context response models) and `models_db` (`QueryTask` reads), from `NessieAI/ns/retry.py`
   - `seek.seekdb`, lazily, from `NessieAI/cc/cc_provision.py`
   - `nextseek_api.models`, from `NessieAI/schema_rag/`
   - `nextseek_api.assistant.excel_export`, lazily and behind a guard, from `NessieAI/chat_nextseek/src/chat_nextseek/orchestrator.py`

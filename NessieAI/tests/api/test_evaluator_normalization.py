@@ -35,8 +35,8 @@ from nextseek_api.assistant.models_evaluator import (
 if "chat_nextseek.agents" not in sys.modules:
     patch("chat_nextseek.helpers.load_prompt", return_value="(test stub)").start()
 
-from nextseek_api.services.evaluator import (
-    EvaluatorViewSet,
+from nextseek_api.services.evaluator import EvaluatorViewSet
+from NessieAI.ns.retry import (
     classify_path,
     normalize_from_task,
     normalize_from_bundle,
@@ -784,7 +784,7 @@ class TestBuildRetrySignals(TestCase):
     """Test _build_retry_signals() with production-like fixtures."""
 
     def test_search_bundle_extracts_api_observables(self):
-        from nextseek_api.services.evaluator import _build_retry_signals
+        from NessieAI.ns.retry import _build_retry_signals
         bundle = {
             "mode": "new_search",
             "api_result_full": {"ok": True, "status_code": 200, "data": {"total": 195}},
@@ -798,7 +798,7 @@ class TestBuildRetrySignals(TestCase):
         self.assertTrue(signals.has_artifacts)
 
     def test_search_bundle_api_error(self):
-        from nextseek_api.services.evaluator import _build_retry_signals
+        from NessieAI.ns.retry import _build_retry_signals
         bundle = {
             "mode": "new_search",
             "api_result_full": {"ok": False, "status_code": 500, "error": "Internal Server Error"},
@@ -808,7 +808,7 @@ class TestBuildRetrySignals(TestCase):
         self.assertEqual(signals.api_status_code, 500)
 
     def test_graph_bundle_extracts_graph_observables(self):
-        from nextseek_api.services.evaluator import _build_retry_signals
+        from NessieAI.ns.retry import _build_retry_signals
         bundle = {
             "mode": "graph_query",
             "graph_result": {"ok": True, "count": 3, "data": [{"n": 1}]},
@@ -819,7 +819,7 @@ class TestBuildRetrySignals(TestCase):
         self.assertIsNone(signals.api_ok)
 
     def test_graph_bundle_failure(self):
-        from nextseek_api.services.evaluator import _build_retry_signals
+        from NessieAI.ns.retry import _build_retry_signals
         bundle = {
             "mode": "graph_query",
             "graph_result": {"ok": False, "error": "Invalid Cypher", "count": 0},
@@ -829,7 +829,7 @@ class TestBuildRetrySignals(TestCase):
         self.assertEqual(signals.rows_returned, 0)
 
     def test_reporter_bundle_with_saved_files(self):
-        from nextseek_api.services.evaluator import _build_retry_signals
+        from NessieAI.ns.retry import _build_retry_signals
         bundle = {
             "mode": "reporter",
             "reporter_result": {"ok": True, "rows_returned": 42},
@@ -841,7 +841,7 @@ class TestBuildRetrySignals(TestCase):
         self.assertTrue(signals.has_artifacts)
 
     def test_reporter_failure(self):
-        from nextseek_api.services.evaluator import _build_retry_signals
+        from NessieAI.ns.retry import _build_retry_signals
         bundle = {
             "mode": "reporter",
             "reporter_result": {"ok": False, "error": "No UIDs found"},
@@ -851,7 +851,7 @@ class TestBuildRetrySignals(TestCase):
         self.assertIsNone(signals.rows_returned)
 
     def test_plan_bundle_all_steps_ok(self):
-        from nextseek_api.services.evaluator import _build_retry_signals
+        from NessieAI.ns.retry import _build_retry_signals
         bundle = {
             "mode": "plan",
             "plan": {"steps": [{"id": "s0"}, {"id": "s1"}, {"id": "s2"}]},
@@ -869,7 +869,7 @@ class TestBuildRetrySignals(TestCase):
         self.assertIsNone(signals.plan_stop_reason)
 
     def test_plan_bundle_step_failed_early(self):
-        from nextseek_api.services.evaluator import _build_retry_signals
+        from NessieAI.ns.retry import _build_retry_signals
         bundle = {
             "mode": "plan",
             "plan": {"steps": [{"id": "s0"}, {"id": "s1"}, {"id": "s2"}]},
@@ -886,7 +886,7 @@ class TestBuildRetrySignals(TestCase):
         self.assertEqual(signals.plan_stop_reason, "API returned 404")
 
     def test_plan_bundle_incomplete_no_failure(self):
-        from nextseek_api.services.evaluator import _build_retry_signals
+        from NessieAI.ns.retry import _build_retry_signals
         bundle = {
             "mode": "plan",
             "plan": {"steps": [{"id": "s0"}, {"id": "s1"}]},
@@ -896,7 +896,7 @@ class TestBuildRetrySignals(TestCase):
         self.assertEqual(signals.plan_stop_reason, "incomplete")
 
     def test_error_task_extracts_error_info(self):
-        from nextseek_api.services.evaluator import _build_retry_signals
+        from NessieAI.ns.retry import _build_retry_signals
         result = {"error": "LLM timeout after 30 seconds", "agent": "router"}
         signals = _build_retry_signals("error", result, None, None)
         self.assertTrue(signals.query_error_present)
@@ -904,7 +904,7 @@ class TestBuildRetrySignals(TestCase):
         self.assertFalse(signals.bundle_present)
 
     def test_no_bundle_no_result(self):
-        from nextseek_api.services.evaluator import _build_retry_signals
+        from NessieAI.ns.retry import _build_retry_signals
         signals = _build_retry_signals("pending", None, None, None)
         self.assertEqual(signals.assistant_status, "pending")
         self.assertFalse(signals.bundle_present)
@@ -912,7 +912,7 @@ class TestBuildRetrySignals(TestCase):
         self.assertIsNone(signals.graph_ok)
 
     def test_has_prior_context_true(self):
-        from nextseek_api.services.evaluator import _build_retry_signals
+        from NessieAI.ns.retry import _build_retry_signals
         user = User.objects.create_user(username="siguser", password="pass")
         session = ChatSession.objects.create(
             user=user,
@@ -926,7 +926,7 @@ class TestBuildRetrySignals(TestCase):
         self.assertTrue(signals.has_prior_context)
 
     def test_has_prior_context_false_single_bundle(self):
-        from nextseek_api.services.evaluator import _build_retry_signals
+        from NessieAI.ns.retry import _build_retry_signals
         user = User.objects.create_user(username="siguser2", password="pass")
         session = ChatSession.objects.create(
             user=user,
@@ -940,14 +940,14 @@ class TestBuildRetrySignals(TestCase):
         self.assertFalse(signals.has_prior_context)
 
     def test_raw_error_excerpt_truncated(self):
-        from nextseek_api.services.evaluator import _build_retry_signals
+        from NessieAI.ns.retry import _build_retry_signals
         long_error = "x" * 500
         result = {"error": long_error}
         signals = _build_retry_signals("error", result, None, None)
         self.assertEqual(len(signals.raw_error_excerpt), 200)
 
     def test_refine_last_search_uses_same_path_as_new_search(self):
-        from nextseek_api.services.evaluator import _build_retry_signals
+        from NessieAI.ns.retry import _build_retry_signals
         bundle = {
             "mode": "refine_last_search",
             "api_result_full": {"ok": True, "status_code": 200, "data": {"total": 50}},
@@ -958,7 +958,7 @@ class TestBuildRetrySignals(TestCase):
         self.assertEqual(signals.path_mode, "refine_last_search")
 
     def test_plan_mode_rows_returned_is_none(self):
-        from nextseek_api.services.evaluator import _build_retry_signals
+        from NessieAI.ns.retry import _build_retry_signals
         bundle = {
             "mode": "plan",
             "plan": {"steps": [{"id": "s0"}]},

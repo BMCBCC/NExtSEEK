@@ -148,7 +148,7 @@ it is fixture source inside the string literal opened at
 - `NessieAI/ns/granular.py:62` and the other lazy call-time imports through `NessieAI/ns/granular.py:208` are the granular per-agent ops; they are deferred deliberately, for the reason given at `NessieAI/ns/granular.py:3-7`.
 - `NessieAI/cc/cc_turn_complete.py:11` shares this package's chat-log derivation so the two writers cannot diverge, argued at `NessieAI/cc/cc_turn_complete.py:7-10`.
 - `NessieAI/cc/step7_llm_cost_ledger.py:88` reads provider token usage out of this package's LLM clients.
-- `nextseek_api/services/evaluator.py:395` imports the orchestrator inside a function body.
+- `NessieAI/ns/retry.py:378` (`_get_orchestrator`) imports the orchestrator inside a function body, for the evaluator retry endpoint in `nextseek_api/services/evaluator.py`.
 - `startup/dev/lane_local_settings.py:19` constructs the Django-wide config singleton at settings-import time, and `startup/dev/lane_local_settings.py:69` optionally builds a second one for the production toggle.
 - `NessieAI/build_tools/gen_op_surfaces/route_capabilities.py:35` reads the capabilities document as generator input, not as an import.
 - See `NessieAI/chat_nextseek/CLAUDE.md` for what breaks when any of these edges moves.

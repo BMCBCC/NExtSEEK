@@ -90,6 +90,15 @@ BACK_EDGE_ALLOWLIST: dict[str, frozenset[str]] = {
     "NessieAI/hibayes/task6_app.py": frozenset({"nextseek_api.assistant.models_db"}),
     # NS engine: the upload helper reingest QA reuses.
     "NessieAI/ns/reingest_qa.py": frozenset({"nextseek_api.batch_upload.helpers"}),
+    # The evaluator's retry engine (Phase B, moved from
+    # nextseek_api/services/evaluator.py, which already held both edges): the
+    # pydantic retry-context response models it builds, and QueryTask, read to
+    # find the task that produced a bundle. The ViewSet builds the adapter and
+    # the event callback and hands them in.
+    "NessieAI/ns/retry.py": frozenset({
+        "nextseek_api.assistant.models_db",
+        "nextseek_api.assistant.models_evaluator",
+    }),
     # The NS turn (Phase B, moved from nextseek_api/services/assistant.py, which
     # already held this edge): _save_session_or_report catches SessionSaveError,
     # the error a failed ChatSession save raises, to tell the user the turn was

@@ -64,8 +64,8 @@ as a detail lookup (`nextseek_api/services/assays.py:41`).
 `nextseek_api/services/cc_assistant.py:86` with 8. Their query endpoints share a shape
 (create a `QueryTask`, hand a callback to the engine, hand the work to a background thread,
 return 202) and their overlap is deliberate reuse rather than a fork, imported at
-`nextseek_api/services/cc_assistant.py:53-57`. `nextseek_api/services/evaluator.py:413`
-reads what those two wrote back out, normalized for retry.
+`nextseek_api/services/cc_assistant.py:53-57`. `nextseek_api/services/evaluator.py:79`
+reads what those two wrote back out, normalized for retry by `NessieAI/ns/retry.py`.
 
 **The library half.** Eight modules with no ViewSet, grouped by what consumes them.
 
@@ -140,8 +140,9 @@ modules and splitting module-scope imports from in-function ones:
 - The NS engine in `NessieAI/chat_nextseek/` (import name `chat_nextseek`), imported at
   module scope by none of the 25 modules. `nextseek_api/services/assistant.py` reaches it
   through `NessieAI/ns/turn.py` (`nextseek_api/services/assistant.py:96-106` imports the turn
-  and the artifact helpers; its own `ChatConfig` import is `TYPE_CHECKING`-only), and
-  `nextseek_api/services/cc_assistant.py` through `NessieAI/cc/turn.py`.
+  and the artifact helpers; its own `ChatConfig` import is `TYPE_CHECKING`-only),
+  `nextseek_api/services/cc_assistant.py` through `NessieAI/cc/turn.py`, and
+  `nextseek_api/services/evaluator.py` only lazily, through `NessieAI/ns/retry.py` (`run_retry`).
 - The Container-CC engine, `NessieAI.cc`: `nextseek_api/services/cc_assistant.py:62-63` imports the turn
   (`NessieAI/cc/turn.py`, which in turn imports `NessieAI.router` and the NS engine) and
   `cc_provision`, and four actions import further `NessieAI.cc` modules in-function;
