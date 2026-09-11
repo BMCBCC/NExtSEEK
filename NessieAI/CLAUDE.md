@@ -7,7 +7,7 @@ Test commands live only in `NessieAI/tests/README.md`.
 
 - NessieAI declares no models, migrations, AppConfig or app label. Engine code that needs the ORM imports `nextseek_api.assistant.models_db` directly and runs only inside a configured Django process.
 - Allowed back-edges into the API side, and no others:
-  - `nextseek_api.assistant.models_db`, from engine modules that persist (for example `NessieAI/cc/cc_transcript_store.py`, `NessieAI/router/turn_ledger.py`, the `NessieAI/hibayes/` ORM modules)
+  - `nextseek_api.assistant.models_db`, from engine modules that persist (for example `NessieAI/cc/cc_transcript_store.py`, `NessieAI/cc/turn.py`, `NessieAI/router/turn_ledger.py`, the `NessieAI/hibayes/` ORM modules)
   - `nextseek_api.batch_upload.helpers`, from `NessieAI/ns/reingest_qa.py`
   - `nextseek_api.assistant.session_adapter` (for `SessionSaveError`), from `NessieAI/ns/turn.py`
   - `nextseek_api.assistant.models_evaluator` (the retry-context response models) and `models_db` (`QueryTask` reads), from `NessieAI/ns/retry.py`
@@ -15,11 +15,13 @@ Test commands live only in `NessieAI/tests/README.md`.
   - `nextseek_api.models`, from `NessieAI/schema_rag/`
   - `nextseek_api.assistant.excel_export`, lazily and behind a guard, from `NessieAI/chat_nextseek/src/chat_nextseek/orchestrator.py`
   - `nextseek_api.conftest` (its fixtures), from `NessieAI/tests/nessie_tests/tests_container/`
+- No engine module imports `nextseek_api.services`: that would be the API calling itself through the engine. The ViewSets there call the engine (`NessieAI/router/policy.py`, `NessieAI/cc/turn.py`, `NessieAI/ns/{turn,artifacts,retry}.py`) and hand in the host seams (the session adapter, the event callback, the SEEK credentials). `policy.py` and `artifacts.py` have no back-edge at all.
+- Importing the router does not load `NessieAI/hibayes/`: `NessieAI/router/posterior_selector.py` imports the generation store only inside `get_active_snapshot` (guard: `NessieAI/tests/router/test_router_import_is_lazy.py`). `NessieAI/router/route_monitoring.py` still imports HiBayes at module scope; nothing on the router's import path imports it.
 - Three engine-to-harness imports are frozen, and no new one may be added:
   - `NessieAI/cc/op_registry/paired_evidence.py` imports the bayes harness
   - `NessieAI/build_tools/gen_op_surfaces/route_capabilities.py` imports the corpus, export and runner
   - `NessieAI/hibayes/human_grade_fit.py` imports `bayes_manifest`, lazily
-- `NessieAI/tests/api/test_nessie_boundaries.py` enforces both lists for `cc`, `router`, `hibayes`, `ns`, `schema_rag` and `build_tools`; chat_nextseek and the tests are not scanned. It fails on a new back-edge, a new import of `NessieAI.tests`, any `sys.path.insert` of the NessieAI directory, and any bare `e2e` or `pathsetup` import.
+- `NessieAI/tests/api/test_nessie_boundaries.py` enforces both lists for `cc`, `router`, `hibayes`, `ns`, `schema_rag` and `build_tools`; chat_nextseek and the tests are not scanned. It fails on a new back-edge, a new import of `NessieAI.tests`, a listed edge that no longer exists (so both lists stay exact), any `sys.path.insert` of the NessieAI directory, and any bare `e2e` or `pathsetup` import.
 
 ## Invariants that span units
 

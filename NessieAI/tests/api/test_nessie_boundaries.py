@@ -1,4 +1,4 @@
-"""The NessieAI / API boundary, frozen as of the Phase A move.
+"""The NessieAI / API boundary, frozen at the Phase A move and amended by Phase B.
 
 NessieAI declares no models, migrations, AppConfig or app label. Its engine
 packages may still reach back into the Django project, and a few engine and
@@ -9,10 +9,14 @@ unnoticed:
 - back-edges: an engine module importing ``nextseek_api``, ``seek`` or
   ``dmac``. The sanctioned one is ``nextseek_api.assistant.models_db`` (the
   ORM models live under the ``nextseek_api`` app label); the rest predate the
-  move.
+  move. Phase B moved the engine half of ``nextseek_api/services`` into
+  ``router/policy.py``, ``cc/turn.py`` and ``ns/{turn,artifacts,retry}.py``
+  and listed only edges the services code already held. None of them may
+  import ``nextseek_api.services``: that would be the API calling itself
+  through the engine.
 - engine-to-harness edges: an engine module importing ``NessieAI.tests``.
-  Exactly three modules do so today (audit decision 14). Phase B may replace
-  them with a non-test harness library and shrink this list to zero.
+  Exactly three modules do so (audit decision 14). A non-test harness
+  library would shrink this list to zero; that extraction has not been done.
 
 The allowlists are exact: a listed edge that disappears fails too, so the
 list only ever shrinks by an edit that removes the entry.
