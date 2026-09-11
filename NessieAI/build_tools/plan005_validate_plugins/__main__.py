@@ -5,13 +5,14 @@ import argparse
 import sys
 from pathlib import Path
 
+from NessieAI import paths
 from NessieAI.build_tools.plan005_validate_plugins.validate import (
     IMMUTABLE_VALIDATOR_IMAGE,
     PluginValidationError,
     validate_installed_plugins,
 )
 
-_DEFAULT_REPO_ROOT = Path(__file__).resolve().parents[2]
+_DEFAULT_REPO_ROOT = paths.REPO_ROOT
 EXIT_OK = 0
 EXIT_ERROR = 1
 
@@ -24,7 +25,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--repo-root",
         type=Path,
         required=True,
-        help="Repository root containing docker/cc-runtime plugin trees.",
+        help="Repository root containing the NessieAI/docker/cc-runtime plugin trees.",
     )
     parser.add_argument(
         "--validator-image",

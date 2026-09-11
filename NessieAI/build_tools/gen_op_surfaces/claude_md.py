@@ -10,8 +10,10 @@ from NessieAI.build_tools.gen_op_surfaces.constants import (
     CLAUDE_PLUGINS_END,
     CLAUDE_SKILLS_BEGIN,
     CLAUDE_SKILLS_END,
+    DOCKERFILE_REL,
     NEXTSEEK_DOCS_BEGIN,
     NEXTSEEK_DOCS_END,
+    PLUGINS_ROOT_REL,
 )
 from NessieAI.cc.op_registry.install_oracle import (
     InstallDiscovery,
@@ -20,8 +22,8 @@ from NessieAI.cc.op_registry.install_oracle import (
 from NessieAI.cc.op_registry.models import OpSpec
 from NessieAI.cc.op_registry.ops import OPS
 
-_PLUGINS_ROOT_REL = Path("docker/cc-runtime/build_context/plugins")
-_DOCKERFILE_REL = Path("docker/cc-runtime/Dockerfile")
+_PLUGINS_ROOT_REL = Path(PLUGINS_ROOT_REL)
+_DOCKERFILE_REL = Path(DOCKERFILE_REL)
 
 
 class ClaudeMdDocsError(ValueError):

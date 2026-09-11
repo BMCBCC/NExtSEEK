@@ -118,12 +118,12 @@ services:
   # DMAC_PROXY_CONTAINER in test_cc_realstack.py) — never for in-network URLs.
   bedrock-proxy:
     build:
-      context: ./docker/bedrock-proxy
+      context: ./NessieAI/docker/bedrock-proxy
     image: nextseek-bedrock-proxy:latest
     container_name: dmac-bedrock-proxy
     restart: always
     env_file:
-      - ./docker/bedrock-proxy/proxy-secret.env
+      - ./NessieAI/docker/bedrock-proxy/proxy-secret.env
     networks:
       # On dmac-cc-net (internal, F1) so the agent reaches it, AND on the
       # dedicated dmac-cc-egress network so the proxy itself can still reach
@@ -150,10 +150,10 @@ services:
   # never a networked or long-running container.
   cc-agent:
     build:
-      context: ./docker/cc-runtime
+      context: ./NessieAI/docker/cc-runtime
 # BEGIN PLAN005-GEN:additional-contexts
       additional_contexts:
-        chat_nextseek: ./chat_nextseek
+        chat_nextseek: ./NessieAI/chat_nextseek
 # END PLAN005-GEN:additional-contexts
     image: dmac-assistant:poc
     network_mode: none
@@ -161,7 +161,7 @@ services:
 
   # NS shared-cred sidecar (G7-11, Task 13): forwards granular per-request
   # NExtSEEK ops over a WebSocket the agent's nextseek plugin dials directly
-  # (docker/cc-runtime/build_context/plugins/nextseek/bin/_sidecar_client.py).
+  # (NessieAI/docker/cc-runtime/build_context/plugins/nextseek/bin/_sidecar_client.py).
   # THE COMPOSE SERVICE NAME IS THE LOAD-BEARING IDENTITY: `nextseek-sidecar`
   # MUST equal `_sidecar_client.py`'s `NEXTSEEK_SIDECAR_HOST` default — that
   # is the Docker DNS alias agents actually resolve. `container_name:
@@ -185,7 +185,7 @@ services:
   # whose `VolumeOptions.Subpath` backing dir is absent). The sidecar can write
   # ONLY under `_staging/` — never a `{project}/{user}/` tree — so it cannot
   # deliver cross-user by construction; the trusted `cc_engine`/management
-  # sweep (`nextseek_api/cc_assistant/cc_staging.py`) moves completed
+  # sweep (`NessieAI/cc/cc_staging.py`) moves completed
   # `.complete`-marked artifacts into the requesting user's own subtree.
   #
   # COMPOSE-FLOOR CONSEQUENCE (SPEC-7 conditional, PLAN-7 Task 2 iter-1 M-3):
@@ -194,7 +194,7 @@ services:
   # via `compose_config.json`). Host Compose is well above 2.26.
   nextseek-sidecar:
     build:
-      context: ./docker/ns-sidecar
+      context: ./NessieAI/docker/ns-sidecar
     image: nextseek-ns-sidecar:latest
     container_name: nextseek-sidecar
     restart: unless-stopped
@@ -216,7 +216,7 @@ services:
       - dmac-cc-net
     # Cold-start tolerance (Task 9/10 bring-up evidence must not capture a
     # red-herring "unhealthy"): the sidecar's healthcheck GETs through
-    # nginx -> Django (see docker/ns-sidecar/app/healthcheck.py), which is
+    # nginx -> Django (see NessieAI/docker/ns-sidecar/app/healthcheck.py), which is
     # legitimately unhealthy until the whole stack finishes booting.
     # start_period + retries lifted from the upstream sidecar compose
     # fragment's tolerance (dmac-assistant/sidecar/docker-compose.yml

@@ -58,7 +58,7 @@ COPY --from=chat_nextseek src/chat_nextseek/context/capabilities.md /app/plugins
 # Without this, an image can ship with an empty /app/plugins/nextseek/context/
 # and degrade silently at runtime.
 RUN test -n "$(ls /app/plugins/nextseek/context/min_*.json 2>/dev/null)" || \
-    (echo "ERROR: no min_*.json catalog files in /app/plugins/nextseek/context/; see docker/cc-runtime/PORT-EVIDENCE.json for the generation attempt/fallback record" >&2 && exit 1)
+    (echo "ERROR: no min_*.json catalog files in /app/plugins/nextseek/context/; see NessieAI/docker/cc-runtime/PORT-EVIDENCE.json for the generation attempt/fallback record" >&2 && exit 1)
 COPY build_context/docs/nextseek-api/ /app/docs/nextseek-api/
 COPY docs/nextseek/ /app/docs/nextseek/
 COPY container/CLAUDE.md /app/CLAUDE.md

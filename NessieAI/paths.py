@@ -30,6 +30,7 @@ __all__ = [
     "BEDROCK_PROXY_DIR",
     "READ_SAFE_ENDPOINTS",
     "rebase",
+    "repo_relative",
 ]
 
 # NessieAI/paths.py -> parents[0] is NessieAI/, parents[1] is the repo root
@@ -81,3 +82,12 @@ def rebase(path: Path, root: Path) -> Path:
     outside REPO_ROOT.
     """
     return Path(root) / Path(path).relative_to(REPO_ROOT)
+
+
+def repo_relative(path: Path) -> str:
+    """Return ``path``, one of the constants above, as a repo-relative POSIX string.
+
+    For generators whose targets are named relative to a ``--root`` checkout
+    and joined onto it later. Raises ValueError for a path outside REPO_ROOT.
+    """
+    return Path(path).relative_to(REPO_ROOT).as_posix()

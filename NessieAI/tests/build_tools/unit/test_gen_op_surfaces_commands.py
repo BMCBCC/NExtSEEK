@@ -11,7 +11,12 @@ from NessieAI.build_tools.gen_op_surfaces.commands import (
     emit_command_ops_block,
     parse_command_ops_block,
 )
-from NessieAI.build_tools.gen_op_surfaces.constants import COMMAND_OPS_BEGIN, COMMAND_OPS_END
+from NessieAI.build_tools.gen_op_surfaces.constants import (
+    COMMAND_OPS_BEGIN,
+    COMMAND_OPS_END,
+    DOCKERFILE_REL,
+    PLUGINS_ROOT_REL,
+)
 from NessieAI.build_tools.gen_op_surfaces.emit import (
     SurfaceTarget,
     check_surfaces,
@@ -53,8 +58,8 @@ def test_parse_command_ops_block_returns_exact_set():
 
 def test_emit_command_ops_block_changes_exactly_on_add_remove(tmp_path: Path):
     repo = tmp_path / "repo"
-    plugins_root = repo / "docker/cc-runtime/build_context/plugins"
-    dockerfile = repo / "docker/cc-runtime/Dockerfile"
+    plugins_root = repo / PLUGINS_ROOT_REL
+    dockerfile = repo / DOCKERFILE_REL
     plugin_dir = plugins_root / "alpha-plugin"
     plugin_dir.mkdir(parents=True)
     manifest_dir = plugin_dir / ".claude-plugin"
@@ -130,7 +135,7 @@ def test_emit_command_ops_block_changes_exactly_on_add_remove(tmp_path: Path):
 def test_command_surface_is_registered_for_nextseek_command():
     rel_paths = [target.rel_path for target in surface_targets(REPO_ROOT)]
     assert (
-        "docker/cc-runtime/build_context/plugins/nextseek/commands/nextseek.md"
+        f"{PLUGINS_ROOT_REL}/nextseek/commands/nextseek.md"
         in rel_paths
     )
 
@@ -150,7 +155,7 @@ def test_ops_and_export_do_not_load_plugin_json_for_discovery():
 
 def test_write_surfaces_updates_command_block_once(tmp_path: Path):
     repo = tmp_path / "repo"
-    rel = "docker/cc-runtime/build_context/plugins/alpha-plugin/commands/nextseek.md"
+    rel = f"{PLUGINS_ROOT_REL}/alpha-plugin/commands/nextseek.md"
     command_path = repo / rel
     command_path.parent.mkdir(parents=True)
     command_path.write_text(
@@ -168,7 +173,7 @@ def test_write_surfaces_updates_command_block_once(tmp_path: Path):
         + "\n",
         encoding="utf-8",
     )
-    plugins_root = repo / "docker/cc-runtime/build_context/plugins"
+    plugins_root = repo / PLUGINS_ROOT_REL
     plugin_dir = plugins_root / "alpha-plugin"
     manifest_dir = plugin_dir / ".claude-plugin"
     manifest_dir.mkdir(parents=True)
@@ -180,7 +185,7 @@ def test_write_surfaces_updates_command_block_once(tmp_path: Path):
     shim.parent.mkdir(parents=True)
     shim.write_text("#!/bin/sh\n", encoding="utf-8")
     shim.chmod(stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
-    dockerfile = repo / "docker/cc-runtime/Dockerfile"
+    dockerfile = repo / DOCKERFILE_REL
     dockerfile.parent.mkdir(parents=True, exist_ok=True)
     dockerfile.write_text(
         "\n".join(

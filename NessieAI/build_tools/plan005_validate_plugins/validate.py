@@ -6,6 +6,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+from NessieAI import paths
 from NessieAI.build_tools.plan005_validate_plugins.docker_runner import run_claude_plugin_validate
 from NessieAI.cc.op_registry.install_oracle import (
     InstallOracleError,
@@ -16,8 +17,9 @@ from NessieAI.cc.op_registry.plugin_identity import (
     load_and_validate_manifest,
 )
 
-DEFAULT_PLUGINS_ROOT_REL = Path("docker/cc-runtime/build_context/plugins")
-DEFAULT_DOCKERFILE_REL = Path("docker/cc-runtime/Dockerfile")
+# Repo-relative, joined onto --repo-root.
+DEFAULT_PLUGINS_ROOT_REL = Path(paths.repo_relative(paths.CC_PLUGIN_DIR.parent))
+DEFAULT_DOCKERFILE_REL = Path(paths.repo_relative(paths.CC_RUNTIME_DIR / "Dockerfile"))
 IMMUTABLE_VALIDATOR_IMAGE = (
     "sha256:6f4f309cfe24f24047590251ba0ad34ff0c0ed7868b58b080f97b44ed800654c"
 )

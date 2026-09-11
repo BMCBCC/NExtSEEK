@@ -8,6 +8,8 @@ from NessieAI.build_tools.gen_op_surfaces.constants import (
     CANONICAL_CAPABILITIES_IN_CONTEXT,
     IMAGE_CAPABILITIES_PATH,
     NAMED_CAPABILITIES_CONTEXT,
+    NAMED_CAPABILITIES_CONTEXT_PATH,
+    PLUGINS_ROOT_REL,
 )
 from NessieAI.cc.op_registry.install_oracle import (
     PLUGIN_COPY_RE,
@@ -16,7 +18,7 @@ from NessieAI.cc.op_registry.install_oracle import (
     manifest_plugin_dirs,
 )
 
-_PLUGINS_ROOT_REL = Path("docker/cc-runtime/build_context/plugins")
+_PLUGINS_ROOT_REL = Path(PLUGINS_ROOT_REL)
 _COPY_RE = re.compile(
     r"^COPY\s+(?P<flags>(?:--\S+\s+)*)(?P<src>\S+)\s+(?P<dest>\S+)\s*$"
 )
@@ -63,10 +65,10 @@ def emit_capabilities_copy_block(_repo_root: Path) -> str:
 
 
 def emit_additional_contexts_block(_repo_root: Path) -> str:
-    """Declare the vendored chat_nextseek named additional build context."""
+    """Declare the chat_nextseek named additional build context at its tree."""
     return (
         "      additional_contexts:\n"
-        f"        {NAMED_CAPABILITIES_CONTEXT}: ./{NAMED_CAPABILITIES_CONTEXT}\n"
+        f"        {NAMED_CAPABILITIES_CONTEXT}: ./{NAMED_CAPABILITIES_CONTEXT_PATH}\n"
     )
 
 
@@ -164,7 +166,7 @@ def validate_compose_named_context(
     repo_root: Path,
     contexts: dict[str, str],
 ) -> None:
-    """Require chat_nextseek to resolve to the vendored tree inside repo_root."""
+    """Require the chat_nextseek context to resolve to its tree inside repo_root."""
     if NAMED_CAPABILITIES_CONTEXT not in contexts:
         raise ComposeContextError("missing named context chat_nextseek")
     raw = contexts[NAMED_CAPABILITIES_CONTEXT]
@@ -179,7 +181,7 @@ def validate_compose_named_context(
         raise ComposeContextError(
             f"named context traversal is forbidden: {raw}"
         )
-    expected = (repo_root / NAMED_CAPABILITIES_CONTEXT).resolve()
+    expected = (repo_root / NAMED_CAPABILITIES_CONTEXT_PATH).resolve()
     resolved = (repo_root / raw).resolve()
     try:
         resolved.relative_to(repo_root.resolve())
@@ -189,8 +191,8 @@ def validate_compose_named_context(
         ) from exc
     if resolved != expected:
         raise ComposeContextError(
-            "named context does not resolve to vendored chat_nextseek tree: "
-            f"{raw} -> {resolved}"
+            f"named context does not resolve to the {NAMED_CAPABILITIES_CONTEXT_PATH} "
+            f"tree: {raw} -> {resolved}"
         )
     if not resolved.is_dir():
         raise ComposeContextError(

@@ -4,6 +4,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from NessieAI.build_tools.gen_op_surfaces.constants import (
+    DOCKERFILE_REL,
+    PLUGINS_ROOT_REL,
     SKILL_OPS_BEGIN,
     SKILL_OPS_END,
     SKILL_OPS_FIELDS,
@@ -12,8 +14,8 @@ from NessieAI.cc.op_registry.install_oracle import discover_install
 from NessieAI.cc.op_registry.models import GateClass, OpSpec, Transport
 from NessieAI.cc.op_registry.ops import OPS
 
-_PLUGINS_ROOT_REL = Path("docker/cc-runtime/build_context/plugins")
-_DOCKERFILE_REL = Path("docker/cc-runtime/Dockerfile")
+_PLUGINS_ROOT_REL = Path(PLUGINS_ROOT_REL)
+_DOCKERFILE_REL = Path(DOCKERFILE_REL)
 _TRUE = "true"
 _FALSE = "false"
 

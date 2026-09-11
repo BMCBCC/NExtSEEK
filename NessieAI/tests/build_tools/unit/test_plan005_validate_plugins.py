@@ -14,6 +14,8 @@ import pytest
 
 from NessieAI import paths
 from NessieAI.build_tools.plan005_validate_plugins.validate import (
+    DEFAULT_DOCKERFILE_REL,
+    DEFAULT_PLUGINS_ROOT_REL,
     IMMUTABLE_VALIDATOR_IMAGE,
     PluginValidationError,
     hash_plugin_tree,
@@ -72,8 +74,8 @@ def _seed_plugin_tree(
 
 def _fixture_repo(tmp_path: Path, *, plugins: tuple[str, ...]) -> Path:
     repo = tmp_path / "repo"
-    plugins_root = repo / "docker/cc-runtime/build_context/plugins"
-    dockerfile = repo / "docker/cc-runtime/Dockerfile"
+    plugins_root = repo / DEFAULT_PLUGINS_ROOT_REL
+    dockerfile = repo / DEFAULT_DOCKERFILE_REL
     dockerfile.parent.mkdir(parents=True)
     for plugin in plugins:
         _seed_plugin_tree(plugins_root, plugin)
@@ -108,8 +110,8 @@ def test_validate_skips_installed_plugin_is_red(tmp_path: Path):
         wraps=discover_install,
     ) as wrapped:
         real = wrapped(
-            plugins_root=repo / "docker/cc-runtime/build_context/plugins",
-            dockerfile_path=repo / "docker/cc-runtime/Dockerfile",
+            plugins_root=repo / DEFAULT_PLUGINS_ROOT_REL,
+            dockerfile_path=repo / DEFAULT_DOCKERFILE_REL,
         )
         trimmed = type(real)(
             plugins=real.plugins,
@@ -132,7 +134,8 @@ def test_validate_invalid_manifest_is_red(tmp_path: Path):
     repo = _fixture_repo(tmp_path, plugins=("alpha-plugin",))
     manifest = (
         repo
-        / "docker/cc-runtime/build_context/plugins/alpha-plugin/.claude-plugin/plugin.json"
+        / DEFAULT_PLUGINS_ROOT_REL
+        / "alpha-plugin/.claude-plugin/plugin.json"
     )
     manifest.write_text(
         json.dumps(
@@ -164,8 +167,8 @@ def test_validate_second_plugin_without_code_change(tmp_path: Path):
 def test_validate_duplicate_plugin_validation_is_red(tmp_path: Path):
     repo = _fixture_repo(tmp_path, plugins=("alpha-plugin",))
     discovery = discover_install(
-        plugins_root=repo / "docker/cc-runtime/build_context/plugins",
-        dockerfile_path=repo / "docker/cc-runtime/Dockerfile",
+        plugins_root=repo / DEFAULT_PLUGINS_ROOT_REL,
+        dockerfile_path=repo / DEFAULT_DOCKERFILE_REL,
     )
     dup_manifests = discovery.manifests + discovery.manifests
     dup_discovery = type(discovery)(
@@ -187,7 +190,7 @@ def test_validate_duplicate_plugin_validation_is_red(tmp_path: Path):
 
 def test_validate_plugin_tree_change_after_docker_is_red(tmp_path: Path):
     repo = _fixture_repo(tmp_path, plugins=("alpha-plugin",))
-    plugin_dir = repo / "docker/cc-runtime/build_context/plugins/alpha-plugin"
+    plugin_dir = repo / DEFAULT_PLUGINS_ROOT_REL / "alpha-plugin"
 
     def _mutate_after_validate(**kwargs):
         (plugin_dir / "mutated.txt").write_text("changed", encoding="utf-8")
@@ -204,8 +207,8 @@ def test_validate_plugin_tree_change_after_docker_is_red(tmp_path: Path):
 def test_outcome_plugins_and_hashes_match_oracle(tmp_path: Path):
     repo = _fixture_repo(tmp_path, plugins=("alpha-plugin", "beta-plugin"))
     discovery = discover_install(
-        plugins_root=repo / "docker/cc-runtime/build_context/plugins",
-        dockerfile_path=repo / "docker/cc-runtime/Dockerfile",
+        plugins_root=repo / DEFAULT_PLUGINS_ROOT_REL,
+        dockerfile_path=repo / DEFAULT_DOCKERFILE_REL,
     )
     with mock.patch(
         "NessieAI.build_tools.plan005_validate_plugins.validate.run_claude_plugin_validate",
@@ -214,7 +217,7 @@ def test_outcome_plugins_and_hashes_match_oracle(tmp_path: Path):
         outcome = validate_installed_plugins(repo_root=repo, skip_docker=False)
     assert outcome.plugins == discovery.plugins
     for plugin in discovery.plugins:
-        plugin_dir = repo / "docker/cc-runtime/build_context/plugins" / plugin
+        plugin_dir = repo / DEFAULT_PLUGINS_ROOT_REL / plugin
         assert outcome.tree_hashes[plugin] == hash_plugin_tree(plugin_dir)
 
 

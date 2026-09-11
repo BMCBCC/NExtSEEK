@@ -190,7 +190,7 @@ def cc_runner_available() -> tuple[bool, str]:
         return False, (
             f"CC image '{DEFAULT_IMAGE}' not found "
             "(run `docker compose build cc-agent` to build/tag it compose-natively "
-            "from docker/cc-runtime/, or set NEXTSEEK_CC_IMAGE to an existing image)"
+            "from NessieAI/docker/cc-runtime/, or set NEXTSEEK_CC_IMAGE to an existing image)"
         )
     # I-17 / audit A1: the bridge NEVER creates the network — a missing one is a
     # deployment error. Gating here keeps the de-credentialed agent off the shared
@@ -249,7 +249,7 @@ _LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "0.0.0.0"})
 _NEXTSEEK_SERVICE_HOST = "nextseek_nginx"
 
 # Step 2 (G7-11, Task 13): the agent's nextseek plugin dials the NS shared-cred
-# sidecar directly over a WebSocket (docker/cc-runtime/build_context/plugins/
+# sidecar directly over a WebSocket (NessieAI/docker/cc-runtime/build_context/plugins/
 # nextseek/bin/_sidecar_client.py — NEXTSEEK_SIDECAR_HOST/NEXTSEEK_SIDECAR_PORT
 # defaults). These two literals MUST match the compose SERVICE name
 # (docker-compose.yml's ``nextseek-sidecar:`` key — the Docker DNS alias

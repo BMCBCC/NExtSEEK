@@ -36,7 +36,10 @@ from NessieAI.build_tools.gen_op_surfaces.constants import (
     DOCKERFILE_REL,
     NEXTSEEK_DOCS_BEGIN,
     NEXTSEEK_DOCS_END,
+    NEXTSEEK_DOCS_PIN_CLAUDE_MD_REL,
+    NEXTSEEK_DOCS_PIN_CONTENT_HASH_REL,
     NEXTSEEK_DOCS_PIN_REF,
+    PLUGINS_ROOT_REL,
 )
 from NessieAI.build_tools.gen_op_surfaces.emit import (
     SurfaceTarget,
@@ -125,7 +128,7 @@ def _seed_claude_repo(
     plugin_names: tuple[str, ...] = ("alpha-plugin",),
 ) -> Path:
     repo = tmp_path / "repo"
-    plugins_root = repo / "docker/cc-runtime/build_context/plugins"
+    plugins_root = repo / PLUGINS_ROOT_REL
     plugins_root.mkdir(parents=True)
     dockerfile_lines = ["FROM scratch"]
     for name in plugin_names:
@@ -226,7 +229,7 @@ def _independent_expected(
     dockerfile_path: Path | None = None,
 ) -> tuple[frozenset[str], frozenset[tuple[str, str]], frozenset[tuple[str, str, str]]]:
     plugins_root = plugins_root or (
-        repo / "docker/cc-runtime/build_context/plugins"
+        repo / PLUGINS_ROOT_REL
     )
     dockerfile_path = dockerfile_path or (repo / DOCKERFILE_REL)
     discovery = discover_install(
@@ -281,7 +284,7 @@ def test_parse_inventory_blocks_exact_set_equality() -> None:
 
 def test_emit_matches_independently_derived_oracle_sets(tmp_path: Path) -> None:
     repo = _seed_claude_repo(tmp_path, ("alpha-plugin",))
-    plugins_root = repo / "docker/cc-runtime/build_context/plugins"
+    plugins_root = repo / PLUGINS_ROOT_REL
     dockerfile = repo / DOCKERFILE_REL
     ops = [
         _fixture_op("alpha", "nextseek-alpha-plugin-op", purpose="Alpha purpose"),
@@ -316,7 +319,7 @@ def test_emit_matches_independently_derived_oracle_sets(tmp_path: Path) -> None:
 
 def test_fixture_add_remove_propagates_without_emitter_change(tmp_path: Path) -> None:
     repo = _seed_claude_repo(tmp_path, ("alpha-plugin",))
-    plugins_root = repo / "docker/cc-runtime/build_context/plugins"
+    plugins_root = repo / PLUGINS_ROOT_REL
     dockerfile = repo / DOCKERFILE_REL
     base_ops = [
         _fixture_op("alpha", "nextseek-alpha-plugin-op", purpose="Alpha purpose"),
@@ -421,7 +424,7 @@ def test_marker_inside_docs_block_is_rejected() -> None:
 
 def test_changing_docs_block_fails_pin_contract() -> None:
     pinned = extract_nextseek_docs_block(
-        _git_show(CLAUDE_MD_REL).decode("utf-8")
+        _git_show(NEXTSEEK_DOCS_PIN_CLAUDE_MD_REL).decode("utf-8")
     )
     mutated = pinned.replace("NExtSEEK Documentation", "mutated documentation heading")
     assert mutated != pinned
@@ -437,7 +440,7 @@ def test_guard_rejects_docs_block_rewrite() -> None:
 
 
 def test_changing_content_hash_fails_pin_contract() -> None:
-    pinned = _git_show(CONTENT_HASH_REL)
+    pinned = _git_show(NEXTSEEK_DOCS_PIN_CONTENT_HASH_REL)
     mutated = b"0" * 64 + b"\n"
     assert mutated != pinned
     with pytest.raises(AssertionError):
@@ -446,17 +449,17 @@ def test_changing_content_hash_fails_pin_contract() -> None:
 
 def test_committed_docs_block_and_hash_match_pin() -> None:
     current_text = CLAUDE_MD.read_text(encoding="utf-8")
-    pinned_text = _git_show(CLAUDE_MD_REL).decode("utf-8")
+    pinned_text = _git_show(NEXTSEEK_DOCS_PIN_CLAUDE_MD_REL).decode("utf-8")
     assert extract_nextseek_docs_block(current_text) == extract_nextseek_docs_block(
         pinned_text
     )
-    assert CONTENT_HASH.read_bytes() == _git_show(CONTENT_HASH_REL)
+    assert CONTENT_HASH.read_bytes() == _git_show(NEXTSEEK_DOCS_PIN_CONTENT_HASH_REL)
     validate_plan005_markers_outside_docs(current_text)
 
 
 def test_write_keeps_markers_outside_docs_and_preserves_prose(tmp_path: Path) -> None:
     repo = _seed_claude_repo(tmp_path)
-    plugins_root = repo / "docker/cc-runtime/build_context/plugins"
+    plugins_root = repo / PLUGINS_ROOT_REL
     dockerfile = repo / DOCKERFILE_REL
     claude = repo / CLAUDE_MD_REL
     original = claude.read_text(encoding="utf-8")

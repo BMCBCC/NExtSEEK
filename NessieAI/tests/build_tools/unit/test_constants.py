@@ -27,12 +27,12 @@ def test_default_doc_url_is_gitbook_site_index() -> None:
 
 def test_default_docs_dir_is_pathlib_path() -> None:
     assert isinstance(RAW_DEFAULT_DOCS_DIR, Path)
-    assert str(RAW_DEFAULT_DOCS_DIR) == "docker/cc-runtime/docs/nextseek"
+    assert str(RAW_DEFAULT_DOCS_DIR) == "NessieAI/docker/cc-runtime/docs/nextseek"
 
 
 def test_default_claude_md_path_is_container_file() -> None:
     assert isinstance(RAW_DEFAULT_CLAUDE_MD_PATH, Path)
-    assert str(RAW_DEFAULT_CLAUDE_MD_PATH) == "docker/cc-runtime/container/CLAUDE.md"
+    assert str(RAW_DEFAULT_CLAUDE_MD_PATH) == "NessieAI/docker/cc-runtime/container/CLAUDE.md"
 
 
 def test_markers_match_container_claude_md_file() -> None:

@@ -1,17 +1,38 @@
-"""Shared constants for deterministic surface generation."""
+"""Shared constants for deterministic surface generation.
+
+Every target is named relative to the checkout root, because the CLI joins it
+onto ``--root``. The locations come from ``NessieAI.paths`` so a later move
+edits one file; ``repo_relative`` turns each into the repo-relative form.
+"""
 from __future__ import annotations
+
+from NessieAI import paths
 
 EXIT_NO_CHANGE = 0
 EXIT_ERROR = 1
 EXIT_CHANGES_WRITTEN = 2
 
+# The Compose named build context the cc-agent Dockerfile COPYs from. The NAME
+# is what `COPY --from=` references and never changes; the PATH is where that
+# context lives in the checkout.
+NAMED_CAPABILITIES_CONTEXT = "chat_nextseek"
+NAMED_CAPABILITIES_CONTEXT_PATH = paths.repo_relative(paths.CHAT_NEXTSEEK_DIR)
+CANONICAL_CAPABILITIES_IN_CONTEXT = (
+    "src/chat_nextseek/context/capabilities.md"
+)
+IMAGE_CAPABILITIES_PATH = "/app/plugins/nextseek/context/capabilities.md"
+
+# The canonical file is the named context's file, so the two cannot disagree.
 CANONICAL_CAPABILITIES_REL = (
-    "chat_nextseek/src/chat_nextseek/context/capabilities.md"
+    f"{NAMED_CAPABILITIES_CONTEXT_PATH}/{CANONICAL_CAPABILITIES_IN_CONTEXT}"
 )
-BAKED_CAPABILITIES_REL = (
-    "docker/cc-runtime/build_context/plugins/nextseek/context/capabilities.md"
+BAKED_CAPABILITIES_REL = paths.repo_relative(
+    paths.CC_PLUGIN_DIR / "context" / "capabilities.md"
 )
-ROUTE_CAPABILITIES_REL = "dmac_assistant/build_context/route_capabilities.json"
+ROUTE_CAPABILITIES_REL = paths.repo_relative(
+    paths.DMAC_BUILD_CONTEXT / "route_capabilities.json"
+)
+PLUGINS_ROOT_REL = paths.repo_relative(paths.CC_PLUGIN_DIR.parent)
 
 COMMAND_OPS_BEGIN = "<!-- BEGIN PLAN005-GEN:command-ops -->"
 COMMAND_OPS_END = "<!-- END PLAN005-GEN:command-ops -->"
@@ -19,7 +40,7 @@ COMMAND_OPS_END = "<!-- END PLAN005-GEN:command-ops -->"
 SKILL_OPS_BEGIN = "<!-- BEGIN PLAN005-GEN:skill-ops -->"
 SKILL_OPS_END = "<!-- END PLAN005-GEN:skill-ops -->"
 
-DOCKERFILE_REL = "docker/cc-runtime/Dockerfile"
+DOCKERFILE_REL = paths.repo_relative(paths.CC_RUNTIME_DIR / "Dockerfile")
 COMPOSE_REL = "docker-compose.yml"
 
 PLUGIN_COPY_BEGIN = "# BEGIN PLAN005-GEN:plugin-copy"
@@ -31,9 +52,16 @@ CAPABILITIES_COPY_END = "# END PLAN005-GEN:capabilities-copy"
 ADDITIONAL_CONTEXTS_BEGIN = "# BEGIN PLAN005-GEN:additional-contexts"
 ADDITIONAL_CONTEXTS_END = "# END PLAN005-GEN:additional-contexts"
 
-CLAUDE_MD_REL = "docker/cc-runtime/container/CLAUDE.md"
-CONTENT_HASH_REL = "docker/cc-runtime/docs/nextseek/.content-hash"
+CLAUDE_MD_REL = paths.repo_relative(paths.CC_RUNTIME_DIR / "container" / "CLAUDE.md")
+CONTENT_HASH_REL = paths.repo_relative(
+    paths.CC_RUNTIME_DIR / "docs" / "nextseek" / ".content-hash"
+)
+# The docs snapshot is pinned to a commit that predates the NessieAI move, so
+# a `git show <ref>:<path>` against it needs the paths as they were at that
+# commit. History, never rewritten.
 NEXTSEEK_DOCS_PIN_REF = "a9d69522"
+NEXTSEEK_DOCS_PIN_CLAUDE_MD_REL = "docker/cc-runtime/container/CLAUDE.md"
+NEXTSEEK_DOCS_PIN_CONTENT_HASH_REL = "docker/cc-runtime/docs/nextseek/.content-hash"
 
 CLAUDE_PLUGINS_BEGIN = "<!-- BEGIN PLAN005-GEN:plugins -->"
 CLAUDE_PLUGINS_END = "<!-- END PLAN005-GEN:plugins -->"
@@ -44,12 +72,6 @@ CLAUDE_OPS_END = "<!-- END PLAN005-GEN:operations -->"
 
 NEXTSEEK_DOCS_BEGIN = "<!-- BEGIN NEXTSEEK-DOCS (auto-generated) -->"
 NEXTSEEK_DOCS_END = "<!-- END NEXTSEEK-DOCS (auto-generated) -->"
-
-NAMED_CAPABILITIES_CONTEXT = "chat_nextseek"
-CANONICAL_CAPABILITIES_IN_CONTEXT = (
-    "src/chat_nextseek/context/capabilities.md"
-)
-IMAGE_CAPABILITIES_PATH = "/app/plugins/nextseek/context/capabilities.md"
 
 SKILL_OPS_FIELDS = (
     "op_id",

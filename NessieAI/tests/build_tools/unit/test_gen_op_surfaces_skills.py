@@ -8,7 +8,12 @@ from pathlib import Path
 import pytest
 
 from NessieAI import paths
-from NessieAI.build_tools.gen_op_surfaces.constants import SKILL_OPS_BEGIN, SKILL_OPS_END
+from NessieAI.build_tools.gen_op_surfaces.constants import (
+    DOCKERFILE_REL,
+    PLUGINS_ROOT_REL,
+    SKILL_OPS_BEGIN,
+    SKILL_OPS_END,
+)
 from NessieAI.build_tools.gen_op_surfaces.emit import (
     SurfaceTarget,
     check_surfaces,
@@ -107,8 +112,8 @@ def _write_dockerfile(path: Path, plugin_names: tuple[str, ...]) -> None:
 
 def _seed_repo(tmp_path: Path) -> tuple[Path, Path, Path]:
     repo = tmp_path / "repo"
-    plugins_root = repo / "docker/cc-runtime/build_context/plugins"
-    dockerfile = repo / "docker/cc-runtime/Dockerfile"
+    plugins_root = repo / PLUGINS_ROOT_REL
+    dockerfile = repo / DOCKERFILE_REL
     _write_plugin(
         plugins_root,
         plugin_name="alpha-plugin",
@@ -241,7 +246,7 @@ def test_fixture_skill_and_op_need_no_emitter_change(tmp_path: Path):
 
 def test_write_preserves_prose_outside_markers(tmp_path: Path):
     repo, plugins_root, dockerfile = _seed_repo(tmp_path)
-    rel = "docker/cc-runtime/build_context/plugins/alpha-plugin/skills/alpha-skill/SKILL.md"
+    rel = f"{PLUGINS_ROOT_REL}/alpha-plugin/skills/alpha-skill/SKILL.md"
     skill_path = repo / rel
     original = skill_path.read_bytes()
     ops = [

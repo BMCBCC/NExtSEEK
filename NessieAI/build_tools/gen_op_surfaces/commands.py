@@ -3,13 +3,18 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from NessieAI.build_tools.gen_op_surfaces.constants import COMMAND_OPS_BEGIN, COMMAND_OPS_END
+from NessieAI.build_tools.gen_op_surfaces.constants import (
+    COMMAND_OPS_BEGIN,
+    COMMAND_OPS_END,
+    DOCKERFILE_REL,
+    PLUGINS_ROOT_REL,
+)
 from NessieAI.cc.op_registry.install_oracle import discover_install
 from NessieAI.cc.op_registry.models import OpSpec
 from NessieAI.cc.op_registry.ops import OPS
 
-_PLUGINS_ROOT_REL = Path("docker/cc-runtime/build_context/plugins")
-_DOCKERFILE_REL = Path("docker/cc-runtime/Dockerfile")
+_PLUGINS_ROOT_REL = Path(PLUGINS_ROOT_REL)
+_DOCKERFILE_REL = Path(DOCKERFILE_REL)
 
 
 def parse_command_ops_block(text: str) -> frozenset[tuple[str, str, str]]:

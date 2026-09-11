@@ -1,10 +1,12 @@
-"""Whole-file generation for dmac_assistant/build_context/route_capabilities.json."""
+"""Whole-file generation for the dmac_assistant unit's build_context/route_capabilities.json."""
 from __future__ import annotations
 
 import json
 from pathlib import Path
 from typing import Any
 
+from NessieAI import paths
+from NessieAI.build_tools.gen_op_surfaces import constants
 from NessieAI.cc.op_registry.install_oracle import discover_install
 from NessieAI.cc.op_registry.ns_capabilities import (
     MAX_PROJECTION_UTF8_BYTES,
@@ -28,17 +30,16 @@ from NessieAI.tests.nessie_tests import corpus as nessie_corpus
 from NessieAI.tests.nessie_tests import export as nexport
 from NessieAI.tests.nessie_tests import runner as nessie_runner
 
-ROUTE_CAPABILITIES_REL = Path("dmac_assistant") / "build_context" / "route_capabilities.json"
-CANONICAL_CAPABILITIES_REL = Path(
-    "chat_nextseek/src/chat_nextseek/context/capabilities.md"
+# Repo-relative, joined onto the --root checkout; one source in constants.py.
+ROUTE_CAPABILITIES_REL = Path(constants.ROUTE_CAPABILITIES_REL)
+CANONICAL_CAPABILITIES_REL = Path(constants.CANONICAL_CAPABILITIES_REL)
+BAKED_CAPABILITIES_REL = Path(constants.BAKED_CAPABILITIES_REL)
+EVIDENCE_REL = Path(
+    paths.repo_relative(paths.CC_DIR / "op_registry" / "route_example_evidence.json")
 )
-BAKED_CAPABILITIES_REL = Path(
-    "docker/cc-runtime/build_context/plugins/nextseek/context/capabilities.md"
-)
-EVIDENCE_REL = Path("nextseek_api/cc_assistant/op_registry/route_example_evidence.json")
-CORPUS_REL = Path("nessie_tests/corpus.json")
-PLUGINS_ROOT_REL = Path("docker/cc-runtime/build_context/plugins")
-DOCKERFILE_REL = Path("docker/cc-runtime/Dockerfile")
+CORPUS_REL = Path(paths.repo_relative(paths.NESSIE_CORPUS))
+PLUGINS_ROOT_REL = Path(constants.PLUGINS_ROOT_REL)
+DOCKERFILE_REL = Path(constants.DOCKERFILE_REL)
 
 NS_ROUTE = "nextseek_query"
 CC_ROUTE = "container_cc"

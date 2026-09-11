@@ -1269,7 +1269,7 @@ def test_compose_config_bedrock_proxy_has_no_host_ports_key(tmp_path):
 def test_compose_config_bedrock_proxy_build_context_is_docker_bedrock_proxy(tmp_path):
     cfg = _real_compose_config(tmp_path)
     ctx = cfg["services"]["bedrock-proxy"]["build"]["context"]
-    assert ctx.rstrip("/").endswith("docker/bedrock-proxy")
+    assert ctx.rstrip("/").endswith("NessieAI/docker/bedrock-proxy")
     assert "cc-runner" not in ctx
     assert "cc-runtime" not in ctx
 
@@ -1314,11 +1314,11 @@ def test_compose_config_includes_cc_image_build_target(tmp_path):
 @pytest.mark.host_only
 def test_compose_config_cc_image_build_context_is_docker_cc_runtime_not_cc_runner(tmp_path):
     """G7-3: the compose CC image build target must point at the canonical
-    ``docker/cc-runtime/`` -- never the lean, explicitly non-production
+    ``NessieAI/docker/cc-runtime/`` -- never the lean, explicitly non-production
     ``docker/cc-runner/`` proof image."""
     cfg = _real_compose_config(tmp_path)
     ctx = cfg["services"]["cc-agent"]["build"]["context"]
-    assert ctx.rstrip("/").endswith("docker/cc-runtime")
+    assert ctx.rstrip("/").endswith("NessieAI/docker/cc-runtime")
     assert "cc-runner" not in ctx
 
 
@@ -1480,7 +1480,7 @@ def test_compose_config_includes_nextseek_sidecar_service(tmp_path):
 def test_compose_config_sidecar_build_context_is_docker_ns_sidecar(tmp_path):
     cfg = _real_compose_config(tmp_path)
     ctx = cfg["services"]["nextseek-sidecar"]["build"]["context"]
-    assert ctx.rstrip("/").endswith("docker/ns-sidecar")
+    assert ctx.rstrip("/").endswith("NessieAI/docker/ns-sidecar")
 
 
 @pytest.mark.host_only
