@@ -38,3 +38,88 @@ def test_the_nessie_switch_is_not_a_mark_expression():
         "the Nessie gate must run before the -m early return, or --no-nessie "
         "stops working whenever someone passes -m"
     )
+
+
+from ci.smoke.test_nessie import (
+    CHAT_PATH, MAX_CHAT_POSTS, QUESTIONS, SPEND_CEILING_USD, ChatBudget, TurnRecord,
+    bundle_path, cc_model_id, classify_request, is_terminal, normalize, plain_prefix,
+    query_error, reported_cost, route_decision, summary_payload,
+)
+
+BASE = "http://127.0.0.1:8000"
+
+
+def test_the_questions_are_three_ns_then_one_cc_with_unique_keys():
+    assert [q.route for q in QUESTIONS] == [
+        "nextseek_query", "nextseek_query", "nextseek_query", "container_cc"]
+    assert [q.path for q in QUESTIONS] == ["system", "api", "graph", "cc"]
+    assert len({q.key for q in QUESTIONS}) == len(QUESTIONS)
+    assert MAX_CHAT_POSTS == len(QUESTIONS) == 4
+    assert SPEND_CEILING_USD == 1.00
+
+
+def test_classify_request():
+    assert classify_request("POST", BASE + CHAT_PATH) == "lane"
+    assert classify_request("GET", BASE + CHAT_PATH) == "pass"
+    assert classify_request("POST", BASE + "/nextseek_api/nessie/query/") == "blocked"
+    assert classify_request("POST", BASE + "/nextseek_api/cc-assistant/cc/query/async/") == "blocked"
+    assert classify_request("POST", BASE + "/nextseek_api/assistant/sessions/") == "pass"
+    assert classify_request("POST", BASE + "/login/") == "pass"
+
+
+def test_chat_budget_refuses_the_fifth_post_and_tracks_spend():
+    b = ChatBudget()
+    assert [b.admit_post() for _ in range(5)] == [True, True, True, True, False]
+    assert (b.posts, b.refused) == (4, 1)
+    b.add_cost(0.24)
+    b.add_cost(None)
+    assert b.spent_usd == pytest.approx(0.24) and not b.over_ceiling
+    b.add_cost(0.80)
+    assert b.over_ceiling
+
+
+PROGRESS = [
+    {"event": "route_decided", "data": {"route": "container_cc", "source": "baml"}},
+    {"event": "cc_turn_meta", "data": {"model_id": "us.anthropic.claude-opus-4-8"}},
+    {"event": "query_complete", "data": {"reply": "done"}},
+]
+
+
+def test_progress_parsers():
+    assert route_decision(PROGRESS) == ("container_cc", "baml")
+    assert route_decision([]) == (None, None)
+    assert cc_model_id(PROGRESS) == "us.anthropic.claude-opus-4-8"
+    assert cc_model_id([]) is None
+    assert query_error(PROGRESS) is None
+    assert query_error([{"event": "query_error", "data": {"error": "403 path not permitted"}}]) \
+        == "403 path not permitted"
+
+
+def test_status_cost_and_path_helpers():
+    assert is_terminal("completed") and is_terminal("error")
+    assert not is_terminal("running") and not is_terminal(None)
+    assert reported_cost({"total_cost_usd": 0.21}) == 0.21
+    assert reported_cost({"reply": "x"}) is None and reported_cost(None) is None
+    assert bundle_path("graph_query") == "graph"
+    assert bundle_path("new_search") == "api"
+
+
+def test_reply_matching_survives_markdown():
+    reply = "**NDMA-treated mice**: 12 found\n\n| id | sex |"
+    assert plain_prefix(reply) == "ndma treated mice 12 found"
+    assert plain_prefix(reply) in normalize("NDMA-treated mice: 12 found  | id | sex |")
+    assert plain_prefix("") == ""
+
+
+def test_summary_payload_shape():
+    rec = TurnRecord(key="nhp_graph", text="t", expected_route="container_cc",
+                     route="container_cc", source="baml", task_id="a", session_id="s",
+                     status="completed", seconds=88.0, cost_usd=0.24)
+    b = ChatBudget()
+    b.admit_post()
+    b.add_cost(0.24)
+    out = summary_payload([rec], b, None, "/tmp/e")
+    assert out["posts"] == 1 and out["spent_usd"] == 0.24 and out["ceiling_usd"] == 1.0
+    assert out["questions"][0]["key"] == "nhp_graph"
+    assert out["questions"][0]["expected_route"] == "container_cc"
+    assert out["kept_session"] is None and out["evidence_dir"] == "/tmp/e"
