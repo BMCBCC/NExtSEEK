@@ -7,7 +7,7 @@
   (`ci/routes.py:15-20`), and the module docstring says why
   (`ci/routes.py:1-14`). Add a third-party import and the smoke lane stops
   collecting: it runs under `uv run --no-project` with pytest, requests and
-  playwright and nothing else (`.github/workflows/ci-smoke.yml:101-103`). The
+  playwright and nothing else (`.github/workflows/ci-smoke.yml:112-114`). The
   gate lane will not warn you, because it runs in the application's own
   environment, whose dependency list includes requests (`pyproject.toml:92`).
 - Django is imported inside `_walk()` and `live_patterns()`, never at module
@@ -36,6 +36,13 @@
 
 ## Landmines
 
+- Never opt out of the Nessie lane with `-m`: any `-m` expression switches the
+  write lane on. Use `--no-nessie`. `pytest_collection_modifyitems` returns early
+  whenever `-m` is given, and that early return is the only thing that keeps the
+  write lane deselected (`ci/smoke/conftest.py:261-266`). The Nessie switches are
+  applied before it, which is why they are options and not marker expressions
+  (`ci/smoke/conftest.py:209-223`). So `-m "not nessie"` reads like a narrower
+  run and in fact runs the write lane as the superuser.
 - The read-only mount in the gate recipe works ONLY because the recipe's first
   line pre-creates two directories on the host (`ci/gate/live_routes.py:16`).
   Skip that `mkdir` and Django dies during settings import, before a single test
@@ -80,11 +87,6 @@
   carries the client headers, not because a wheel exists. Move that job to a
   slimmer container on the strength of that comment and `uv sync` fails at step
   one.
-- `ci/smoke/README.md:36-39` names six files as the no-stack lane and its
-  copy-paste command at `ci/smoke/README.md:41-46` lists the same six. There is a
-  seventh: `ci/smoke/test_terminal_unit.py:1` declares itself stack-free and, run
-  alone on 2026-09-03 with no stack and no credentials, gave 7 passed in 0.01s.
-  Paste the documented command and you silently skip those 7.
 - Nothing under `ci/` or `ci/gate/` configures pytest. A find for `conftest.py`
   or `pytest.ini` anywhere beneath `ci/` returns only `ci/smoke/conftest.py` and
   `ci/smoke/pytest.ini`, so `pytest ci/gate` takes its configuration from the

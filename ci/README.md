@@ -115,12 +115,13 @@ name is the summary: `pytest (informational)`
 
 **`.github/workflows/ci-smoke.yml`** runs by hand only — `workflow_dispatch` is
 its single trigger (`.github/workflows/ci-smoke.yml:11-12`) — on a self-hosted
-runner labelled `fairdata-dev` (`.github/workflows/ci-smoke.yml:44`). It reads
+runner labelled `fairdata-dev` (`.github/workflows/ci-smoke.yml:48`). It reads
 the box's profile out of `startup/.instance.json` rather than naming one
-(`.github/workflows/ci-smoke.yml:55-68`), refuses the write lane outright on a
-box declaring `prod` (`.github/workflows/ci-smoke.yml:74-78`), runs
-`pytest ci/smoke/` (`.github/workflows/ci-smoke.yml:101-103`) and, only when
-asked for, `pytest ci/smoke/ -m write` (`.github/workflows/ci-smoke.yml:105-110`).
+(`.github/workflows/ci-smoke.yml:59-72`), refuses the write lane outright on a
+box declaring `prod` (`.github/workflows/ci-smoke.yml:78-82`), runs
+`pytest ci/smoke/` (`.github/workflows/ci-smoke.yml:112-114`), adding
+`--no-nessie` when its `nessie` input is off, and, only when asked for,
+`pytest ci/smoke/ -m write` (`.github/workflows/ci-smoke.yml:116-121`).
 The operator rebuilds and this workflow then tests; it never restarts anything
 (`.github/workflows/ci-smoke.yml:3-6`).
 
@@ -146,6 +147,19 @@ successful `./startup.sh rebuild` unless `--no-ci` is passed
 (`startup/cli.py:632-646`), and skips itself when the restart was deferred,
 because the running containers would still carry the previous image
 (`startup/cli.py:633-639`).
+
+**The Nessie lane** (`ci/smoke/test_nessie.py`) rides both smoke callers. It
+proves a build did not break Nessie: every Nessie route and chat-page control
+exists, three NS questions and one CC question complete through the real chat
+page, and the sessions endpoints report what the page showed. It is the one part
+of `ci/smoke/` that sends chat turns (about $0.30 a run), so it runs only on a box
+declaring `local` or `dev`, after an app rebuild or on `./startup.sh ci`.
+`--no-nessie` skips it: a startup flag, a suite option, and the dispatch
+workflow's `nessie` input. It needs the write account in a participating project
+and a non-empty Bedrock proxy token, and with the lane on, startup checks its
+prerequisites after stack health; unlike the advisory checks above, those stop
+the run. See [Nessie lane](smoke/README.md#nessie-lane) for its stages,
+prerequisites, how to extend it and how to read a failure.
 
 ### What can fail a job, and what is only a report
 
@@ -272,7 +286,7 @@ grepping every `.py` file in the tree for `ci.routes`, `ci.gate`, `ci.smoke`,
 - `.github/workflows/ci-pytest.yml:68-72` runs the differ, and
   `.github/workflows/ci-pytest.yml:80-86` runs the gate as the one step whose
   exit code can fail that job.
-- `.github/workflows/ci-smoke.yml:101-103` runs the smoke suite on a self-hosted
+- `.github/workflows/ci-smoke.yml:112-114` runs the smoke suite on a self-hosted
   runner in a deliberately isolated environment.
 - Not a consumer: `startup/cli.py:40-44` restates `("local", "dev", "prod")` as
   its own constant and says in the comment above it that `startup/` never imports

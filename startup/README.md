@@ -241,7 +241,7 @@ omitted, and so are the two files under `docs/superpowers/plans/` whose `from st
 lines sit inside quoted code samples in a plan document rather than being imports that
 file performs.
 
-- `.github/workflows/ci-smoke.yml:60` reads `startup/.instance.json` by path to learn
+- `.github/workflows/ci-smoke.yml:64` reads `startup/.instance.json` by path to learn
   the box-declared profile, deliberately rather than naming one itself.
 - `seek/tests/test_context_seed_tables.py:10` binds `startup/seed/sql/` as a directory
   and reads three DDL files out of it at `seek/tests/test_context_seed_tables.py:19`,

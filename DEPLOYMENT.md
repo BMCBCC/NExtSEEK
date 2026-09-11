@@ -242,8 +242,18 @@ git diff --name-only HEAD@{1} HEAD -- '*migrations*'
 #           without them every scripted request passes and the six browser flows
 #           fail with a 403 on the login form (measured on fairdata-dev,
 #           2026-09-02). An env change takes effect on recreate, which rebuild does.
+#         · On a box declaring local or dev, an app rebuild (and ./startup.sh ci)
+#           also runs the Nessie lane, which sends four real chat turns (about
+#           $0.30) and needs two more (ci/smoke/README.md, "Nessie lane"):
+#           CI_WRITE_USER / CI_WRITE_PASS in ci.env for a superuser that is a
+#           member of a SEEK project listed in ASSISTANT_PARTICIPATING_PROJECTS
+#           (dmac/local_settings.py), and a non-empty AWS_BEARER_TOKEN_BEDROCK in
+#           docker/bedrock-proxy/proxy-secret.env. Startup checks the token, the
+#           first-party images and the CC services before the suite starts and
+#           stops naming the missing one; the lane's first tests check the
+#           account. A prod box never runs the lane.
 #       `./startup.sh doctor` reports the first two, read-only. Or skip CI:
-#       rebuild --no-ci.
+#       rebuild --no-ci. Or skip only the Nessie lane: rebuild --no-nessie.
 #    c. SEEK's config mount — docker/seek-nginx.conf is an untracked host file
 #       that SEEK's entrypoint (uid 33) rewrites on every start. It must exist as
 #       a FILE (chmod 666) before the seek service is ever recreated; if it is
