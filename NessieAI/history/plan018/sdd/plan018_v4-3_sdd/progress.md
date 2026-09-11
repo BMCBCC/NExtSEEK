@@ -1,4 +1,4 @@
-# SDD ledger — plan: /home/taishajo/.cursor/plans/plan018_v4-3_sdd_9ae91f7b.plan.md (V4-3)
+# SDD ledger, plan: <local Cursor plan plan018_v4-3_sdd_9ae91f7b.plan.md> (V4-3)
 
 Task 0: complete (prereq gate PASS @ 35b46d3a)
 Task 1: complete (DD-44 aggregation + models ported; 9 tests; port receipt)

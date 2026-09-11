@@ -13,8 +13,7 @@ It is **not a Python package**. There is no `__init__.py` here, so `nextseek_api
 resolves as a PEP 420 namespace package: importing it inside the stack image on 2026-09-03
 printed `<module 'nextseek_api.services' (namespace)>` with `__file__` set to `None`. Every
 one of its eleven sibling directories under `nextseek_api/` has an `__init__.py`; this one
-alone does not. See `nextseek_api/services/CLAUDE.md` for what that costs a tool that
-wants to walk this directory.
+alone does not.
 
 Two populations live here and they answer to different callers. Seventeen modules define
 20 ViewSet classes carrying 85 request handlers between them — the standard CRUD method
@@ -116,16 +115,17 @@ docker run --rm --network none -v "$PWD":/src:ro -e DJANGO_SETTINGS_MODULE=dmac.
 Result: **7 failed, 794 passed, 868 warnings, 4 subtests passed in 12.64s**. The copy step is
 what makes a read-only checkout usable: `dmac/settings.py:497-498` creates directories beside
 the settings file at import time. Six of the seven failures share one cause and the seventh is
-a real gate; both are written up in CLAUDE.md, along with an eighth test that passes in this
-run and fails when the same module is run alone.
+a real gate, and an eighth test passes in this run but fails when the same module is run
+alone.
 
 `scripts/run_tests.sh:44-47` is the supported wrapper for the same idea and needs two things a
 fresh worktree does not have: a `dmac/local_settings.py` inside the checkout
 (`scripts/run_tests.sh:37-41`) and a compose directory holding the gitignored `docker/*.env`
 files (`scripts/run_tests.sh:20`).
 
-The cheap gate, and the one this directory fails today, is the AST-only convention validator.
-Its command and its current output are in CLAUDE.md.
+The cheap gate, and the one this directory fails today, is the AST-only convention validator,
+`python3 scripts/validate_viewset_conventions.py`; `nextseek_api/CLAUDE.md` "Test command"
+records what it prints.
 
 ## Depends on / depended on by
 
@@ -200,5 +200,3 @@ modules here inside docstrings, which is documentation and not a dependency.
 `nextseek_api/views.py:27-28`, and has nothing to do with this directory. And
 `nextseek_api/services/schema_rag.py:27` is an import *into* this directory from the
 `nextseek_api/schema_rag/` package, not the reverse — the ViewSet is here, the engine is there.
-
-See `nextseek_api/services/CLAUDE.md` for the invariants, the traps, and the one command to run.

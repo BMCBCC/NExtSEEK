@@ -66,23 +66,10 @@ schema. Breaking one is a defect, not a refactor.
 
 ## Landmines
 
-- **The three attribute runtimes are behind a compose profile.** `profiles: [attributes]`
-  gates the worker, the dispatcher and the recovery scheduler
-  (`docker-compose.yml:339`, `docker-compose.yml:373`, `docker-compose.yml:408`), and
-  `startup/lib/rebuild_policy.py:65-70` adds them to the rebuild cohort only when
-  `COMPOSE_PROFILES` in the process environment names `attributes`
-  (`startup/lib/rebuild_policy.py:35-36`). Without it exported, an asynchronous
-  mutation returns its `202` and is then never executed: the outbox row stays
-  `pending` and the status endpoint reports `queued` forever
-  (`nextseek_api/attributes/service.py:254`).
-- **Worse than absent is stale.** Because the three services carry
-  `restart: unless-stopped` (`docker-compose.yml:352`) and share the app image, a
-  rebuild run without the profile leaves them up on the previous image, executing
-  mutations with old code while the web container runs new code.
-- **`DEPLOYMENT.md:284` describes that rebuild as unconditional for these runtimes**
-  and conditions only the assay-registration worker on an exported profile, so an
-  operator following it will believe all three were refreshed when they were not. The
-  cohort description at `DEPLOYMENT.md:268-269` reads the same way.
+- **The three attribute runtimes are processes of the `nextseek` container**, started by
+  `docker/scripts/entrypoint.sh` beside the web server, so `./startup.sh rebuild`
+  restarts them with the app and there is no compose profile to export. Any one of them
+  exiting takes the whole container down under `wait -n`, and with it the site.
 - **The documented sole write surface for job rows is dead code.**
   `nextseek_api/attributes/models_db.py:373-375` states that product code must not call
   `objects.create`, but the live creation path does exactly that
@@ -101,7 +88,7 @@ schema. Breaking one is a defect, not a refactor.
   `ATTRIBUTE_TEST_FAULT_CONTROL` in a real container arms real mid-mutation aborts.
 - **One test hardcodes an absolute path into another developer's home directory.**
   `nextseek_api/attributes/tests/test_openapi.py:9` points the machine schema contract
-  at a path under `/home/taishajo`, so that case cannot pass anywhere else, and its
+  at a path in that developer's home directory, so that case cannot pass anywhere else, and its
   failure is not a regression in this package.
 - **Six unit cases in `nextseek_api/attributes/tests/test_executor.py` fail on this
   branch with no database involved.** The kernel indexes `outcome["counts"]` at
@@ -141,8 +128,9 @@ schema. Breaking one is a defect, not a refactor.
   anywhere after a reset.
 - **Deleting a shim under `nextseek_api/management/commands/` silently removes a
   command.** Django never scans this subpackage's own commands directory, so nothing
-  here would fail to import; instead the compose service that invokes the command by
-  name (`docker-compose.yml:385`) dies on an unknown command. See
+  here would fail to import; instead the entrypoint process that invokes the command by
+  name (`docker/scripts/entrypoint.sh`) dies on an unknown command and takes the
+  `nextseek` container down with it. See
   `nextseek_api/attributes/README.md` for all three shims and why they exist.
 
 ## Test command
@@ -173,8 +161,9 @@ kind of account.
 
 - See `nextseek_api/attributes/README.md` for what each module does, how a mutation is
   planned and executed, and the dependency map in both directions.
-- See `DEPLOYMENT.md:42` for the service table row covering these three runtimes.
-- See `docker-compose.yml:334-429` for the three service definitions in full.
+- See `DEPLOYMENT.md` §0 for the service table row covering these three runtimes.
+- See `docker/scripts/entrypoint.sh` for how the `nextseek` container starts them, and
+  the `nextseek` service in `docker-compose.yml` for the broker volume they share.
 - See `nextseek_api/attributes/planner.py:10-31` for the eight-method repository
   protocol the planner requires.
 - See `nextseek_api/attributes/executor.py:796-818` for the adjudicated claim rules.

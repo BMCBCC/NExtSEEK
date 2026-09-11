@@ -24,10 +24,12 @@ Breaking one is a regression, not a refactor.
 - **`reset` passes every install parameter explicitly** (`startup/cli.py:497-507`),
   including `no_seed=False` and the carried-over CI profile. Omit one and it arrives as
   the truthy sentinel above, on a stack whose volumes have just been dropped.
-- **Runtime-service selection accumulates across compose profiles, never chooses**
-  (`startup/lib/rebuild_policy.py:65-70`). An early return per profile would leave one
-  worker on its old container under `restart: unless-stopped`, which is the failure the
-  docstring at `startup/lib/rebuild_policy.py:59-63` describes as looking healthy.
+- **The app image runs in exactly one service, `nextseek`** (`BASE_APP_RUNTIME_SERVICES`
+  in `startup/lib/rebuild_policy.py`). The attribute and assay-registration workers are
+  processes of that container (`docker/scripts/entrypoint.sh`), so a rebuild cannot leave
+  one on the old image. A second service running the app image re-opens that failure
+  unless startup also restarts it; `startup/tests/test_rebuild_policy.py` asserts the set
+  against compose.
 - **An absent or empty `ci_profile` resolves to the narrowest value, `prod`** — at the
   install default (`startup/cli.py:46-47`), at the runner
   (`startup/ci/runner.py:54`) and in the diagnostic (`startup/steps/doctor.py:31-36`).
@@ -144,9 +146,6 @@ Breaking one is a regression, not a refactor.
   in the output file rather than raising. That is why reading a value back has to sniff
   for the residue (`startup/steps/config.py:63-65`); a rendered env file can look
   complete and still contain an uninterpolated token.
-- **The vendoring script deletes.** `startup/scripts/sync_chat_nextseek.sh:36-45` runs
-  `rsync -a --delete` into the vendored `chat_nextseek/` tree, so any uncommitted local
-  edit there is gone with no prompt and no backup.
 - **The frozen full-lane script's own header contradicts the pin it enforces.**
   `startup/dev/run_full_test_lane.sh:38-40` names one image and one digest; the constants
   actually checked are a different image and a different digest

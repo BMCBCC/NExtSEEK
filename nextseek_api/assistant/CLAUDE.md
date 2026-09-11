@@ -122,10 +122,6 @@ regression, not a refactor.
   scope is the parent's, `nextseek_api/conftest.py:1-83`. Combined with the real settings
   module named at `pyproject.toml:147`, a bare `pytest` aimed here loads production
   settings and fails on a missing chat config rather than on anything real.
-- **`session_adapter.save` swallows every failure of its locked path.** The bare
-  handler at `nextseek_api/assistant/session_adapter.py:119-122` falls through to an
-  unlocked write, so on a backend without row locking the merge protection is gone
-  and nothing is logged. A lost bundle looks like a model mistake, not a race.
 - **`models_db.py` is the evaluation subsystem's table module as well as the
   chat's.** Nine of its thirteen classes are `eval_*` tables, one being the spend
   reservation at `nextseek_api/assistant/models_db.py:240-265`, and seven module-scope

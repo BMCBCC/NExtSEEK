@@ -117,9 +117,7 @@
   `seek/views/`, and a citation of the old path cannot be resolved to anything.
   44 files across the tree still spell it, measured 2026-09-03 by
   `grep -rl 'seek/views\.py'` excluding `.superpowers/`, `.git/` and this
-  directory's own two documents; some of those are deliberate history, but
-  `architecture.md:61` is a live pointer at a line number in a file that is
-  gone.
+  directory's own two documents; some of those are deliberate history.
 - **Credentials go into a shell command line, and TLS verification is off.**
   `seek/seekapi.py:21` interpolates the SEEK username and password into a `curl`
   string that `seek/seekapi.py:37-40` runs with `shell=True`; `-k` there and

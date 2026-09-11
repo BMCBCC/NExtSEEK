@@ -212,16 +212,16 @@ in any `.py` file under `startup/cli.py`, `startup/lib/`, `startup/steps/` or
   clean-source check (`startup/lib/deploy_source.py:20-29`) and the rollback tag
   (`startup/steps/rollback_tags.py:47`).
 - Compose service names as build and restart targets: `nextseek`, `cc-agent`,
-  `nextseek-sidecar` and `bedrock-proxy` are named at
-  `startup/lib/rebuild_policy.py:102-168`.
+  `nextseek-sidecar` and `bedrock-proxy` are named in `component_policies`
+  (`startup/lib/rebuild_policy.py`).
 - Compose service names as `exec` targets: `db` takes the SQL seeds
   (`startup/steps/seed.py:85`) and the schema-fixup table probe
   (`startup/steps/schema_fixups.py:160-161`), `neo4j` takes the graph seed
   (`startup/steps/seed.py:56`) and `seek` takes the filestore archive on stdin
   (`startup/steps/seed_filestore.py:94-103`).
 - Seven external named volumes it creates by name (`startup/steps/volumes.py:6-16`);
-  six are declared `external: true` at `docker-compose.yml:503-520` and the seventh at
-  `docker-compose.yml:530-531`, so Compose fails rather than creating them itself.
+  all seven are declared `external: true` in the top-level `volumes:` block of
+  `docker-compose.yml`, so Compose fails rather than creating them itself.
 - The vendored `chat_nextseek/pyproject.toml`, whose absence aborts install phase 2
   (`startup/cli.py:126-129`).
 - `ci/smoke/` by path string, launched as a subprocess and never imported, precisely so
@@ -258,7 +258,9 @@ file performs.
   inside a container.
 - `chat_nextseek/README.md:172` documents `startup/dev/lane_local_settings.py` as the
   file that constructs the Django-wide assistant config at settings-import time.
-- `.gitignore:229-231` and `.gitignore:261` reserve the four runtime paths this CLI
-  writes or downloads, so none of them can be committed by accident.
+- `.gitignore` reserves the runtime paths this CLI writes or downloads
+  (`startup/.instance.json`, `startup/.ghcr-push-state.json`, `startup/.ci-last-run.xml`,
+  `startup/ci-reports/` and `startup/seed/filestore.tar.gz`), so none of them can be
+  committed by accident.
 
 See `startup/CLAUDE.md` for the invariants, the traps and the one command to run.

@@ -16,7 +16,7 @@ Everything under "After" refers to the current tree.
 
 Three rendered pages carried seven controls between them.
 
-**`/seek/search/` → `searchAdvanced.html`** (`seek/views.py:869`)
+**`/seek/search/` → `searchAdvanced.html`** (`searchAdvanced` in `seek/views/search.py`)
 
 | | Control | Went to |
 |---|---|---|
@@ -24,7 +24,7 @@ Three rendered pages carried seven controls between them.
 | b | Simple tab grid → `simple_downloadSamples` | Yes/No prompt. Yes → `/seek/admin/retrieve/`; No → `/seek/samples/download/` |
 | c | Advanced tab grid → `downloadSamples0` | Always `/seek/admin/retrieve/` |
 
-**`/seek/newsearch/` → `newSearch.html`** (`seek/views.py:1742`)
+**`/seek/newsearch/` → `newSearch.html`** (`newSearch` in `seek/views/search.py`)
 
 | | Control | Went to |
 |---|---|---|
@@ -32,7 +32,7 @@ Three rendered pages carried seven controls between them.
 | e | Advanced grid → same function | same |
 | f | Retrieval form | `POST /nextseek_api/admin/samples/retrieve/` |
 
-**Sample detail page → `pages/samples.embed.html`** (via `samples.html`, `seek/views.py:166`)
+**Sample detail page → `pages/samples.embed.html`** (via `samples.html`, `sample` in `seek/views/samples.py`)
 
 | | Control | Went to |
 |---|---|---|
@@ -40,7 +40,7 @@ Three rendered pages carried seven controls between them.
 
 ### Backends
 
-- **`seek/views.py:adminRetrieveSamples`** — expanded the selection over Neo4j
+- **`seek/views/admin.py:adminRetrieveSamples`**: expanded the selection over Neo4j
   `DERIVED_FROM*0..` in both directions, fetched `json_metadata` from MySQL,
   `pd.json_normalize`d it, wrote one xlsx with a sheet per sample type via the
   module function `sample_retrieval_data`. Despite the URL, not admin-gated:
@@ -49,7 +49,7 @@ Three rendered pages carried seven controls between them.
   output, numeric SEEK-id resolution, and a Neo4j-failure fallback. Wrote its
   workbook through `DBtable_sample.sampleRetrievalData` — a *second, separate
   copy* of the same pandas/openpyxl loop.
-- **`seek/views.py:sampleDownload`** — the oldest path
+- **`seek/views/samples.py:sampleDownload`**: the oldest path
   (`downloadSamples_new` / `downloadSamples_noTree`). Returned JSON carrying a
   link to a file on disk rather than the bytes, and emitted a zip of per-type
   `.xls` when the selection spanned sample types.
@@ -79,7 +79,7 @@ The template source implied far more behavior than actually ran.
    branch been reachable.
 4. **Orphaned templates.** Nothing includes `searchAdvanced_rtable.embed.html`
    (download button at `:28`) or `searchAdvanced_tree.embed.html` (`:26`).
-   `sampleSearch.html`'s `render` is commented out at `seek/views.py:412` and the
+   `sampleSearch.html`'s `render` is commented out in `sampleSearch` (`seek/views/search.py`) and the
    view redirects to `/seek/search/`; `sampleDeletion.html` has no view at all.
    Both of those include `samples_stable.embed.html`, so its grid was live only
    via `searchAdvanced.html`. `samples_stable.embed.html.bk` is a backup file.
@@ -259,7 +259,7 @@ note rather than an empty one.
 #### Where the text comes from
 
 Sample type names and descriptions come from `dmac.sample_types_context` via the
-`Sample_types_context` model (`seek/models.py`); per-column meanings come from
+`Sample_types_context` model (`seek/models/nextseek.py`); per-column meanings come from
 `dmac.sample_attributes_unique` via `Sample_attributes_unique`, where `sample_type =
 ''` is the definition used on every tab and a sample type code overrides it for
 that tab only. **Both join on a string key, never on an id** —
@@ -339,7 +339,7 @@ rather than shipping a broken button.
   user at login, so `or is_staff` made project scope a no-op for everyone and
   handed every authenticated account the unfiltered branch of `getChildrenUIDs`.
   The predicate is now `is_superuser` alone (`nextseek_api/views.py:747-754`),
-  matching the legacy path it mirrors (`seek/views.py:1249`, `verifySuperUser`).
+  matching the legacy path it mirrors (`adminRetrieveSamples` in `seek/views/admin.py`, `verifySuperUser`).
   Kept here rather than deleted: this section records what was knowingly
   deferred, and this entry is the reason it stopped being deferred.
 - **`sampleDownload`, `adminRetrieveSamples`, the zip-of-xls path.** Unreachable

@@ -81,16 +81,16 @@ after claiming a partition (`nextseek_api/attributes/jobs.py:251`); the recovery
 scheduler drives it through that worker helper too
 (`nextseek_api/attributes/management/commands/recover_attribute_sync_jobs.py:137`).
 
-**The workers are separate compose services, not threads in the app container.** All
-three run the shared app image `${COMPOSE_PROJECT_NAME:-nextseek}-nextseek:latest`
-(`docker-compose.yml:340`) as their own services: a Celery worker bound to the
-`attribute_mutations` queue only (`docker-compose.yml:334`, command at
-`docker-compose.yml:351`), the outbox dispatcher (`docker-compose.yml:368`, command at
-`docker-compose.yml:385`), and the synchronous-job recovery scheduler
-(`docker-compose.yml:403`, command at `docker-compose.yml:417`). The dispatcher and
-worker share a SQLite Celery broker on a named volume (`docker-compose.yml:348`);
-the recovery scheduler deliberately has neither, so it can consume no queue at all
-(`docker-compose.yml:399-402`).
+**The workers are background processes of the app container, not separate services.**
+`docker/scripts/entrypoint.sh` starts all three in the `nextseek` container beside the
+web server: a Celery worker bound to the `attribute_mutations` queue only, the outbox
+dispatcher (`dispatch_attribute_outbox`), and the synchronous-job recovery scheduler
+(`recover_attribute_sync_jobs --loop`). The dispatcher and worker share a SQLite Celery
+broker on the named volume `attribute_mutation_broker`, which the `nextseek` service
+mounts at `/var/lib/attribute-broker`; the recovery scheduler deliberately has neither,
+so it can consume no queue at all. Any one of them exiting stops the container under
+`wait -n`, and `docker/scripts/attribute_runtime_healthcheck.py app` is the
+container's healthcheck.
 
 **Django cannot see these commands where they live.** Its per-app command scan walks
 only each `INSTALLED_APPS` entry's own path, and this is a subpackage rather than an
@@ -199,11 +199,9 @@ edges made of service definitions and names in string form.
   grep over every `*.py` in the worktree for
   `nextseek_api.attributes.management` returns only those three files and one test
   (`nextseek_api/attributes/tests/test_sync_recovery.py:118`).
-- Compose reaches the commands purely by name (`docker-compose.yml:385`,
-  `docker-compose.yml:417`) and the worker by queue name
-  (`docker-compose.yml:351`).
-- `startup/lib/rebuild_policy.py:16-20` names the three services as literal strings,
-  which is what `./startup.sh rebuild` recreates (`startup/cli.py:599-607`).
+- `docker/scripts/entrypoint.sh` reaches the commands purely by name and the worker by
+  queue name, so `./startup.sh rebuild` restarts all three with the app
+  (`BASE_APP_RUNTIME_SERVICES` in `startup/lib/rebuild_policy.py`).
 - `docker/scripts/attribute_runtime_healthcheck.py:22` is not an importer: it hardcodes
   the heartbeat table name and reads MySQL directly, precisely to avoid starting a
   second Django process inside the service containers

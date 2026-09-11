@@ -72,7 +72,7 @@ MySQL-only `CHARACTER SET` DDL that SQLite cannot parse, which its docstring rec
 
 `dmac/local_settings.example.py` is a five-name sample — participating projects, test
 cases, publish URL, publish stats file and smart-search URL
-(`dmac/local_settings.example.py:3-25`). It is the surface `seek/views.py` needs at
+(`dmac/local_settings.example.py:3-25`). It is the surface the `seek/views/` package needs at
 import, which is why two test modules reproduce exactly those names by hand rather than
 copying the file: `seek/tests/test_seek_public_links.py:98-103` and
 `seek/tests/test_views_children_uids_sql.py:50-55`. It is *not* the surface a working
@@ -277,9 +277,8 @@ modules.
   `ci/gate/live_routes.py:18`, `scripts/dump_routes.py:20`,
   `nextseek_api/batch_upload/celery_app.py:12` and `nessie_tests/sources.py:249`.
 - `dmac/local_settings.py`, which this directory never contains, is bind-mounted by path
-  into the `nextseek` service at `docker-compose.yml:30` and into four attribute and assay
-  worker services at `docker-compose.yml:346`, `docker-compose.yml:380`,
-  `docker-compose.yml:415` and `docker-compose.yml:450`. It is written by
+  into the `nextseek` service (`docker-compose.yml`), the only service that runs the app
+  image. It is written by
   `startup/steps/config.py:167`, inspected by `startup/steps/validate.py:63`, and required
   by `scripts/run_tests.sh:37-41`.
 

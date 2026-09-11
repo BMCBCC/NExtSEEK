@@ -127,7 +127,8 @@ Django's per-app command scan walks only an installed app's own path, and this i
 subpackage, so a same-named shim in the parent re-exports the class
 (`nextseek_api/management/commands/run_assay_registration_jobs.py:1-5`); the reasoning is at
 `nextseek_api/assay_registration/management/commands/run_assay_registration_jobs.py:21-30`.
-Compose runs it as a profile-gated service (`docker-compose.yml:438-453`).
+It runs as a background process of the `nextseek` container, started by
+`docker/scripts/entrypoint.sh` with `--interval 5`; there is no separate compose service.
 
 ## Running and testing
 
@@ -220,11 +221,10 @@ which constrains the prose constants that live in the parent rather than anythin
 - Convention and drift gates. `scripts/validate_viewset_conventions.py:34` names this
   ViewSet module, and `nextseek_api/cc_assistant/tests/test_cc_context_drift_guard.py:403`
   classifies the POST route as a write rather than a read-shaped POST.
-- Deployment. `startup/lib/rebuild_policy.py:26` enumerates the worker service so
-  `./startup.sh rebuild` can recreate it, gated on the profile parsed at
-  `startup/lib/rebuild_policy.py:35-36` and accumulated at
-  `startup/lib/rebuild_policy.py:68-69`; `docker-compose.yml:452` is the command it runs; and
-  `DEPLOYMENT.md:43` is the operator-facing row.
+- Deployment. `docker/scripts/entrypoint.sh` starts the drain loop inside the `nextseek`
+  container, so `./startup.sh rebuild` restarts it with the app
+  (`BASE_APP_RUNTIME_SERVICES` in `startup/lib/rebuild_policy.py`), and `DEPLOYMENT.md` §0
+  is the operator-facing row.
 - The Container-CC agent, as data. `docker/cc-runtime/build_context/plugins/nextseek/context/min_api_endpoints.json:8-10`
   publishes the POST route to the agent, and the sibling entry at
   `docker/cc-runtime/build_context/plugins/nextseek/context/min_api_endpoints.json:30`
@@ -236,8 +236,5 @@ What a hit here is NOT. `nextseek_api/batch_upload/errors.py:83` defines a class
 `nextseek_api/assay_registration/schemas.py:102`, and nothing crosses between them.
 `ci/smoke/test_health.py:40` names the string `assay-registrations` inside the set of router
 keys the API root is asserted to advertise (`ci/smoke/test_health.py:33`); it exercises the
-registration in the parent and reaches no code in this directory. `startup/tests/test_rebuild_policy.py` matches twelve
-times but tests the deploy policy module, not this package.
-
-See `nextseek_api/assay_registration/CLAUDE.md` for the invariants this pipeline rests on and
-the traps around the job path.
+registration in the parent and reaches no code in this directory. `startup/tests/test_rebuild_policy.py` matches
+too, but tests the deploy policy module, not this package.

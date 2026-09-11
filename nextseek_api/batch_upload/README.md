@@ -235,8 +235,8 @@ remaining 13 import sites in 10 files, plus the three edges that are not imports
   `nextseek_api/urls.py:37` can register it under the `nextseek_api` app.
 - The shared Celery app is the widest edge. `nextseek_api/attributes/tasks.py:12` binds the
   attribute-mutation task to it, `nextseek_api/cc_assistant/cc_upload_tasks.py:18` binds the
-  CC upload task, and `docker-compose.yml:351` runs a separate worker process off the same
-  app for a different queue. Renaming or moving `celery_app` breaks all three.
+  CC upload task, and `docker/scripts/entrypoint.sh` runs a second worker process off the
+  same app for the `attribute_mutations` queue. Renaming or moving `celery_app` breaks all three.
 - Job ownership. `nextseek_api/services/cc_assistant.py:888` registers a CC upload in this
   package's index and `nextseek_api/services/cc_assistant.py:900` gates the status endpoint
   on it, so the CC upload flow inherits this package's ownership model wholesale.

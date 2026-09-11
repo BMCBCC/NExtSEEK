@@ -228,7 +228,7 @@ python NessieAI/tests/nessie_tests/scripts/delta_selection.py --graded <run>/gra
 git checkout NessieAI/tests/nessie_tests/corpus.json   # the narrowing is run-time state, not a commit
 ```
 
-Full grading and merge procedure: `docs/nessie-corpus-additive-2026-08-06.md`.
+Full grading and merge procedure: `NessieAI/history/docs/nessie-corpus-additive-2026-08-06.md` (archived).
 
 ## Scope
 - `--scope specific` → only `route_gate`-tagged cases (+ consistency groups).
@@ -387,8 +387,8 @@ All three ways of getting them wrong fail in a way that does not name the cause:
 
 Five of the six tests in `NessieAI/tests/nessie_tests/tests/test_v4_2_set3_replay.py` open a
 delivery zip through an absolute path into another developer's home directory:
-`v4_2_verifier.py:20` pins
-`V13A_DELIVERY = Path("/home/taishajo/work/NExtSEEK-dev/testquestions-2026-08-07")`.
+`v4_2_verifier.py:20` pins `V13A_DELIVERY` to a `testquestions-2026-08-07` directory
+under that developer's home directory.
 On any machine that is not that one they die
 `FileNotFoundError: ... testquestions.zip` — the same five, on every run, with
 everything else green. That is the machine, not a regression; do not chase it.

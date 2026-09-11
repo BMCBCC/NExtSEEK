@@ -145,23 +145,15 @@ lineage — none of them fails loudly.
   this boundary** by `ci/smoke/test_flows.py:220-223`, which skips rather than fails when it
   is absent (`ci/smoke/test_flows.py:224-225`). Renaming or moving it removes a smoke check
   without turning anything red.
-- **Four files here still tell you to run them from a path that is not in the image.**
+- **Three files here still tell you to run them from a path that is not in the image.**
   `nextseek_api/batch_upload/scripts/backfill_parent_titles.py:12`,
-  `nextseek_api/batch_upload/scripts/backfill_parent_title_hashes.py:12`,
-  `nextseek_api/batch_upload/tests/fixtures/_generate_wave3_fixtures.py:15` and
-  `nextseek_api/batch_upload/tests/WAVE3_LIVE_TESTING.md:43` all name an interpreter under
-  `/opt/NExtSEEK`, while the image puts the application and its virtualenv under `/app`
-  (`scripts/run_tests.sh:45-47`, `docker-compose.yml:354`). Copy-pasting any of those four
-  commands fails on a missing interpreter.
-- **`nextseek_api/batch_upload/tests/WAVE3_LIVE_TESTING.md:1` is half true, which is worse
-  than plainly wrong.** Every environment variable it documents is still read by the module:
-  the two `WAVE3_*` names at
-  `nextseek_api/batch_upload/tests/test_identity_drift_integration.py:51-52` and the four
-  `SPIKE_DB_*` overrides at
-  `nextseek_api/batch_upload/tests/test_identity_drift_integration.py:57-60`, so the file
-  reads as maintained, while the command that would run the lane
-  (`nextseek_api/batch_upload/tests/WAVE3_LIVE_TESTING.md:59`) uses the missing interpreter
-  named above. Check every other claim in it against source before acting on it.
+  `nextseek_api/batch_upload/scripts/backfill_parent_title_hashes.py:12` and
+  `nextseek_api/batch_upload/tests/fixtures/_generate_wave3_fixtures.py:15` all name an
+  interpreter under `/opt/NExtSEEK`, while the image puts the application and its
+  virtualenv under `/app` (`scripts/run_tests.sh:45-47`, the `nextseek` healthcheck in
+  `docker-compose.yml`). Copy-pasting any of those three commands fails on a missing
+  interpreter. `nextseek_api/batch_upload/tests/WAVE3_LIVE_TESTING.md` already runs its
+  lane with `/app/.venv/bin/python` inside the `nextseek` container.
 - **`nextseek_api/batch_upload/neo4j_sync.py:1849` is the last line of the largest module
   here**, and a `grep` of its top-level `def` lines on 2026-09-03 counted 31, among them 8
   bulk merges from `nextseek_api/batch_upload/neo4j_sync.py:99` to

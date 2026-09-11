@@ -28,8 +28,10 @@ container, not just read off the router registrations.
 
 **Line-number caveat:** several files were being edited in this working tree while the register
 was compiled (a UTF-8 Basic-auth fix in `nextseek_api/helpers.py`, `seek/seekapi.py` and
-`seek/views.py`; then the #60 scoping fix in `nextseek_api/views.py`). Every citation below was
-read from the tree at compile time. Citations into `nextseek_api/views.py` below the sample-tree
+`seek/views.py`, a module that no longer exists; then the #60 scoping fix in
+`nextseek_api/views.py`). Every citation below was read from the tree at compile time. The
+views are now the `seek/views/` package and the sample table the `seek/sample/` package, so
+citations into those two name the owning module and symbol. Citations into `nextseek_api/views.py` below the sample-tree
 viewset have since shifted by roughly +75 lines; the surrounding symbol names are the reliable
 anchor, not the numbers.
 
@@ -59,8 +61,8 @@ user.is_staff = 1
 
 **3.** Net effect: `is_superuser or is_staff` is true for essentially every account, so
 `getChildrenUIDs(requested_uids, user_project_ids, is_superuser)` at `nextseek_api/views.py:686`
-takes the admin branch at `seek/dbtable_sample.py:901-905` (`WHERE uuid IN (...)`, no project
-join) rather than the scoped branch at `seek/dbtable_sample.py:907-913`
+takes the admin branch of `getChildrenUIDs` in `seek/sample/trees.py` (`WHERE uuid IN (...)`,
+no project join) rather than its scoped branch
 (`... JOIN projects_samples ps ... AND ps.project_id IN (...)`). The same bypass applies to
 the MySQL fallback path at `nextseek_api/views.py:710-716` versus `:717-729`. The project ids
 are resolved correctly and for real at `nextseek_api/views.py:621-627`; they are simply not
@@ -93,8 +95,8 @@ running stack and is still exact.
 Note the comment is more specific than "we left it because it would break things": it records
 that the technical prerequisite is satisfied and that what remains is an impact assessment.
 This section is that assessment. For contrast, the legacy path this mirrors,
-`seek/views.py:1249` inside `adminRetrieveSamples`, uses `verifySuperUser(request)`
-(`seek/views.py:748-754`), which tests `is_superuser` alone.
+`adminRetrieveSamples` in `seek/views/admin.py`, uses `verifySuperUser(request)`
+(`seek/decorators.py`), which tests `is_superuser` alone.
 
 ### The question
 
@@ -156,7 +158,7 @@ have **no consumer anywhere in the worktree**.
    applies and answers narrow per user. As a service identity, scoping is centralized in one
    account, but every user's answer is that account's view.
 4. **Should a scoped read tell the caller that rows were withheld?** Today the scoped branches
-   at `seek/dbtable_sample.py:907-913` and `nextseek_api/views.py:717-729` silently return
+   in `getChildrenUIDs` (`seek/sample/trees.py`) and `nextseek_api/views.py:717-729` silently return
    fewer rows. An assistant cannot distinguish "no such data" from "not your project", which is
    a correctness problem for generated answers regardless of which way question 1 is decided.
 5. **What is the measurement cost?** Assistant ground-truth values in `nessie_tests` were all
@@ -180,7 +182,7 @@ endpoints add a second inline auth gate inside the handler, which is noted where
 | `GET /nextseek_api/redoc/` | `SpectacularRedocView` | `IsAuthenticated` at the route (`nextseek_api/urls.py:63`, #77) | n/a, no data | public-to-authenticated |
 | `GET /nextseek_api/sample-tree/{uid}/tree/` | `SampleTreeViewSet.get_tree` | `IsAuthenticated` (`views.py:109`) | **Yes, added in this branch** (`665a103`): root gate + lineage pruning against `projects_samples`, admin bypass on `is_superuser` alone. Pre-fix: none | project-scoped (done) |
 | `POST /nextseek_api/samples/advanced_search/` | `SampleAdvancedSearchViewSet.create` | `IsAuthenticated` (`services/samples.py:357`) | **None. Deliberately NOT changed** in this branch, see note A | project-scoped (open, blocked) |
-| `POST /nextseek_api/admin/samples/retrieve/` | `AdminSampleViewSet.admin_retrieve_samples` | `IsAuthenticated` (`views.py:537`) | Yes but bypassed for staff: `views.py:686` -> `seek/dbtable_sample.py:907-913`; bypass at `views.py:642`. See note B | project-scoped |
+| `POST /nextseek_api/admin/samples/retrieve/` | `AdminSampleViewSet.admin_retrieve_samples` | `IsAuthenticated` (`views.py:537`) | Yes but bypassed for staff: `views.py:686` -> `getChildrenUIDs` in `seek/sample/trees.py`; bypass at `views.py:642`. See note B | project-scoped |
 | `GET /nextseek_api/samples/{uid}/` | `SampleProxyViewSet.retrieve` | `IsAuthenticated` (`services/samples.py:74`) | Delegated to SEEK under the caller's creds (`services/samples.py:129` -> `helpers.py:135-148`) | project-scoped (already, upstream) |
 | `GET /nextseek_api/sample_types/` | `SampleTypeProxyViewSet.list` | `IsAuthenticated` (`services/sample_types.py:58`) | Delegated to SEEK (`services/sample_types.py:89`) | public-to-authenticated |
 | `GET /nextseek_api/sample_types/{uid}/` | `SampleTypeProxyViewSet.retrieve` | `IsAuthenticated` (same) | Delegated to SEEK (`services/sample_types.py:120`) | public-to-authenticated |
@@ -259,14 +261,15 @@ carry no current exposure. They are listed so a future re-enable is a deliberate
 
 ### Note A: `samples/advanced_search` and the dead `project_id` hook
 
-`seek/dbtable_sample.py:3841` declares:
+`DBtable_sample.searchAdvanced` in `seek/sample/search.py` declared, when this was compiled:
 
 ```python
 def searchAdvanced(self, user_seek, filters, searchType, project_id=0, skip_tree=False):
 ```
 
 and the predicate is appended only when the argument is positive
-(`seek/dbtable_sample.py:3913-3917`):
+(now `_retrieveRecords_advanced` in `seek/sample/queries.py`, which since #93 also binds
+the value as a query parameter):
 
 ```python
 if 'project_id' in filtersdic:
@@ -277,8 +280,8 @@ if 'project_id' in filtersdic:
 ```
 
 The `projects_samples D` join that the predicate needs is likewise conditional
-(`seek/dbtable_sample.py:1754-1755`), and the value flows in via
-`__initSearchFilters` (`seek/dbtable_sample.py:1907, :1915`), default `0`.
+(`_sqlQuery_select_records_from` in `seek/sample/queries.py`), and the value flows in via
+`_initSearchFilters` in the same module, default `0`.
 
 The routed API path never supplies it. `nextseek_api/services/samples.py:509` calls:
 
@@ -290,10 +293,10 @@ with `search_type` in the third positional slot and `skip_tree` as a keyword, so
 takes its default of `0` and the predicate is never appended. Confirmed by grep: the only two
 callers of `searchAdvanced` in application code are `nextseek_api/views.py:505` (inside
 `SampleQueryViewSet`, **NOT ROUTED**) and `nextseek_api/services/samples.py:509`. In the routed
-surface the `project_id` hook at `dbtable_sample.py:3915` is therefore **dead code today**.
+surface the `project_id` hook in `_retrieveRecords_advanced` is therefore **dead code today**.
 
 **Status in this branch: NOT CHANGED, deliberately.** The plan was to generalize the
-`dbtable_sample.py:3915` hook from `= project_id` to an `IN (...)` set and pass the caller's
+`_retrieveRecords_advanced` hook from `= project_id` to an `IN (...)` set and pass the caller's
 SEEK project ids through. `SampleTreeViewSet.get_tree` was scoped that way and landed
 (`665a103`). This endpoint was not, for three reasons, in descending order of weight.
 
@@ -353,7 +356,7 @@ records the intent: this is the single download API behind every sample-download
 UI. Do not describe it as admin-gated.
 
 It is nonetheless the **only** read endpoint in the whole register that implements real project
-scoping in NExtSEEK's own query layer (`seek/dbtable_sample.py:907-913` and
+scoping in NExtSEEK's own query layer (`getChildrenUIDs` in `seek/sample/trees.py` and
 `nextseek_api/views.py:717-729`), and that scoping is what the headline open question is about.
 
 ### Note C: two unscoped Neo4j traversals in `sample_types.py`

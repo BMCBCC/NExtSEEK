@@ -179,11 +179,11 @@ is bound to the single database every entry in the batch targets, which is
 
 The lane driver is `scripts/attribute_api_test.sh schema`. It is not runnable
 outside one developer's machine: it reads its exact test-node selection from
-`/home/taishajo/work/state/attribute-viewset/VERIFICATION-MANIFEST.json`
-(`scripts/attribute_api_test.sh:138-146`) and writes evidence under
-`/home/taishajo/work/state/attribute-viewset/evidence/...`
-(`scripts/attribute_api_test.sh:187`). `/usr/bin/grep -n taishajo
-scripts/attribute_api_test.sh` on 2026-09-03 returns 16 lines. With the manifest
+`work/state/attribute-viewset/VERIFICATION-MANIFEST.json` under that developer's
+home directory (`scripts/attribute_api_test.sh:138-146`) and writes evidence
+under `work/state/attribute-viewset/evidence/...` in the same home directory
+(`scripts/attribute_api_test.sh:187`). A grep of `scripts/attribute_api_test.sh`
+for that home directory on 2026-09-03 returns 16 lines. With the manifest
 absent the schema branch exits 64 with `missing exact schema lane selection`
 (`scripts/attribute_api_test.sh:146`).
 
@@ -255,7 +255,7 @@ hardcoded:
 ### Two `run_identity` fields are unusable off one machine
 
 `base_sha` is read from a hardcoded path in a named developer's home directory,
-`/home/taishajo/work/state/attribute-viewset/VERIFICATION-MANIFEST.json`
+`work/state/attribute-viewset/VERIFICATION-MANIFEST.json` under it
 (`startup/steps/schema_fixups.py:72`). `_base_sha()` returns `None` whenever that
 file is absent (`startup/steps/schema_fixups.py:567-569`), so on every other
 machine the record's `base_sha` field is null

@@ -21,7 +21,7 @@ authoritative validation command exits 0:
 
 ```bash
 python3 scripts/plan018_v4_9_task2_coverage.py validate \
-  --root /home/taishajo/work/NExtSEEK-plan018-v4-9
+  --root <plan018-v4-9 checkout>
 ```
 
 The remediation restored the strict manifest schema lost during the later integration
@@ -99,7 +99,7 @@ All product/Django tests used the required Docker worktree mount plus `dmac.test
 
 ```bash
 docker run --rm --network none \
-  -v /home/taishajo/work/NExtSEEK-plan018-v4-9:/repo -w /repo \
+  -v <plan018-v4-9 checkout>:/repo -w /repo \
   -e DJANGO_SETTINGS_MODULE=dmac.test_settings \
   -e PYTHONPATH=/repo:/repo/dmac_assistant/src \
   nextseek-nextseek:latest \

@@ -13,11 +13,11 @@ correctness regression, not a refactor.
   the authenticated REST API as the logged-in user.
 - **Network segmentation is the containment control**, not filesystem
   permissions. The sibling joins the network named at
-  `NessieAI/cc/cc_engine.py:59`, declared at
-  `docker-compose.yml:488` and marked `internal: true` at
-  `docker-compose.yml:495` so it has no gateway at all. `db`, `neo4j`, `seek`
+  `NessieAI/cc/cc_engine.py:59`, declared as `dmac-cc-net` in the top-level
+  `networks:` block of `docker-compose.yml` and marked `internal: true` there, so it
+  has no gateway at all. `db`, `neo4j`, `seek`
   and `solr` declare no `networks:` key and so stay on the default network
-  only, which is the stated intent at `docker-compose.yml:73-74`. Adding the agent
+  only. Adding the agent
   to the default network would hand it L3 reach to services whose password is a
   committed default.
 - **Every mount is a subpath of one named volume.** `NessieAI/cc/cc_engine.py:932`

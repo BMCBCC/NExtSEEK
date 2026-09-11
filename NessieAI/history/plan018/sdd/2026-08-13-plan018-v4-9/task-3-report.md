@@ -26,14 +26,14 @@ Machine-checkable evidence:
 The fail-closed validator exits 0:
 
 ```bash
-cd /home/taishajo/work/NExtSEEK-plan018-v4-9
+cd <plan018-v4-9 checkout>
 python3 scripts/plan018_v4_9_task3_coverage.py validate
 ```
 
 The complete reproducible run is:
 
 ```bash
-cd /home/taishajo/work/NExtSEEK-plan018-v4-9
+cd <plan018-v4-9 checkout>
 python3 scripts/plan018_v4_9_task3_coverage.py run
 ```
 

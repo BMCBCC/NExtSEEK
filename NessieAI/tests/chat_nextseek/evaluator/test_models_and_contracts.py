@@ -17,8 +17,12 @@ from chat_nextseek.evaluator import (
 
 
 REPO_ROOT = paths.CHAT_NEXTSEEK_DIR
+# The external NextSeekEval checkout this parity test compares against lives in
+# its author's home directory, so the test fails on every other machine (it is
+# in ci/pytest-baseline.txt). Resolved from the home directory rather than
+# spelled out, so no personal path sits in a public file.
 EXTERNAL_SCHEMA_PATH = (
-    Path("/Users/taishajoseph/Documents/Projects/NextSeekEval/src/schemas/evaluator.py")
+    Path.home() / "Documents/Projects/NextSeekEval/src/schemas/evaluator.py"
 )
 
 

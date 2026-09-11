@@ -1256,7 +1256,7 @@ bytes; a matching basename is not evidence.
 
 The exact remotely retrieved pre-V5 registry plan was preserved beside the vault target before
 editing and is retained outside the vault (so it is not misclassified as a registry asset) at
-`/home/taishajo/work/state/plan018/registry-nextseek--plan-018-pre-v5-backup-20260804T224551-0400.md`
+`work/state/plan018/registry-nextseek--plan-018-pre-v5-backup-20260804T224551-0400.md` in a developer's home directory
 (SHA-256 `a4e9fc0a53442eaf098ec01c967d65dfe2e305edd6d6015a40d554015151711f`).
 The later corrective source plan is separately preserved as
 `docs/superpowers/plans/2026-07-31-hibayes-eval-routing.md.bak-pre-plan-vetting-v5-20260804T224551-0400.md`

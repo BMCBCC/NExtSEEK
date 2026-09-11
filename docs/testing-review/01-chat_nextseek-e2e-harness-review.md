@@ -4,7 +4,7 @@ Scope: `chat_nextseek/e2e.py`, `chat_nextseek/e2e/**`, `chat_nextseek/tests/**`,
 `chat_nextseek/conftest.py`, `chat_nextseek/README.md`, `chat_nextseek/CLAUDE.md`.
 Read-only analysis feeding a design discussion on unifying the NS + CC harnesses
 and adding router-level tests. All paths are relative to
-`/home/cdemu/code/dmac/docker/dev-v3-merge/chat_nextseek/`.
+the `chat_nextseek/` directory of a `dev-v3-merge` checkout in a developer's home directory.
 
 **Headline finding:** the harness is a strong, Pydantic-validated,
 input→expected-output catalog that asserts the **NS-internal parser mode** on

@@ -53,7 +53,7 @@ and evaluation image
 The test container has networking disabled and is capped at 2 CPUs and 4 GiB.
 
 ```bash
-cd /home/taishajo/work/NExtSEEK-plan018-v4-9
+cd <plan018-v4-9 checkout>
 python3 scripts/plan018_v4_9_task6_replay.py run
 python3 scripts/plan018_v4_9_task6_replay.py validate
 ```

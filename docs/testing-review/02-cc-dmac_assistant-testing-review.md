@@ -4,7 +4,7 @@ Scope: the Container-CC ("CC" mode) side of the NExtSEEK assistant. This maps
 the three code pieces, inventories every CC test/harness, and answers the six
 questions posed for the unified-router-harness design discussion.
 
-Repo root: `/home/cdemu/code/dmac/docker/dev-v3-merge` (branch `dev-v3-merge`).
+Repo root: a `dev-v3-merge` checkout in a developer's home directory (branch `dev-v3-merge`).
 All paths below are relative to that root unless absolute. READ-ONLY review — no
 code was modified.
 
