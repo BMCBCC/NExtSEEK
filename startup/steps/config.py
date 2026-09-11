@@ -11,6 +11,7 @@ from pathlib import Path
 from string import Template
 
 from startup.lib.env import read_env, write_env
+from startup.lib.layout import legacy_proxy_secret_env, proxy_secret_env
 
 
 @dataclass
@@ -183,19 +184,28 @@ def render_proxy_secret_env(
     token so compose can still create the service and paid CC calls remain
     disabled until the file is filled in. The file is written mode 0600 since
     it holds an institutional Bedrock token.
+
+    The path is ``startup.lib.layout.PROXY_SECRET_ENV``. A token still sitting
+    at the pre-NessieAI location is read as the last fallback, so a re-run on a
+    box that has not moved the file yet carries its token across instead of
+    rendering an empty one. That file is only read, never written or removed.
     """
     source = source_env if source_env is not None else os.environ
-    output = repo_root / "docker" / "bedrock-proxy" / "proxy-secret.env"
+    output = proxy_secret_env(repo_root)
     existing = read_env(output)
-    # Precedence: operator env > existing hand-filled file > empty.
+    legacy = read_env(legacy_proxy_secret_env(repo_root))
+    # Precedence: operator env > existing hand-filled file > pre-move file > empty.
     # Re-running install must never clobber a filled token back to empty (D2).
-    token = source.get("AWS_BEARER_TOKEN_BEDROCK", "") or existing.get(
-        "AWS_BEARER_TOKEN_BEDROCK", ""
+    token = (
+        source.get("AWS_BEARER_TOKEN_BEDROCK", "")
+        or existing.get("AWS_BEARER_TOKEN_BEDROCK", "")
+        or legacy.get("AWS_BEARER_TOKEN_BEDROCK", "")
     )
     region = (
         source.get("AWS_REGION")
         or source.get("AWS_DEFAULT_REGION")
         or existing.get("AWS_REGION")
+        or legacy.get("AWS_REGION")
         or "us-east-1"
     )
     write_env(output, {"AWS_BEARER_TOKEN_BEDROCK": token, "AWS_REGION": region})

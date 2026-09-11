@@ -31,8 +31,8 @@ def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Isolated repo skeleton with cli.REPO_ROOT pointed at it."""
     (tmp_path / "startup").mkdir()
     (tmp_path / "docker").mkdir()
-    (tmp_path / "chat_nextseek").mkdir()
-    (tmp_path / "chat_nextseek" / "pyproject.toml").write_text("[project]\n")
+    (tmp_path / "NessieAI" / "chat_nextseek").mkdir(parents=True)
+    (tmp_path / "NessieAI" / "chat_nextseek" / "pyproject.toml").write_text("[project]\n")
     monkeypatch.setattr(cli, "REPO_ROOT", tmp_path)
     return tmp_path
 
@@ -129,9 +129,10 @@ def test_install_fails_fast_when_prereqs_fail(repo: Path, steps) -> None:
 
 
 def test_install_fails_when_vendored_chat_nextseek_missing(repo: Path, steps) -> None:
-    (repo / "chat_nextseek" / "pyproject.toml").unlink()
+    (repo / "NessieAI" / "chat_nextseek" / "pyproject.toml").unlink()
     result = runner.invoke(cli.app, ["install", "--yes"])
     assert result.exit_code == 1
+    assert "NessieAI/chat_nextseek/ is missing" in result.output
 
 
 def test_install_rejects_invalid_seek_public_url_with_exit_2(repo: Path, steps) -> None:
@@ -344,6 +345,29 @@ def test_reset_keep_config_preserves_config_files(
     result = runner.invoke(cli.app, ["reset", "--yes", "--keep-config"])
     assert result.exit_code == 0, result.output
     assert (repo / "docker" / "db.env").exists()
+
+
+@patch("startup.lib.docker_ops.compose_down")
+def test_reset_removes_the_proxy_token_at_both_homes(
+    mock_down: MagicMock, repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Reset claims to remove config. A box that never moved its token after
+    the NessieAI move still holds it at the old path, and reset must not
+    leave the real token behind there."""
+    _saved_state(repo)
+    homes = [
+        repo / "NessieAI" / "docker" / "bedrock-proxy" / "proxy-secret.env",
+        repo / "docker" / "bedrock-proxy" / "proxy-secret.env",
+    ]
+    for p in homes:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text('AWS_BEARER_TOKEN_BEDROCK="ABSK-x"\n')
+    monkeypatch.setattr(cli, "install", MagicMock())
+
+    result = runner.invoke(cli.app, ["reset", "--yes"])
+
+    assert result.exit_code == 0, result.output
+    assert [p for p in homes if p.exists()] == []
 
 
 @patch("startup.lib.docker_ops.compose_down")
@@ -1268,6 +1292,74 @@ def test_rebuild_disk_floor_overrides_the_profile(
 
     assert result.exit_code == 0, result.output
     assert seen[0]["floor_override"] == 8
+
+
+# The three pre-NessieAI lines a box's rendered docker/nextseek.env carried on
+# 2026-09-10. "/app" is joined on separately so the stale-path grep the move is
+# verified with (over startup/) keeps returning nothing but real regressions.
+_PRE = "/app"
+_PRE_MOVE_ENV = (
+    'SEEK_HOST="seek"\n'
+    f'CATALOG_FILE="{_PRE}/chat_nextseek/agent_model_catalog.json"\n'
+    f"DMAC_ROUTE_CAPABILITIES_FILE={_PRE}/dmac_assistant/build_context/route_capabilities.json\n"
+    f"DMAC_ROUTER_MODEL_CLASS_MAP_FILE={_PRE}"
+    "/dmac_assistant/build_context/router_model_class_map.json\n"
+)
+
+
+@pytest.mark.parametrize(
+    "component", ["app", "cc-agent", "bedrock-proxy", "nextseek-sidecar", "custom-stack"]
+)
+def test_rebuild_refuses_a_nextseek_env_with_pre_move_paths(
+    repo: Path, monkeypatch: pytest.MonkeyPatch, component: str,
+) -> None:
+    """rebuild never re-renders docker/nextseek.env, so it must refuse to
+    recreate anything on top of one that names the pre-move layout, before the
+    disk review, the rollback tags or the build."""
+    from startup.lib import docker_ops
+    from startup.steps import rollback_tags
+
+    _saved_state(repo, ci_profile="dev")
+    _mock_rebuild(monkeypatch)
+    disk_seen = _capture_preflight(monkeypatch)
+    tagged: list[int] = []
+    monkeypatch.setattr(
+        rollback_tags, "create_verified", lambda images, build_root: tagged.append(1) or ()
+    )
+    built: list[int] = []
+    monkeypatch.setattr(docker_ops, "compose_build", lambda **kw: built.append(1))
+    (repo / "docker" / "nextseek.env").write_text(_PRE_MOVE_ENV)
+
+    result = runner.invoke(cli.app, ["rebuild", "--component", component])
+
+    assert result.exit_code == 1, result.output
+    assert (disk_seen, tagged, built) == ([], [], [])
+    flat = _flat(result.output)
+    assert "stopped before building" in flat
+    for line, key in ((2, "CATALOG_FILE"), (3, "DMAC_ROUTE_CAPABILITIES_FILE"),
+                      (4, "DMAC_ROUTER_MODEL_CLASS_MAP_FILE")):
+        assert f"line {line} {key}" in flat
+
+
+def test_rebuild_proceeds_once_the_env_names_the_nessieai_paths(
+    repo: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _saved_state(repo, ci_profile="dev")
+    _mock_rebuild(monkeypatch)
+    _capture_preflight(monkeypatch)
+    built: list[int] = []
+    from startup.lib import docker_ops
+    monkeypatch.setattr(docker_ops, "compose_build", lambda **kw: built.append(1))
+    monkeypatch.setattr(ci_runner, "run_ci", lambda *a, **k: 0)
+    (repo / "docker" / "nextseek.env").write_text(
+        'SEEK_HOST="seek"\n'
+        'CATALOG_FILE="/app/NessieAI/chat_nextseek/agent_model_catalog.json"\n'
+    )
+
+    result = runner.invoke(cli.app, ["rebuild"])
+
+    assert result.exit_code == 0, result.output
+    assert built == [1]
 
 
 def test_install_measures_disk_too(repo: Path, steps) -> None:

@@ -17,6 +17,12 @@ from startup.lib.docker_ops import (
 )
 from startup.lib.rebuild_policy import component_policies
 from startup.lib.env import read_env
+from startup.lib.layout import (
+    LEGACY_PROXY_SECRET_ENV,
+    PROXY_SECRET_ENV,
+    legacy_proxy_secret_env,
+    proxy_secret_env,
+)
 
 
 @dataclass
@@ -123,18 +129,107 @@ def check_prod_overlay_guard(repo_root: Path) -> HealthResult:
 
 
 def check_proxy_token(repo_root: Path) -> HealthResult:
-    secret = repo_root / "docker" / "bedrock-proxy" / "proxy-secret.env"
+    secret = proxy_secret_env(repo_root)
     token = read_env(secret).get("AWS_BEARER_TOKEN_BEDROCK", "")
     if token:
         return HealthResult(name="bedrock proxy token", ok=True, detail="token present")
+    if legacy_proxy_secret_env(repo_root).exists():
+        # The one empty case with a one-line fix: the box kept its token at the
+        # pre-NessieAI path, which compose no longer reads.
+        fill = (
+            f"a pre-move token file is still at {LEGACY_PROXY_SECRET_ENV.as_posix()}: "
+            f"move it to {PROXY_SECRET_ENV.parent.as_posix()}/ (mv keeps its mode)"
+        )
+    else:
+        fill = f"Fill {PROXY_SECRET_ENV.as_posix()}"
     return HealthResult(
         name="bedrock proxy token",
         ok=True,
         warn=True,
         detail=(
-            "EMPTY — CC model calls are disabled. Fill "
-            "docker/bedrock-proxy/proxy-secret.env, then "
+            f"EMPTY: CC model calls are disabled. {fill}, then "
             "`docker compose up -d --force-recreate bedrock-proxy`"
+        ),
+    )
+
+
+# A rendered docker/nextseek.env value that still points into a Nessie unit's
+# pre-move location (/app/<unit> for chat_nextseek, dmac_assistant and
+# nessie_tests, all now under /app/NessieAI/). The file is gitignored, rebuild never
+# re-renders it, and install rewrites it whole (rotating DJANGO_SECRET_KEY), so
+# nothing in git ever fixes these lines on a box. A superset of
+# ^[A-Z_]+=.*?/app/(chat_nextseek|dmac_assistant|nessie_tests)/ : digits are
+# allowed in the key, and the unit name may also end at a quote, a colon,
+# whitespace or the end of the line.
+STALE_NESSIE_ENV_RE = re.compile(
+    r"^([A-Z_][A-Z0-9_]*)=.*?/app/(chat_nextseek|dmac_assistant|nessie_tests)"
+    r"(?=/|[\"':\s]|$)"
+)
+
+# What to do with each known stale key. The two DMAC_* overrides are deleted,
+# not repointed: the package default already resolves inside the editable
+# install, and a stale value is silent (every CC turn loses its model id and
+# 403s at the proxy; every turn's routing drops to the keyword heuristic).
+_STALE_ENV_FIXES = {
+    "CATALOG_FILE": 'set it to "/app/NessieAI/chat_nextseek/agent_model_catalog.json"',
+    "DMAC_ROUTE_CAPABILITIES_FILE": "delete the line (the package default is correct)",
+    "DMAC_ROUTER_MODEL_CLASS_MAP_FILE": "delete the line (the package default is correct)",
+}
+_STALE_UNIT_HOMES = {
+    "chat_nextseek": "/app/NessieAI/chat_nextseek/",
+    "dmac_assistant": "/app/NessieAI/dmac_assistant/",
+    "nessie_tests": "/app/NessieAI/tests/nessie_tests/",
+}
+
+
+def find_stale_nessie_env_lines(env_path: Path) -> list[tuple[int, str, str]]:
+    """``(line number, key, unit)`` for each value naming a pre-move Nessie path.
+
+    Keys and line numbers only: the same file carries the Django secret and the
+    LLM keys, and this output goes to a terminal.
+    """
+    if not env_path.exists():
+        return []
+    hits: list[tuple[int, str, str]] = []
+    for number, line in enumerate(env_path.read_text().splitlines(), start=1):
+        match = STALE_NESSIE_ENV_RE.match(line)
+        if match:
+            hits.append((number, match.group(1), match.group(2)))
+    return hits
+
+
+def check_stale_nessie_env(repo_root: Path) -> HealthResult:
+    """Fail on any docker/nextseek.env value that names a pre-NessieAI path.
+
+    ``rebuild`` refuses on this before it builds anything; doctor and install's
+    final checks report it.
+    """
+    name = "nextseek.env paths"
+    env_file = repo_root / "docker" / "nextseek.env"
+    if not env_file.exists():
+        return HealthResult(
+            name=name, ok=True, detail="docker/nextseek.env not rendered, nothing to check"
+        )
+    stale = find_stale_nessie_env_lines(env_file)
+    if not stale:
+        return HealthResult(
+            name=name, ok=True, detail="no value points at a pre-NessieAI path"
+        )
+    fixes = "; ".join(
+        f"line {number} {key}: "
+        + _STALE_ENV_FIXES.get(
+            key, f"repoint it under {_STALE_UNIT_HOMES[unit]} (was /app/{unit}/)"
+        )
+        for number, key, unit in stale
+    )
+    return HealthResult(
+        name=name,
+        ok=False,
+        detail=(
+            "docker/nextseek.env still names the pre-NessieAI layout, which a "
+            "rebuild would load into nextseek. Edit it by hand (rebuild never "
+            "re-renders it, and install rotates DJANGO_SECRET_KEY): "
+            f"{fixes}. A rebuild then recreates nextseek, which re-reads the file"
         ),
     )
 
@@ -215,7 +310,7 @@ def check_cc_runner(repo_root: Path, env: dict[str, str]) -> HealthResult:
             # executes in /app/.venv without modifying it (DEPLOYMENT.md 6.6).
             command=[
                 "uv", "run", "--no-sync", "python", "-c",
-                "from nextseek_api.cc_assistant import cc_engine; "
+                "from NessieAI.cc import cc_engine; "
                 "print(cc_engine.cc_runner_available())",
             ],
             project_dir=repo_root,
@@ -306,6 +401,7 @@ def run_all_health_checks(
         check_http("Neo4j", f"http://localhost:{ports.get('neo4j_http', 7474)}"),
         run_django_check(repo_root, env),
         check_prod_overlay_guard(repo_root),
+        check_stale_nessie_env(repo_root),
         check_seek_url_consistency(repo_root, load_instance(repo_root), env),
         check_proxy_token(repo_root),
         check_cc_services(repo_root, env),
@@ -328,6 +424,7 @@ def run_app_health_checks(
         check_http("NExtSEEK", f"http://localhost:{ports.get('nextseek', 8000)}"),
         run_django_check(repo_root, env),
         check_prod_overlay_guard(repo_root),
+        check_stale_nessie_env(repo_root),
         check_proxy_token(repo_root),
         check_cc_services(repo_root, env),
         # An app-only deploy is precisely the cohort that never rebuilds

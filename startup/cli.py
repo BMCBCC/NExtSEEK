@@ -7,7 +7,7 @@ from pathlib import Path
 
 import typer
 
-from startup.lib import ui
+from startup.lib import layout, ui
 from startup.lib.env import read_env
 from startup.lib.instance import (
     InstanceState,
@@ -51,9 +51,30 @@ DEFAULT_CI_PROFILE = "prod"
 def _warn_if_proxy_token_empty(proxy_env_path: Path) -> None:
     if not read_env(proxy_env_path).get("AWS_BEARER_TOKEN_BEDROCK"):
         ui.warn(
-            "AWS_BEARER_TOKEN_BEDROCK is EMPTY — CC model calls disabled until "
-            "docker/bedrock-proxy/proxy-secret.env is filled and bedrock-proxy recreated"
+            "AWS_BEARER_TOKEN_BEDROCK is EMPTY: CC model calls disabled until "
+            f"{layout.PROXY_SECRET_ENV.as_posix()} is filled and bedrock-proxy recreated"
         )
+
+
+def _nessie_env_preflight_or_exit() -> None:
+    """Refuse to rebuild over a docker/nextseek.env that names pre-move paths.
+
+    The file is gitignored and rebuild never re-renders it, so the NessieAI move
+    reaches a box only through a hand edit. Rebuilding first would recreate
+    nextseek on the stale values: CATALOG_FILE stops the site booting, and the
+    two DMAC_* overrides silently cost every CC turn its model id and every
+    turn its router. Runs before the disk review, the rollback tags and the
+    build, so a refusal leaves the box exactly as it was.
+    """
+    result = validate.check_stale_nessie_env(REPO_ROOT)
+    if not result.ok:
+        ui.fail(f"stopped before building: {result.detail}")
+        ui.remediation(
+            "edit docker/nextseek.env as listed, confirm with "
+            "grep -nE '/app/(chat_nextseek|dmac_assistant|nessie_tests)' "
+            "docker/nextseek.env (expect no output), then re-run the rebuild"
+        )
+        raise typer.Exit(code=1)
 
 
 def _disk_preflight_or_exit(
@@ -170,13 +191,14 @@ def _install_impl(
         floor_override=disk_floor,
     )
 
-    # [2/9] chat_nextseek vendored
-    ui.step(2, total, "Verifying vendored chat_nextseek/")
-    if not (REPO_ROOT / "chat_nextseek" / "pyproject.toml").exists():
-        ui.fail("chat_nextseek/ is missing or empty")
-        ui.remediation("This repo ships chat_nextseek as a vendored directory; re-clone NExtSEEK")
+    # [2/9] chat_nextseek present (it ships in-tree, under NessieAI/)
+    chat_dir = layout.CHAT_NEXTSEEK_DIR.as_posix()
+    ui.step(2, total, f"Verifying {chat_dir}/")
+    if not (REPO_ROOT / layout.CHAT_NEXTSEEK_DIR / "pyproject.toml").exists():
+        ui.fail(f"{chat_dir}/ is missing or empty")
+        ui.remediation("This repo ships chat_nextseek in-tree under NessieAI/; re-clone NExtSEEK")
         raise typer.Exit(code=1)
-    ui.ok("chat_nextseek/ present")
+    ui.ok(f"{chat_dir}/ present")
 
     # [3/9] Resolve instance + ports
     ui.step(3, total, "Configuring instance")
@@ -283,7 +305,7 @@ def _install_impl(
     config.render_root_env(REPO_ROOT, compose_env, neo4j_password=values.neo4j_password)
     ui.ok(
         "docker/db.env, docker/nextseek.env, "
-        "docker/bedrock-proxy/proxy-secret.env, dmac/local_settings.py, .env"
+        f"{layout.PROXY_SECRET_ENV.as_posix()}, dmac/local_settings.py, .env"
     )
 
     # [5/9] Volumes
@@ -536,7 +558,10 @@ def reset(
         for p in [
             REPO_ROOT / "docker" / "db.env",
             REPO_ROOT / "docker" / "nextseek.env",
-            REPO_ROOT / "docker" / "bedrock-proxy" / "proxy-secret.env",
+            layout.proxy_secret_env(REPO_ROOT),
+            # A box that never moved its token still has it here. Reset claims
+            # to remove config, so it must not leave the real token behind.
+            layout.legacy_proxy_secret_env(REPO_ROOT),
             REPO_ROOT / "dmac" / "local_settings.py",
             REPO_ROOT / ".env",
             REPO_ROOT / "startup" / ".instance.json",
@@ -636,6 +661,10 @@ def rebuild(
     except ValueError as exc:
         ui.fail(str(exc))
         raise typer.Exit(code=2) from exc
+
+    # Before the disk review: a box that is going to be refused should not be
+    # walked through a purge first.
+    _nessie_env_preflight_or_exit()
 
     _disk_preflight_or_exit(
         ci_profile=state.ci_profile,

@@ -231,7 +231,7 @@ def test_prod_overlay_guard_wired_into_health_checks(
 
 
 def test_check_proxy_token_empty_is_warn_not_fail(tmp_path):
-    out = tmp_path / "docker" / "bedrock-proxy" / "proxy-secret.env"
+    out = tmp_path / "NessieAI" / "docker" / "bedrock-proxy" / "proxy-secret.env"
     out.parent.mkdir(parents=True)
     out.write_text('AWS_BEARER_TOKEN_BEDROCK=""\n')
     result = validate.check_proxy_token(tmp_path)
@@ -241,17 +241,181 @@ def test_check_proxy_token_empty_is_warn_not_fail(tmp_path):
 
 
 def test_check_proxy_token_present_is_ok(tmp_path):
-    out = tmp_path / "docker" / "bedrock-proxy" / "proxy-secret.env"
+    out = tmp_path / "NessieAI" / "docker" / "bedrock-proxy" / "proxy-secret.env"
     out.parent.mkdir(parents=True)
     out.write_text('AWS_BEARER_TOKEN_BEDROCK="ABSK-x"\n')
     result = validate.check_proxy_token(tmp_path)
     assert result.ok is True and result.warn is False
 
 
+def test_check_proxy_token_ignores_a_token_left_at_the_pre_move_path(tmp_path):
+    """compose reads only the NessieAI/ path now, so a token at the old one is
+    not a working token: warn, and say which mv fixes it, never what it holds."""
+    legacy = tmp_path / "docker" / "bedrock-proxy" / "proxy-secret.env"
+    legacy.parent.mkdir(parents=True)
+    legacy.write_text('AWS_BEARER_TOKEN_BEDROCK="ABSK-old-home"\n')
+
+    result = validate.check_proxy_token(tmp_path)
+
+    assert result.ok is True and result.warn is True
+    assert "disabled" in result.detail
+    assert "docker/bedrock-proxy/proxy-secret.env" in result.detail
+    assert "NessieAI/docker/bedrock-proxy/" in result.detail
+    assert "ABSK-old-home" not in result.detail
+
+
+# --- C9: rendered docker/nextseek.env values that name pre-NessieAI paths ---
+
+def _pre_move(rel: str) -> str:
+    """A unit's pre-NessieAI in-image path. "/app" is joined on separately so
+    the stale-path grep the move is verified with (over startup/) keeps
+    returning nothing but real regressions."""
+    return "/app" + "/" + rel
+
+
+# The three lines the local box's rendered env carried on 2026-09-10 (the same
+# values, rebuilt with _pre_move; fairdata-dev carries the same three keys).
+_PRE_MOVE_ENV_LINES = {
+    "CATALOG_FILE": (
+        'CATALOG_FILE="' + _pre_move("chat_nextseek/agent_model_catalog.json") + '"'
+    ),
+    "DMAC_ROUTE_CAPABILITIES_FILE": (
+        "DMAC_ROUTE_CAPABILITIES_FILE="
+        + _pre_move("dmac_assistant/build_context/route_capabilities.json")
+    ),
+    "DMAC_ROUTER_MODEL_CLASS_MAP_FILE": (
+        "DMAC_ROUTER_MODEL_CLASS_MAP_FILE="
+        + _pre_move("dmac_assistant/build_context/router_model_class_map.json")
+    ),
+}
+
+
+def _env_repo(tmp_path: Path, text: str) -> Path:
+    repo = tmp_path / "repo"
+    (repo / "docker").mkdir(parents=True)
+    (repo / "docker" / "nextseek.env").write_text(text)
+    return repo
+
+
+@pytest.mark.parametrize("key", sorted(_PRE_MOVE_ENV_LINES))
+def test_stale_nessie_env_refuses_each_pre_move_line_on_its_own(tmp_path, key):
+    repo = _env_repo(tmp_path, 'SEEK_HOST="seek"\n' + _PRE_MOVE_ENV_LINES[key] + "\n")
+
+    result = validate.check_stale_nessie_env(repo)
+
+    assert result.ok is False
+    assert f"line 2 {key}:" in result.detail
+
+
+def test_stale_nessie_env_lists_every_stale_line_with_its_fix(tmp_path):
+    repo = _env_repo(tmp_path, "\n".join(_PRE_MOVE_ENV_LINES.values()) + "\n")
+
+    result = validate.check_stale_nessie_env(repo)
+
+    assert result.ok is False
+    assert (
+        'line 1 CATALOG_FILE: set it to "/app/NessieAI/chat_nextseek/agent_model_catalog.json"'
+        in result.detail
+    )
+    # Deleted, not repointed: the package default is right, and a repointed
+    # override would silently go stale again at the next move.
+    assert "line 2 DMAC_ROUTE_CAPABILITIES_FILE: delete the line" in result.detail
+    assert "line 3 DMAC_ROUTER_MODEL_CLASS_MAP_FILE: delete the line" in result.detail
+
+
+def test_stale_nessie_env_repoints_any_other_key_by_its_unit(tmp_path):
+    repo = _env_repo(
+        tmp_path,
+        "NESSIE_CORPUS=" + _pre_move("nessie_tests/corpus.json") + "\n"
+        "EXTRA_PATH=/app:" + _pre_move("chat_nextseek") + "\n",
+    )
+
+    result = validate.check_stale_nessie_env(repo)
+
+    assert result.ok is False
+    assert "line 1 NESSIE_CORPUS: repoint it under /app/NessieAI/tests/nessie_tests/" in result.detail
+    assert "line 2 EXTRA_PATH: repoint it under /app/NessieAI/chat_nextseek/" in result.detail
+
+
+def test_stale_nessie_env_passes_current_paths_comments_and_near_misses(tmp_path):
+    repo = _env_repo(
+        tmp_path,
+        'CATALOG_FILE="/app/NessieAI/chat_nextseek/agent_model_catalog.json"\n'
+        "# " + _PRE_MOVE_ENV_LINES["CATALOG_FILE"] + "\n"
+        "ARCHIVE_DIR=" + _pre_move("chat_nextseek_archive/x") + "\n"
+        'LOG_DIR="/app/logs"\n',
+    )
+
+    result = validate.check_stale_nessie_env(repo)
+
+    assert result.ok is True, result.detail
+
+
+def test_stale_nessie_env_is_ok_when_nothing_is_rendered(tmp_path):
+    result = validate.check_stale_nessie_env(tmp_path)
+    assert result.ok is True
+    assert "not rendered" in result.detail
+
+
+def test_stale_nessie_env_names_keys_and_never_values(tmp_path):
+    """The same file carries the Django secret and the LLM keys."""
+    secret = "not-a-real-django-secret-7f3a"
+    repo = _env_repo(
+        tmp_path,
+        f'DJANGO_SECRET_KEY="{secret}"\n' + _PRE_MOVE_ENV_LINES["CATALOG_FILE"] + "\n",
+    )
+
+    result = validate.check_stale_nessie_env(repo)
+
+    assert result.ok is False
+    assert secret not in result.detail
+    # Only the stale line is reported, never its neighbour.
+    assert "line 2 CATALOG_FILE:" in result.detail
+    assert "line 1 " not in result.detail
+
+
+def test_rendered_template_passes_the_stale_env_check(tmp_path):
+    """install renders this file; the rebuild that follows must not refuse it."""
+    import shutil
+
+    from startup.steps import config
+
+    real_root = Path(__file__).resolve().parents[2]
+    repo = tmp_path / "repo"
+    (repo / "startup" / "templates").mkdir(parents=True)
+    shutil.copy(
+        real_root / "startup" / "templates" / "nextseek.env.template",
+        repo / "startup" / "templates" / "nextseek.env.template",
+    )
+    config.render_nextseek_env(repo, config.default_values(nextseek_port=8000, seek_port=3000))
+
+    result = validate.check_stale_nessie_env(repo)
+
+    assert result.ok is True, result.detail
+
+
+@pytest.mark.parametrize("which", ["run_all_health_checks", "run_app_health_checks"])
+def test_stale_nessie_env_is_reported_by_both_health_check_sets(monkeypatch, tmp_path, which):
+    """doctor (either scope) and install's final checks both surface it."""
+    repo = _env_repo(tmp_path, "\n".join(_PRE_MOVE_ENV_LINES.values()) + "\n")
+    _stub_unrelated_health_checks(monkeypatch)
+    monkeypatch.setattr(validate, "image_exists", lambda name: True)
+    monkeypatch.setattr(
+        validate,
+        "check_seek_url_consistency",
+        lambda repo_root, state, env: validate.HealthResult("SEEK public URL", True, "ok"),
+    )
+
+    results = getattr(validate, which)({"nextseek": 8000}, repo, env={})
+
+    by_name = {r.name: r for r in results}
+    assert by_name["nextseek.env paths"].ok is False
+
+
 def test_run_all_health_checks_surfaces_cc_warnings_and_services(monkeypatch, tmp_path):
     calls = []
-    (tmp_path / "docker" / "bedrock-proxy").mkdir(parents=True)
-    (tmp_path / "docker" / "bedrock-proxy" / "proxy-secret.env").write_text(
+    (tmp_path / "NessieAI" / "docker" / "bedrock-proxy").mkdir(parents=True)
+    (tmp_path / "NessieAI" / "docker" / "bedrock-proxy" / "proxy-secret.env").write_text(
         'AWS_BEARER_TOKEN_BEDROCK=""\n'
     )
 
@@ -275,8 +439,8 @@ def test_run_all_health_checks_surfaces_cc_warnings_and_services(monkeypatch, tm
 
 def test_app_health_checks_exclude_seek_and_neo4j(monkeypatch, tmp_path):
     calls = []
-    (tmp_path / "docker" / "bedrock-proxy").mkdir(parents=True)
-    (tmp_path / "docker" / "bedrock-proxy" / "proxy-secret.env").write_text(
+    (tmp_path / "NessieAI" / "docker" / "bedrock-proxy").mkdir(parents=True)
+    (tmp_path / "NessieAI" / "docker" / "bedrock-proxy" / "proxy-secret.env").write_text(
         'AWS_BEARER_TOKEN_BEDROCK=""\n'
     )
     monkeypatch.setattr(
@@ -315,7 +479,7 @@ def test_app_health_checks_exclude_seek_and_neo4j(monkeypatch, tmp_path):
 
     assert calls == [("NExtSEEK", "http://localhost:18000")]
     assert {result.name for result in results} == {
-        "NExtSEEK", "django check", "prod overlay guard",
+        "NExtSEEK", "django check", "prod overlay guard", "nextseek.env paths",
         "bedrock proxy token", "cc services",
         "first-party images", "CC runner",
     }
@@ -428,8 +592,8 @@ def test_cli_health_summary_warns_on_empty_token_and_lists_cc_services(monkeypat
     monkeypatch.setattr(cli.ui, "ok", lambda msg: ok_lines.append(msg))
     monkeypatch.setattr(cli.ui, "fail", lambda msg: fail_lines.append(msg))
 
-    (tmp_path / "docker" / "bedrock-proxy").mkdir(parents=True)
-    (tmp_path / "docker" / "bedrock-proxy" / "proxy-secret.env").write_text(
+    (tmp_path / "NessieAI" / "docker" / "bedrock-proxy").mkdir(parents=True)
+    (tmp_path / "NessieAI" / "docker" / "bedrock-proxy" / "proxy-secret.env").write_text(
         'AWS_BEARER_TOKEN_BEDROCK=""\n'
     )
     monkeypatch.setattr(
@@ -460,8 +624,8 @@ def test_cli_health_summary_no_token_warning_when_token_present(monkeypatch, tmp
     monkeypatch.setattr(cli.ui, "ok", lambda msg: ok_lines.append(msg))
     monkeypatch.setattr(cli.ui, "fail", lambda msg: (_ for _ in ()).throw(AssertionError(msg)))
 
-    (tmp_path / "docker" / "bedrock-proxy").mkdir(parents=True)
-    (tmp_path / "docker" / "bedrock-proxy" / "proxy-secret.env").write_text(
+    (tmp_path / "NessieAI" / "docker" / "bedrock-proxy").mkdir(parents=True)
+    (tmp_path / "NessieAI" / "docker" / "bedrock-proxy" / "proxy-secret.env").write_text(
         'AWS_BEARER_TOKEN_BEDROCK="ABSK-x"\n'
     )
     monkeypatch.setattr(
@@ -484,7 +648,7 @@ def test_cli_health_summary_no_token_warning_when_token_present(monkeypatch, tmp
 # ---------------------------------------------------------------------------
 
 def _proxy_secret(tmp_path: Path, token: str = "") -> None:
-    out = tmp_path / "docker" / "bedrock-proxy" / "proxy-secret.env"
+    out = tmp_path / "NessieAI" / "docker" / "bedrock-proxy" / "proxy-secret.env"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(f'AWS_BEARER_TOKEN_BEDROCK="{token}"\n')
 
@@ -568,6 +732,23 @@ def test_check_cc_runner_runs_deployment_step_6_in_the_app_container(monkeypatch
     assert "cc_runner_available" in joined
     # The app image has no bare `python` on PATH (DEPLOYMENT.md 6.6).
     assert "--no-sync" in seen["command"]
+
+
+def test_check_cc_runner_imports_the_engine_from_its_nessieai_home(monkeypatch):
+    """cc_engine moved to NessieAI/cc/; the old import path no longer exists."""
+    seen = {}
+
+    def fake_exec(service, command, project_dir, env):
+        seen["command"] = command
+        return "(True, 'ok')\n"
+
+    monkeypatch.setattr(validate, "compose_exec", fake_exec)
+
+    validate.check_cc_runner(Path("/repo"), env={})
+
+    code = seen["command"][seen["command"].index("-c") + 1]
+    assert code.startswith("from NessieAI.cc import cc_engine;")
+    assert "nextseek_api.cc_assistant" not in code
 
 
 def test_check_cc_runner_fails_and_carries_the_engine_s_own_reason(monkeypatch):

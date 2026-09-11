@@ -3,8 +3,8 @@
 # NExtSEEK base test lane (UD-12 shape, plan base-suite-green).
 #
 # PURPOSE
-#   Run the frozen selection `nextseek_api/tests startup/tests` in ONE pytest
-#   invocation under `dmac.test_settings_realstack` (full dmac.settings + fast
+#   Run the frozen selection `nextseek_api/tests startup/tests` plus the
+#   MOVED_AI_TESTS files (see below) in ONE pytest invocation under `dmac.test_settings_realstack` (full dmac.settings + fast
 #   password hasher), inside the pinned app image, against a disposable
 #   digest-pinned mysql:8.0 sidecar, on a docker network created with
 #   `--internal` — the lane has NO WAN egress BY CONSTRUCTION. This script is
@@ -61,7 +61,7 @@
 #   | AWS_BEARER_TOKEN_BEDROCK  | SET_IN_LOCAL_ENV (dummy)                | import-time presence only; never called |
 #   | FDH_API                   | SET_IN_LOCAL_ENV (dummy)                | import-time presence only; never called |
 #   | NEXTSEEK_BASE_URL         | http://127.0.0.1:8000                   | ChatConfig construction |
-#   | CATALOG_FILE              | /work/chat_nextseek/agent_model_catalog.json | catalog inside the mounted tree |
+#   | CATALOG_FILE              | /work/NessieAI/chat_nextseek/agent_model_catalog.json | catalog inside the mounted tree |
 #   | NEXTSEEK_NEO4J_HOST       | neo4j (no such host in the lane)        | settings import; no graph calls |
 #   | NEXTSEEK_NEO4J_PASSWORD   | placeholder                             | settings import |
 #   | SEEK_HOST                 | seek                                    | settings import |
@@ -76,7 +76,7 @@
 #   | TRANSFORMERS_OFFLINE      | 1                                       | ditto — zero network by construction |
 #
 # EXACT TEST INVOCATION (frozen; no -k, no --ignore, no deselection)
-#   python -m pytest -q --tb=line -rsf -p no:cacheprovider nextseek_api/tests startup/tests
+#   python -m pytest -q --tb=line -rsf -p no:cacheprovider nextseek_api/tests startup/tests <MOVED_AI_TESTS>
 #
 # TEARDOWN GUARANTEES
 #   - trap-based cleanup runs on ANY exit (normal, error, or signal): the
@@ -130,6 +130,40 @@ TEST_TREE="$(cd "$1" && pwd)"
 for required in dmac nextseek_api/tests startup/tests; do
     if [ ! -e "${TEST_TREE}/${required}" ]; then
         echo "ERROR: ${TEST_TREE} does not look like a NExtSEEK checkout (missing ${required})" >&2
+        exit 2
+    fi
+done
+# The schema_rag and AI API tests that sat in nextseek_api/tests until the
+# NessieAI move. Named file by file so the lane still runs exactly the tests it
+# ran before the move (the whole NessieAI/tests/api directory would add tests
+# this lane never ran). A pre-move checkout keeps them in nextseek_api/tests:
+# run that checkout's own copy of this script.
+MOVED_AI_TESTS=(
+    NessieAI/tests/api/test_assistant_unit.py
+    NessieAI/tests/api/test_evaluator_integration.py
+    NessieAI/tests/api/test_evaluator_listing.py
+    NessieAI/tests/api/test_evaluator_models.py
+    NessieAI/tests/api/test_evaluator_normalization.py
+    NessieAI/tests/api/test_evaluator_retry.py
+    NessieAI/tests/api/test_services_assistant.py
+    NessieAI/tests/api/test_ws_origin.py
+    NessieAI/tests/schema_rag/test_schema_processor.py
+    NessieAI/tests/schema_rag/test_schema_processor_coverage.py
+    NessieAI/tests/schema_rag/test_schema_rag_errors.py
+    NessieAI/tests/schema_rag/test_schema_rag_ingest_coverage.py
+    NessieAI/tests/schema_rag/test_schema_rag_integration.py
+    NessieAI/tests/schema_rag/test_schema_rag_retrieve_coverage.py
+    NessieAI/tests/schema_rag/test_schema_rag_self_ingest.py
+    NessieAI/tests/schema_rag/test_schema_rag_service_coverage.py
+    NessieAI/tests/schema_rag/test_schema_rag_session_coverage.py
+    NessieAI/tests/schema_rag/test_schema_rag_unit.py
+    NessieAI/tests/schema_rag/test_services_schema_rag_coverage.py
+)
+for moved in "${MOVED_AI_TESTS[@]}"; do
+    if [ ! -f "${TEST_TREE}/${moved}" ]; then
+        echo "ERROR: ${TEST_TREE} is missing ${moved}" >&2
+        echo "  a checkout from before the NessieAI move keeps it in nextseek_api/tests;" >&2
+        echo "  run that checkout's own startup/dev/run_full_test_lane.sh instead" >&2
         exit 2
     fi
 done
@@ -244,7 +278,7 @@ timeout 2200 docker run --rm --name "${PYTEST_CTR}" --network "${NET}" --entrypo
     -e DJANGO_SETTINGS_MODULE=dmac.test_settings_realstack \
     -e DJANGO_SECRET_KEY=lane-test-harness-dummy-secret \
     -e GCP_API_KEY=SET_IN_LOCAL_ENV -e AWS_BEARER_TOKEN_BEDROCK=SET_IN_LOCAL_ENV -e FDH_API=SET_IN_LOCAL_ENV \
-    -e NEXTSEEK_BASE_URL=http://127.0.0.1:8000 -e CATALOG_FILE=/work/chat_nextseek/agent_model_catalog.json \
+    -e NEXTSEEK_BASE_URL=http://127.0.0.1:8000 -e CATALOG_FILE=/work/NessieAI/chat_nextseek/agent_model_catalog.json \
     -e NEXTSEEK_NEO4J_HOST=neo4j -e NEXTSEEK_NEO4J_PASSWORD=placeholder \
     -e SEEK_HOST=seek -e SEEK_HOSTNAME=http://seek:3000 -e NEXTSEEK_HOSTNAME=127.0.0.1:8000 \
     -e SPIKE_DB_HOST=spikemysql -e SPIKE_DB_USER=root -e SPIKE_DB_PASSWORD="${PW}" -e SPIKE_DB_PORT=3306 \
@@ -252,7 +286,8 @@ timeout 2200 docker run --rm --name "${PYTEST_CTR}" --network "${NET}" --entrypo
     -e NEXTSEEK_MYSQL_DATABASE=dmac -e MYSQL_DATABASE=seek_production \
     -e HF_HUB_OFFLINE=1 -e TRANSFORMERS_OFFLINE=1 \
     "${APP_IMAGE}" \
-    -c 'python -m pytest -q --tb=line -rsf -p no:cacheprovider nextseek_api/tests startup/tests'
+    -c 'python -m pytest -q --tb=line -rsf -p no:cacheprovider "$@"' \
+    sh nextseek_api/tests startup/tests "${MOVED_AI_TESTS[@]}"
 PYTEST_RC=$?
 echo "lane: pytest container exit code ${PYTEST_RC}"
 exit "${PYTEST_RC}"
