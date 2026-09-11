@@ -9,6 +9,8 @@ def test_no_dropbox_reply_copy():
     assert "artifacts_published" not in (CC / "cc_engine.py").read_text()
     svc = (paths.REPO_ROOT / "nextseek_api" / "services" / "cc_assistant.py").read_text()
     assert "Saved to your Dropbox" not in svc
+    # The CC turn body moved out of the service into NessieAI/cc/turn.py (Phase B).
+    assert "Saved to your Dropbox" not in (CC / "turn.py").read_text()
 
 
 def test_no_laptop_or_host_bind_default_path():

@@ -11,9 +11,9 @@ Only the chat_log ENTRY's turn_id changed to a sequential int; these must not.
 from NessieAI import paths
 
 _ENGINE = (paths.CC_DIR / "cc_engine.py").read_text()
-_SERVICE = (
-    paths.REPO_ROOT / "nextseek_api" / "services" / "cc_assistant.py"
-).read_text()
+# The CC turn-complete writer moved out of nextseek_api/services/cc_assistant.py
+# into NessieAI/cc/turn.py (Phase B).
+_TURN = (paths.CC_DIR / "turn.py").read_text()
 
 
 def test_publish_artifacts_still_keyed_by_str_run_id():
@@ -30,4 +30,4 @@ def test_turn_complete_payload_still_carries_str_run_id():
 def test_cc_transcript_persisted_with_payload_turn_id():
     # CCSessionTranscript.turn_id (unique_together) is fed from payload.turn_id,
     # i.e. still the run UUID — NOT the chat_log entry's sequential int.
-    assert "turn_id=payload.turn_id" in _SERVICE
+    assert "turn_id=payload.turn_id" in _TURN

@@ -68,14 +68,14 @@ def sweep(tmp_path, monkeypatch):
     monkeypatch.setattr(cc_summary, "summarize_transcript", fake_summarize)
     monkeypatch.setattr(cc_router, "_resolve_cc_model_id", lambda: "model-x")
     monkeypatch.setattr(
-        "nextseek_api.services.cc_assistant._persist_summary_standalone", fake_persist)
+        "NessieAI.cc.turn._persist_summary_standalone", fake_persist)
 
     def run(transcript: Path):
         meta = cc_memory.SessionMeta(
             session_id="sess-b", updated_at=0.0, fingerprint=None, summary=None,
             transcript_path=str(transcript), changed=True)
         monkeypatch.setattr(
-            "nextseek_api.services.cc_assistant._session_metas",
+            "NessieAI.cc.turn._session_metas",
             lambda user, current_id, paths, mem_cfg, project_dirname=None: [meta])
         return cc_sweep._run_sweep(), seen
 

@@ -567,7 +567,7 @@ def test_a_successful_turn_writes_exactly_one_row_and_not_from_the_finally(
     again in the ``finally`` and re-write the row — asserted on CONTENT and
     COUNT, since an upsert makes a double write invisible to ``exists()``.
     """
-    from nextseek_api.services.cc_assistant import _append_cc_turn_complete
+    from NessieAI.cc.turn import _append_cc_turn_complete
 
     calls: list[dict] = []
     real = cc_transcript_store.store_transcript

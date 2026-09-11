@@ -16,7 +16,7 @@ from django.test import TestCase
 
 from nextseek_api.assistant.models_db import ChatSession
 from NessieAI.cc.cc_turn_complete import TurnCompletePayload
-from nextseek_api.services.cc_assistant import (
+from NessieAI.cc.turn import (
     _append_cc_turn_complete,
     _merge_extra_state,
 )

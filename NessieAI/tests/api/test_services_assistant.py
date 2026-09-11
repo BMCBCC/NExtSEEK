@@ -1400,8 +1400,14 @@ class MostRecentSessionSortBufferTests(TestCase):
             r"\s*\.first\(\)"
         )
         offenders = []
-        for rel in ("services/assistant.py", "services/cc_assistant.py"):
-            text = (repo_root / "nextseek_api" / rel).read_text()
+        # NessieAI/cc/turn.py holds _session_metas's ChatSession queries, moved
+        # out of services/cc_assistant.py in Phase B.
+        for rel in (
+            "nextseek_api/services/assistant.py",
+            "nextseek_api/services/cc_assistant.py",
+            "NessieAI/cc/turn.py",
+        ):
+            text = (repo_root / rel).read_text()
             # Collapse the multi-line chained form onto one line first.
             flat = re.sub(r"\n\s*", " ", text)
             offenders += [f"{rel}: {m.group(0)}" for m in pattern.finditer(flat)]

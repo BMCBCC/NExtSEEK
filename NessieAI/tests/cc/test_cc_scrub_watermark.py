@@ -1,6 +1,6 @@
 """#76: the transcript scrub must survive the process that ran it dying.
 
-``run_cc_turn`` executes on a ``daemon=True`` thread (services/cc_assistant.py,
+``run_cc_turn`` executes on a ``daemon=True`` thread (NessieAI/cc/turn.py,
 ``threading.Thread(target=_run, daemon=True).start()``), and the #72 in-place
 source scrub runs in that turn's ``finally``. A gunicorn worker recycle, a
 ``docker restart`` or a SIGKILL kills a daemon thread at interpreter exit

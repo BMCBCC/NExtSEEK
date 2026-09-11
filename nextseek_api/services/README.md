@@ -61,10 +61,10 @@ as a detail lookup (`nextseek_api/services/assays.py:41`).
 `nextseek_api/services/users.py:359` and `nextseek_api/services/project_export.py:256`.
 
 *The chat pair*: `nextseek_api/services/assistant.py:417` with 18 actions, and
-`nextseek_api/services/cc_assistant.py:446` with 8. Their query endpoints share a shape
+`nextseek_api/services/cc_assistant.py:86` with 8. Their query endpoints share a shape
 (create a `QueryTask`, hand a callback to the engine, hand the work to a background thread,
 return 202) and their overlap is deliberate reuse rather than a fork, imported at
-`nextseek_api/services/cc_assistant.py:48-54`. `nextseek_api/services/evaluator.py:413`
+`nextseek_api/services/cc_assistant.py:53-57`. `nextseek_api/services/evaluator.py:413`
 reads what those two wrote back out, normalized for retry.
 
 **The library half.** Eight modules with no ViewSet, grouped by what consumes them.
@@ -91,7 +91,7 @@ module here opens: a `grep` for `open(`, `read_text` and `Path(__file__)` across
 modules returns `nextseek_api/services/sample_workbook.py:76` and
 `nextseek_api/services/sample_workbook.py:103` for this file, and otherwise only per-request
 artifact reads and writes such as `nextseek_api/services/assistant.py:1088` and
-`nextseek_api/services/cc_assistant.py:883`.
+`nextseek_api/services/cc_assistant.py:270`.
 
 ## Running and testing
 
@@ -138,14 +138,13 @@ modules and splitting module-scope imports from in-function ones:
   `nextseek_api/services/template_catalog.py:20`, `nextseek_api/services/project_connections.py:28`
   and `nextseek_api/services/sample_workbook.py:26`.
 - The NS engine in `NessieAI/chat_nextseek/` (import name `chat_nextseek`), imported at
-  module scope by exactly two of the 25 modules: `nextseek_api/services/assistant.py:104-105`,
-  and `nextseek_api/services/cc_assistant.py:60` with one more at
-  `nextseek_api/services/cc_assistant.py:81`.
-- The Container-CC engine and the top-level router, `NessieAI.cc` and `NessieAI.router`,
-  imported across `nextseek_api/services/cc_assistant.py:62-76` and again at
-  `nextseek_api/services/cc_assistant.py:80` and `nextseek_api/services/cc_assistant.py:82`;
+  module scope by exactly one of the 25 modules: `nextseek_api/services/assistant.py:113-114`.
+  `nextseek_api/services/cc_assistant.py` reaches it only through `NessieAI/cc/turn.py`.
+- The Container-CC engine, `NessieAI.cc`: `nextseek_api/services/cc_assistant.py:62-63` imports the turn
+  (`NessieAI/cc/turn.py`, which in turn imports `NessieAI.router` and the NS engine) and
+  `cc_provision`, and four actions import further `NessieAI.cc` modules in-function;
   the Django shell `nextseek_api/cc_assistant/` only lazily, inside two functions
-  (`nextseek_api/services/cc_assistant.py:737`, `nextseek_api/services/cc_assistant.py:834`).
+  (`nextseek_api/services/cc_assistant.py:243`, `nextseek_api/services/cc_assistant.py:340`).
 - The `neo4j` driver, at module scope in four modules and constructed per request at seven
   call sites, of which `nextseek_api/services/entity_tree.py:302` and
   `nextseek_api/services/sample_workbook.py:285-290` are two.

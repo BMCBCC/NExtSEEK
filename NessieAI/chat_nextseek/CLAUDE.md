@@ -34,7 +34,7 @@ without an error at the point of the change.
 - **The chat-log cap is duplicated across the boundary and must stay in step.**
   `NessieAI/chat_nextseek/src/chat_nextseek/chat_memory.py:25` sets the FIFO limit applied
   at `NessieAI/chat_nextseek/src/chat_nextseek/chat_memory.py:246-247`, and
-  `nextseek_api/services/cc_assistant.py:81` hardcodes the same number with a
+  `NessieAI/cc/turn.py:54` hardcodes the same number with a
   comment naming this module; changing one truncates the two writers differently.
 - **Seqera Tower is retired, not deleted.** The schema builder never offers it
   (`NessieAI/chat_nextseek/src/chat_nextseek/pipeline/agent_tools.py:218-221`) and a test

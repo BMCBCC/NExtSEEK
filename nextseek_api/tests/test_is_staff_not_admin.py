@@ -150,8 +150,12 @@ class StaffAdminWideningIsConfinedToCapabilities(SimpleTestCase):
         # policy.py), moved out of nextseek_api/services/cc_assistant.py in
         # Phase B; scanning it keeps that gate inside this inventory. The
         # use_prod gate (_select_chat_config) moved to NessieAI/ns/turn.py the
-        # same way, out of nextseek_api/services/assistant.py.
-        for rel in ("nextseek_api", "seek", "dmac", "NessieAI/router", "NessieAI/ns"):
+        # same way, out of nextseek_api/services/assistant.py, and the
+        # max-turn-length gate to NessieAI/cc/turn.py.
+        for rel in (
+            "nextseek_api", "seek", "dmac",
+            "NessieAI/router", "NessieAI/ns", "NessieAI/cc",
+        ):
             for path in (REPO / rel).rglob("*.py"):
                 if "test" in path.parts or path.name.startswith("test_"):
                     continue

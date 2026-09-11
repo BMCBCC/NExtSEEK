@@ -49,7 +49,7 @@ def store_transcript(*, chat_session, cc_session_id: str, turn_id: str,
     Keyed on ``(chat_session, cc_session_id, turn_id)`` — the table's
     ``unique_together`` — so re-persisting the same turn overwrites rather than
     duplicating. Same row shape as the success-path upsert in
-    ``nextseek_api/services/cc_assistant.py`` (``_append_cc_turn_complete``),
+    ``NessieAI/cc/turn.py`` (``_append_cc_turn_complete``),
     which still writes its own copy; the duplication is known and accepted.
 
     Called for turns that **FAILED** as well as turns that succeeded (#68): a

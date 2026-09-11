@@ -67,6 +67,10 @@ BACK_EDGE_ALLOWLIST: dict[str, frozenset[str]] = {
     # CC engine: SeekDB for provisioning (lazy), the transcript ORM model.
     "NessieAI/cc/cc_provision.py": frozenset({"seek.seekdb"}),
     "NessieAI/cc/cc_transcript_store.py": frozenset({"nextseek_api.assistant.models_db"}),
+    # The CC turn (Phase B, moved from nextseek_api/services/cc_assistant.py,
+    # which already held this edge): ChatSession reads and summary writes, and
+    # the CCSessionTranscript upsert when a CC turn completes.
+    "NessieAI/cc/turn.py": frozenset({"nextseek_api.assistant.models_db"}),
     # Router telemetry and the posterior leg, through the ORM models.
     "NessieAI/router/risk_overlay.py": frozenset({"nextseek_api.assistant.models_db"}),
     "NessieAI/router/turn_ledger.py": frozenset({"nextseek_api.assistant.models_db"}),

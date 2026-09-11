@@ -7,8 +7,8 @@
 :mod:`NessieAI.router.turn_ledger`, best effort.
 
 Moved verbatim from ``nextseek_api/services/cc_assistant.py`` (Phase B of the
-NessieAI consolidation). That module imports ``_decide_route`` and
-``_record_ledger_row`` back and calls them from the CC turn; nothing here
+NessieAI consolidation). The CC turn, :mod:`NessieAI.cc.turn`, imports
+``_decide_route`` and ``_record_ledger_row`` and calls them; nothing here
 imports ``nextseek_api.services``. ``ChatSession`` appears only in an
 annotation, which ``from __future__ import annotations`` keeps a string, so
 this module adds no ORM edge of its own (the ledger write goes through

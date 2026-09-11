@@ -33,7 +33,7 @@ from NessieAI.tests.nessie_tests.collect import _TERMINAL
 
 PROBE_QUERY = "What is the weather in Boston tomorrow?"
 
-# The event Task 1 added to `nextseek_api/services/cc_assistant.py`. Named once;
+# The event Task 1 added to the CC turn (now `NessieAI/cc/turn.py`). Named once;
 # `collect._run_roots` reads the same string off the collected rows.
 NS_RUN_ROOT_EVENT = "ns_run_root"
 
@@ -143,7 +143,7 @@ def assert_force_route_works(post_query, get_progress, *, sleep=time.sleep,
         f"the forced-NS probe turn reached status={status!r} and emitted NO "
         f"`{NS_RUN_ROOT_EVENT}` event.\n"
         f"That event is PRODUCT code added on this branch "
-        f"(nextseek_api/services/cc_assistant.py, `_emit_ns_run_root`), and a "
+        f"(NessieAI/cc/turn.py, `_emit_ns_run_root`), and a "
         f"running container serves a BAKED image, so it is absent until the image "
         f"is rebuilt:\n"
         f"    ./startup.sh rebuild\n"

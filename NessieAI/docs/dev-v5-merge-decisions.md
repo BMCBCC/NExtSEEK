@@ -70,7 +70,7 @@ question above. Treat its result as the arbiter:
 cannot tell you what it spent.** `--tier route` stops the *client* polling at
 `route_decided` (`NessieAI/tests/nessie_tests/http_driver.py:130-131`); it cancels nothing. The
 server already started the turn on a daemon thread and returned 202
-(`nextseek_api/services/cc_assistant.py:759`), and its only early return is the
+(`NessieAI/cc/turn.py:546`, `nextseek_api/services/cc_assistant.py:148`), and its only early return is the
 `unrelated` route, so every case routing anywhere else runs to completion and
 bills after the harness has walked away -- on a CC-routed case, a full
 Container-CC turn (~$0.24 observed). Cost is read off `query_complete`, which

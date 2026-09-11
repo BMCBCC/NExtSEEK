@@ -16,7 +16,9 @@ from nextseek_api.assistant.models_db import ChatSession, QueryTask
 from NessieAI.cc import cc_engine
 from NessieAI.router import router as cc_router
 from NessieAI.cc.cc_provision import ProjectIdentity
-from nextseek_api.services import cc_assistant as svc
+# The turn body (and so every name its _run closure looks up) is in
+# NessieAI/cc/turn.py; patches go there, not on the thin services module.
+from NessieAI.cc import turn as cc_turn
 
 pytestmark = pytest.mark.django_db(transaction=True)
 
@@ -42,11 +44,11 @@ def _patch_dispatch(monkeypatch):
     def fake_cc_turn(**kw):
         kw["send_event"]("query_complete", {"reply": "cc ok"})
 
-    monkeypatch.setattr(svc, "run_query", fake_run_query)
-    monkeypatch.setattr(svc, "run_query_plan", fake_run_query)
+    monkeypatch.setattr(cc_turn, "run_query", fake_run_query)
+    monkeypatch.setattr(cc_turn, "run_query_plan", fake_run_query)
     monkeypatch.setattr(cc_engine, "cc_runner_available", lambda: (True, "ok"))
     monkeypatch.setattr(cc_engine, "run_cc_turn", fake_cc_turn)
-    monkeypatch.setattr(svc, "_record_ledger_row", lambda *a, **k: None)
+    monkeypatch.setattr(cc_turn, "_record_ledger_row", lambda *a, **k: None)
     _patch_cc_project(monkeypatch)
     yield
 
@@ -61,7 +63,7 @@ def _patch_cc_model(monkeypatch):
 def _patch_chat_config(monkeypatch):
     cfg = type("Cfg", (), {"API_USER": "", "API_PASS": ""})()
     monkeypatch.setattr(
-        "nextseek_api.services.cc_assistant._select_chat_config",
+        "NessieAI.cc.turn._select_chat_config",
         lambda request, req: cfg,
     )
     yield
@@ -124,7 +126,7 @@ def test_http_admin_force_route_ns_crosses_to_dispatch(admin_user, monkeypatch):
         dispatched.append(query)
         send_event("query_complete", {"reply": "ns ok", "bundle_id": 1})
 
-    monkeypatch.setattr(svc, "run_query", tracking_run_query)
+    monkeypatch.setattr(cc_turn, "run_query", tracking_run_query)
 
     tid, _ = _post_query(client, "find mice", force_route="ns")
     task = _wait_terminal(tid)

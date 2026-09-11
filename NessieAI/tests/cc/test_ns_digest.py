@@ -66,8 +66,10 @@ def test_compose_neither_is_empty():
 
 
 def test_service_composes_via_pure_function_ast():
+    # The CC turn body moved out of nextseek_api/services/cc_assistant.py into
+    # NessieAI/cc/turn.py (Phase B); the composition call site is there now.
     src = (Path(__file__).resolve().parents[3]
-           / "nextseek_api" / "services" / "cc_assistant.py").read_text()
+           / "NessieAI" / "cc" / "turn.py").read_text()
     tree = ast.parse(src)
     compose_assigns = [n for n in ast.walk(tree) if isinstance(n, ast.Assign)
                        and isinstance(n.value, ast.Call)

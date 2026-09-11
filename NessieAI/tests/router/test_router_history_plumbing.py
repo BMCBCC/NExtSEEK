@@ -107,14 +107,12 @@ def test_thread_through_call_site_ast():
     decision.reasoning.
 
     Phase B split the chain across two files: the CC turn in
-    services/cc_assistant.py builds the history and passes it to
+    NessieAI/cc/turn.py builds the history and passes it to
     _decide_route(history=...), which now lives in NessieAI/router/policy.py
     and passes it on to cc_router.decide(history=...). Each assertion reads
     the file that holds its code, and the hand-off between the two files is
     checked too, so dropping history= at either hop fails."""
-    call_site = ast.parse(
-        (_REPO / "nextseek_api" / "services" / "cc_assistant.py").read_text()
-    )
+    call_site = ast.parse((_REPO / "NessieAI" / "cc" / "turn.py").read_text())
     policy = ast.parse((_REPO / "NessieAI" / "router" / "policy.py").read_text())
 
     decide_route_defs = [

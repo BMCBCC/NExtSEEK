@@ -27,7 +27,7 @@ from django.test.utils import CaptureQueriesContext
 from django.db import connection
 
 from nextseek_api.assistant.models_db import ChatSession
-from nextseek_api.services.cc_assistant import _session_metas
+from NessieAI.cc.turn import _session_metas
 
 
 class _Paths:

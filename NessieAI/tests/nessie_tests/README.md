@@ -27,12 +27,12 @@ searching every non-test module of this package for a DELETE method, a cancel or
 abort call, or a revoke returns nothing, so the server is never told to stop. It
 has already returned 202 and is running the turn on its own thread, and its
 single early return is the `unrelated` route
-(`nextseek_api/services/cc_assistant.py:537-544`), so every gate routed anywhere
+(`NessieAI/cc/turn.py:321-334`), so every gate routed anywhere
 else runs to completion and bills for it after the harness has walked away. That
 is why a route-tier run reports its spend as unmeasured instead of zero
 (`NessieAI/tests/nessie_tests/manifest.py:153-158`). No route is free: the router's own model
 call happens on every turn and the routing event is emitted before the
-`unrelated` check, not after (`nextseek_api/services/cc_assistant.py:529-537`).
+`unrelated` check, not after (`NessieAI/cc/turn.py:315-321`).
 
 It reuses the `PassCriterion` DSL of the catalog-driven E2E runner in
 `NessieAI/tests/e2e/` with **zero edits** to it, and imports it by package
@@ -428,7 +428,7 @@ Route gate = pre-merge. Full pass = nightly / pre-release on a seeded instance.
 polling once it sees `route_decided` (`http_driver.py:130-131`); it does not
 cancel anything. The server started the turn on a daemon thread and returned
 202, and its only early return is the `unrelated` route
-(`nextseek_api/services/cc_assistant.py:537-543`), so every gate that routes
+(`NessieAI/cc/turn.py:321-334`), so every gate that routes
 anywhere else runs to completion and bills for it after the harness has walked
 away, on a CC gate a full Opus turn.
 

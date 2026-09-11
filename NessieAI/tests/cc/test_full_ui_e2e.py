@@ -503,7 +503,7 @@ def test_total_cost_over_cap_fails(monkeypatch, tmp_path):
 
 def test_ns_route_passes_without_any_cost_row(monkeypatch, tmp_path):
     """The deterministic NS pipeline persists no cc_traces (see the NS branch of
-    services/cc_assistant.py). An NS-routed question must pass on criteria +
+    NessieAI/cc/turn.py). An NS-routed question must pass on criteria +
     session + no-forbidden WITHOUT a cost row — the CC-only cost gate must not
     fail it."""
     approval = _approval()

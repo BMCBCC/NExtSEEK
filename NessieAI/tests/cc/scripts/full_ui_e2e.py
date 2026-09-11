@@ -302,7 +302,7 @@ def _session_id_from_artifacts(q_dir: Path) -> str | None:
 # NS pipeline or the Container-CC agent. They persist DIFFERENT shapes and cost
 # is persisted ONLY on the CC route:
 #   - NS  (pipeline_adapter): query_complete.data has `debug` (+ `files`); the NS
-#         branch of services/cc_assistant.py runs run_query() with no
+#         branch of NessieAI/cc/turn.py runs run_query() with no
 #         cc_engine/on_turn_complete, so NO cc_traces / cost row exists.
 #   - CC  (cc_engine.run_cc_turn): query_complete.data has `total_cost_usd` +
 #         `cc_session_id` (no `debug`); cost is persisted to extra_state.cc_traces.

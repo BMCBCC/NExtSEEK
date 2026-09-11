@@ -10,7 +10,8 @@ It is a plain package inside `NessieAI/`, not a Django app. The Django shell of 
 `nextseek_api/cc_assistant/` app stays there: `apps.py` (the `cc_assistant` app label, whose
 `ready()` arms the LLM cost ledger), the Celery task modules `cc_sweep.py` and `cc_upload_tasks.py`,
 and `cc_endpoint_guards.py`. The route decision is in `NessieAI/router/` (`NessieAI/router/README.md`),
-and the only HTTP surface is the ViewSet in `nextseek_api/services/cc_assistant.py`.
+and the only HTTP surface is the ViewSet in `nextseek_api/services/cc_assistant.py`, which
+hands every routed turn to `start_task` in `NessieAI/cc/turn.py`.
 
 ## Surface
 
@@ -28,6 +29,7 @@ largest module here and holds several concerns; read the part you need.
 
 | Module | What it does |
 |---|---|
+| `turn.py` | `start_task`, one routed chat turn on a daemon thread: the route decision, then the NS orchestrator, a CC turn or the out-of-scope reply; plus the helpers that persist the CC session id, the chat_log entry and transcript row, and the memory summaries (`cc_sweep` reuses two of them) |
 | `attach.py` | demultiplexes Docker's attach-socket framing (copied from upstream with attribution, because the upstream module pulls in FastAPI) |
 | `translate.py` | maps Claude Code `stream-json` onto the progress events the chat panel already renders |
 | `cc_artifacts.py` | decides which outputs become a downloadable bundle |
@@ -66,8 +68,9 @@ source-tree checks out of the in-container run.
 Depends on, outside this directory:
 
 - `NessieAI/dmac_assistant/`: `run_tracker.diff_files`, imported lazily inside `cc_engine.py`.
-- `nextseek_api.assistant.models_db`, from `cc_transcript_store.py`, and `seek.seekdb`, lazily, from
-  `cc_provision.py` (both allowed back-edges, `NessieAI/CLAUDE.md` "Boundary").
+- `nextseek_api.assistant.models_db`, from `cc_transcript_store.py` and `turn.py`, and `seek.seekdb`,
+  lazily, from `cc_provision.py` (both allowed back-edges, `NessieAI/CLAUDE.md` "Boundary").
+- `NessieAI/router/` (`policy.py`, the route decision) and `NessieAI/ns/turn.py`, from `turn.py`.
 - `NessieAI/ns/read_safe_endpoints.json`, read at import by `op_registry/ops.py` through
   `NessieAI/paths.py`.
 - The plugin `bin/` directory under `NessieAI/docker/cc-runtime/`. Emptying it silently empties the
@@ -77,8 +80,8 @@ Depends on, outside this directory:
 
 Depended on by (non-test):
 
-- `nextseek_api/services/cc_assistant.py`, the ViewSet, which runs `run_cc_turn` for a
-  `container_cc` route.
+- `nextseek_api/services/cc_assistant.py`, the ViewSet, which calls `turn.start_task`; that runs
+  `run_cc_turn` for a `container_cc` route.
 - The Django shell in `nextseek_api/cc_assistant/`, `nextseek_api/management/commands/cc_sweep_staging.py`
   and `nextseek_api/assistant/session_debug.py`.
 - `NessieAI/build_tools/gen_op_surfaces/` and `NessieAI/build_tools/plan005_validate_plugins/`, which

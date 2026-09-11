@@ -164,7 +164,7 @@ def test_the_probe_runs_at_route_tier_so_a_hang_costs_60s_not_600s():
 
 
 # --------------------------------------------------------------------------- #
-# The ns_run_root event. Task 1 added it to nextseek_api/services/cc_assistant.py
+# The ns_run_root event. Task 1 added it to the CC turn (now NessieAI/cc/turn.py)
 # and a running container serves a BAKED image, so an operator who pulled the
 # branch and did not `./startup.sh rebuild` gets an endpoint without it. Nothing
 # checked. The run completes, looks healthy, and all 127 NS arms lose the only

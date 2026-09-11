@@ -57,4 +57,4 @@ Tests are in `NessieAI/tests/router/`; commands are in `NessieAI/tests/README.md
 
 - Depends on `NessieAI/dmac_assistant/` (lazily), `NessieAI/hibayes/` (posterior leg), `nextseek_api.assistant.models_db` (ledger), and `chat_nextseek`'s pipeline agent (`policy.py` asks it whether a wizard is open).
 - `NessieAI/hibayes/` imports `family_labels` back. That loop has no load-time cycle.
-- Called by `nextseek_api/services/cc_assistant.py`.
+- Called by `NessieAI/cc/turn.py`, the CC turn behind `nextseek_api/services/cc_assistant.py`.

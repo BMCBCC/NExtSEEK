@@ -20,13 +20,13 @@ evidence about directory lifetime -- it is a property of vendored chat_nextseek.
 Vendored code is NOT touched. This reads the session dict the Django side already
 holds, so startup/scripts/sync_chat_nextseek.sh cannot clobber it.
 """
-from nextseek_api.services import cc_assistant as svc
+from NessieAI.cc import turn as cc_turn
 
 
 def test_run_root_is_emitted_when_the_session_carries_one():
     events = []
     session = {"run_root_dir": "/app/outputs/260804_101500_demo"}
-    svc._emit_ns_run_root(lambda e, d: events.append((e, d)), session)
+    cc_turn._emit_ns_run_root(lambda e, d: events.append((e, d)), session)
     assert events == [("ns_run_root", {"run_root": "/app/outputs/260804_101500_demo"})]
 
 
@@ -34,7 +34,7 @@ def test_nothing_is_emitted_when_the_session_has_no_run_root():
     """A turn that never reached the orchestrator has no run_root. Emitting an
     empty one would make the collector look for a directory that never existed."""
     events = []
-    svc._emit_ns_run_root(lambda e, d: events.append((e, d)), {})
+    cc_turn._emit_ns_run_root(lambda e, d: events.append((e, d)), {})
     assert events == []
 
 
@@ -45,7 +45,7 @@ def test_a_broken_session_object_never_breaks_the_turn():
             raise RuntimeError("boom")
 
     events = []
-    svc._emit_ns_run_root(lambda e, d: events.append((e, d)), Hostile())
+    cc_turn._emit_ns_run_root(lambda e, d: events.append((e, d)), Hostile())
     assert events == []
 
 
@@ -60,6 +60,6 @@ def test_a_raising_send_event_never_breaks_the_turn():
     # RuntimeError and return None. Do not "fix" this test by deleting it as
     # assertion-less -- if the guard regresses, the call above propagates and
     # the test errors.
-    assert svc._emit_ns_run_root(
+    assert cc_turn._emit_ns_run_root(
         exploding_send_event, {"run_root_dir": "/app/outputs/x"}
     ) is None

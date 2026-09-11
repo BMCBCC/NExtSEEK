@@ -106,9 +106,9 @@ def test_within_chat_db_mixed_sequence_exactly_once(client, monkeypatch):
         )
         send_event("query_complete", {"reply": "42 mice", "bundle_id": 1})
 
-    from nextseek_api.services import cc_assistant as svc
+    from NessieAI.cc import turn as cc_turn
 
-    monkeypatch.setattr(svc, "run_query", fake_run_query)
+    monkeypatch.setattr(cc_turn, "run_query", fake_run_query)
 
     def fake_run_query_error(session, config, query, send_event, credentials=None):
         send_event("query_error", {"error": "graph agent exploded", "agent": "graph"})
@@ -140,7 +140,7 @@ def test_within_chat_db_mixed_sequence_exactly_once(client, monkeypatch):
     _wait_terminal(tid)
     tid, _ = _post_query(client, "who won the game", session_id=sid)
     _wait_terminal(tid)
-    monkeypatch.setattr(svc, "run_query", fake_run_query_error)
+    monkeypatch.setattr(cc_turn, "run_query", fake_run_query_error)
     tid, _ = _post_query(client, "explode please", session_id=sid)
     assert _wait_terminal(tid).status == "error"
     tid, _ = _post_query(client, "make a chart", session_id=sid)
@@ -239,7 +239,7 @@ def test_within_chat_db_get_session_visibility_and_turn_ids(client, user):
 
 def test_within_chat_db_digest_composed_fresh_and_not(client, monkeypatch):
     """G-6: digest present with fresh=True (digest-only) AND fresh=False."""
-    from nextseek_api.services import cc_assistant as svc
+    from NessieAI.cc import turn as cc_turn
 
     written = {}
 
@@ -286,7 +286,7 @@ def test_within_chat_db_digest_composed_fresh_and_not(client, monkeypatch):
         )
         send_event("query_complete", {"reply": "found", "bundle_id": 1})
 
-    monkeypatch.setattr(svc, "run_query", fake_run_query)
+    monkeypatch.setattr(cc_turn, "run_query", fake_run_query)
 
     tid, sid = _post_query(client, "seed NS turn")
     _wait_terminal(tid)
@@ -410,7 +410,7 @@ def test_within_chat_db_recall_resolution_path(client, user):
 
 def test_within_chat_db_plan_mode_error_leaves_trace(client, monkeypatch):
     """Site #12: a plan-mode catch-all error now writes an error-labeled entry."""
-    from nextseek_api.services import cc_assistant as svc
+    from NessieAI.cc import turn as cc_turn
 
     monkeypatch.setattr(
         cc_router,
@@ -432,7 +432,7 @@ def test_within_chat_db_plan_mode_error_leaves_trace(client, monkeypatch):
         )
         send_event("query_complete", {"reply": reply})
 
-    monkeypatch.setattr(svc, "run_query_plan", fake_plan)
+    monkeypatch.setattr(cc_turn, "run_query_plan", fake_plan)
     resp = client.post(
         CC_QUERY_URL,
         {"query": "plan me", "mode": "plan"},
@@ -467,7 +467,7 @@ def _progress_events(task_id, name):
 def test_within_chat_db_ns_run_root_reaches_the_event_stream(client, monkeypatch):
     """A successful NS turn publishes the run_root the session carries, so a
     collector can join the task_id to its outputs/<ts>_<user>/ directory."""
-    from nextseek_api.services import cc_assistant as svc
+    from NessieAI.cc import turn as cc_turn
 
     monkeypatch.setattr(
         cc_router, "_baml_decision", lambda q, h=None: _decision(cc_router.ROUTE_NS)
@@ -479,7 +479,7 @@ def test_within_chat_db_ns_run_root_reaches_the_event_stream(client, monkeypatch
         session["run_root_dir"] = "/app/outputs/260804_101500_wc-user"
         send_event("query_complete", {"reply": "ok", "bundle_id": None})
 
-    monkeypatch.setattr(svc, "run_query", fake_run_query)
+    monkeypatch.setattr(cc_turn, "run_query", fake_run_query)
 
     tid, _ = _post_query(client, "how many mice")
     _wait_terminal(tid)
@@ -494,7 +494,7 @@ def test_within_chat_db_ns_run_root_is_emitted_on_the_plan_branch(client, monkey
     """The NS branch forks on mode, and plan-mode calls run_query_plan. The emit
     sits after that fork on purpose, so BOTH arms reach it -- an emit that drifted
     into the `else:` would drop the join key for every plan-mode turn."""
-    from nextseek_api.services import cc_assistant as svc
+    from NessieAI.cc import turn as cc_turn
 
     monkeypatch.setattr(
         cc_router, "_baml_decision", lambda q, h=None: _decision(cc_router.ROUTE_NS)
@@ -504,10 +504,10 @@ def test_within_chat_db_ns_run_root_is_emitted_on_the_plan_branch(client, monkey
         session["run_root_dir"] = "/app/outputs/260804_101500_plan"
         send_event("query_complete", {"reply": "a plan", "bundle_id": None})
 
-    monkeypatch.setattr(svc, "run_query_plan", fake_run_query_plan)
+    monkeypatch.setattr(cc_turn, "run_query_plan", fake_run_query_plan)
     # Fail loudly rather than silently passing via the standard arm.
     monkeypatch.setattr(
-        svc, "run_query",
+        cc_turn, "run_query",
         lambda *a, **k: pytest.fail("plan mode must not reach run_query"),
     )
 
@@ -529,7 +529,7 @@ def test_within_chat_db_ns_run_root_survives_a_raising_orchestrator(
     Second half matters as much as the first: instrumentation must not swallow a
     real failure, so the original RuntimeError must still propagate out of the NS
     branch unchanged and be the exception the catch-all logs."""
-    from nextseek_api.services import cc_assistant as svc
+    from NessieAI.cc import turn as cc_turn
 
     monkeypatch.setattr(
         cc_router, "_baml_decision", lambda q, h=None: _decision(cc_router.ROUTE_NS)
@@ -539,9 +539,9 @@ def test_within_chat_db_ns_run_root_survives_a_raising_orchestrator(
         session["run_root_dir"] = "/app/outputs/260804_101500_wc-user"
         raise RuntimeError("graph agent exploded")
 
-    monkeypatch.setattr(svc, "run_query", exploding_run_query)
+    monkeypatch.setattr(cc_turn, "run_query", exploding_run_query)
 
-    with caplog.at_level(logging.ERROR, logger="nextseek_api.services.cc_assistant"):
+    with caplog.at_level(logging.ERROR, logger="NessieAI.cc.turn"):
         tid, _ = _post_query(client, "how many mice")
         _wait_terminal(tid)
 

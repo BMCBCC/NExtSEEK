@@ -7,7 +7,9 @@ import os
 from NessieAI import paths
 
 _CC_ENGINE = paths.CC_DIR / "cc_engine.py"
-_SERVICE = paths.REPO_ROOT / "nextseek_api" / "services" / "cc_assistant.py"
+# The CC turn body, which hands run_cc_turn its on_turn_complete writer, moved
+# out of nextseek_api/services/cc_assistant.py into NessieAI/cc/turn.py (Phase B).
+_TURN = paths.CC_DIR / "turn.py"
 
 
 def test_newest_jsonl_respects_min_mtime(tmp_path):
@@ -42,6 +44,6 @@ def test_cc_engine_actually_invokes_on_turn_complete():
 
 
 def test_services_wires_append_cc_turn_complete_into_run_cc_turn():
-    """RED if services/cc_assistant.py stops passing the real writer (Task 11 Step 3)."""
-    src = _SERVICE.read_text()
+    """RED if the CC turn (NessieAI/cc/turn.py) stops passing the real writer (Task 11 Step 3)."""
+    src = _TURN.read_text()
     assert "on_turn_complete=_append_cc_turn_complete" in src

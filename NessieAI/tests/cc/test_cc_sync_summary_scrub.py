@@ -1,7 +1,7 @@
 """#72 residual: the in-request sync summarizer must not be handed an unscrubbed
 transcript.
 
-``_start_task`` picks a sync target with ``cc_memory.select_sync_target(metas,
+``start_task`` (``NessieAI/cc/turn.py``) picks a sync target with ``cc_memory.select_sync_target(metas,
 current_id=cc_state_key)`` — deliberately the most recently changed session that
 is NOT the current one. The engine's in-place source scrub
 (``cc_engine.scrub_transcript_store``) only runs in the ``finally`` of a turn
@@ -23,7 +23,7 @@ import ast
 import base64
 from pathlib import Path
 
-import nextseek_api.services.cc_assistant as cc_svc
+import NessieAI.cc.turn as cc_turn
 from NessieAI.cc import cc_engine, cc_summary
 
 PW = "hunter2-s3cr3t"
@@ -82,7 +82,7 @@ def _fixture(tmp_path, monkeypatch):
         seen["persisted"] = (session_id, summary_dict, fp)
 
     monkeypatch.setattr(cc_summary, "summarize_transcript", fake_summarize)
-    monkeypatch.setattr(cc_svc, "_persist_summary_standalone", fake_persist)
+    monkeypatch.setattr(cc_turn, "_persist_summary_standalone", fake_persist)
     return src, _Tgt(src), seen
 
 
@@ -90,7 +90,7 @@ def test_sync_summarizer_never_sees_the_password(tmp_path, monkeypatch):
     src, tgt, seen = _fixture(tmp_path, monkeypatch)
     assert _leaks(src.read_bytes()), "fixture must start dirty"
 
-    ok = cc_svc._summarize_sync_target(
+    ok = cc_turn._summarize_sync_target(
         None, tgt, None, cc_engine.transcript_scrubber(ENV)
     )
 
@@ -109,7 +109,7 @@ def test_sync_summary_fingerprint_still_tracks_the_file_on_disk(tmp_path, monkey
     """
     src, tgt, seen = _fixture(tmp_path, monkeypatch)
 
-    cc_svc._summarize_sync_target(None, tgt, None, cc_engine.transcript_scrubber(ENV))
+    cc_turn._summarize_sync_target(None, tgt, None, cc_engine.transcript_scrubber(ENV))
 
     _sid, _summary, fp = seen["persisted"]
     assert fp == cc_summary.fingerprint(src.read_bytes())
@@ -123,7 +123,7 @@ def test_sync_summarize_without_a_scrubber_still_works(tmp_path, monkeypatch):
     """Defensive: a caller with no credentials in scope passes scrub=None."""
     src, tgt, seen = _fixture(tmp_path, monkeypatch)
 
-    assert cc_svc._summarize_sync_target(None, tgt, None, None) is True
+    assert cc_turn._summarize_sync_target(None, tgt, None, None) is True
     assert seen["raw"] == src.read_bytes()
 
 
@@ -133,7 +133,7 @@ def test_sync_summarize_failure_is_swallowed(tmp_path, monkeypatch):
     src, tgt, seen = _fixture(tmp_path, monkeypatch)
     tgt.transcript_path = str(tmp_path / "does-not-exist.jsonl")
 
-    assert cc_svc._summarize_sync_target(None, tgt, None, None) is False
+    assert cc_turn._summarize_sync_target(None, tgt, None, None) is False
     assert "raw" not in seen
 
 
@@ -143,11 +143,13 @@ def test_sync_summarize_failure_is_swallowed(tmp_path, monkeypatch):
 
 
 def _start_task_ast() -> ast.FunctionDef:
-    src = Path(cc_svc.__file__).with_suffix(".py").read_text()
+    # The CC turn body moved out of CCAssistantViewSet._start_task into
+    # start_task in NessieAI/cc/turn.py (Phase B); the call site is there now.
+    src = Path(cc_turn.__file__).with_suffix(".py").read_text()
     tree = ast.parse(src)
     return next(
         n for n in ast.walk(tree)
-        if isinstance(n, ast.FunctionDef) and n.name == "_start_task"
+        if isinstance(n, ast.FunctionDef) and n.name == "start_task"
     )
 
 
@@ -167,7 +169,7 @@ def _calls_named(fn: ast.FunctionDef, name: str) -> list[ast.Call]:
 def test_start_task_summarizes_through_the_helper():
     calls = _calls_named(_start_task_ast(), "_summarize_sync_target")
     assert len(calls) == 1, (
-        "_start_task must route the sync-target transcript read through "
+        "start_task must route the sync-target transcript read through "
         "_summarize_sync_target, which scrubs it"
     )
 

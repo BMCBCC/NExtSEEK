@@ -3,10 +3,13 @@ from NessieAI import paths
 
 
 SERVICE = paths.REPO_ROOT / "nextseek_api" / "services" / "cc_assistant.py"
+# The CC turn body and its helpers moved out of SERVICE into NessieAI/cc/turn.py
+# (Phase B); the ViewSet class (auth, permissions) stayed in SERVICE.
+TURN = paths.CC_DIR / "turn.py"
 
 
 def test_project_resolution_uses_user_creds_not_prod_swapped_agent_creds():
-    src = SERVICE.read_text()
+    src = TURN.read_text()
 
     assert "user_api_user, user_api_pass = api_user, api_pass" in src
     assert "resolve_user_project(user_api_user, user_api_pass)" in src
@@ -21,7 +24,7 @@ def test_cc_view_does_not_use_static_participating_project_permission():
 
 
 def test_session_project_dirname_is_initialized_not_overwritten():
-    src = SERVICE.read_text()
+    src = TURN.read_text()
 
     assert "stored_project_dirname != project.dirname" in src
     assert "Please start a new chat." in src

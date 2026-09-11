@@ -36,7 +36,7 @@ def _run_sweep():
     from django.utils import timezone
     from NessieAI.cc import cc_summary, cc_config, cc_engine
     from NessieAI.router import router as cc_router
-    from nextseek_api.services.cc_assistant import _session_metas, _persist_summary_standalone
+    from NessieAI.cc.turn import _session_metas, _persist_summary_standalone
 
     paths = cc_config.CCPaths.from_env()
     mem_cfg = cc_config.CCMemoryConfig.from_env()

@@ -62,15 +62,15 @@ flowchart LR
 
 **Auth.** The Django session comes from SEEK-credential login (`dmac/views.py:110` `login_seek`): credentials are checked via `SeekDB.getSeekLogin`, stored in the session, then Django `authenticate()` + `login()` run; the bare GET renders `login.html` (`dmac/views.py:168`). Login is SEEK, not MIT SSO. The embedded frontend is same-origin cookie-based: `NessieAI/chat_frontend/src/lib/services/sessionAuth.ts:14` derives the API base from `window.location`, `NessieAI/chat_frontend/src/lib/services/sessionAuth.ts:19` derives the `ws://`/`wss://` base the same way, and `NessieAI/chat_frontend/src/lib/services/sessionAuth.ts:4-11` sends `X-CSRFToken` only if a `csrftoken` cookie exists.
 
-**Submit.** `NessieAI/chat_frontend/src/lib/services/chatApi.ts:78` POSTs to **`/nextseek_api/cc-assistant/query/async/`**. `use_prod` selects the alternate `NEXTSEEK_CHAT_CONFIG_PROD` ChatConfig and swaps the pipeline's outbound API credentials for that config's baked-in `API_USER`/`API_PASS` (`nextseek_api/services/cc_assistant.py:501-504`); the requesting user's own credentials are captured before the swap (`nextseek_api/services/cc_assistant.py:495-496`) and are what the CC route carries.
+**Submit.** `NessieAI/chat_frontend/src/lib/services/chatApi.ts:78` POSTs to **`/nextseek_api/cc-assistant/query/async/`**. `use_prod` selects the alternate `NEXTSEEK_CHAT_CONFIG_PROD` ChatConfig and swaps the pipeline's outbound API credentials for that config's baked-in `API_USER`/`API_PASS` (`NessieAI/cc/turn.py:285-288`); the requesting user's own credentials are captured before the swap (`NessieAI/cc/turn.py:280`) and are what the CC route carries.
 
-**Server dispatch.** Both viewsets are DRF-router-registered under `/nextseek_api/`: `assistant/` → `AssistantViewSet` (`nextseek_api/urls.py:38`), `cc-assistant/` → `CCAssistantViewSet` (`nextseek_api/urls.py:40`). They are additive: the new one does not replace the old. `CCAssistantViewSet.query_async` (`nextseek_api/services/cc_assistant.py:788`) validates the request and calls `_start_task(force_cc=False)`; a second endpoint `cc/query/async/` (`nextseek_api/services/cc_assistant.py:808`) forces the CC route. Auth: DRF Token, CSRF-exempt session, and Basic (`nextseek_api/services/cc_assistant.py:449`).
+**Server dispatch.** Both viewsets are DRF-router-registered under `/nextseek_api/`: `assistant/` → `AssistantViewSet` (`nextseek_api/urls.py:38`), `cc-assistant/` → `CCAssistantViewSet` (`nextseek_api/urls.py:40`). They are additive: the new one does not replace the old. `CCAssistantViewSet.query_async` (`nextseek_api/services/cc_assistant.py:164`) validates the request and calls `_start_task(force_cc=False)`; a second endpoint `cc/query/async/` (`nextseek_api/services/cc_assistant.py:186`) forces the CC route. Auth: DRF Token, CSRF-exempt session, and Basic (`nextseek_api/services/cc_assistant.py:89`).
 
-`_start_task` (`nextseek_api/services/cc_assistant.py:479`):
+`_start_task` (`nextseek_api/services/cc_assistant.py:119`):
 
-1. Resolves the `ChatSession`: a miss returns 404 (`nextseek_api/services/cc_assistant.py:481-485`).
-2. Creates a `QueryTask` (status `running`) (`nextseek_api/services/cc_assistant.py:487-489`) and builds `send_event = make_db_event_callback(...)` (`nextseek_api/services/cc_assistant.py:490-491`; `nextseek_api/assistant/pipeline_adapter.py:10-16`): every progress event is *appended to the `QueryTask.progress` JSON column*, and terminal events also set `status`/`result` (`nextseek_api/assistant/pipeline_adapter.py:30-44`).
-3. Wraps the `ChatSession` in a `DictSessionAdapter` (`nextseek_api/services/cc_assistant.py:494`; `nextseek_api/assistant/session_adapter.py:17-32`), resolves the user's SEEK credentials, and spawns a **plain daemon thread**. This is *not* Celery: Celery (`batch_upload` queue) serves the file-upload endpoint (`docker/scripts/entrypoint.sh:67-70`).
+1. Resolves the `ChatSession`: a miss returns 404 (`nextseek_api/services/cc_assistant.py:120-125`).
+2. Creates a `QueryTask` (status `running`) (`nextseek_api/services/cc_assistant.py:127-129`) and builds `send_event = make_db_event_callback(...)` (`nextseek_api/services/cc_assistant.py:131`; `nextseek_api/assistant/pipeline_adapter.py:10-16`): every progress event is *appended to the `QueryTask.progress` JSON column*, and terminal events also set `status`/`result` (`nextseek_api/assistant/pipeline_adapter.py:30-44`).
+3. Wraps the `ChatSession` in a `DictSessionAdapter` (`nextseek_api/services/cc_assistant.py:132`; `nextseek_api/assistant/session_adapter.py:17-32`), resolves the user's SEEK credentials, and hands all of it to `start_task` (`NessieAI/cc/turn.py:266`), which spawns a **plain daemon thread** (`NessieAI/cc/turn.py:546`). This is *not* Celery: Celery (`batch_upload` queue) serves the file-upload endpoint (`docker/scripts/entrypoint.sh:67-70`).
 4. Returns **HTTP 202 `{task_id, session_id}`** immediately.
 
 **Progress transport: HTTP polling in practice.** The client first *attempts* a WebSocket at `ws/assistant/progress/{task_id}/` (`NessieAI/chat_frontend/src/lib/services/chatApi.ts:110`) and, only if it fails to open, falls back to HTTP polling at a 2 s interval (`NessieAI/chat_frontend/src/lib/services/chatApi.ts:12`) of `/nextseek_api/assistant/tasks/{taskId}/progress/` (`NessieAI/chat_frontend/src/lib/services/chatApi.ts:181`; note the *assistant* endpoint, not cc-assistant). Which channel actually runs is decided by the web-server toggle in `docker/scripts/entrypoint.sh:61-65`: `NEXTSEEK_SERVER=gunicorn` (WSGI) cannot complete a WS handshake; anything else starts `daphne` (ASGI), which is the code default. <!-- UNVERIFIED: which server the dev and production instances actually run is a deployment-time env value; the previously recorded "gunicorn on the running instance" observation is from 2026-07-12 and was not re-checked for this refresh. -->
@@ -103,7 +103,7 @@ flowchart TD
 - **Heuristic leg**: a regex keyword classifier (`NessieAI/router/router.py:112`) defaulting to `ROUTE_NS` (`NessieAI/router/router.py:44-49` are the two pattern sets).
 - **Model pinning**: for the CC route, `model_class` is always `'opus'` and `model_id` always comes from `resolve_cc_model()` (`NessieAI/dmac_assistant/src/dmac_assistant/router/models.py:104-112`), which returns the fixed `opus` entry of `NessieAI/dmac_assistant/build_context/router_model_class_map.json:2` → `us.anthropic.claude-opus-4-8`. Sonnet/haiku entries exist in that map but are never selected: only Opus is allowlisted by the bedrock-proxy (`NessieAI/docker/bedrock-proxy/app/config.py:18`), so anything else would be refused.
 - **Unrelated**: emits one `query_complete` with a fixed "NExtSEEK research assistant for the MIT BioMicro Center … outside that scope" reply (`NessieAI/router/router.py:36-41`); neither path runs.
-- **Forced CC**: the `cc/query/async/` endpoint bypasses the router entirely (`nextseek_api/services/cc_assistant.py:808`).
+- **Forced CC**: the `cc/query/async/` endpoint bypasses the router entirely (`nextseek_api/services/cc_assistant.py:194`).
 
 ### 3. NS path: the in-process engine
 
@@ -261,7 +261,7 @@ A FastAPI relay that **drops any inbound `Authorization` header** (`NessieAI/doc
 
 ### API auth notes
 
-Both assistant viewsets accept Token, session and Basic auth. `CCAssistantViewSet` requires only `IsAuthenticated` (`nextseek_api/services/cc_assistant.py:450`); `AssistantViewSet` (the surface the agent's sidecar ops and the Family-C shims terminate in) additionally enforces `UserInParticipatingProject` (`nextseek_api/services/assistant.py:421`), a cached SEEK-project-membership check defined at `nextseek_api/services/assistant.py:109`. The session class is `CsrfExemptSessionAuthentication` (`nextseek_api/authentication.py:15`, re-exported by `nextseek_api/services/assistant.py`), whose `enforce_csrf` is an unconditional no-op (`nextseek_api/authentication.py:27-28`), and note that its docstring's claim that `CsrfViewMiddleware` is "disabled in this project" is **wrong**: the middleware is enabled at `dmac/settings.py:200`. The skip is per-endpoint, not global. WebSocket access, when served under daphne, requires an authenticated session cookie *and* task ownership; the UUID is not a capability token (`nextseek_api/assistant/consumers.py:29-41`).
+Both assistant viewsets accept Token, session and Basic auth. `CCAssistantViewSet` requires only `IsAuthenticated` (`nextseek_api/services/cc_assistant.py:90`); `AssistantViewSet` (the surface the agent's sidecar ops and the Family-C shims terminate in) additionally enforces `UserInParticipatingProject` (`nextseek_api/services/assistant.py:421`), a cached SEEK-project-membership check defined at `nextseek_api/services/assistant.py:109`. The session class is `CsrfExemptSessionAuthentication` (`nextseek_api/authentication.py:15`, re-exported by `nextseek_api/services/assistant.py`), whose `enforce_csrf` is an unconditional no-op (`nextseek_api/authentication.py:27-28`), and note that its docstring's claim that `CsrfViewMiddleware` is "disabled in this project" is **wrong**: the middleware is enabled at `dmac/settings.py:200`. The skip is per-endpoint, not global. WebSocket access, when served under daphne, requires an authenticated session cookie *and* task ownership; the UUID is not a capability token (`nextseek_api/assistant/consumers.py:29-41`).
 
 ### Caps & limits
 
@@ -275,7 +275,7 @@ Both assistant viewsets accept Token, session and Basic auth. `CCAssistantViewSe
 | Sidecar → Django HTTP | 60 s | `NessieAI/docker/ns-sidecar/app/ns_client.py:27` |
 | NS REST tool | 90 s, 120 s for advanced search | `NessieAI/chat_nextseek/src/chat_nextseek/helpers/tools/nextseek_api.py:133`, `NessieAI/chat_nextseek/src/chat_nextseek/helpers/tools/nextseek_api.py:135` |
 | Proxy request body | 10 MiB | `NessieAI/docker/bedrock-proxy/app/config.py:22` |
-| Upload total size | `BATCH_UPLOAD_MAX_TOTAL_BYTES`, default 200 MiB | `nextseek_api/services/cc_assistant.py:862` |
+| Upload total size | `BATCH_UPLOAD_MAX_TOTAL_BYTES`, default 200 MiB | `nextseek_api/services/cc_assistant.py:249` |
 
 ### Persistence (`nextseek_api/assistant/models_db.py`)
 
@@ -288,7 +288,7 @@ Thirteen model classes live in this module across four `assistant_*` tables and 
 | `TurnLedger` | `assistant_turn_ledger` | `nextseek_api/assistant/models_db.py:90` |
 | `CCSessionTranscript` | `assistant_cc_transcript` | `nextseek_api/assistant/models_db.py:341` |
 
-`CCAssistantViewSet` also exposes ownership-checked endpoints for file upload (`nextseek_api/services/cc_assistant.py:730`), upload status (`nextseek_api/services/cc_assistant.py:777`) and listing (`nextseek_api/services/cc_assistant.py:797`), artifact download (`nextseek_api/services/cc_assistant.py:812`) and transcript streaming (`nextseek_api/services/cc_assistant.py:860`).
+`CCAssistantViewSet` also exposes ownership-checked endpoints for file upload (`nextseek_api/services/cc_assistant.py:236`), upload status (`nextseek_api/services/cc_assistant.py:283`) and listing (`nextseek_api/services/cc_assistant.py:303`), artifact download (`nextseek_api/services/cc_assistant.py:318`) and transcript streaming (`nextseek_api/services/cc_assistant.py:366`).
 
 ### Agent image (`NessieAI/docker/cc-runtime/Dockerfile`)
 

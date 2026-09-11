@@ -29,7 +29,7 @@ The merged chat UI POSTs to ``cc-assistant/query/async``, whose BAML router
   ``debug`` dict (``parser_plan``/``api_plan``/``entity_result``/
   ``api_result_meta``/``graph_plan``/``graph_result``/``reporter_plan``) plus
   ``files``. **No per-turn cost is persisted** — the NS branch in
-  ``services/cc_assistant.py`` (``if decision.route == ROUTE_NS``) runs
+  ``NessieAI/cc/turn.py`` (``if decision.route == ROUTE_NS``) runs
   ``run_query(...)`` and its only persistence is ``adapter.save()``; there is no
   ``cc_engine.run_cc_turn`` / ``on_turn_complete`` and therefore no
   ``cc_traces`` row.

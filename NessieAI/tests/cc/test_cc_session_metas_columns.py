@@ -32,7 +32,7 @@ from django.contrib.auth import get_user_model
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 
-import nextseek_api.services.cc_assistant as cc_svc
+import NessieAI.cc.turn as cc_turn
 from nextseek_api.assistant.models_db import ChatSession
 from NessieAI.cc import cc_config
 
@@ -98,7 +98,7 @@ def test_session_metas_sorts_only_over_the_columns_it_reads(tmp_path):
     paths, mem_cfg = _cfg(tmp_path)
 
     with CaptureQueriesContext(connection) as ctx:
-        cc_svc._session_metas(user, None, paths, mem_cfg, project_dirname=PROJECT)
+        cc_turn._session_metas(user, None, paths, mem_cfg, project_dirname=PROJECT)
 
     ordering = _ordering_sql(ctx.captured_queries)
     assert len(ordering) == 1, f"expected exactly one ORDER BY query, got {ordering}"
@@ -135,7 +135,7 @@ def test_session_metas_does_not_limit_the_sweep(tmp_path):
     paths, mem_cfg = _cfg(tmp_path)
 
     with CaptureQueriesContext(connection) as ctx:
-        metas = cc_svc._session_metas(user, None, paths, mem_cfg, project_dirname=PROJECT)
+        metas = cc_turn._session_metas(user, None, paths, mem_cfg, project_dirname=PROJECT)
 
     sql = _ordering_sql(ctx.captured_queries)[0]
     assert "LIMIT" not in sql.upper(), f"bounded the sweep's own input: {sql}"
@@ -150,7 +150,7 @@ def test_session_metas_does_not_limit_the_sweep(tmp_path):
 def _query_count(user, tmp_path):
     paths, mem_cfg = _cfg(tmp_path)
     with CaptureQueriesContext(connection) as ctx:
-        metas = cc_svc._session_metas(user, None, paths, mem_cfg, project_dirname=PROJECT)
+        metas = cc_turn._session_metas(user, None, paths, mem_cfg, project_dirname=PROJECT)
     return len(ctx.captured_queries), metas
 
 
@@ -192,7 +192,7 @@ def test_session_metas_reads_extra_state_without_a_second_query(tmp_path):
     _seed(user, 3)
     paths, mem_cfg = _cfg(tmp_path)
 
-    metas = cc_svc._session_metas(user, None, paths, mem_cfg, project_dirname=PROJECT)
+    metas = cc_turn._session_metas(user, None, paths, mem_cfg, project_dirname=PROJECT)
 
     assert {m.fingerprint for m in metas} == {"fp-0", "fp-1", "fp-2"}
     assert {m.summary["gist"] for m in metas} == {"gist-0", "gist-1", "gist-2"}
@@ -208,7 +208,7 @@ def test_session_metas_still_returns_every_session_newest_first(tmp_path):
     sessions = _seed(user, 4)
     paths, mem_cfg = _cfg(tmp_path)
 
-    metas = cc_svc._session_metas(user, None, paths, mem_cfg, project_dirname=PROJECT)
+    metas = cc_turn._session_metas(user, None, paths, mem_cfg, project_dirname=PROJECT)
 
     expected = sorted(sessions, key=lambda s: s.updated_at, reverse=True)
     assert [m.session_id for m in metas] == [str(s.session_id) for s in expected]
@@ -226,6 +226,6 @@ def test_session_metas_is_still_scoped_to_the_users_own_sessions(tmp_path):
     _seed(theirs, 3)
     paths, mem_cfg = _cfg(tmp_path)
 
-    metas = cc_svc._session_metas(mine, None, paths, mem_cfg, project_dirname=PROJECT)
+    metas = cc_turn._session_metas(mine, None, paths, mem_cfg, project_dirname=PROJECT)
 
     assert {m.session_id for m in metas} == {str(s.session_id) for s in ours}

@@ -75,12 +75,12 @@ def test_run_sweep_skips_empty_path_and_swallows_errors(monkeypatch):
     monkeypatch.setattr("NessieAI.cc.cc_config.CCPaths.from_env", Paths.from_env)
     monkeypatch.setattr("NessieAI.cc.cc_config.CCMemoryConfig.from_env", Mem.from_env)
     monkeypatch.setattr(
-        "nextseek_api.services.cc_assistant._session_metas",
+        "NessieAI.cc.turn._session_metas",
         lambda *a, **k: metas,
     )
     persisted = []
     monkeypatch.setattr(
-        "nextseek_api.services.cc_assistant._persist_summary_standalone",
+        "NessieAI.cc.turn._persist_summary_standalone",
         lambda *a, **k: persisted.append(a),
     )
     monkeypatch.setattr(
