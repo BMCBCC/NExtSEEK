@@ -2,8 +2,10 @@
 
 - Date: 2026-09-11
 - Branch: `feat/nessie-ci-lane`, cut from `origin/dev` at `f1ef0f3c`
-- Status: approved design, not yet implemented. Brainstormed with the operator on 2026-09-11, after three
-  read-only research passes (the CI architecture, the Nessie feature surface, and the reusable test tooling).
+- Status: approved design, implemented on `feat/nessie-ci-lane`. Brainstormed with the operator on
+  2026-09-11, after three read-only research passes (the CI architecture, the Nessie feature surface, and
+  the reusable test tooling). Section 3.1 describes the checks as built; section 6 lists what implementation
+  changed and why.
 
 ## 1. Goal
 
@@ -39,7 +41,9 @@ When Nessie changes, this file changes. Its parts:
   `container_cc`), the expected path (`system`, `api`, `graph` or `cc`), whether a bundle is expected, and
   whether a CC artifact is expected. A new question is a new row.
 - **Module fixtures**
-  - `nessie_admin_api`: a `GuardedSession` as `CI_WRITE_USER`, reusing the existing `write_creds` fixture.
+  - `nessie_admin_api`: a `GuardedSession` as `CI_WRITE_USER`. Its credentials come from
+    `require_write_creds()`, which fails when they are missing; the existing `write_creds` fixture skips
+    instead, which the opt-in write lane relies on and decision 6 rules out here.
   - `nessie_page`: a Playwright context logged in through `/login/` as `CI_WRITE_USER`, the way the existing
     browser fixtures log in. It carries a network guard that counts POSTs to `cc-assistant/query/async/`,
     aborts a fifth one (and fails), and aborts any POST to any other chat-turn route.
@@ -62,16 +66,17 @@ When Nessie changes, this file changes. Its parts:
   `evaluator/` and `schema_rag/` answers its declared status, each with the account its `auth` names. That
   includes the superuser-only `nessie/sessions/<id>/debug/`, which no test requests today.
 - Features: the sessions list; the test cases; `nessie/uploads/`; `schema_rag/retrieve/` returns a non-empty
-  endpoint list (it answers 200 even on failure, so the list is what is asserted); the evaluator runs
-  listing; a scratch session is created, renamed and deleted.
+  `endpoints_minimal` list (it answers 200 even on failure, so the list is what is asserted; the body names
+  this instance's own schema URL); the evaluator runs listing; a scratch session is created, renamed and
+  deleted.
 
 **Stages 2 and 3: the four questions**
 
 | Question | Route and source | Page | API |
 |---|---|---|---|
 | "What can you do?" | `nextseek_query`, `baml` | The reply shows; the Debug panel has the route entry | The reply is non-empty; no bundle (the system-agent path ends with `bundle_id=None`) |
-| "What mice are treated with NDMA?" | `nextseek_query`, `baml` | The reply shows; JSON and Metadata become enabled; clicking each downloads a file | The bundle JSON parses and carries the full API result; the Metadata download works; the xlsx artifact downloads; the bundle was built by the API path |
-| "What studies are in IMPACT?" | `nextseek_query`, `baml` | As above | As above, and the bundle was built by the graph path |
+| "What mice are treated with NDMA?" | `nextseek_query`, `baml` | The reply shows; JSON and Metadata become enabled; clicking each downloads a file | The bundle JSON parses and carries the full API result; the Metadata download works; the xlsx artifact downloads; every file artifact the turn offered downloads; the bundle was built by the API path (`new_search` or `refine_last_search`) |
+| "What studies are in IMPACT?" | `nextseek_query`, `baml` | As above | The bundle JSON parses; the Metadata download works; every file artifact the turn offered downloads; the bundle was built by the graph path. No xlsx: a graph bundle has none (section 6) |
 | "Make me a graph of NHP species" | `container_cc`, `baml` | The reply and at least one artifact link show | `cc_turn_meta.model_id` is not null; no 403 and no `query_error`; the CC artifact download works for one file and for the zip; the transcript comes back as ndjson; the reported cost is recorded |
 
 The path for questions 2 and 3 is read from the bundle the turn registered: the graph branch records its
@@ -80,18 +85,22 @@ REST branch records a different mode. The implementer confirms the exact field a
 
 **The session cross-check: are the sessions endpoints telling the truth?**
 
-- `assistant/sessions/<s>/?include=turns` has exactly four turns, with the replies the page showed and the
-  same bundle ids.
+- `assistant/sessions/<s>/?include=turns` has exactly four turns, with the questions the page sent, the
+  replies the API returned (the NS writer stores a reply cut at its debug block, so the stored reply is a
+  prefix of it) and the same bundle ids.
 - `nessie/sessions/<s>/debug/` resolves as a session, counts four turns, has a route ledger reading
   `nextseek_query, nextseek_query, nextseek_query, container_cc` with every source `baml`, carries the CC
-  transcript and the files list, and reports no warnings. The same endpoint given a `task_id` resolves as a
-  task.
+  transcript and the files list, and reports no warning except `bundle_chatlog_count_mismatch`, which is
+  allowed once and only when the bundle count equals the number of bundle turns (section 6). The same
+  endpoint given a `task_id` resolves as a task.
 - `nessie/sessions/<s>/artifacts/` and `nessie/sessions/<s>/transcript/<turn>/` answer 200 with the real ids.
-- The page: after a reload the chat is in the sidebar, and reopening it shows all four turns with the Debug
-  panel entries rebuilt.
+- The page: after a reload the chat is in the sidebar, and reopening it shows all four turns, with Search
+  Details rebuilt on each bundle turn and each CC turn (section 6).
 
 **Cleanup**: a module finalizer deletes the chat when every test passed. When anything failed it keeps the
-chat and writes its id and `/debug/` URL into the CI record.
+chat and writes its id and `/debug/` URL into the CI record. "Anything" is any test in the module, stage 1
+included: the failure count is taken before the first stage 1 test. A delete that does not answer 204 is
+recorded in the CI record as a failed cleanup that names the chat.
 
 ### 3.2 The route registry (`ci/routes.py`)
 
@@ -167,7 +176,7 @@ chat and writes its id and `/debug/` URL into the CI record.
 - `startup/tests`: the `build_command` flag, rebuild's component gating, the `ci` flag, and the prerequisites
   check (an empty token fails with a message, and the token value never appears in output).
 - Frontend: the existing vitest suite plus a test-id assertion; the mock Playwright project green after the
-  `ws-mock.ts` fix.
+  `ws-mock.ts` fix, with no `.env` (its config supplies placeholder `VITE_API_*` values).
 - Live: one paid run on `local` by the operator (`./startup.sh ci`, about $0.30). The implementation
   workflow stops before it.
 
@@ -179,6 +188,34 @@ chat and writes its id and `/debug/` URL into the CI record.
 - The opt-out is a `--no-nessie` option, not a `-m` expression (3.3).
 - The write gate's blocked path is left to its unit tests. Checking it over HTTP would need `GuardedSession`
   to permit a POST to an `EXCLUDE_COST` route from the requests client, which this design avoids.
+
+### Refinements made during implementation
+
+Each was checked against the tree; section 3.1 now says what the code does.
+
+- **One `/debug/` warning is allowed.** `session_debug._warnings`
+  (`nextseek_api/assistant/session_debug.py`) raises `bundle_chatlog_count_mismatch` whenever the bundle
+  count differs from the chat_log count. The system answer and the CC turn each write a chat_log entry and
+  no bundle, so a healthy four-question chat always raises it. "No warnings" would fail every green build.
+- **Question 3 has no xlsx.** `download_artifact` (`nextseek_api/services/assistant.py`) answers
+  `search_results` only for `new_search` and `refine_last_search`, `all_tables` only for a reporter bundle,
+  and a `graph_query` bundle carries no table. The xlsx check is for the API path. For both paths, every
+  file artifact the turn offered must download.
+- **Search Details replaces "Debug panel entries rebuilt".** The Debug panel shows only the newest turn
+  (`debugForTurns`), and a CC newest turn has no entries there by design. The reopened chat is checked
+  through each bundle turn's and each CC turn's Search Details, which `MessageBubble` shows from the
+  rebuilt debug entries and from `cc_traces` (`hasCcTrace`).
+- **Stage 1 asserts `endpoints_minimal`.** `RetrieveResponse` (`nextseek_api/models.py`) has no
+  `endpoints` key, and a body naming neither `session_id` nor `schema_url` always answers
+  `SESSION_MISSING_OR_EXPIRED`, so the check sends this instance's own schema URL.
+- **`require_write_creds()` replaces the `write_creds` fixture.** That fixture skips when the account is
+  missing, and a skipped lane would read green on a misconfigured box (decision 6).
+- **Two registry notes were corrected, not three.** The `assistant/sessions/` list route takes POST and
+  its detail route PATCH and DELETE; the `bundles/` and `artifacts/` routes are GET only and never claimed
+  a write.
+- **A bundle's path is its mode, strictly.** `graph_query` is the graph path and the two search modes are
+  the API path. Any other mode is reported under its own name, so a turn that lands on reporter fails the
+  path check saying so.
 
 ## 7. Out of scope
 
