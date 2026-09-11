@@ -229,6 +229,10 @@ show
 startup/.instance.json
 startup/.ghcr-push-state.json
 startup/.ci-last-run.xml
+# The Nessie lane's summary and a failure's evidence: single slots, cleared every
+# run; the evidence is moved under startup/ci-reports/ with the run's record.
+startup/.ci-nessie-last.json
+startup/.ci-nessie-evidence/
 # Per-run CI records. Local to the box that ran them: dev and prod each write
 # their own, so committing them would collide across boxes for no gain.
 startup/ci-reports/

@@ -727,3 +727,75 @@ def test_app_health_checks_report_image_health_too(monkeypatch, tmp_path):
     by_name = {r.name: r for r in results}
     assert by_name["first-party images"].ok is False
     assert by_name["CC runner"].ok is True
+
+
+# ---------------------------------------------------------------------------
+# the Nessie lane's prerequisites: advisory in stack health, failures here
+# ---------------------------------------------------------------------------
+
+def test_nessie_prerequisites_fail_on_an_empty_proxy_token(tmp_path, monkeypatch):
+    (tmp_path / "docker" / "bedrock-proxy").mkdir(parents=True)
+    (tmp_path / "docker" / "bedrock-proxy" / "proxy-secret.env").write_text(
+        "AWS_BEARER_TOKEN_BEDROCK=\nAWS_REGION=us-east-1\n")
+    ok = validate.HealthResult(name="x", ok=True, detail="fine")
+    monkeypatch.setattr(validate, "check_first_party_images", lambda *a, **k: ok)
+    monkeypatch.setattr(validate, "check_cc_services", lambda *a, **k: ok)
+    monkeypatch.setattr(validate, "check_cc_runner", lambda *a, **k: ok)
+    results = validate.nessie_prerequisites(tmp_path, {}, "nextseek")
+    token = results[0]
+    assert token.name == "bedrock proxy token" and token.ok is False
+
+
+def test_nessie_prerequisites_never_print_the_token(tmp_path, monkeypatch):
+    (tmp_path / "docker" / "bedrock-proxy").mkdir(parents=True)
+    (tmp_path / "docker" / "bedrock-proxy" / "proxy-secret.env").write_text(
+        "AWS_BEARER_TOKEN_BEDROCK=sekrit-value\n")
+    ok = validate.HealthResult(name="x", ok=True, detail="fine")
+    monkeypatch.setattr(validate, "check_first_party_images", lambda *a, **k: ok)
+    monkeypatch.setattr(validate, "check_cc_services", lambda *a, **k: ok)
+    monkeypatch.setattr(validate, "check_cc_runner", lambda *a, **k: ok)
+    results = validate.nessie_prerequisites(tmp_path, {}, "nextseek")
+    assert all(r.ok for r in results)
+    assert all("sekrit" not in r.detail for r in results)
+
+
+def test_nessie_prerequisites_fail_on_a_missing_token_file(tmp_path, monkeypatch):
+    """No file at all is the same missing credential as an empty value."""
+    ok = validate.HealthResult(name="x", ok=True, detail="fine")
+    monkeypatch.setattr(validate, "check_first_party_images", lambda *a, **k: ok)
+    monkeypatch.setattr(validate, "check_cc_services", lambda *a, **k: ok)
+    monkeypatch.setattr(validate, "check_cc_runner", lambda *a, **k: ok)
+    token = validate.nessie_prerequisites(tmp_path, {}, "nextseek")[0]
+    assert token.ok is False and token.warn is False
+
+
+def test_nessie_prerequisites_carry_the_image_service_and_runner_checks(tmp_path, monkeypatch):
+    """The cc-agent image, the two CC services and the in-container runner check,
+    asked with this box's own project name and compose environment."""
+    _proxy_secret(tmp_path, token="present")
+    asked = {}
+
+    def images(name):
+        asked["project"] = name
+        return validate.HealthResult("first-party images", False, "ABSENT: dmac-assistant:poc")
+
+    def services(repo_root, env):
+        asked["services_env"] = env
+        return validate.HealthResult("cc services", False, "not running: nextseek-sidecar")
+
+    def cc_runner(repo_root, env):
+        asked["runner_env"] = env
+        return validate.HealthResult("CC runner", True, "(True, 'ok')")
+
+    monkeypatch.setattr(validate, "check_first_party_images", images)
+    monkeypatch.setattr(validate, "check_cc_services", services)
+    monkeypatch.setattr(validate, "check_cc_runner", cc_runner)
+    env = {"COMPOSE_PROJECT_NAME": "nextseek-v2"}
+
+    results = validate.nessie_prerequisites(tmp_path, env, "nextseek-v2")
+
+    assert [r.name for r in results] == [
+        "bedrock proxy token", "first-party images", "cc services", "CC runner",
+    ]
+    assert [r.ok for r in results] == [True, False, False, True]
+    assert asked == {"project": "nextseek-v2", "services_env": env, "runner_env": env}

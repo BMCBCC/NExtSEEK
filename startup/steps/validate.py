@@ -224,6 +224,27 @@ def stack_health(
     )
 
 
+def nessie_prerequisites(
+    repo_root: Path, env: dict[str, str], compose_project_name: str
+) -> tuple[HealthResult, ...]:
+    """What the Nessie lane needs before it can pass: a CC turn reaches Bedrock
+    only through the proxy, with its token, from a runnable cc-agent image.
+
+    The proxy token is advisory in stack health; for the Nessie lane an empty one
+    is a failure (spec decision 6), so its warning is turned into a failure here.
+    The token's value never leaves check_proxy_token, which reports presence only.
+    """
+    token = check_proxy_token(repo_root)
+    if token.warn:
+        token = HealthResult(name=token.name, ok=False, detail=token.detail)
+    return (
+        token,
+        check_first_party_images(compose_project_name),
+        check_cc_services(repo_root, env),
+        check_cc_runner(repo_root, env),
+    )
+
+
 def check_first_party_images(compose_project_name: str = "nextseek") -> HealthResult:
     """Whether every image this box builds for itself is actually here.
 

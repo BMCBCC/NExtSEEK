@@ -194,3 +194,139 @@ def test_running_image_survives_no_docker_at_all(monkeypatch):
         raise OSError("no docker here")
     monkeypatch.setattr(ci_runner.subprocess, "run", boom)
     assert ci_runner.running_image() == (None, None)
+
+
+# --------------------------------------------------------------------------- #
+# the Nessie lane: its switch, its summary and evidence, its CI record section
+# --------------------------------------------------------------------------- #
+
+def test_build_command_runs_the_nessie_lane_by_default(tmp_path):
+    assert "--no-nessie" not in runner.build_command(tmp_path, _state(), wait_ready=False)
+
+
+def test_build_command_passes_no_nessie_when_off(tmp_path):
+    cmd = runner.build_command(tmp_path, _state(), wait_ready=False, nessie=False)
+    assert cmd[-1] == "--no-nessie"
+
+
+def test_run_ci_names_the_nessie_summary_and_evidence_paths(tmp_path, monkeypatch):
+    seen = {}
+
+    def fake_run(cmd, cwd, env):
+        seen.update(env)
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    runner.nessie_summary_path(tmp_path).parent.mkdir(parents=True)
+    runner.nessie_summary_path(tmp_path).write_text("{}")      # a stale one
+    runner.run_ci(tmp_path, _state(), wait_ready=False)
+    assert seen["CI_NESSIE_SUMMARY"] == str(runner.nessie_summary_path(tmp_path))
+    assert seen["CI_NESSIE_EVIDENCE_DIR"] == str(runner.nessie_evidence_path(tmp_path))
+    assert not runner.nessie_summary_path(tmp_path).exists(), "a stale summary survived"
+
+
+def test_run_ci_clears_stale_nessie_evidence(tmp_path, monkeypatch):
+    """A previous failure's trace must not be filed under this run's record."""
+    monkeypatch.setattr(runner.subprocess, "run",
+                        lambda cmd, cwd, env: SimpleNamespace(returncode=0))
+    stale = runner.nessie_evidence_path(tmp_path)
+    stale.mkdir(parents=True)
+    (stale / "trace.zip").write_bytes(b"old")
+    runner.run_ci(tmp_path, _state(), wait_ready=False)
+    assert not stale.exists()
+
+
+def test_nessie_summary_and_evidence_live_under_startup(tmp_path):
+    assert runner.nessie_summary_path(tmp_path) == tmp_path / "startup" / ".ci-nessie-last.json"
+    assert runner.nessie_evidence_path(tmp_path) == tmp_path / "startup" / ".ci-nessie-evidence"
+
+
+def test_read_nessie_summary_is_none_when_absent_or_unreadable(tmp_path):
+    assert runner.read_nessie_summary(tmp_path) is None
+    path = runner.nessie_summary_path(tmp_path)
+    path.parent.mkdir(parents=True)
+    path.write_text("not json")
+    assert runner.read_nessie_summary(tmp_path) is None
+    path.write_text('{"posts": 4}')
+    assert runner.read_nessie_summary(tmp_path) == {"posts": 4}
+
+
+SUMMARY = {
+    "questions": [
+        {"key": "capabilities", "text": "What can you do?", "expected_route": "nextseek_query",
+         "route": "nextseek_query", "source": "baml", "task_id": "t1", "session_id": "s",
+         "status": "completed", "seconds": 31.5, "cost_usd": None, "error": None},
+        {"key": "nhp_graph", "text": "Make me a graph of NHP species",
+         "expected_route": "container_cc", "route": "container_cc", "source": "baml",
+         "task_id": "t4", "session_id": "s", "status": "completed", "seconds": 88.0,
+         "cost_usd": 0.24, "error": None},
+    ],
+    "posts": 2, "refused_posts": 0, "spent_usd": 0.24, "ceiling_usd": 1.0,
+    "kept_session": {"session_id": "s", "debug_url": "http://127.0.0.1:8000/nextseek_api/nessie/sessions/s/debug/"},
+    "evidence_dir": None,
+}
+
+
+def test_render_nessie_section():
+    text = "\n".join(runner.render_nessie_section(SUMMARY))
+    assert text.startswith("## Nessie")
+    assert "| capabilities | nextseek_query | baml | 31.5 | unmeasured | completed |" in text
+    assert "| nhp_graph | container_cc | baml | 88.0 | $0.24 | completed |" in text
+    assert "$0.24 of $1.00" in text
+    assert "/nessie/sessions/s/debug/" in text
+    assert "\u2014" not in text
+
+
+def test_render_nessie_section_names_each_turn_s_task_id():
+    """The spec's record carries the task_id, the handle /debug/ resolves a turn by."""
+    text = "\n".join(runner.render_nessie_section(SUMMARY))
+    assert "| capabilities | nextseek_query | baml | 31.5 | unmeasured | completed | `t1` |" in text
+    assert "| nhp_graph | container_cc | baml | 88.0 | $0.24 | completed | `t4` |" in text
+
+
+def test_render_nessie_section_carries_a_question_s_error_and_a_turn_never_asked():
+    summary = dict(SUMMARY, kept_session=None, questions=[
+        dict(SUMMARY["questions"][0], status="failed", error="HTTP 502"),
+        {"key": "ndma_mice", "route": None, "source": None, "task_id": None,
+         "status": None, "seconds": None, "cost_usd": None,
+         "error": "not asked: the lane passed its 720 s deadline"},
+    ])
+    text = "\n".join(runner.render_nessie_section(summary))
+    assert "| failed: HTTP 502 |" in text
+    assert "| ndma_mice | - | - | - | unmeasured | not run: not asked:" in text
+    assert "Kept session" not in text
+
+
+def test_write_report_includes_the_nessie_section_and_moves_the_evidence(tmp_path):
+    runner.junit_path(tmp_path).parent.mkdir(parents=True, exist_ok=True)
+    runner.junit_path(tmp_path).write_text(
+        '<testsuites><testsuite tests="1" failures="0" errors="0" skipped="0" time="1">'
+        '<testcase classname="c" name="n" time="1"/></testsuite></testsuites>')
+    evidence = runner.nessie_evidence_path(tmp_path)
+    evidence.mkdir(parents=True)
+    (evidence / "page.png").write_bytes(b"png")
+    path = runner.write_report(tmp_path, label="run1", nessie_summary=dict(SUMMARY))
+    text = path.read_text()
+    assert "## Nessie" in text
+    moved = runner.reports_dir(tmp_path) / "run1-nessie"
+    assert (moved / "page.png").is_file() and not evidence.exists()
+    assert str(moved) in text
+
+
+def test_write_report_without_a_nessie_summary_has_no_nessie_section(tmp_path):
+    _junit(tmp_path)
+    evidence = runner.nessie_evidence_path(tmp_path)
+    evidence.mkdir(parents=True)
+    (evidence / "page.png").write_bytes(b"png")
+    text = runner.write_report(tmp_path, label="run2").read_text()
+    assert "## Nessie" not in text
+    # Not the lane's run, so not its evidence to file.
+    assert (evidence / "page.png").is_file()
+    assert not (runner.reports_dir(tmp_path) / "run2-nessie").exists()
+
+
+def test_write_report_puts_the_nessie_section_after_stack_health(tmp_path):
+    _junit(tmp_path)
+    text = runner.write_report(tmp_path, label="run3", nessie_summary=dict(SUMMARY),
+                               health=[("app + front door", True, "running")]).read_text()
+    assert text.index("## Stack health") < text.index("## Nessie")
