@@ -52,7 +52,7 @@ QUESTIONS: tuple[Question, ...] = (
     Question("capabilities", "What can you do?", "nextseek_query", "system", False, False),
     Question("ndma_mice", "What mice are treated with NDMA?", "nextseek_query", "api", True, False),
     Question("impact_studies", "What studies are in IMPACT?", "nextseek_query", "graph", True, False),
-    Question("nhp_graph", "Make me a histogram of NHP species", "container_cc", "cc", False, True),
+    Question("nhp_graph", "Make me a histogram image of NHP species", "container_cc", "cc", False, True),
 )
 
 MAX_CHAT_POSTS = len(QUESTIONS)
