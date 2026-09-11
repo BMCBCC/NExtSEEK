@@ -76,8 +76,8 @@ When Nessie changes, this file changes. Its parts:
 | Question | Route and source | Page | API |
 |---|---|---|---|
 | "What can you do?" | `nextseek_query`, `baml` | The reply shows; the Debug panel has the route entry | The reply is non-empty; no bundle (the system-agent path ends with `bundle_id=None`) |
-| "What mice are treated with NDMA?" | `nextseek_query`, `baml` | The reply shows; JSON and Metadata become enabled; clicking each downloads a file | The bundle JSON parses and carries the full API result; the Metadata download works; the xlsx artifact downloads; every file artifact the turn offered downloads; the bundle was built by the API path (`new_search` or `refine_last_search`) |
-| "What studies are in IMPACT?" | `nextseek_query`, `baml` | As above | The bundle JSON parses; the Metadata download works; every file artifact the turn offered downloads; the bundle was built by the graph path. No xlsx: a graph bundle has none (section 6) |
+| "What mice are treated with NDMA?" | `nextseek_query`, `baml` | The reply shows; JSON and Metadata become enabled; clicking each downloads a file | The bundle JSON parses and carries the full API result; the Metadata download works; every table or xlsx the turn offered downloads as a spreadsheet; every file artifact the turn offered downloads; the bundle was built by the API path (`new_search` or `refine_last_search`) |
+| "What studies are in IMPACT?" | `nextseek_query`, `baml` | As above | The bundle JSON parses; the Metadata download works; every table or xlsx the turn offered downloads as a spreadsheet; every file artifact the turn offered downloads; the bundle was built by the graph path (section 6) |
 | "Make me a graph of NHP species" | `container_cc`, `baml` | The reply and at least one artifact link show | `cc_turn_meta.model_id` is not null; no 403 and no `query_error`; the CC artifact download works for one file and for the zip; the transcript comes back as ndjson; the reported cost is recorded |
 
 The path for questions 2 and 3 is read from the bundle the turn registered: the graph branch records its
@@ -198,10 +198,13 @@ Each was checked against the tree; section 3.1 now says what the code does.
   (`nextseek_api/assistant/session_debug.py`) raises `bundle_chatlog_count_mismatch` whenever the bundle
   count differs from the chat_log count. The system answer and the CC turn each write a chat_log entry and
   no bundle, so a healthy four-question chat always raises it. "No warnings" would fail every green build.
-- **Question 3 has no xlsx.** `download_artifact` (`nextseek_api/services/assistant.py`) answers
-  `search_results` only for `new_search` and `refine_last_search`, `all_tables` only for a reporter bundle,
-  and a `graph_query` bundle carries no table. The xlsx check is for the API path. For both paths, every
-  file artifact the turn offered must download.
+- **A spreadsheet is checked only when the turn offers one.** The first paid run (2026-09-11) found that
+  the NDMA search offers only its full-result JSON, and that requesting `search_results` directly answered
+  500: `generate_search_xlsx` knew only the JSON:API list shape, while the advanced-search endpoint answers a
+  grid (`{"data": {"total", "rows", ...}}`). The endpoint now reads the grid's `rows`, pinned by
+  `nextseek_api/assistant/tests/test_excel_export.py`. The lane requires every table or xlsx file a turn
+  offers to download as a spreadsheet, and every file artifact to download, and asks for no spreadsheet a
+  turn did not offer. A graph bundle offers none.
 - **Search Details replaces "Debug panel entries rebuilt".** The Debug panel shows only the newest turn
   (`debugForTurns`), and a CC newest turn has no entries there by design. The reopened chat is checked
   through each bundle turn's and each CC turn's Search Details, which `MessageBubble` shows from the

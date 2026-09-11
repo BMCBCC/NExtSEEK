@@ -185,6 +185,20 @@ def observed_path(route: str | None, bundle_id: int | None) -> str | None:
     return None
 
 
+def offered_spreadsheets(artifacts) -> list[str]:
+    """The keys of the artifacts a turn offered that download as a spreadsheet:
+    every table (the page's download button fetches it as xlsx) and every file whose
+    format is xlsx. The lane checks exactly these, and asks for no spreadsheet a
+    turn did not offer."""
+    keys = []
+    for art in artifacts or []:
+        if not isinstance(art, dict) or not art.get("key"):
+            continue
+        if art.get("artifact_type") == "table" or art.get("file_format") == "xlsx":
+            keys.append(art["key"])
+    return keys
+
+
 def normalize(text: str) -> str:
     """Letters and digits only, lower case, single spaces."""
     return re.sub(r"[^0-9A-Za-z]+", " ", text or "").strip().lower()
@@ -801,16 +815,18 @@ def test_bundle_turns_download_and_took_the_expected_path(q, chat_run, nessie_ad
         f"{q.key}: the bundle's ?part=metadata has no 'omitted' key: {list(meta.json())[:20]}")
     if q.path == "api":
         assert "api_result_full" in bundle, "the API bundle lacks the full API result"
-        # A graph bundle offers no spreadsheet: search_results answers only a
-        # search mode and all_tables only a reporter bundle (download_artifact in
-        # nextseek_api/services/assistant.py), and build_artifacts gives a
-        # graph_query bundle no table.
-        xlsx = [nessie_admin_api.get(f"{root}artifacts/{key}/", timeout=120)
-                for key in ("search_results", "all_tables")]
-        assert any(x.status_code == 200 and "spreadsheet" in x.headers.get("Content-Type", "")
-                   and len(x.content) > 0 for x in xlsx), (
-            f"{q.key}: neither search_results nor all_tables downloaded as xlsx: "
-            f"{[x.status_code for x in xlsx]}")
+    # Every spreadsheet the turn offered (a table, or an xlsx file) must download as
+    # one. Nothing is asked for that the turn did not offer: the 2026-09-11 run's
+    # NDMA search offered only its full-result JSON, and search_results itself is
+    # pinned by nextseek_api/assistant/tests/test_excel_export.py.
+    for key in offered_spreadsheets((rec.result or {}).get("artifacts")):
+        x = nessie_admin_api.get(f"{root}artifacts/{key}/", timeout=120)
+        assert x.status_code == 200, (
+            f"{q.key}: the offered spreadsheet {key} answered {x.status_code}: {x.text[:200]}")
+        assert "spreadsheet" in x.headers.get("Content-Type", ""), (
+            f"{q.key}: the offered spreadsheet {key} came back as "
+            f"{x.headers.get('Content-Type')!r}")
+        assert len(x.content) > 0, f"{q.key}: the offered spreadsheet {key} downloaded empty"
     # Every file the turn offered the page downloads through the same route.
     for art in (rec.result or {}).get("artifacts") or []:
         if art.get("artifact_type") != "file":

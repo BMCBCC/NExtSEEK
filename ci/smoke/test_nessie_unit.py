@@ -108,7 +108,8 @@ import json
 from ci.smoke.test_nessie import (
     CHAT_PATH, MAX_CHAT_POSTS, QUESTIONS, SPEND_CEILING_USD, ChatBudget, TurnRecord,
     bundle_path, cc_model_id, classify_request, finish_chat, is_terminal, normalize,
-    observed_path, plain_prefix, query_error, reported_cost, require_smoke_creds,
+    observed_path, offered_spreadsheets, plain_prefix, query_error, reported_cost,
+    require_smoke_creds,
     require_write_creds, route_decision, summary_payload,
 )
 
@@ -520,3 +521,18 @@ def test_a_green_lane_deletes_its_chat_and_reports_no_cleanup_error(
     assert summary["evidence_dir"] is None
     assert summary["cleanup_error"] is None
     assert methods == ["DELETE"], f"expected one DELETE, got {methods}"
+
+
+def test_offered_spreadsheets_are_the_tables_and_xlsx_files_a_turn_offered():
+    artifacts = [
+        {"artifact_type": "file", "key": "api_result", "file_format": "json"},
+        {"artifact_type": "table", "key": "samples", "label": "Samples"},
+        {"artifact_type": "file", "key": "geo_seq_workbooks", "file_format": "xlsx"},
+        {"artifact_type": "table"},                 # no key: nothing to download
+        "not-a-dict",
+    ]
+    assert offered_spreadsheets(artifacts) == ["samples", "geo_seq_workbooks"]
+    assert offered_spreadsheets(None) == []
+    assert offered_spreadsheets([{"artifact_type": "file", "key": "api_result",
+                                  "file_format": "json"}]) == [], (
+        "a turn that offers only its JSON result must be asked for no spreadsheet")
