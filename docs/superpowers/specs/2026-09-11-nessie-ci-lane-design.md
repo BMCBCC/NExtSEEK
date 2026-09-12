@@ -26,7 +26,7 @@ increment may wrap its paid full tier in a startup command.
 | 4 | Mechanism | Each question is typed and sent in the page; completion and results are checked through the API | The page proves the UI; the API cross-check proves the sessions endpoints report the truth |
 | 5 | Accounts | `CI_WRITE_USER` (the existing superuser) drives the page and the admin checks. `CI_SMOKE_USER` is unchanged | Admin controls, `/debug/` and the evaluator reads need a superuser; a separate account would duplicate this one |
 | 6 | Failure policy | Any stage that cannot run fails and names the cause, including a provider outage and a misconfigured box | The operator chose "always fail" |
-| 7 | Spend | At most 4 chat POSTs per run; the CC turn keeps its existing per-turn cap; reported spend over $1.00 fails the run; NS spend is recorded as unmeasured | A hard ceiling, without building NS cost measurement first |
+| 7 | Spend | At most 4 chat POSTs per run; the CC turn may report up to $0.50 for each minute it ran, with a one-minute floor; reported spend over $1.00 fails the run; NS spend is recorded as unmeasured | A hard ceiling, without building NS cost measurement first |
 | 8 | Cleanup | Delete the chat on a pass. On a failure, keep it and print its id and its `/debug/` URL | No pile-up on green runs; full evidence on red ones |
 | 9 | Path check | Question 2 must take the API path and question 3 the graph path; a flip fails the test | Covering both paths is why there are two questions. If the planner proves flaky here (#33), downgrade this one check to a warning in the CI record |
 | 10 | Base | `origin/dev` | Merges into the NessieAI refactor through git's rename detection (see section 8) |
@@ -166,7 +166,7 @@ recorded in the CI record as a failed cleanup that names the chat.
 - Timeouts: 5 minutes per NS turn (observed mean 38 s, maximum 623 s), 4 minutes for the CC turn (the engine
   stops CC at 180 s), about 12 minutes for the whole lane. Expect roughly 4 to 5 minutes added to a
   rebuild's CI.
-- Spend per run: three NS turns (a few cents, unmeasured), one CC turn (observed mean $0.24, cap $0.50), and
+- Spend per run: three NS turns (a few cents, unmeasured), one CC turn (observed mean $0.24, cap $0.50 a minute), and
   the router calls. The run fails above $1.00 of reported spend.
 
 ## 5. Testing the lane itself

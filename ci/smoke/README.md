@@ -114,8 +114,9 @@ and in pytest's warnings summary on a direct run.
   as their own flag and pass it through; a direct `pytest ci/smoke/` run takes it
   as a suite option; the GitHub dispatch workflow has a `nessie` input, default
   on.
-- It costs about $0.30 a run. The CC turn's observed mean is $0.24 under its
-  existing $0.50 per-turn cap, and the three NS turns cost a few cents that
+- It costs about $0.30 a run. The CC turn's observed mean is $0.24; it may
+  report up to $0.50 for each minute it ran (never less than $0.50), and the
+  three NS turns cost a few cents that
   nothing measures yet. At most four chat POSTs leave the page; the browser
   aborts a fifth and the lane fails. Reported spend above $1.00 fails the run.
 - It adds about 4 to 5 minutes to a rebuild's CI. Each NS turn may take 300 s,

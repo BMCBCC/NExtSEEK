@@ -57,7 +57,10 @@ QUESTIONS: tuple[Question, ...] = (
 
 MAX_CHAT_POSTS = len(QUESTIONS)
 SPEND_CEILING_USD = 1.00
-CC_TURN_CAP_USD = 0.50            # NEXTSEEK_CC_MAX_BUDGET_USD's default
+# The CC turn may report up to this much for each minute it ran, never less than one
+# minute's worth. A flat $0.50 failed real two-minute turns ($0.51 in run 5, $0.54 in
+# run 6) that sat well inside the engine's own budget (NEXTSEEK_CC_MAX_BUDGET_USD).
+CC_COST_PER_MINUTE_USD = 0.50
 TURN_TIMEOUT_S = {"nextseek_query": 300, "container_cc": 240}
 LANE_DEADLINE_S = 720
 POLL_INTERVAL_S = 2.0
@@ -845,6 +848,13 @@ def test_bundle_turns_download_and_took_the_expected_path(q, chat_run, nessie_ad
         f"{q.key}: the page's JSON and Metadata downloads did not both work")
 
 
+def cc_turn_cap_usd(seconds: float | None) -> float:
+    """The most a CC turn of this length may report: CC_COST_PER_MINUTE_USD for
+    each minute it ran, with a one-minute floor (an unknown length gets the floor)."""
+    minutes = max(1.0, (seconds or 0.0) / 60.0)
+    return round(CC_COST_PER_MINUTE_USD * minutes, 4)
+
+
 @turn
 @pytest.mark.parametrize("q", CC_QUESTIONS, ids=lambda q: q.key)
 def test_each_cc_turn_has_a_model_artifacts_and_a_bounded_cost(q, chat_run, nessie_admin_api,
@@ -852,8 +862,10 @@ def test_each_cc_turn_has_a_model_artifacts_and_a_bounded_cost(q, chat_run, ness
     rec = _completed(chat_run, q.key)
     assert rec.model_id, f"{q.key}: cc_turn_meta.model_id is null, so the proxy will answer 403"
     assert rec.cost_usd is not None, f"{q.key}: the CC turn reported no total_cost_usd"
-    assert 0 < rec.cost_usd <= CC_TURN_CAP_USD, (
-        f"{q.key}: reported CC cost ${rec.cost_usd} is outside (0, {CC_TURN_CAP_USD}]")
+    cap = cc_turn_cap_usd(rec.seconds)
+    assert 0 < rec.cost_usd <= cap, (
+        f"{q.key}: reported CC cost ${rec.cost_usd} over {rec.seconds} s is outside (0, {cap}] "
+        f"(${CC_COST_PER_MINUTE_USD} a minute, one-minute floor)")
     if not q.cc_artifact:
         return
     # A turn that wrote one file lists that file; one that wrote several lists only

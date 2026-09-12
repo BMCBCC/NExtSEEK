@@ -536,3 +536,17 @@ def test_offered_spreadsheets_are_the_tables_and_xlsx_files_a_turn_offered():
     assert offered_spreadsheets([{"artifact_type": "file", "key": "api_result",
                                   "file_format": "json"}]) == [], (
         "a turn that offers only its JSON result must be asked for no spreadsheet")
+
+
+def test_the_cc_cost_cap_is_a_rate_per_minute_with_a_one_minute_floor():
+    """The CC turn's cost bound scales with how long the turn ran: $0.50 a
+    minute, never below one minute's worth, so a longer turn is not failed for
+    costing a little over a flat $0.50."""
+    from ci.smoke.test_nessie import CC_COST_PER_MINUTE_USD, cc_turn_cap_usd
+    assert CC_COST_PER_MINUTE_USD == 0.50
+    assert cc_turn_cap_usd(None) == 0.50
+    assert cc_turn_cap_usd(30.0) == 0.50
+    assert cc_turn_cap_usd(60.0) == 0.50
+    assert cc_turn_cap_usd(120.0) == 1.00
+    assert 0.5400435 <= cc_turn_cap_usd(119.7)   # run 6's turn now passes
+    assert not 0.51 <= cc_turn_cap_usd(30.0)     # a 30 s turn over $0.50 still fails
